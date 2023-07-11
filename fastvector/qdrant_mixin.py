@@ -42,7 +42,6 @@ class QdrantClientMixin:
                     collection_name=collection_name,
                     vectors_config=models.VectorParams(size=len(embeddings[0]), distance=models.Distance.COSINE),
                 )
-            print(f"Upserting {len(points)} points")
             # Call the existing upsert method with the new PointStruct
             self.upsert(collection_name=collection_name, points=points, wait=wait)
 
@@ -56,24 +55,30 @@ class QdrantClientMixin:
         embedding_model=None,
         **kwargs,
     ):
+        # If no embedding model is provided, use SentenceTransformersEmbedding by default
         if embedding_model is None:
             embedding_model = SentenceTransformersEmbedding()
-
-        # Encode the query text
-        query_vector = embedding_model.encode(query_texts)[0]
 
         # Define default search parameters if not provided
         if search_params is None:
             search_params = models.SearchParams(hnsw_ef=128, exact=False)
 
-        # Perform the search
-        search_result = self.search(
-            collection_name=collection_name,
-            query_filter=query_filter,
-            search_params=search_params,
-            query_vector=query_vector.tolist(),
-            limit=n_results,
-            **kwargs,
-        )
+        # Initialize dictionary for storing query results
+        query_results = []
 
-        return search_result
+        # Perform the search for each query text
+        for query_text in query_texts:
+            query_vector = embedding_model.encode([query_text])[0]
+
+            search_result = self.search(
+                collection_name=collection_name,
+                query_filter=query_filter,
+                search_params=search_params,
+                query_vector=query_vector.tolist(),
+                limit=n_results,
+                **kwargs,
+            )
+
+            query_results.append({"query_text": query_text, "results": search_result})
+
+        return query_results
