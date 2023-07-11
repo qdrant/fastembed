@@ -16,12 +16,15 @@ class QdrantClientMixin:
         try:
             from sentence_transformers import SentenceTransformer
         except ImportError:
-            raise ImportError(
-                "Please install the sentence-transformers package to use this method."
-            )
+            raise ImportError("Please install the sentence-transformers package to use this method.")
         model = SentenceTransformer(model_name)
 
         n = len(docs["documents"])
+
+        if "ids" not in docs:
+            # If not, generate sequential IDs
+            docs["ids"] = list(range(1, n + 1))
+
         for i in range(0, n, batch_size):
             batch_docs = docs["documents"][i : i + batch_size]
             batch_metadatas = docs["metadatas"][i : i + batch_size]
@@ -33,9 +36,7 @@ class QdrantClientMixin:
             # Create a PointStruct for each document
             points = [
                 PointStruct(id=id, vector=embedding.tolist(), payload=metadata)
-                for id, embedding, metadata in zip(
-                    batch_ids, embeddings, batch_metadatas
-                )
+                for id, embedding, metadata in zip(batch_ids, embeddings, batch_metadatas)
             ]
 
             # Check if collection exists
@@ -43,9 +44,7 @@ class QdrantClientMixin:
                 warn(f"Collection {collection_name} not found. Creating it.")
                 self.recreate_collection(
                     collection_name=collection_name,
-                    vectors_config=models.VectorParams(
-                        size=len(embeddings[0]), distance=models.Distance.COSINE
-                    ),
+                    vectors_config=models.VectorParams(size=len(embeddings[0]), distance=models.Distance.COSINE),
                 )
             print(f"Upserting {len(points)} points")
             # Call the existing upsert method with the new PointStruct
@@ -63,9 +62,7 @@ class QdrantClientMixin:
         try:
             from sentence_transformers import SentenceTransformer
         except ImportError:
-            raise ImportError(
-                "Please install the sentence-transformers package to use this method."
-            )
+            raise ImportError("Please install the sentence-transformers package to use this method.")
         # Initialize the SentenceTransformer model
         model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
