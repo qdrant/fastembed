@@ -1,6 +1,7 @@
 from warnings import warn
 from qdrant_client.models import PointStruct
 from qdrant_client.http import models
+from .embedding import SentenceTransformersEmbedding, OpenAIEmbedding
 
 
 class QdrantClientMixin:
@@ -10,15 +11,10 @@ class QdrantClientMixin:
         docs,
         batch_size=512,
         wait=True,
-        model_name="sentence-transformers/all-MiniLM-L6-v2",
+        embedding_model=None,
     ):
-        # Initialize the SentenceTransformer model
-        try:
-            from sentence_transformers import SentenceTransformer
-        except ImportError:
-            raise ImportError("Please install the sentence-transformers package to use this method.")
-        model = SentenceTransformer(model_name)
-
+        if embedding_model is None:
+            embedding_model = SentenceTransformersEmbedding()
         n = len(docs["documents"])
 
         if "ids" not in docs:
@@ -31,7 +27,7 @@ class QdrantClientMixin:
             batch_ids = docs["ids"][i : i + batch_size]
 
             # Tokenize, embed, and index each document
-            embeddings = model.encode(batch_docs)
+            embeddings = embedding_model.encode(batch_docs)
 
             # Create a PointStruct for each document
             points = [
@@ -57,17 +53,14 @@ class QdrantClientMixin:
         n_results=2,
         query_filter=None,
         search_params=None,
+        embedding_model=None,
         **kwargs,
     ):
-        try:
-            from sentence_transformers import SentenceTransformer
-        except ImportError:
-            raise ImportError("Please install the sentence-transformers package to use this method.")
-        # Initialize the SentenceTransformer model
-        model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+        if embedding_model is None:
+            embedding_model = SentenceTransformersEmbedding()
 
         # Encode the query text
-        query_vector = model.encode(query_texts)[0]
+        query_vector = embedding_model.encode(query_texts)[0]
 
         # Define default search parameters if not provided
         if search_params is None:
