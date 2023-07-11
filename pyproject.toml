@@ -15,8 +15,18 @@ black = "^23.7.0"
 ruff = "^0.0.277"
 isort = "^5.12.0"
 pre-commit = "^3.3.3"
+sentence-transformers = "^2.2.2"
 
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 120
+
+[tool.isort]
+profile = "black"
+
+[tool.ruff]
+line-length = 120
