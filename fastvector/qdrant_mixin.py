@@ -1,13 +1,25 @@
 from warnings import warn
 from qdrant_client.models import PointStruct
 from qdrant_client.http import models
-from sentence_transformers import SentenceTransformer
 
 
 class QdrantClientMixin:
-    def upsert_docs(self, collection_name, docs, batch_size=512, wait=True):
+    def upsert_docs(
+        self,
+        collection_name,
+        docs,
+        batch_size=512,
+        wait=True,
+        model_name="sentence-transformers/all-MiniLM-L6-v2",
+    ):
         # Initialize the SentenceTransformer model
-        model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+        try:
+            from sentence_transformers import SentenceTransformer
+        except ImportError:
+            raise ImportError(
+                "Please install the sentence-transformers package to use this method."
+            )
+        model = SentenceTransformer(model_name)
 
         n = len(docs["documents"])
         for i in range(0, n, batch_size):
@@ -38,3 +50,40 @@ class QdrantClientMixin:
             print(f"Upserting {len(points)} points")
             # Call the existing upsert method with the new PointStruct
             self.upsert(collection_name=collection_name, points=points, wait=wait)
+
+    def query(
+        self,
+        collection_name,
+        query_texts,
+        n_results=2,
+        query_filter=None,
+        search_params=None,
+        **kwargs,
+    ):
+        try:
+            from sentence_transformers import SentenceTransformer
+        except ImportError:
+            raise ImportError(
+                "Please install the sentence-transformers package to use this method."
+            )
+        # Initialize the SentenceTransformer model
+        model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+
+        # Encode the query text
+        query_vector = model.encode(query_texts)[0]
+
+        # Define default search parameters if not provided
+        if search_params is None:
+            search_params = models.SearchParams(hnsw_ef=128, exact=False)
+
+        # Perform the search
+        search_result = self.search(
+            collection_name=collection_name,
+            query_filter=query_filter,
+            search_params=search_params,
+            query_vector=query_vector.tolist(),
+            limit=n_results,
+            **kwargs,
+        )
+
+        return search_result
