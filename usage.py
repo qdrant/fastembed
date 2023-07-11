@@ -29,3 +29,12 @@ client.upsert_docs(
     batch_size=512,  # Adjust as needed
     wait=True,  # Wait for the operation to complete
 )
+
+search_result = client.query(
+    collection_name="demo_collection",
+    query_texts=["This is a query document"],
+    n_results=2,
+    with_vectors=True,
+    with_payload=True,
+)
+print(search_result)
