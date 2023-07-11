@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "fastvector"
 version = "0.0.1"
-description = "Simple, light weight embedding making light weight alternative to Huggingface transformers"
+description = "Fast embedding alternative to Sentence transformers"
 authors = ["NirantK <nirant.bits@gmail.com>"]
 license = "Apache License"
 readme = "README.md"
@@ -14,6 +14,7 @@ onnxruntime-silicon = "^1.15.0"
 black = "^23.7.0"
 ruff = "^0.0.277"
 isort = "^5.12.0"
+pre-commit = "^3.3.3"
 
 
 [build-system]
