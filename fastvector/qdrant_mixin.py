@@ -96,9 +96,6 @@ class QdrantClientMixin:
         Returns:
             List[QueryResponse]: _description_
         """
-        # Define default search parameters if not provided
-        if search_params is None:
-            search_params = models.SearchParams(hnsw_ef=128, exact=False)
 
         query_responses = []
 
@@ -133,3 +130,7 @@ class QdrantClientMixin:
                 )
 
         return query_responses
+
+    # Define aliases for the methods
+    add = upsert_docs
+    query = search_docs
