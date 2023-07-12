@@ -34,7 +34,7 @@ class QdrantClientMixin:
         docs: Dict[str, List[Any]],
         batch_size: int = 512,
         wait: bool = True,
-        embedding_model: Embedding = SentenceTransformersEmbedding,
+        embedding_model: Embedding = SentenceTransformersEmbedding(),
         **kwargs,
     ) -> None:
         """
