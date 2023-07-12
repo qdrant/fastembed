@@ -11,10 +11,10 @@ FastVector is a Python library that provides convenient methods for indexing and
 
 ## Installation
 
-To install the FastVector library, use pip:
+To install the FastVector library, we install Qdrant client as well with pip:
 
 ```bash
-pip install fastvector
+pip install fastvector qdrant-client
 ```
 
 ## Usage
