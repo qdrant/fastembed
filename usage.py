@@ -20,7 +20,7 @@ ids = [
     3,
     50,
     63,
-]  # unique for each doc, if not mentioned, we'll insert this sequentially
+]  # unique for each doc, if not mentioned, we'll generate random IDs, can lead to duplicates
 
 # Use the new upsert_docs method
 client.upsert_docs(
