@@ -17,6 +17,17 @@ class QueryResponse(BaseModel):
 
 
 class QdrantClientMixin:
+    def batch_iterable(self, iterable: List[Any], batch_size: int = 512) -> Generator[List[Any], None, None]:
+        """A generator that yields batches of items from an iterable."""
+        batch = []
+        for item in iterable:
+            batch.append(item)
+            if len(batch) >= batch_size:
+                yield batch
+                batch = []
+        if batch:
+            yield batch
+
     def upsert_docs(
         self,
         collection_name: str,
