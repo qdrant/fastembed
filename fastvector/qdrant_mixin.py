@@ -76,15 +76,26 @@ class QdrantClientMixin:
         query_texts: List[str],
         n_results: int = 2,
         query_filter: Optional[Dict[str, Any]] = None,
-        search_params: Optional[models.SearchParams] = None,
-        embedding_model: Optional[Embedding] = None,
+        search_params: Optional[models.SearchParams] = models.SearchParams(hnsw_ef=128, exact=False),
+        embedding_model: Optional[Embedding] = SentenceTransformersEmbedding(),
         batch_size: int = 512,
         **kwargs,
     ) -> List[QueryResponse]:
-        # If no embedding model is provided, use SentenceTransformersEmbedding by default
-        if embedding_model is None:
-            embedding_model = SentenceTransformersEmbedding()
+        """
+        Search for documents in a collection.
 
+        Args:
+            collection_name (str): _description_
+            query_texts (List[str]): _description_
+            n_results (int, optional): _description_. Defaults to 2.
+            query_filter (Optional[Dict[str, Any]], optional): _description_. Defaults to None.
+            search_params (Optional[models.SearchParams], optional): _description_. Defaults to models.SearchParams(hnsw_ef=128, exact=False).
+            embedding_model (Optional[Embedding], optional): _description_. Defaults to SentenceTransformersEmbedding().
+            batch_size (int, optional): _description_. Defaults to 512.
+
+        Returns:
+            List[QueryResponse]: _description_
+        """
         # Define default search parameters if not provided
         if search_params is None:
             search_params = models.SearchParams(hnsw_ef=128, exact=False)
