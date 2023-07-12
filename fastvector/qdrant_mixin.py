@@ -100,6 +100,20 @@ class QdrantClientMixin:
                     **kwargs,
                 )
 
-            query_results.append({"query_text": query_text, "results": search_result})
+                ids, embeddings, metadatas, distances = [], [], [], []
+                for scored_point in search_result:
+                    ids.append(scored_point.id)
+                    embeddings.append(scored_point.vector)
+                    metadatas.append(scored_point.payload)
+                    distances.append(scored_point.score)
+
+                query_responses.append(
+                    QueryResponse(
+                        ids=ids,
+                        embeddings=embeddings,
+                        metadatas=metadatas,
+                        distances=distances,
+                    )
+                )
 
         return query_responses
