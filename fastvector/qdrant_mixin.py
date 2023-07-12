@@ -1,18 +1,31 @@
+import uuid
+from typing import Any, Dict, Generator, List, Optional
 from warnings import warn
-from qdrant_client.models import PointStruct
+
+from pydantic import BaseModel
 from qdrant_client.http import models
-from .embedding import SentenceTransformersEmbedding, OpenAIEmbedding
+from qdrant_client.models import PointStruct
+
+from .embedding import Embedding, SentenceTransformersEmbedding
+
+
+class QueryResponse(BaseModel):
+    ids: List[str]
+    embeddings: List[List[float]]
+    metadatas: List[Dict[str, Any]]
+    distances: List[float]
 
 
 class QdrantClientMixin:
     def upsert_docs(
         self,
-        collection_name,
-        docs,
-        batch_size=512,
-        wait=True,
-        embedding_model=None,
-    ):
+        collection_name: str,
+        docs: Dict[str, List[Any]],
+        batch_size: int = 512,
+        wait: bool = True,
+        embedding_model: Optional[Embedding] = None,
+        **kwargs,
+    ) -> None:
         if embedding_model is None:
             embedding_model = SentenceTransformersEmbedding()
         n = len(docs["documents"])
