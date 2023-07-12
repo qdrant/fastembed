@@ -23,7 +23,7 @@ ids = [
 ]  # unique for each doc, if not mentioned, we'll generate random IDs, can lead to duplicates
 
 # Use the new upsert_docs method
-client.upsert_docs(
+client.add(
     collection_name="demo_collection",
     docs={"documents": docs, "metadatas": metadatas, "ids": ids},
     batch_size=512,  # Adjust as needed
