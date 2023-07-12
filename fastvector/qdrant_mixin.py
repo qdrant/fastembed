@@ -40,7 +40,7 @@ class QdrantClientMixin:
             collection_name (str): _description_
             vectors_config (VectorParams, optional): _description_. Defaults to VectorParams(size=1536, distance=Distance.COSINE).
         """
-        self.create_collection(collection_name=collection_name, vectors_config=vectors_config, **kwargs)
+        self.recreate_collection(collection_name=collection_name, vectors_config=vectors_config, **kwargs)
 
     def upsert_docs(
         self,
@@ -77,7 +77,7 @@ class QdrantClientMixin:
             # Check if collection exists
             if collection_name not in self.get_collections():
                 warn(f"Collection {collection_name} not found. Creating it.")
-                self.recreate_collection(
+                self.create_collection(
                     collection_name=collection_name,
                     vectors_config=VectorParams(size=len(embeddings[0]), distance=Distance.COSINE),
                 )

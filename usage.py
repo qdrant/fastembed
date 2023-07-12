@@ -19,7 +19,7 @@ ids = [
     2,
 ]  # unique for each doc, if not mentioned, we'll generate random IDs, can lead to duplicates
 
-# Use the new upsert_docs method
+# Use the new add method
 client.add(
     collection_name="demo_collection",
     docs={"documents": docs, "metadatas": metadatas, "ids": ids},
