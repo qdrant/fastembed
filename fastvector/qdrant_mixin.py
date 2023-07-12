@@ -39,7 +39,6 @@ class QdrantClientMixin:
     ) -> None:
         if embedding_model is None:
             embedding_model = SentenceTransformersEmbedding()
-        n = len(docs["documents"])
 
         # Iterate over documents and metadatas in batches
         for batch_docs, batch_metadatas in zip(
