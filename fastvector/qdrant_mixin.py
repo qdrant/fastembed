@@ -70,7 +70,7 @@ class QdrantClientMixin:
             # Call the existing upsert method with the new PointStruct
             self.upsert(collection_name=collection_name, points=points, wait=wait, **kwargs)
 
-    def query(
+    def search_docs(
         self,
         collection_name: str,
         query_texts: List[str],
