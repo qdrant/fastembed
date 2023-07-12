@@ -3,8 +3,7 @@ from typing import Any, Dict, Generator, List, Optional
 from warnings import warn
 
 from pydantic import BaseModel
-from qdrant_client.http import models
-from qdrant_client.models import PointStruct
+from qdrant_client.models import PointStruct, VectorParams, SearchParams, Distance
 
 from .embedding import Embedding, SentenceTransformersEmbedding
 
@@ -17,7 +16,7 @@ class QueryResponse(BaseModel):
 
 
 class QdrantClientMixin:
-    def batch_iterable(self, iterable: List[Any], batch_size: int = 512) -> Generator[List[Any], None, None]:
+    def batch_iterable(self, iterable: List[Any], batch_size: int) -> Generator[List[Any], None, None]:
         """A generator that yields batches of items from an iterable."""
         batch = []
         for item in iterable:
@@ -27,6 +26,21 @@ class QdrantClientMixin:
                 batch = []
         if batch:
             yield batch
+
+    def create_collection(
+        self,
+        collection_name: str,
+        vectors_config: VectorParams = VectorParams(size=1536, distance=Distance.COSINE),
+        **kwargs,
+    ) -> None:
+        """
+        Create a collection with the given name and vectors config.
+
+        Args:
+            collection_name (str): _description_
+            vectors_config (VectorParams, optional): _description_. Defaults to VectorParams(size=1536, distance=Distance.COSINE).
+        """
+        self.create_collection(collection_name=collection_name, vectors_config=vectors_config, **kwargs)
 
     def upsert_docs(
         self,
@@ -65,7 +79,7 @@ class QdrantClientMixin:
                 warn(f"Collection {collection_name} not found. Creating it.")
                 self.recreate_collection(
                     collection_name=collection_name,
-                    vectors_config=models.VectorParams(size=len(embeddings[0]), distance=models.Distance.COSINE),
+                    vectors_config=VectorParams(size=len(embeddings[0]), distance=Distance.COSINE),
                 )
             # Call the existing upsert method with the new PointStruct
             self.upsert(collection_name=collection_name, points=points, wait=wait, **kwargs)
@@ -75,10 +89,10 @@ class QdrantClientMixin:
         collection_name: str,
         query_texts: List[str],
         n_results: int = 2,
-        query_filter: Optional[Dict[str, Any]] = None,
-        search_params: Optional[models.SearchParams] = models.SearchParams(hnsw_ef=128, exact=False),
-        embedding_model: Optional[Embedding] = SentenceTransformersEmbedding(),
         batch_size: int = 512,
+        query_filter: Optional[Dict[str, Any]] = None,
+        search_params: SearchParams = SearchParams(hnsw_ef=128, exact=False),
+        embedding_model: Embedding = SentenceTransformersEmbedding(),
         **kwargs,
     ) -> List[QueryResponse]:
         """
@@ -89,8 +103,8 @@ class QdrantClientMixin:
             query_texts (List[str]): _description_
             n_results (int, optional): _description_. Defaults to 2.
             query_filter (Optional[Dict[str, Any]], optional): _description_. Defaults to None.
-            search_params (Optional[models.SearchParams], optional): _description_. Defaults to models.SearchParams(hnsw_ef=128, exact=False).
-            embedding_model (Optional[Embedding], optional): _description_. Defaults to SentenceTransformersEmbedding().
+            search_params (models.SearchParams, optional): _description_. Defaults to models.SearchParams(hnsw_ef=128, exact=False).
+            embedding_model (Embedding, optional): _description_. Defaults to SentenceTransformersEmbedding().
             batch_size (int, optional): _description_. Defaults to 512.
 
         Returns:
