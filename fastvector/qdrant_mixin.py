@@ -84,21 +84,21 @@ class QdrantClientMixin:
         if search_params is None:
             search_params = models.SearchParams(hnsw_ef=128, exact=False)
 
-        # Initialize dictionary for storing query results
-        query_results = []
+        query_responses = []
 
-        # Perform the search for each query text
-        for query_text in query_texts:
-            query_vector = embedding_model.encode([query_text])[0]
+        # Perform the search for each batch of query texts
+        for query_texts_batch in self.batch_iterable(query_texts, batch_size):
+            query_vectors = embedding_model.encode(query_texts_batch)
 
-            search_result = self.search(
-                collection_name=collection_name,
-                query_filter=query_filter,
-                search_params=search_params,
-                query_vector=query_vector.tolist(),
-                limit=n_results,
-                **kwargs,
-            )
+            for _, query_vector in zip(query_texts_batch, query_vectors):
+                search_result = self.search(
+                    collection_name=collection_name,
+                    query_filter=query_filter,
+                    search_params=search_params,
+                    query_vector=query_vector.tolist(),
+                    limit=n_results,
+                    **kwargs,
+                )
 
             query_results.append({"query_text": query_text, "results": search_result})
 
