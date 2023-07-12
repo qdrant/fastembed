@@ -56,14 +56,15 @@ class QdrantClientMixin:
 
     def query(
         self,
-        collection_name,
-        query_texts,
-        n_results=2,
-        query_filter=None,
-        search_params=None,
-        embedding_model=None,
+        collection_name: str,
+        query_texts: List[str],
+        n_results: int = 2,
+        query_filter: Optional[Dict[str, Any]] = None,
+        search_params: Optional[models.SearchParams] = None,
+        embedding_model: Optional[Embedding] = None,
+        batch_size: int = 512,
         **kwargs,
-    ):
+    ) -> List[QueryResponse]:
         # If no embedding model is provided, use SentenceTransformersEmbedding by default
         if embedding_model is None:
             embedding_model = SentenceTransformersEmbedding()
@@ -90,4 +91,4 @@ class QdrantClientMixin:
 
             query_results.append({"query_text": query_text, "results": search_result})
 
-        return query_results
+        return query_responses
