@@ -1,9 +1,8 @@
 import uuid
 from typing import Any, Dict, Generator, List, Optional
-from warnings import warn
 
 from pydantic import BaseModel
-from qdrant_client.models import PointStruct, VectorParams, SearchParams, Distance
+from qdrant_client.models import Distance, PointStruct, SearchParams, VectorParams
 
 from .embedding import Embedding, SentenceTransformersEmbedding
 
@@ -38,7 +37,7 @@ class QdrantClientMixin:
 
         Args:
             collection_name (str): _description_
-            vectors_config (VectorParams, optional): _description_. Defaults to VectorParams(size=1536, distance=Distance.COSINE).
+            vectors_config (VectorParams, optional): Defaults to VectorParams(size=1536, distance=Distance.COSINE).
         """
         self.recreate_collection(collection_name=collection_name, vectors_config=vectors_config, **kwargs)
 
@@ -76,7 +75,6 @@ class QdrantClientMixin:
 
             # Check if collection exists
             if collection_name not in self.get_collections():
-                warn(f"Collection {collection_name} not found. Creating it.")
                 self.create_collection(
                     collection_name=collection_name,
                     vectors_config=VectorParams(size=len(embeddings[0]), distance=Distance.COSINE),
@@ -103,7 +101,7 @@ class QdrantClientMixin:
             query_texts (List[str]): _description_
             n_results (int, optional): _description_. Defaults to 2.
             query_filter (Optional[Dict[str, Any]], optional): _description_. Defaults to None.
-            search_params (models.SearchParams, optional): _description_. Defaults to models.SearchParams(hnsw_ef=128, exact=False).
+            search_params (SearchParams, optional): _description_. Defaults to SearchParams(hnsw_ef=128, exact=False).
             embedding_model (Embedding, optional): _description_. Defaults to SentenceTransformersEmbedding().
             batch_size (int, optional): _description_. Defaults to 512.
 
