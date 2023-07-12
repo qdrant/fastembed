@@ -15,11 +15,8 @@ metadatas = [
     # ...more metadata...
 ]
 ids = [
-    1,
+    72,
     2,
-    3,
-    50,
-    63,
 ]  # unique for each doc, if not mentioned, we'll generate random IDs, can lead to duplicates
 
 # Use the new upsert_docs method
