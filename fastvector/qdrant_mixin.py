@@ -30,22 +30,18 @@ class QdrantClientMixin:
             embedding_model = SentenceTransformersEmbedding()
         n = len(docs["documents"])
 
-        if "ids" not in docs:
-            # If not, generate sequential IDs
-            docs["ids"] = list(range(1, n + 1))
-
-        for i in range(0, n, batch_size):
-            batch_docs = docs["documents"][i : i + batch_size]
-            batch_metadatas = docs["metadatas"][i : i + batch_size]
-            batch_ids = docs["ids"][i : i + batch_size]
-
+        # Iterate over documents and metadatas in batches
+        for batch_docs, batch_metadatas in zip(
+            self.batch_iterable(docs["documents"], batch_size),
+            self.batch_iterable(docs["metadatas"], batch_size),
+        ):
             # Tokenize, embed, and index each document
             embeddings = embedding_model.encode(batch_docs)
 
             # Create a PointStruct for each document
             points = [
-                PointStruct(id=id, vector=embedding.tolist(), payload=metadata)
-                for id, embedding, metadata in zip(batch_ids, embeddings, batch_metadatas)
+                PointStruct(id=uuid.uuid4().hex, vector=embedding.tolist(), payload={**metadata, "text": doc})
+                for doc, embedding, metadata in zip(batch_docs, embeddings, batch_metadatas)
             ]
 
             # Check if collection exists
@@ -56,7 +52,7 @@ class QdrantClientMixin:
                     vectors_config=models.VectorParams(size=len(embeddings[0]), distance=models.Distance.COSINE),
                 )
             # Call the existing upsert method with the new PointStruct
-            self.upsert(collection_name=collection_name, points=points, wait=wait)
+            self.upsert(collection_name=collection_name, points=points, wait=wait, **kwargs)
 
     def query(
         self,
