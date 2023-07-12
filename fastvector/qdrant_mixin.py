@@ -10,7 +10,7 @@ from .embedding import Embedding, SentenceTransformersEmbedding
 
 class QueryResponse(BaseModel):
     ids: List[str]
-    embeddings: List[List[float]]
+    embeddings: Optional[List[List[float]]]
     metadatas: List[Dict[str, Any]]
     distances: List[float]
 
@@ -124,13 +124,15 @@ class QdrantClientMixin:
                     search_params=search_params,
                     query_vector=query_vector.tolist(),
                     limit=n_results,
+                    with_payload=True,
                     **kwargs,
                 )
 
                 ids, embeddings, metadatas, distances = [], [], [], []
                 for scored_point in search_result:
                     ids.append(scored_point.id)
-                    embeddings.append(scored_point.vector)
+                    if scored_point.vector:
+                        embeddings.append(scored_point.vector)
                     metadatas.append(scored_point.payload)
                     distances.append(scored_point.score)
 
