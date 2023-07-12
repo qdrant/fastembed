@@ -37,8 +37,14 @@ class QdrantClientMixin:
         embedding_model: Embedding = SentenceTransformersEmbedding,
         **kwargs,
     ) -> None:
-        if embedding_model is None:
-            embedding_model = SentenceTransformersEmbedding()
+        """
+        Args:
+            collection_name (str): _description_
+            docs (Dict[str, List[Any]]): _description_
+            batch_size (int, optional): _description_. Defaults to 512.
+            wait (bool, optional): _description_. Defaults to True.
+            embedding_model (Embedding, optional): Defaults to SentenceTransformersEmbedding.
+        """
 
         # Iterate over documents and metadatas in batches
         for batch_docs, batch_metadatas in zip(
