@@ -5,9 +5,13 @@ description = "Fast embedding alternative to Sentence transformers"
 authors = ["NirantK <nirant.bits@gmail.com>"]
 license = "Apache License"
 readme = "README.md"
+packages = [{include = "fastvector"}]
+homepage = "https://github.com/qdrant/qdrant-client"
+repository = "https://github.com/qdrant/qdrant-client"
+keywords = ["vector", "embedding", "neural", "search", "qdrant"]
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.12"
+python = ">=3.8.0,<3.12"
 qdrant-client = "^1.3.1"
 onnxruntime = "^1.15.1"
 sentence-transformers = "^2.2.2"
