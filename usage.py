@@ -7,7 +7,7 @@ client = QdrantClient(":memory:")  # or QdrantClient(path="path/to/db")
 docs = ["Qdrant has Langchain integrations", "Qdrant also has Llama Index integrations"]
 metadatas = [
     {"source": "Langchain-docs"},
-    {"source": "Linkedin-docs"},
+    {"source": "LlamaIndex-docs"},
 ]
 ids = [42, 2]
 
