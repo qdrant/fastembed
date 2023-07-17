@@ -9,7 +9,7 @@ class QdrantClient:
 
         # Check if fastvector is installed
         try:
-            from fastvector.qdrant_mixin import QdrantClientMixin
+            from fastembed.qdrant_mixin import QdrantClientMixin
 
             # If it is, add the mixin methods to this instance
             for name, method in QdrantClientMixin.__dict__.items():
