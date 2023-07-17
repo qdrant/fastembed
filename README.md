@@ -1,6 +1,6 @@
-# FastVector Library
+# FastEmbed Library
 
-FastVector is a Python library that provides convenient methods for indexing and searching text documents using Qdrant, a high-dimensional vector indexing and search system.
+FastEmbed is a Python library that provides convenient methods for indexing and searching text documents using Qdrant, a high-dimensional vector indexing and search system.
 
 ## Features
 
@@ -11,10 +11,10 @@ FastVector is a Python library that provides convenient methods for indexing and
 
 ## Installation
 
-To install the FastVector library, we install Qdrant client as well with pip:
+To install the FastEmbed library, we install Qdrant client as well with pip:
 
 ```bash
-pip install fastvector qdrant-client
+pip install fastembed qdrant-client
 ```
 
 ## Usage
