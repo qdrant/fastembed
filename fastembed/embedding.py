@@ -12,6 +12,13 @@ from tokenizers import Tokenizer
 from tqdm import tqdm
 
 
+# Use pytorches default epsilon for division by zero
+# https://pytorch.org/docs/stable/generated/torch.nn.functional.normalize.html
+def normalize(v):
+    norm = np.linalg.norm(v, axis=1)
+    norm[norm == 0] = 1e-12
+    return v / norm[:, np.newaxis]
+
 class Embedding(ABC):
     @abstractmethod
     def encode(self, texts: List[str])->List[np.ndarray]:
@@ -93,7 +100,8 @@ class DefaultEmbedding(Embedding):
             "https://storage.googleapis.com/qdrant-fastembed/fast-all-MiniLM-L6-v2.tar.gz", output_path="fast-all-MiniLM-L6-v2.tar.gz"
         )
 
-        model_dir = self.decompress_to_cache(targz_path=filepath)        
+        model_dir = self.decompress_to_cache(targz_path=filepath)
+        print(model_dir)
         self.tokenizer = Tokenizer.from_file(f"{model_dir}/tokenizer.json")
         self.tokenizer.enable_truncation(max_length=256)
         self.tokenizer.enable_padding(pad_id=0, pad_token="[PAD]", length=256)
