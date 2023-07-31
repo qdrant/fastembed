@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 class Embedding(ABC):
     @abstractmethod
-    def encode(self, texts):
+    def encode(self, texts: List[str])->List[np.ndarray]:
         pass
 
 class DefaultEmbedding(Embedding):
