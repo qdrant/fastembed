@@ -1,14 +1,14 @@
 [tool.poetry]
 name = "fastembed"
-version = "0.0.1.alpha3"
-description = "Fast embedding alternative to Sentence transformers"
+version = "0.0.1"
+description = "Fast Embedding Creation and Simpler API for Qdrant"
 authors = ["NirantK <nirant.bits@gmail.com>"]
 license = "Apache License"
 readme = "README.md"
 packages = [{include = "fastembed"}]
-homepage = "https://github.com/qdrant/qdrant-client"
-repository = "https://github.com/qdrant/qdrant-client"
-keywords = ["vector", "embedding", "neural", "search", "qdrant"]
+homepage = "https://github.com/qdrant/fastembed"
+repository = "https://github.com/qdrant/fastembed"
+keywords = ["vector", "embedding", "neural", "search", "qdrant", "sentence-transformers"]
 
 [tool.poetry.dependencies]
 python = ">=3.8.0,<3.12"
