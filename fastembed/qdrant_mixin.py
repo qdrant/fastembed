@@ -4,7 +4,7 @@ from typing import Any, Dict, Generator, List, Optional
 from pydantic import BaseModel
 from qdrant_client.models import Distance, PointStruct, SearchParams, VectorParams
 
-from .embedding import Embedding, SentenceTransformersEmbedding
+from .embedding import DefaultEmbedding, Embedding
 
 
 class QueryResponse(BaseModel):
@@ -47,7 +47,7 @@ class QdrantClientMixin:
         docs: Dict[str, List[Any]],
         batch_size: int = 512,
         wait: bool = True,
-        embedding_model: Embedding = SentenceTransformersEmbedding(),
+        embedding_model: Embedding = DefaultEmbedding(),
         **kwargs,
     ) -> None:
         """
@@ -56,7 +56,7 @@ class QdrantClientMixin:
             docs (Dict[str, List[Any]]): _description_
             batch_size (int, optional): _description_. Defaults to 512.
             wait (bool, optional): _description_. Defaults to True.
-            embedding_model (Embedding, optional): Defaults to SentenceTransformersEmbedding.
+            embedding_model (Embedding, optional): Defaults to DefaultEmbedding() with all-MiniLM-L6-v2.
         """
 
         # Iterate over documents and metadatas in batches
@@ -90,7 +90,7 @@ class QdrantClientMixin:
         batch_size: int = 512,
         query_filter: Optional[Dict[str, Any]] = None,
         search_params: SearchParams = SearchParams(hnsw_ef=128, exact=False),
-        embedding_model: Embedding = SentenceTransformersEmbedding(),
+        embedding_model: Embedding = DefaultEmbedding(),
         **kwargs,
     ) -> List[QueryResponse]:
         """
