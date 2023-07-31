@@ -3,6 +3,7 @@ import shutil
 import tarfile
 import tempfile
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Any, List
 
 import numpy as np
@@ -25,7 +26,7 @@ class Embedding(ABC):
         pass
 
 class DefaultEmbedding(Embedding):
-    def download_file_from_gcs(url, output_path, show_progress=True):
+    def download_file_from_gcs(self, url: str, output_path: str, show_progress: bool=True):
         if os.path.exists(output_path):
             return output_path
         response = requests.get(url, stream=True)
@@ -66,7 +67,7 @@ class DefaultEmbedding(Embedding):
                 progress_bar.close()
         return output_path
 
-    def decompress_to_cache(targz_path, cache_dir=None):
+    def decompress_to_cache(self, targz_path: str, cache_dir: str=None):
         # Check if targz_path exists and is a file
         if not os.path.isfile(targz_path):
             raise ValueError(f"{targz_path} does not exist or is not a file.")
@@ -101,11 +102,19 @@ class DefaultEmbedding(Embedding):
         )
 
         model_dir = self.decompress_to_cache(targz_path=filepath)
-        print(model_dir)
-        self.tokenizer = Tokenizer.from_file(f"{model_dir}/tokenizer.json")
+        
+        model_dir = Path(model_dir) / "fast-all-MiniLM-L6-v2"
+        tokenizer_path = model_dir / "tokenizer.json"
+        if not tokenizer_path.exists():
+            raise ValueError(f"Could not find tokenizer.json in {model_dir}")
+        model_path = model_dir / "model_optimized.onnx"
+        if not model_path.exists():
+            raise ValueError(f"Could not find model_optimized.onnx in {model_dir}")
+
+        self.tokenizer = Tokenizer.from_file(str(tokenizer_path))
         self.tokenizer.enable_truncation(max_length=256)
         self.tokenizer.enable_padding(pad_id=0, pad_token="[PAD]", length=256)
-        self.model = ort.InferenceSession(f"{model_dir}/model.onnx")
+        self.model = ort.InferenceSession(str(model_path), providers=['CoreMLExecutionProvider', 'CPUExecutionProvider'])
 
     def encode(self, documents: List[str], batch_size: int = 32) -> List[np.ndarray]:
         # Encode documents using the model
