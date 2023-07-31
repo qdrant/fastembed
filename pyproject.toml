@@ -16,6 +16,7 @@ onnxruntime = "^1.15.1"
 sentence-transformers = "^2.2.2"
 tqdm = "^4.65.0"
 requests = "^2.31.0"
+tokenizers = "^0.13.3"
 
 [tool.poetry.dev-dependencies]
 ruff = "^0.0.277"
