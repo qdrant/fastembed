@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fastembed"
-version = "0.0.1.alpha2"
+version = "0.0.1.alpha3"
 description = "Fast embedding alternative to Sentence transformers"
 authors = ["NirantK <nirant.bits@gmail.com>"]
 license = "Apache License"
