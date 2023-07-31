@@ -160,3 +160,4 @@ cython_debug/
 #.idea/
 .DS_Store
 nbs/*.tar.gz
+*.tar.gz
