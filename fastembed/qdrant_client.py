@@ -9,10 +9,10 @@ class QdrantClient:
 
         # Check if fastvector is installed
         try:
-            from fastembed.qdrant_mixin import QdrantClientMixin
+            from fastembed.qdrant_mixin import QdrantAPIExtensions
 
             # If it is, add the mixin methods to this instance
-            for name, method in QdrantClientMixin.__dict__.items():
+            for name, method in QdrantAPIExtensions.__dict__.items():
                 if callable(method):
                     setattr(self, name, method.__get__(self, self.__class__))
         except ImportError:
