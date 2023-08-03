@@ -12,6 +12,9 @@ import requests
 from tokenizers import Tokenizer
 from tqdm import tqdm
 
+# set the default logger to ERROR level with this
+ort.set_default_logger_severity(3)
+
 
 # Use pytorches default epsilon for division by zero
 # https://pytorch.org/docs/stable/generated/torch.nn.functional.normalize.html
@@ -28,6 +31,28 @@ class Embedding(ABC):
 
 
 class DefaultEmbedding(Embedding):
+    def __init__(self, model_name: str = "sentence-transformers/all-MiniLM-L6-v2"):
+        self.cache_dir = Path(tempfile.gettempdir()) / "fastembed"
+        filepath = self.download_file_from_gcs(
+            "https://storage.googleapis.com/qdrant-fastembed/fast-all-MiniLM-L6-v2.tar.gz",
+            output_path="fast-all-MiniLM-L6-v2.tar.gz",
+        )
+        model_dir = self.decompress_to_cache(targz_path=filepath)
+        model_dir = Path(model_dir) / "fast-all-MiniLM-L6-v2"
+        tokenizer_path = model_dir / "tokenizer.json"
+        if not tokenizer_path.exists():
+            raise ValueError(f"Could not find tokenizer.json in {model_dir}")
+        model_path = model_dir / "model_optimized.onnx"
+        if not model_path.exists():
+            raise ValueError(f"Could not find model_optimized.onnx in {model_dir}")
+
+        self.tokenizer = Tokenizer.from_file(str(tokenizer_path))
+        self.tokenizer.enable_truncation(max_length=256)
+        self.tokenizer.enable_padding(pad_id=0, pad_token="[PAD]", length=256)
+        self.model = ort.InferenceSession(
+            str(model_path), providers=["CoreMLExecutionProvider", "CPUExecutionProvider"]
+        )
+
     def download_file_from_gcs(self, url: str, output_path: str, show_progress: bool = True):
         if os.path.exists(output_path):
             return output_path
@@ -82,14 +107,17 @@ class DefaultEmbedding(Embedding):
 
         # Create a temporary directory for caching if cache_dir is not provided
         if cache_dir is None:
-            cache_dir = tempfile.mkdtemp()
+            cache_dir = self.cache_dir
+
+        # Decompress the tar.gz file if it has not been decompressed already
+        if Path(cache_dir).exists():
+            return cache_dir
 
         try:
             # Open the tar.gz file
             with tarfile.open(targz_path, "r:gz") as tar:
                 # Extract all files into the cache directory
                 tar.extractall(path=cache_dir)
-            print(f"Files have been decompressed into {cache_dir}")
         except tarfile.TarError as e:
             # If any error occurs while opening or extracting the tar.gz file,
             # delete the cache directory (if it was created in this function)
@@ -99,29 +127,6 @@ class DefaultEmbedding(Embedding):
             raise ValueError(f"An error occurred while decompressing {targz_path}: {e}")
 
         return cache_dir
-
-    def __init__(self, model_name="sentence-transformers/all-MiniLM-L6-v2"):
-        filepath = self.download_file_from_gcs(
-            "https://storage.googleapis.com/qdrant-fastembed/fast-all-MiniLM-L6-v2.tar.gz",
-            output_path="fast-all-MiniLM-L6-v2.tar.gz",
-        )
-
-        model_dir = self.decompress_to_cache(targz_path=filepath)
-
-        model_dir = Path(model_dir) / "fast-all-MiniLM-L6-v2"
-        tokenizer_path = model_dir / "tokenizer.json"
-        if not tokenizer_path.exists():
-            raise ValueError(f"Could not find tokenizer.json in {model_dir}")
-        model_path = model_dir / "model_optimized.onnx"
-        if not model_path.exists():
-            raise ValueError(f"Could not find model_optimized.onnx in {model_dir}")
-
-        self.tokenizer = Tokenizer.from_file(str(tokenizer_path))
-        self.tokenizer.enable_truncation(max_length=256)
-        self.tokenizer.enable_padding(pad_id=0, pad_token="[PAD]", length=256)
-        self.model = ort.InferenceSession(
-            str(model_path), providers=["CoreMLExecutionProvider", "CPUExecutionProvider"]
-        )
 
     def encode(self, documents: List[str], batch_size: int = 32) -> List[np.ndarray]:
         # Encode documents using the model
