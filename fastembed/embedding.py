@@ -20,13 +20,15 @@ def normalize(v):
     norm[norm == 0] = 1e-12
     return v / norm[:, np.newaxis]
 
+
 class Embedding(ABC):
     @abstractmethod
-    def encode(self, texts: List[str])->List[np.ndarray]:
+    def encode(self, texts: List[str]) -> List[np.ndarray]:
         pass
 
+
 class DefaultEmbedding(Embedding):
-    def download_file_from_gcs(self, url: str, output_path: str, show_progress: bool=True):
+    def download_file_from_gcs(self, url: str, output_path: str, show_progress: bool = True):
         if os.path.exists(output_path):
             return output_path
         response = requests.get(url, stream=True)
@@ -48,7 +50,9 @@ class DefaultEmbedding(Embedding):
 
         # Initialize the progress bar
         progress_bar = (
-            tqdm(total=total_size_in_bytes, unit="iB", unit_scale=True) if total_size_in_bytes and show_progress else None
+            tqdm(total=total_size_in_bytes, unit="iB", unit_scale=True)
+            if total_size_in_bytes and show_progress
+            else None
         )
 
         # Attempt to download the file
@@ -67,7 +71,7 @@ class DefaultEmbedding(Embedding):
                 progress_bar.close()
         return output_path
 
-    def decompress_to_cache(self, targz_path: str, cache_dir: str=None):
+    def decompress_to_cache(self, targz_path: str, cache_dir: str = None):
         # Check if targz_path exists and is a file
         if not os.path.isfile(targz_path):
             raise ValueError(f"{targz_path} does not exist or is not a file.")
@@ -96,13 +100,14 @@ class DefaultEmbedding(Embedding):
 
         return cache_dir
 
-    def __init__(self, model_name="sentence-transformers/all-MiniLM-L6-v2"):        
+    def __init__(self, model_name="sentence-transformers/all-MiniLM-L6-v2"):
         filepath = self.download_file_from_gcs(
-            "https://storage.googleapis.com/qdrant-fastembed/fast-all-MiniLM-L6-v2.tar.gz", output_path="fast-all-MiniLM-L6-v2.tar.gz"
+            "https://storage.googleapis.com/qdrant-fastembed/fast-all-MiniLM-L6-v2.tar.gz",
+            output_path="fast-all-MiniLM-L6-v2.tar.gz",
         )
 
         model_dir = self.decompress_to_cache(targz_path=filepath)
-        
+
         model_dir = Path(model_dir) / "fast-all-MiniLM-L6-v2"
         tokenizer_path = model_dir / "tokenizer.json"
         if not tokenizer_path.exists():
@@ -114,15 +119,17 @@ class DefaultEmbedding(Embedding):
         self.tokenizer = Tokenizer.from_file(str(tokenizer_path))
         self.tokenizer.enable_truncation(max_length=256)
         self.tokenizer.enable_padding(pad_id=0, pad_token="[PAD]", length=256)
-        self.model = ort.InferenceSession(str(model_path), providers=['CoreMLExecutionProvider', 'CPUExecutionProvider'])
+        self.model = ort.InferenceSession(
+            str(model_path), providers=["CoreMLExecutionProvider", "CPUExecutionProvider"]
+        )
 
     def encode(self, documents: List[str], batch_size: int = 32) -> List[np.ndarray]:
         # Encode documents using the model
         # https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
-        
+
         all_embeddings = []
         for i in range(0, len(documents), batch_size):
-            batch = documents[i:i + batch_size]
+            batch = documents[i : i + batch_size]
             encoded = [self.tokenizer.encode(d) for d in batch]
             input_ids = np.array([e.ids for e in encoded])
             attention_mask = np.array([e.attention_mask for e in encoded])
@@ -135,13 +142,12 @@ class DefaultEmbedding(Embedding):
             last_hidden_state = model_output[0]
             # Perform mean pooling with attention weighting
             input_mask_expanded = np.broadcast_to(np.expand_dims(attention_mask, -1), last_hidden_state.shape)
-            embeddings = np.sum(last_hidden_state * input_mask_expanded, 1) / np.clip(input_mask_expanded.sum(1), a_min=1e-9, a_max=None)
+            embeddings = np.sum(last_hidden_state * input_mask_expanded, 1) / np.clip(
+                input_mask_expanded.sum(1), a_min=1e-9, a_max=None
+            )
             embeddings = normalize(embeddings).astype(np.float32)
             all_embeddings.append(embeddings)
         return np.concatenate(all_embeddings)
-
-
-
 
 
 class SentenceTransformersEmbedding(Embedding):
@@ -155,6 +161,7 @@ class SentenceTransformersEmbedding(Embedding):
     def encode(self, texts):
         return self.model.encode(texts)
 
+
 class GeneralTextEmbedding(Embedding):
     """
     https://huggingface.co/thenlper/gte-large
@@ -163,8 +170,7 @@ class GeneralTextEmbedding(Embedding):
     """
 
     @classmethod
-    def average_pool(last_hidden_states: Any,
-                    attention_mask: Any) -> Any:
+    def average_pool(last_hidden_states: Any, attention_mask: Any) -> Any:
         last_hidden = last_hidden_states.masked_fill(~attention_mask[..., None].bool(), 0.0)
         return last_hidden.sum(dim=1) / attention_mask.sum(dim=1)[..., None]
 
@@ -176,24 +182,23 @@ class GeneralTextEmbedding(Embedding):
             raise ImportError("Please install the transformers package with torch to use this method.")
         self.tokenizer = AutoTokenizer.from_pretrained("thenlper/gte-large")
         self.model = AutoModel.from_pretrained("thenlper/gte-large")
-        
+
     def encode(self, input_texts: List[str]):
         try:
             import torch.nn.functional as F
         except ImportError:
             raise ImportError("Please install Pytorch to use this method.")
         # Tokenize the input texts
-        batch_dict = self.tokenizer(input_texts, max_length=512, padding=True, truncation=True, return_tensors='pt')
+        batch_dict = self.tokenizer(input_texts, max_length=512, padding=True, truncation=True, return_tensors="pt")
 
         outputs = self.model(**batch_dict)
-        embeddings = GeneralTextEmbedding.average_pool(outputs.last_hidden_state, batch_dict['attention_mask'])
+        embeddings = GeneralTextEmbedding.average_pool(outputs.last_hidden_state, batch_dict["attention_mask"])
 
         # (Optionally) normalize embeddings
         embeddings = F.normalize(embeddings, p=2, dim=1)
         scores = (embeddings[:1] @ embeddings[1:].T) * 100
         return scores
 
-        
 
 class OpenAIEmbedding(Embedding):
     def __init__(self):
