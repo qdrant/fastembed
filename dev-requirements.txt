@@ -1,0 +1,5 @@
+jupyter
+jupyter_nbextensions_configurator
+black[jupyter]
+isort
+ruff
