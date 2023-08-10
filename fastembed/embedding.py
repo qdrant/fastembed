@@ -32,15 +32,19 @@ class Embedding(ABC):
 
 class ONNXProviders:
     """List of Execution Providers: https://onnxruntime.ai/docs/execution-providers"""
+
     CPU = "CPUExecutionProvider"
     GPU = "CUDAExecutionProvider"
     Metal = "CoreMLExecutionProvider"
 
+
 class DefaultEmbedding(Embedding):
-    def __init__(self, 
-                 model_name: str = "BAAI/bge-base-en", 
-                 onnx_providers: List[str] = [ONNXProviders.Metal], 
-                 max_length: int = 512):
+    def __init__(
+        self,
+        model_name: str = "BAAI/bge-base-en",
+        onnx_providers: List[str] = [ONNXProviders.Metal],
+        max_length: int = 512,
+    ):
         self.cache_dir = Path(tempfile.gettempdir()) / "fastembed"
         assert "/" in model_name, "model_name must be in the format <org>/<model> e.g. BAAI/bge-base-en"
         model_name = model_name.split("/")[-1]
@@ -146,7 +150,7 @@ class DefaultEmbedding(Embedding):
         Args:
             documents: List of documents to encode
             batch_size: Batch size for encoding -- higher values will use more memory, but be faster
-        
+
         Returns:
             List of embeddings, one per document
         """
@@ -185,9 +189,6 @@ class SentenceTransformersEmbedding(Embedding):
 
     def encode(self, texts):
         return self.model.encode(texts)
-
-
-
 
 
 class OpenAIEmbedding(Embedding):
