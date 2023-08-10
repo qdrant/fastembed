@@ -45,8 +45,6 @@ class DefaultEmbedding(Embedding):
         onnx_providers: List[str] = [ONNXProviders.CPU],
         max_length: int = 512,
     ):
-        self.cache_dir = Path(".").resolve() / "local_cache"
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
         assert "/" in model_name, "model_name must be in the format <org>/<model> e.g. BAAI/bge-base-en"
         model_name = model_name.split("/")[-1]
         fast_model_name = f"fast-{model_name}"
@@ -109,9 +107,11 @@ class DefaultEmbedding(Embedding):
                 progress_bar.close()
         return output_path
 
-    def decompress_to_cache(self, targz_path: str):
+    def decompress_to_cache(self, targz_path: str, cache_dir: str = None):
         # create cache directory if it doesn't exist using Pathlib
-        cache_dir = self.cache_dir
+        if cache_dir is None:
+            cache_dir = Path(".").resolve() / "local_cache"
+            cache_dir.mkdir(parents=True, exist_ok=True)
 
         # Check if targz_path exists and is a file
         if not os.path.isfile(targz_path):
