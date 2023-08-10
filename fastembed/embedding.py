@@ -42,12 +42,15 @@ class DefaultEmbedding(Embedding):
                  onnx_providers: List[str] = [ONNXProviders.Metal], 
                  max_length: int = 512):
         self.cache_dir = Path(tempfile.gettempdir()) / "fastembed"
+        assert "/" in model_name, "model_name must be in the format <org>/<model> e.g. BAAI/bge-base-en"
+        model_name = model_name.split("/")[-1]
+        fast_model_name = f"fast-{model_name}"
         filepath = self.download_file_from_gcs(
-            "https://storage.googleapis.com/qdrant-fastembed/fast-all-MiniLM-L6-v2.tar.gz",
-            output_path="fast-all-MiniLM-L6-v2.tar.gz",
+            f"https://storage.googleapis.com/qdrant-fastembed/{fast_model_name}.tar.gz",
+            output_path=f"{fast_model_name}.tar.gz",
         )
         model_dir = self.decompress_to_cache(targz_path=filepath)
-        model_dir = Path(model_dir) / "fast-all-MiniLM-L6-v2"
+        model_dir = Path(model_dir) / fast_model_name
         tokenizer_path = model_dir / "tokenizer.json"
         if not tokenizer_path.exists():
             raise ValueError(f"Could not find tokenizer.json in {model_dir}")
@@ -56,11 +59,9 @@ class DefaultEmbedding(Embedding):
             raise ValueError(f"Could not find model_optimized.onnx in {model_dir}")
 
         self.tokenizer = Tokenizer.from_file(str(tokenizer_path))
-        self.tokenizer.enable_truncation(max_length=256)
-        self.tokenizer.enable_padding(pad_id=0, pad_token="[PAD]", length=256)
-        self.model = ort.InferenceSession(
-            str(model_path), providers=["CoreMLExecutionProvider", "CPUExecutionProvider"]
-        )
+        self.tokenizer.enable_truncation(max_length=max_length)
+        self.tokenizer.enable_padding(pad_id=0, pad_token="[PAD]", length=max_length)
+        self.model = ort.InferenceSession(str(model_path), providers=onnx_providers)
 
     def download_file_from_gcs(self, url: str, output_path: str, show_progress: bool = True):
         if os.path.exists(output_path):
