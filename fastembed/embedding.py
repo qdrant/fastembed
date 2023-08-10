@@ -34,7 +34,7 @@ class ONNXProviders:
     """List of Execution Providers: https://onnxruntime.ai/docs/execution-providers"""
 
     CPU = "CPUExecutionProvider"
-    GPU = "CUDAExecutionProvider" 
+    GPU = "CUDAExecutionProvider"
     # GPU support is experimental, and can be improved: https://onnxruntime.ai/docs/api/python/api_summary.html#data-on-device
     Metal = "CoreMLExecutionProvider"
 
@@ -43,7 +43,7 @@ class DefaultEmbedding(Embedding):
     def __init__(
         self,
         model_name: str = "BAAI/bge-small-en",
-        onnx_providers: List[str] = [ONNXProviders.Metal],
+        onnx_providers: List[str] = [ONNXProviders.CPU],
         max_length: int = 512,
     ):
         self.cache_dir = Path(tempfile.gettempdir()) / "fastembed"
@@ -75,11 +75,9 @@ class DefaultEmbedding(Embedding):
 
         # Handle HTTP errors
         if response.status_code == 403:
-            print("Authentication error: you do not have permission to access this resource.")
-            return
-        elif response.status_code != 200:
-            print(f"HTTP error {response.status_code} while trying to download the file.")
-            return
+            raise PermissionError(
+                "Authentication Error: You do not have permission to access this resource. Please check your credentials."
+            )
 
         # Get the total size of the file
         total_size_in_bytes = int(response.headers.get("content-length", 0))
@@ -127,6 +125,8 @@ class DefaultEmbedding(Embedding):
         # Decompress the tar.gz file if it has not been decompressed already
         if Path(cache_dir).exists():
             return cache_dir
+
+        print(f"Decompressing {targz_path} to {cache_dir}...")
 
         try:
             # Open the tar.gz file
