@@ -138,6 +138,35 @@ class DefaultEmbedding(Embedding):
 
         return cache_dir
 
+
+class FlagEmbedding(Embedding):
+    def __init__(
+        self,
+        model_name: str,
+        onnx_providers: List[str],
+        max_length: int = 512,
+    ):
+        assert "/" in model_name, "model_name must be in the format <org>/<model> e.g. BAAI/bge-base-en"
+        model_name = model_name.split("/")[-1]
+        fast_model_name = f"fast-{model_name}"
+        filepath = self.download_file_from_gcs(
+            f"https://storage.googleapis.com/qdrant-fastembed/{fast_model_name}.tar.gz",
+            output_path=f"{fast_model_name}.tar.gz",
+        )
+        model_dir = self.decompress_to_cache(targz_path=filepath)
+        model_dir = Path(model_dir) / fast_model_name
+        tokenizer_path = model_dir / "tokenizer.json"
+        if not tokenizer_path.exists():
+            raise ValueError(f"Could not find tokenizer.json in {model_dir}")
+        model_path = model_dir / "model_optimized.onnx"
+        if not model_path.exists():
+            raise ValueError(f"Could not find model_optimized.onnx in {model_dir}")
+
+        self.tokenizer = Tokenizer.from_file(str(tokenizer_path))
+        self.tokenizer.enable_truncation(max_length=max_length)
+        self.tokenizer.enable_padding(pad_id=0, pad_token="[PAD]", length=max_length)
+        self.model = ort.InferenceSession(str(model_path), providers=onnx_providers)
+
     def encode(self, documents: List[str], batch_size: int = 256) -> List[np.ndarray]:
         """
         Encode a list of documents into list of embeddings.
