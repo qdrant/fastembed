@@ -139,10 +139,20 @@ class DefaultEmbedding(Embedding):
         return cache_dir
 
     def encode(self, documents: List[str], batch_size: int = 32) -> List[np.ndarray]:
-        # Encode documents using the model
-        # https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
+        """
+        Encode a list of documents into list of embeddings.
+        We use mean pooling with attention so that the model can handle variable-length inputs.
 
+        Args:
+            documents: List of documents to encode
+            batch_size: Batch size for encoding -- higher values will use more memory, but be faster
+        
+        Returns:
+            List of embeddings, one per document
+        """
         all_embeddings = []
+
+        # TODO: Replace loop with parallelized batching
         for i in range(0, len(documents), batch_size):
             batch = documents[i : i + batch_size]
             encoded = [self.tokenizer.encode(d) for d in batch]
