@@ -23,12 +23,6 @@ def normalize(v):
     return v / norm[:, np.newaxis]
 
 
-class Embedding(ABC):
-    @abstractmethod
-    def encode(self, texts: List[str]) -> List[np.ndarray]:
-        pass
-
-
 class ONNXProviders:
     """List of Execution Providers: https://onnxruntime.ai/docs/execution-providers"""
 
@@ -38,33 +32,10 @@ class ONNXProviders:
     Metal = "CoreMLExecutionProvider"
 
 
-class DefaultEmbedding(Embedding):
-    def __init__(
-        self,
-        model_name: str = "BAAI/bge-small-en",
-        onnx_providers: List[str] = [ONNXProviders.CPU],
-        max_length: int = 512,
-    ):
-        assert "/" in model_name, "model_name must be in the format <org>/<model> e.g. BAAI/bge-base-en"
-        model_name = model_name.split("/")[-1]
-        fast_model_name = f"fast-{model_name}"
-        filepath = self.download_file_from_gcs(
-            f"https://storage.googleapis.com/qdrant-fastembed/{fast_model_name}.tar.gz",
-            output_path=f"{fast_model_name}.tar.gz",
-        )
-        model_dir = self.decompress_to_cache(targz_path=filepath)
-        model_dir = Path(model_dir) / fast_model_name
-        tokenizer_path = model_dir / "tokenizer.json"
-        if not tokenizer_path.exists():
-            raise ValueError(f"Could not find tokenizer.json in {model_dir}")
-        model_path = model_dir / "model_optimized.onnx"
-        if not model_path.exists():
-            raise ValueError(f"Could not find model_optimized.onnx in {model_dir}")
-
-        self.tokenizer = Tokenizer.from_file(str(tokenizer_path))
-        self.tokenizer.enable_truncation(max_length=max_length)
-        self.tokenizer.enable_padding(pad_id=0, pad_token="[PAD]", length=max_length)
-        self.model = ort.InferenceSession(str(model_path), providers=onnx_providers)
+class Embedding(ABC):
+    @abstractmethod
+    def encode(self, texts: List[str]) -> List[np.ndarray]:
+        raise NotImplementedError
 
     def download_file_from_gcs(self, url: str, output_path: str, show_progress: bool = True):
         if os.path.exists(output_path):
@@ -179,8 +150,6 @@ class FlagEmbedding(Embedding):
         Returns:
             List of embeddings, one per document
         """
-        all_embeddings = []
-
         # TODO: Replace loop with parallelized batching
         for i in range(0, len(documents), batch_size):
             batch = documents[i : i + batch_size]
@@ -201,17 +170,8 @@ class FlagEmbedding(Embedding):
             )
             # TODO: Should we normalize after all batches are done?
             embeddings = normalize(embeddings).astype(np.float32)
-            all_embeddings.append(embeddings)
-        return np.concatenate(all_embeddings)
+            yield embeddings
 
-
-class SentenceTransformersEmbedding(Embedding):
-    def __init__(self, model_name="sentence-transformers/all-MiniLM-L6-v2"):
-        try:
-            from sentence_transformers import SentenceTransformer
-        except ImportError:
-            raise ImportError("Please install the sentence-transformers package to use this method.")
-        self.model = SentenceTransformer(model_name)
 
 class DefaultEmbedding(FlagEmbedding):
     def __init__(
