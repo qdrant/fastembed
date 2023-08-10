@@ -178,7 +178,7 @@ class DefaultEmbedding(FlagEmbedding):
         self,
         model_name: str = "BAAI/bge-base-en",
         onnx_providers: List[str] = [ONNXProviders.CPU],
-        max_length: int = 512
+        max_length: int = 512,
     ):
         super().__init__(model_name, onnx_providers, max_length)
 
