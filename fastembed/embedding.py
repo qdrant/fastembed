@@ -213,8 +213,14 @@ class SentenceTransformersEmbedding(Embedding):
             raise ImportError("Please install the sentence-transformers package to use this method.")
         self.model = SentenceTransformer(model_name)
 
-    def encode(self, texts):
-        return self.model.encode(texts)
+class DefaultEmbedding(FlagEmbedding):
+    def __init__(
+        self,
+        model_name: str = "BAAI/bge-base-en",
+        onnx_providers: List[str] = [ONNXProviders.CPU],
+        max_length: int = 512
+    ):
+        super().__init__(model_name, onnx_providers, max_length)
 
 
 class OpenAIEmbedding(Embedding):
