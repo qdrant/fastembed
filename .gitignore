@@ -161,3 +161,5 @@ cython_debug/
 .DS_Store
 nbs/*.tar.gz
 *.tar.gz
+nbs/local_cache/*/*
+local_cache/*/*
