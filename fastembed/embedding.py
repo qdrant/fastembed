@@ -41,7 +41,7 @@ class ONNXProviders:
 class DefaultEmbedding(Embedding):
     def __init__(
         self,
-        model_name: str = "BAAI/bge-base-en",
+        model_name: str = "BAAI/bge-small-en",
         onnx_providers: List[str] = [ONNXProviders.Metal],
         max_length: int = 512,
     ):
