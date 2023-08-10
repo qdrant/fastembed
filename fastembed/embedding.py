@@ -30,6 +30,12 @@ class Embedding(ABC):
         pass
 
 
+class ONNXProviders:
+    """List of Execution Providers: https://onnxruntime.ai/docs/execution-providers"""
+    CPU = "CPUExecutionProvider"
+    GPU = "CUDAExecutionProvider"
+    Metal = "CoreMLExecutionProvider"
+
 class DefaultEmbedding(Embedding):
     def __init__(self, model_name: str = "sentence-transformers/all-MiniLM-L6-v2"):
         self.cache_dir = Path(tempfile.gettempdir()) / "fastembed"
