@@ -37,7 +37,10 @@ class ONNXProviders:
     Metal = "CoreMLExecutionProvider"
 
 class DefaultEmbedding(Embedding):
-    def __init__(self, model_name: str = "sentence-transformers/all-MiniLM-L6-v2"):
+    def __init__(self, 
+                 model_name: str = "BAAI/bge-base-en", 
+                 onnx_providers: List[str] = [ONNXProviders.Metal], 
+                 max_length: int = 512):
         self.cache_dir = Path(tempfile.gettempdir()) / "fastembed"
         filepath = self.download_file_from_gcs(
             "https://storage.googleapis.com/qdrant-fastembed/fast-all-MiniLM-L6-v2.tar.gz",
