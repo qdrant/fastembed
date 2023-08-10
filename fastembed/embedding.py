@@ -38,6 +38,18 @@ class Embedding(ABC):
         raise NotImplementedError
 
     def download_file_from_gcs(self, url: str, output_path: str, show_progress: bool = True):
+        """
+        Downloads a file from Google Cloud Storage.
+
+        Args:
+            url (str): The URL to download the file from.
+            output_path (str): The path to save the downloaded file to.
+            show_progress (bool, optional): Whether to show a progress bar. Defaults to True.
+        
+        Returns:
+            str: The path to the downloaded file.
+        """
+
         if os.path.exists(output_path):
             return output_path
         response = requests.get(url, stream=True)
