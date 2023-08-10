@@ -142,7 +142,7 @@ class DefaultEmbedding(Embedding):
 
         return cache_dir
 
-    def encode(self, documents: List[str], batch_size: int = 32) -> List[np.ndarray]:
+    def encode(self, documents: List[str], batch_size: int = 256) -> List[np.ndarray]:
         """
         Encode a list of documents into list of embeddings.
         We use mean pooling with attention so that the model can handle variable-length inputs.
@@ -174,6 +174,7 @@ class DefaultEmbedding(Embedding):
             embeddings = np.sum(last_hidden_state * input_mask_expanded, 1) / np.clip(
                 input_mask_expanded.sum(1), a_min=1e-9, a_max=None
             )
+            # TODO: Should we normalize after all batches are done?
             embeddings = normalize(embeddings).astype(np.float32)
             all_embeddings.append(embeddings)
         return np.concatenate(all_embeddings)
