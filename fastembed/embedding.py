@@ -34,7 +34,8 @@ class ONNXProviders:
     """List of Execution Providers: https://onnxruntime.ai/docs/execution-providers"""
 
     CPU = "CPUExecutionProvider"
-    GPU = "CUDAExecutionProvider"
+    GPU = "CUDAExecutionProvider" 
+    # GPU support is experimental, and can be improved: https://onnxruntime.ai/docs/api/python/api_summary.html#data-on-device
     Metal = "CoreMLExecutionProvider"
 
 
