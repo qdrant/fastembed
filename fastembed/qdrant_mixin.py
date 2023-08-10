@@ -156,7 +156,7 @@ class QdrantAPIExtensions:
                         embeddings=embeddings,
                         metadatas=metadatas,
                         distances=distances,
-                    )
+                    ).dict()
                 )
 
         return query_responses

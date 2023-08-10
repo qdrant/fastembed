@@ -4,7 +4,7 @@ import tarfile
 import tempfile
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, List
+from typing import List
 
 import numpy as np
 import onnxruntime as ort
