@@ -79,6 +79,16 @@ class Embedding(ABC):
         return output_path
 
     def decompress_to_cache(self, targz_path: str, cache_dir: str = None):
+        """
+        Decompresses a .tar.gz file to a cache directory.
+
+        Args:
+            targz_path (str): Path to the .tar.gz file.
+            cache_dir (str, optional): Path to the cache directory. Defaults to None.
+        
+        Returns:
+            cache_dir (str): Path to the cache directory.
+        """
         # create cache directory if it doesn't exist using Pathlib
         if cache_dir is None:
             cache_dir = Path(".").resolve() / "local_cache"
@@ -117,6 +127,16 @@ class FlagEmbedding(Embedding):
         onnx_providers: List[str],
         max_length: int = 512,
     ):
+        """
+        Args:
+            model_name (str): The name of the model to use.
+            onnx_providers (List[str]): A list of ONNX providers to use.
+            max_length (int, optional): The maximum length of the input text. Defaults to 512.
+
+        Raises:
+            ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.    
+        """
+
         assert "/" in model_name, "model_name must be in the format <org>/<model> e.g. BAAI/bge-base-en"
         model_name = model_name.split("/")[-1]
         fast_model_name = f"fast-{model_name}"
