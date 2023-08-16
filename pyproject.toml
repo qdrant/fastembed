@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "fastembed"
-version = "0.0.1"
-description = "Fast Embedding Creation and Simpler API for Qdrant"
+version = "0.0.2"
+description = "Fast, State of the Art Quantized Embedding Models"
 authors = ["NirantK <nirant.bits@gmail.com>"]
 license = "Apache License"
 readme = "README.md"
