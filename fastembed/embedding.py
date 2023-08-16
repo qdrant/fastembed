@@ -114,8 +114,6 @@ class Embedding(ABC):
         if not targz_path.endswith(".tar.gz"):
             raise ValueError(f"{targz_path} is not a .tar.gz file.")
 
-        print(f"Decompressing {targz_path} to {cache_dir}...")
-
         try:
             # Open the tar.gz file
             with tarfile.open(targz_path, "r:gz") as tar:
@@ -136,7 +134,7 @@ class FlagEmbedding(Embedding):
     def __init__(
         self,
         model_name: str,
-        onnx_providers: List[str],
+        onnx_providers: List[str] = [ONNXProviders.CPU],
         max_length: int = 512,
     ):
         """
