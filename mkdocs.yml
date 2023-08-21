@@ -13,6 +13,15 @@ copyright: |
 theme:
   name: material
   custom_dir: docs/overrides
+  icon:
+    repo: fontawesome/brands/github
+
+  accent:
+    # Primary color
+    color: "#3f51b5"
+    # Text color for primary color
+    text: "#ffffff"
+
   palette: 
     # Palette toggle for light mode
     - scheme: default
@@ -35,3 +44,19 @@ markdown_extensions:
   - toc:
       permalink: true
       toc_depth: 3
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            show_source: false
+            show_bases: false
+            show_if_no_docstring: true
+            merge_init_into_class: true
+            show_root_toc_entry: false
+            show_inheritance: true
+            show_private: false
+            show_special_members: false
