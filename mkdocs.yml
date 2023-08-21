@@ -68,3 +68,16 @@ plugins:
             show_inheritance: true
             show_private: false
             show_special_members: false
+  - mknotebooks:
+      execute: false
+      timeout: 100
+      allow_errors: false
+      tag_remove_configs:
+        remove_cell_tags:
+          - Remove_cell
+        remove_all_outputs_tags:
+          - Remove_all_output
+        remove_single_output_tags:
+          - Remove_single_output
+        remove_input_tags:
+          - Remove_input
