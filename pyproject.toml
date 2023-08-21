@@ -26,6 +26,8 @@ onnx = "^1.11.0"
 notebook = ">=7.0.2"
 mkdocs-material = "^9.1.21"
 mkdocstrings = "^0.22.0"
+pillow = "^10.0.0"
+cairosvg = "^2.7.1"
 pytest = "^7.4.0"
 
 [tool.poetry.dependencies.onnxruntime-silicon]
