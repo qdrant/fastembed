@@ -1,4 +1,15 @@
 site_name: FastEmbed
+site_url: https://qdrant.github.io/fastembed/
+site_author: Nirant Kasliwal
+repo_url: https://github.com/qdrant/fastembed
+repo_name: qdrant/fastembed
+
+remote_branch: gh-pages
+remote_name: origin
+
+copyright: |
+  Maintained by <a href="https://github.com/qdrant">Qdrant</a>.
+
 theme:
   name: material
   custom_dir: docs/overrides
