@@ -1602,6 +1602,21 @@ i18n = ["babel (>=2.9.0)"]
 min-versions = ["babel (==2.9.0)", "click (==7.0)", "colorama (==0.4)", "ghp-import (==1.0)", "importlib-metadata (==4.3)", "jinja2 (==2.11.1)", "markdown (==3.2.1)", "markupsafe (==2.0.1)", "mergedeep (==1.3.4)", "packaging (==20.5)", "pathspec (==0.11.1)", "platformdirs (==2.2.0)", "pyyaml (==5.1)", "pyyaml-env-tag (==0.1)", "typing-extensions (==3.10)", "watchdog (==2.0)"]
 
 [[package]]
+name = "mkdocs-autorefs"
+version = "0.5.0"
+description = "Automatically link across pages in MkDocs."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "mkdocs_autorefs-0.5.0-py3-none-any.whl", hash = "sha256:7930fcb8ac1249f10e683967aeaddc0af49d90702af111a5e390e8b20b3d97ff"},
+    {file = "mkdocs_autorefs-0.5.0.tar.gz", hash = "sha256:9a5054a94c08d28855cfab967ada10ed5be76e2bfad642302a610b252c3274c0"},
+]
+
+[package.dependencies]
+Markdown = ">=3.3"
+mkdocs = ">=1.1"
+
+[[package]]
 name = "mkdocs-material"
 version = "9.1.21"
 description = "Documentation that simply works"
@@ -1633,6 +1648,32 @@ files = [
     {file = "mkdocs_material_extensions-1.1.1-py3-none-any.whl", hash = "sha256:e41d9f38e4798b6617ad98ca8f7f1157b1e4385ac1459ca1e4ea219b556df945"},
     {file = "mkdocs_material_extensions-1.1.1.tar.gz", hash = "sha256:9c003da71e2cc2493d910237448c672e00cefc800d3d6ae93d2fc69979e3bd93"},
 ]
+
+[[package]]
+name = "mkdocstrings"
+version = "0.22.0"
+description = "Automatic documentation from sources, for MkDocs."
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "mkdocstrings-0.22.0-py3-none-any.whl", hash = "sha256:2d4095d461554ff6a778fdabdca3c00c468c2f1459d469f7a7f622a2b23212ba"},
+    {file = "mkdocstrings-0.22.0.tar.gz", hash = "sha256:82a33b94150ebb3d4b5c73bab4598c3e21468c79ec072eff6931c8f3bfc38256"},
+]
+
+[package.dependencies]
+importlib-metadata = {version = ">=4.6", markers = "python_version < \"3.10\""}
+Jinja2 = ">=2.11.1"
+Markdown = ">=3.3"
+MarkupSafe = ">=1.1"
+mkdocs = ">=1.2"
+mkdocs-autorefs = ">=0.3.1"
+pymdown-extensions = ">=6.3"
+typing-extensions = {version = ">=4.1", markers = "python_version < \"3.10\""}
+
+[package.extras]
+crystal = ["mkdocstrings-crystal (>=0.3.4)"]
+python = ["mkdocstrings-python (>=0.5.2)"]
+python-legacy = ["mkdocstrings-python-legacy (>=0.2.1)"]
 
 [[package]]
 name = "mpmath"
@@ -3858,4 +3899,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.0,<3.12"
-content-hash = "a4d59617f3cad897f32f7540a50de89200ed3235fda8ccf47135bde81c47f94b"
+content-hash = "d4327e11857172c45acd036fac7b850c087a1db3bf3f3257ef2c8c1fa9e4834d"
