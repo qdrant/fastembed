@@ -25,6 +25,7 @@ optimum = "^1.11.1"
 onnx = "^1.11.0"
 notebook = ">=7.0.2"
 mkdocs-material = "^9.1.21"
+pytest = "^7.4.0"
 
 [tool.poetry.dependencies.onnxruntime-silicon]
 version = "^1.15.0"

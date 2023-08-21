@@ -3,7 +3,7 @@ import shutil
 import tarfile
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import List
+from typing import List, Iterable
 
 import numpy as np
 import onnxruntime as ort
@@ -37,7 +37,8 @@ class Embedding(ABC):
     def encode(self, texts: List[str]) -> List[np.ndarray]:
         raise NotImplementedError
 
-    def download_file_from_gcs(self, url: str, output_path: str, show_progress: bool = True):
+    @classmethod
+    def download_file_from_gcs(cls, url: str, output_path: str, show_progress: bool = True) -> str:
         """
         Downloads a file from Google Cloud Storage.
 
@@ -45,7 +46,7 @@ class Embedding(ABC):
             url (str): The URL to download the file from.
             output_path (str): The path to save the downloaded file to.
             show_progress (bool, optional): Whether to show a progress bar. Defaults to True.
-        
+
         Returns:
             str: The path to the downloaded file.
         """
@@ -90,22 +91,18 @@ class Embedding(ABC):
                 progress_bar.close()
         return output_path
 
-    def decompress_to_cache(self, targz_path: str, cache_dir: str = None):
+    @classmethod
+    def decompress_to_cache(cls, targz_path: str, cache_dir: str):
         """
         Decompresses a .tar.gz file to a cache directory.
 
         Args:
             targz_path (str): Path to the .tar.gz file.
-            cache_dir (str, optional): Path to the cache directory. Defaults to None.
-        
+            cache_dir (str): Path to the cache directory.
+
         Returns:
             cache_dir (str): Path to the cache directory.
         """
-        # create cache directory if it doesn't exist using Pathlib
-        if cache_dir is None:
-            cache_dir = Path(".").resolve() / "local_cache"
-            cache_dir.mkdir(parents=True, exist_ok=True)
-
         # Check if targz_path exists and is a file
         if not os.path.isfile(targz_path):
             raise ValueError(f"{targz_path} does not exist or is not a file.")
@@ -129,13 +126,38 @@ class Embedding(ABC):
 
         return cache_dir
 
+    def retrieve_model(self, model_name: str, cache_dir: str) -> Path:
+        assert "/" in model_name, "model_name must be in the format <org>/<model> e.g. BAAI/bge-base-en"
+
+        model_name = model_name.split("/")[-1]
+
+        fast_model_name = f"fast-{model_name}"
+
+        model_dir = Path(cache_dir) / fast_model_name
+        if model_dir.exists():
+            return model_dir
+
+        model_tar_gz = Path(cache_dir) / f"{fast_model_name}.tar.gz"
+        self.download_file_from_gcs(
+            f"https://storage.googleapis.com/qdrant-fastembed/{fast_model_name}.tar.gz",
+            output_path=str(model_tar_gz),
+        )
+
+        self.decompress_to_cache(targz_path=str(model_tar_gz), cache_dir=cache_dir)
+        assert model_dir.exists(), f"Could not find {model_dir} in {cache_dir}"
+
+        model_tar_gz.unlink()
+
+        return model_dir
+
 
 class FlagEmbedding(Embedding):
     def __init__(
         self,
         model_name: str,
-        onnx_providers: List[str] = [ONNXProviders.CPU],
+        onnx_providers=None,
         max_length: int = 512,
+        cache_dir: str = None,
     ):
         """
         Args:
@@ -144,18 +166,17 @@ class FlagEmbedding(Embedding):
             max_length (int, optional): The maximum length of the input text. Defaults to 512.
 
         Raises:
-            ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.    
+            ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
         """
 
-        assert "/" in model_name, "model_name must be in the format <org>/<model> e.g. BAAI/bge-base-en"
-        model_name = model_name.split("/")[-1]
-        fast_model_name = f"fast-{model_name}"
-        filepath = self.download_file_from_gcs(
-            f"https://storage.googleapis.com/qdrant-fastembed/{fast_model_name}.tar.gz",
-            output_path=f"{fast_model_name}.tar.gz",
-        )
-        model_dir = self.decompress_to_cache(targz_path=filepath)
-        model_dir = Path(model_dir) / fast_model_name
+        if onnx_providers is None:
+            onnx_providers = [ONNXProviders.CPU]
+
+        if cache_dir is None:
+            cache_dir = Path(".").resolve() / "local_cache"
+            cache_dir.mkdir(parents=True, exist_ok=True)
+
+        model_dir = self.retrieve_model(model_name, cache_dir)
         tokenizer_path = model_dir / "tokenizer.json"
         if not tokenizer_path.exists():
             raise ValueError(f"Could not find tokenizer.json in {model_dir}")
@@ -168,7 +189,7 @@ class FlagEmbedding(Embedding):
         self.tokenizer.enable_padding(pad_id=0, pad_token="[PAD]", length=max_length)
         self.model = ort.InferenceSession(str(model_path), providers=onnx_providers)
 
-    def encode(self, documents: List[str], batch_size: int = 256) -> List[np.ndarray]:
+    def encode(self, documents: List[str], batch_size: int = 256) -> Iterable[np.ndarray]:
         """
         Encode a list of documents into list of embeddings.
         We use mean pooling with attention so that the model can handle variable-length inputs.
@@ -200,17 +221,20 @@ class FlagEmbedding(Embedding):
             )
             # TODO: Should we normalize after all batches are done?
             embeddings = normalize(embeddings).astype(np.float32)
-            yield embeddings
+            yield from embeddings
 
 
 class DefaultEmbedding(FlagEmbedding):
     def __init__(
         self,
         model_name: str = "BAAI/bge-base-en",
-        onnx_providers: List[str] = [ONNXProviders.CPU],
+        onnx_providers: List[str] = None,
         max_length: int = 512,
+        cache_dir: str = None,
     ):
-        super().__init__(model_name, onnx_providers, max_length)
+        if onnx_providers is None:
+            onnx_providers = [ONNXProviders.CPU]
+        super().__init__(model_name, onnx_providers, max_length, cache_dir)
 
 
 class OpenAIEmbedding(Embedding):
