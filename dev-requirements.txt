@@ -1,6 +1,0 @@
-jupyter
-jupyter_nbextensions_configurator
-google-cloud-storage
-black[jupyter]
-isort
-ruff
