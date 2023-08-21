@@ -15,7 +15,15 @@ theme:
   custom_dir: docs/overrides
   icon:
     repo: fontawesome/brands/github
-
+  features:
+    - search.suggest
+    - search.highlight
+    - navigation.instant
+    - navigation.tracking
+    - navigation.expand
+    - navigation.sections
+    - content.code.annotate
+    - toc.follow
   accent:
     # Primary color
     color: "#3f51b5"
