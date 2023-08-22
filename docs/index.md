@@ -22,7 +22,7 @@ documents: List[str] = [
     # You can leave out the prefix but it's recommended
     "fastembed is supported by and maintained by Qdrant." 
 ]
-embedding_model = DeafultEmbedding() 
+embedding_model = DefaultEmbedding() 
 embeddings: List[np.ndarray] = list(embedding_model.encode(documents))
 ```
 
