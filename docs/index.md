@@ -1,7 +1,6 @@
-# 🪶 What is FastEmbed?
+# ⚡️ What is FastEmbed?
 
-FastEmbed is lightweight, fast, Python library built for retrieval and easy to use. 
-
+FastEmbed is an easy to use -- lightweight, fast, Python library built for retrieval augmented generation. The default embedding supports "query" and "passage" prefixes for the input text.
 
 ## 🚀 Installation
 
