@@ -164,3 +164,4 @@ nbs/*.tar.gz
 nbs/local_cache/*/*
 local_cache/*/*
 nbs/fast-*/*
+docs/local_cache/*/*
