@@ -27,7 +27,7 @@ pip install fastembed
 ## 📖 Usage
 
 ```python
-from fastembed.embedding import DefaultEmbedding
+from fastembed.embedding import FlagEmbedding as Embedding
 
 documents: List[str] = [
     "passage: Hello, World!",
@@ -36,7 +36,7 @@ documents: List[str] = [
     # You can leave out the prefix but it's recommended
     "fastembed is supported by and maintained by Qdrant." 
 ]
-embedding_model = DeafultEmbedding() 
+embedding_model = Embedding(model_name="BAAI/bge-base-en", max_length=512) 
 embeddings: List[np.ndarray] = list(embedding_model.encode(documents))
 ```
 
