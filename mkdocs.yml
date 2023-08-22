@@ -25,6 +25,8 @@ theme:
     - navigation.sections
     - content.code.annotate
     - toc.follow
+    - header.autohide
+    - announce.dismiss
   accent:
     # Primary color
     color: "#3f51b5"
