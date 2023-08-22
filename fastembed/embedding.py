@@ -3,7 +3,7 @@ import shutil
 import tarfile
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import List, Iterable
+from typing import Iterable, List
 
 import numpy as np
 import onnxruntime as ort
@@ -33,6 +33,29 @@ class ONNXProviders:
 
 
 class Embedding(ABC):
+    """
+    Abstract class for embeddings.
+
+    Args:
+        ABC (): 
+
+    Raises:
+        NotImplementedError: _description_
+        PermissionError: _description_
+        ValueError: _description_
+        ValueError: _description_
+        ValueError: _description_
+        ValueError: _description_
+        ValueError: _description_
+        NotImplementedError: _description_
+
+    Returns:
+        _type_: _description_
+
+    Yields:
+        _type_: _description_
+    """
+
     @abstractmethod
     def encode(self, texts: List[str]) -> List[np.ndarray]:
         raise NotImplementedError
@@ -154,7 +177,7 @@ class Embedding(ABC):
 class FlagEmbedding(Embedding):
     def __init__(
         self,
-        model_name: str,
+        model_name: str = "BAAI/bge-small-en",
         onnx_providers=None,
         max_length: int = 512,
         cache_dir: str = None,
@@ -227,7 +250,7 @@ class FlagEmbedding(Embedding):
 class DefaultEmbedding(FlagEmbedding):
     def __init__(
         self,
-        model_name: str = "BAAI/bge-base-en",
+        model_name: str = "BAAI/bge-small-en",
         onnx_providers: List[str] = None,
         max_length: int = 512,
         cache_dir: str = None,
