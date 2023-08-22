@@ -17,9 +17,10 @@ pip install fastembed
 from fastembed.embedding import DefaultEmbedding
 
 documents: List[str] = [
-    "Hello, World!",
-    "This is an example document.",
-    "fastembed is supported by and maintained by Qdrant." * 128,
+    "passage: Hello, World!",
+    "query: Hello, World!", # these are two different embedding
+    "passage: This is an example document.",
+    "fastembed is supported by and maintained by Qdrant." # You can leave out the prefix but it's recommended
 ]
 embedding_model = DeafultEmbedding() 
 embeddings: List[np.ndarray] = list(embedding_model.encode(documents))
