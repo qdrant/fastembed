@@ -1,5 +1,3 @@
-# FastEmbed
-
 # 🪶 What is FastEmbed?
 
 FastEmbed is lightweight, fast, Python library built for retrieval and easy to use. 
@@ -7,7 +5,7 @@ FastEmbed is lightweight, fast, Python library built for retrieval and easy to u
 
 ## 🚀 Installation
 
-To install the FastEmbed library, we recommend using Poetry, alternatively -- pip works: 
+To install the FastEmbed library, pip works: 
 
 ```bash
 pip install fastembed
