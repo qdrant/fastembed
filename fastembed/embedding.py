@@ -150,6 +150,20 @@ class Embedding(ABC):
         return cache_dir
 
     def retrieve_model(self, model_name: str, cache_dir: str) -> Path:
+        """
+        Retrieves a model from Google Cloud Storage.
+
+        Args:
+            model_name (str): The name of the model to retrieve.
+            cache_dir (str): The path to the cache directory.
+
+        Raises:
+            ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
+
+        Returns:
+            Path: The path to the model directory.
+        """
+
         assert "/" in model_name, "model_name must be in the format <org>/<model> e.g. BAAI/bge-base-en"
 
         model_name = model_name.split("/")[-1]
@@ -175,6 +189,14 @@ class Embedding(ABC):
 
 
 class FlagEmbedding(Embedding):
+    """
+    Implementation of the Flag Embedding model.
+
+    Args:
+        Embedding (_type_): _description_
+    """
+
+
     def __init__(
         self,
         model_name: str = "BAAI/bge-small-en",
@@ -248,6 +270,12 @@ class FlagEmbedding(Embedding):
 
 
 class DefaultEmbedding(FlagEmbedding):
+    """
+    Implementation of the default Flag Embedding model.
+
+    Args:
+        FlagEmbedding (_type_): _description_
+    """
     def __init__(
         self,
         model_name: str = "BAAI/bge-small-en",
