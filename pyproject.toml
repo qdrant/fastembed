@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fastembed"
-version = "0.0.2"
+version = "0.0.3a0"
 description = "Fast, State of the Art Quantized Embedding Models"
 authors = ["NirantK <nirant.bits@gmail.com>"]
 license = "Apache License"
