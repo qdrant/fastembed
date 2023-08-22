@@ -1,8 +1,8 @@
 site_name: FastEmbed
 site_url: https://qdrant.github.io/fastembed/
 site_author: Nirant Kasliwal
-repo_url: https://github.com/qdrant/fastembed
-repo_name: qdrant/fastembed
+repo_url: https://github.com/qdrant/fastembed/
+repo_name: qdrant/fastembed  
 
 remote_branch: gh-pages
 remote_name: origin
@@ -12,6 +12,7 @@ copyright: |
 
 theme:
   name: material
+  logo: assets/favicon.png
   custom_dir: docs/overrides
   icon:
     repo: fontawesome/brands/github
