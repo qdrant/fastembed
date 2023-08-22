@@ -18,8 +18,9 @@ from fastembed.embedding import DefaultEmbedding
 documents: List[str] = [
     "passage: Hello, World!",
     "query: Hello, World!", # these are two different embedding
-    "passage: This is an example document.",
-    "fastembed is supported by and maintained by Qdrant." # You can leave out the prefix but it's recommended
+    "passage: This is an example passage.",
+    # You can leave out the prefix but it's recommended
+    "fastembed is supported by and maintained by Qdrant." 
 ]
 embedding_model = DeafultEmbedding() 
 embeddings: List[np.ndarray] = list(embedding_model.encode(documents))
