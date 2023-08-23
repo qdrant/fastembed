@@ -187,6 +187,40 @@ class Embedding(ABC):
 
         return model_dir
 
+    def passage_embed(self, texts: List[str], batch_size: int = 256) -> Iterable[np.ndarray]:
+        """
+        Embeds a list of text passages into a list of embeddings.
+
+        Args:
+            texts (List[str]): The list of texts to embed.
+            batch_size (int, optional): The batch size. Defaults to 256.
+
+        Yields:
+            Iterable[np.ndarray]: The embeddings.
+        """
+
+        for i in range(0, len(texts), batch_size):
+            # Prepend "passage: " to each text
+            yield from self.embed([f"passage: {t}" for t in texts[i : i + batch_size]])
+
+    def query_embed(self, query: str) -> Iterable[np.ndarray]:
+        """
+        Embeds a query
+
+        Args:
+            query (str): The query to search for.
+
+        Returns:
+            Iterable[np.ndarray]: The embeddings.
+        """
+        
+        # Prepend "query: " to the query
+        query = f"query: {query}"
+        # Embed the query
+        query_embedding = self.embed([query])
+        # Compute the cosine similarity between the query embedding and the document embeddings
+        return query_embedding
+        
 
 class FlagEmbedding(Embedding):
     """
