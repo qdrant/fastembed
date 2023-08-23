@@ -14,7 +14,7 @@ def test_onnx_inference():
         -3.44772711e-02,  3.10231801e-02,  6.73499797e-03,  2.61089597e-02
     ]
 
-    vector = list(model.encode(docs))[0]
+    vector = list(model.embed(docs))[0]
     assert len(vector) == 384
 
     for i in range(len(expected_vector)):
