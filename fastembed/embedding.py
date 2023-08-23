@@ -240,7 +240,7 @@ class FlagEmbedding(Embedding):
         We use mean pooling with attention so that the model can handle variable-length inputs.
 
         Args:
-            documents: List of documents to encode
+            documents: List of documents to embed
             batch_size: Batch size for encoding -- higher values will use more memory, but be faster
 
         Returns:
@@ -295,7 +295,7 @@ class OpenAIEmbedding(Embedding):
         ...
 
     def embed(self, texts):
-        # Use your OpenAI model to encode the texts
-        # return self.model.encode(texts)
+        # Use your OpenAI model to embed the texts
+        # return self.model.embed(texts)
         raise NotImplementedError
 
