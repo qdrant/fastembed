@@ -57,7 +57,7 @@ class Embedding(ABC):
     """
 
     @abstractmethod
-    def encode(self, texts: List[str]) -> List[np.ndarray]:
+    def embed(self, texts: List[str]) -> List[np.ndarray]:
         raise NotImplementedError
 
     @classmethod
@@ -234,7 +234,7 @@ class FlagEmbedding(Embedding):
         self.tokenizer.enable_padding(pad_id=0, pad_token="[PAD]", length=max_length)
         self.model = ort.InferenceSession(str(model_path), providers=onnx_providers)
 
-    def encode(self, documents: List[str], batch_size: int = 256) -> Iterable[np.ndarray]:
+    def embed(self, documents: List[str], batch_size: int = 256) -> Iterable[np.ndarray]:
         """
         Encode a list of documents into list of embeddings.
         We use mean pooling with attention so that the model can handle variable-length inputs.
@@ -294,7 +294,8 @@ class OpenAIEmbedding(Embedding):
         # self.model = ...
         ...
 
-    def encode(self, texts):
+    def embed(self, texts):
         # Use your OpenAI model to encode the texts
         # return self.model.encode(texts)
         raise NotImplementedError
+
