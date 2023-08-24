@@ -2,8 +2,7 @@
 
 FastEmbed is an easy to use -- lightweight, fast, Python library built for retrieval embedding generation. The default embedding supports "query" and "passage" prefixes for the input text.
 
-The default model is Flag Embedding, which is top of the [MTEB](https://huggingface.co/spaces/mteb/leaderboard) leaderboard.
-
+The default model is Flag Embedding, which is top of the [MTEB](https://huggingface.co/spaces/mteb/leaderboard) leaderboard. Here is an example for [Retrieval Embedding Generation](https://qdrant.github.io/fastembed/examples/Retrieval%20with%20FastEmbed/)
 ## 🚀 Installation
 
 To install the FastEmbed library, pip works: 
