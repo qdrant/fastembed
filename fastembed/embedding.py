@@ -37,7 +37,7 @@ class Embedding(ABC):
     Abstract class for embeddings.
 
     Args:
-        ABC (): 
+        ABC ():
 
     Raises:
         NotImplementedError: _description_
@@ -213,14 +213,14 @@ class Embedding(ABC):
         Returns:
             Iterable[np.ndarray]: The embeddings.
         """
-        
+
         # Prepend "query: " to the query
         query = f"query: {query}"
         # Embed the query
         query_embedding = self.embed([query])
         # Compute the cosine similarity between the query embedding and the document embeddings
         return query_embedding
-        
+
 
 class FlagEmbedding(Embedding):
     """
@@ -229,7 +229,6 @@ class FlagEmbedding(Embedding):
     Args:
         Embedding (_type_): _description_
     """
-
 
     def __init__(
         self,
@@ -310,6 +309,7 @@ class DefaultEmbedding(FlagEmbedding):
     Args:
         FlagEmbedding (_type_): _description_
     """
+
     def __init__(
         self,
         model_name: str = "BAAI/bge-small-en",
@@ -332,4 +332,3 @@ class OpenAIEmbedding(Embedding):
         # Use your OpenAI model to embed the texts
         # return self.model.embed(texts)
         raise NotImplementedError
-
