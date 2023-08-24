@@ -1,6 +1,8 @@
 # ⚡️ What is FastEmbed?
 
-FastEmbed is an easy to use -- lightweight, fast, Python library built for retrieval augmented generation. The default embedding supports "query" and "passage" prefixes for the input text.
+FastEmbed is an easy to use -- lightweight, fast, Python library built for retrieval embedding generation. 
+
+The default embedding supports "query" and "passage" prefixes for the input text. The default model is Flag Embedding, which is top of the [MTEB](https://huggingface.co/spaces/mteb/leaderboard) leaderboard.
 
 1. Light
     - Quantized model weights
