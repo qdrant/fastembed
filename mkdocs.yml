@@ -8,7 +8,7 @@ remote_branch: gh-pages
 remote_name: origin
 
 copyright: |
-  Maintained by <a href="https://github.com/qdrant">Qdrant</a>.
+  Maintained by <a href="https://github.com/qdrant">Qdrant</a>. Originally created by <a href="https://nirantk.com/about">Nirant Kasliwal</a>.
 
 theme:
   name: material
