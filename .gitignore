@@ -165,3 +165,4 @@ nbs/fast-*/*
 local_cache/*/*
 */local_cache/*/*
 */*/local_cache/*/*
+docs/experimental/*.parquet
