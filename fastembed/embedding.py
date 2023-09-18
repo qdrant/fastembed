@@ -241,14 +241,14 @@ class FlagEmbedding(Embedding):
         Args:
             model_name (str): The name of the model to use.
             onnx_providers (List[str]): A list of ONNX providers to use.
-            max_length (int, optional): The maximum length of the input text. Defaults to 512.
+            max_length (int, optional): The maximum number of tokens. Defaults to 512. Unknown behavior for values > 512.
 
         Raises:
             ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
         """
 
         if onnx_providers is None:
-            onnx_providers = [ONNXProviders.CPU]
+            onnx_providers = [ONNXProviders.CPU, ONNXProviders.Metal]
 
         if cache_dir is None:
             cache_dir = Path(".").resolve() / "local_cache"
@@ -267,6 +267,20 @@ class FlagEmbedding(Embedding):
         self.tokenizer.enable_padding(pad_id=0, pad_token="[PAD]", length=max_length)
         self.model = ort.InferenceSession(str(model_path), providers=onnx_providers)
 
+    def onnx_embed(self, documents: List[str]) -> Iterable[np.ndarray]:
+        encoded = [self.tokenizer.encode(d) for d in documents]
+        input_ids = np.array([e.ids for e in encoded])
+        attention_mask = np.array([e.attention_mask for e in encoded])
+        onnx_input = {
+            "input_ids": np.array(input_ids, dtype=np.int64),
+            "attention_mask": np.array(attention_mask, dtype=np.int64),
+            "token_type_ids": np.array([np.zeros(len(e), dtype=np.int64) for e in input_ids], dtype=np.int64),
+        }
+        model_output = self.model.run(None, onnx_input)
+        last_hidden_state = model_output[0][:,0]
+        embeddings = normalize(last_hidden_state).astype(np.float32)
+        yield from embeddings
+
     def embed(self, documents: List[str], batch_size: int = 256) -> Iterable[np.ndarray]:
         """
         Encode a list of documents into list of embeddings.
@@ -280,20 +294,12 @@ class FlagEmbedding(Embedding):
             List of embeddings, one per document
         """
         # TODO: Replace loop with parallelized batching
-        for i in range(0, len(documents), batch_size):
-            batch = documents[i : i + batch_size]
-            encoded = [self.tokenizer.encode(d) for d in batch]
-            input_ids = np.array([e.ids for e in encoded])
-            attention_mask = np.array([e.attention_mask for e in encoded])
-            onnx_input = {
-                "input_ids": np.array(input_ids, dtype=np.int64),
-                "attention_mask": np.array(attention_mask, dtype=np.int64),
-                "token_type_ids": np.array([np.zeros(len(e), dtype=np.int64) for e in input_ids], dtype=np.int64),
-            }
-            model_output = self.model.run(None, onnx_input)
-            last_hidden_state = model_output[0][:,0]
-            embeddings = normalize(last_hidden_state).astype(np.float32)
-            yield from embeddings
+        if len(documents) >= batch_size:
+            for i in range(0, len(documents), batch_size):
+                batch = documents[i : i + batch_size]
+                return self.onnx_embed(batch)
+        else:
+            return self.onnx_embed(documents)
 
 
 class DefaultEmbedding(FlagEmbedding):
