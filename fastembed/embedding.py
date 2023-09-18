@@ -291,14 +291,8 @@ class FlagEmbedding(Embedding):
                 "token_type_ids": np.array([np.zeros(len(e), dtype=np.int64) for e in input_ids], dtype=np.int64),
             }
             model_output = self.model.run(None, onnx_input)
-            last_hidden_state = model_output[0]
-            # Perform mean pooling with attention weighting
-            input_mask_expanded = np.broadcast_to(np.expand_dims(attention_mask, -1), last_hidden_state.shape)
-            embeddings = np.sum(last_hidden_state * input_mask_expanded, 1) / np.clip(
-                input_mask_expanded.sum(1), a_min=1e-9, a_max=None
-            )
-            # TODO: Should we normalize after all batches are done?
-            embeddings = normalize(embeddings).astype(np.float32)
+            last_hidden_state = model_output[0][:,0]
+            embeddings = normalize(last_hidden_state).astype(np.float32)
             yield from embeddings
 
 
