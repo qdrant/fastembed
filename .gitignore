@@ -167,3 +167,4 @@ local_cache/*/*
 */*/local_cache/*/*
 docs/experimental/*.parquet
 docs/experimental/*.bin
+qdrant_storage/*
