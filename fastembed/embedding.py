@@ -253,7 +253,8 @@ class FlagEmbedding(Embedding):
         if cache_dir is None:
             cache_dir = Path(".").resolve() / "local_cache"
             cache_dir.mkdir(parents=True, exist_ok=True)
-
+        so = ort.SessionOptions()
+        so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
         model_dir = self.retrieve_model(model_name, cache_dir)
         tokenizer_path = model_dir / "tokenizer.json"
         if not tokenizer_path.exists():
@@ -265,7 +266,7 @@ class FlagEmbedding(Embedding):
         self.tokenizer = Tokenizer.from_file(str(tokenizer_path))
         self.tokenizer.enable_truncation(max_length=max_length)
         self.tokenizer.enable_padding(pad_id=0, pad_token="[PAD]", length=max_length)
-        self.model = ort.InferenceSession(str(model_path), providers=onnx_providers)
+        self.model = ort.InferenceSession(str(model_path), providers=onnx_providers, sess_options=so)
 
     def onnx_embed(self, documents: List[str]) -> Iterable[np.ndarray]:
         encoded = [self.tokenizer.encode(d) for d in documents]
