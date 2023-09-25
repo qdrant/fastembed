@@ -1,35 +1,18 @@
 import os
 import shutil
 import tarfile
+import time
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Iterable, List
 
 import numpy as np
-import onnxruntime as ort
 import requests
+import torch.nn.functional as F
+from optimum.onnxruntime import ORTModelForFeatureExtraction
 from tokenizers import Tokenizer
 from tqdm import tqdm
-
-# set the default logger to ERROR level with this
-ort.set_default_logger_severity(3)
-
-
-# Use pytorches default epsilon for division by zero
-# https://pytorch.org/docs/stable/generated/torch.nn.functional.normalize.html
-def normalize(v):
-    norm = np.linalg.norm(v, axis=1)
-    norm[norm == 0] = 1e-12
-    return v / norm[:, np.newaxis]
-
-
-class ONNXProviders:
-    """List of Execution Providers: https://onnxruntime.ai/docs/execution-providers"""
-
-    CPU = "CPUExecutionProvider"
-    GPU = "CUDAExecutionProvider"
-    # GPU support is experimental, and can be improved: https://onnxruntime.ai/docs/api/python/api_summary.html#data-on-device
-    Metal = "CoreMLExecutionProvider"
+from transformers import AutoTokenizer
 
 
 class Embedding(ABC):
@@ -233,54 +216,34 @@ class FlagEmbedding(Embedding):
     def __init__(
         self,
         model_name: str = "BAAI/bge-small-en",
-        onnx_providers=None,
         max_length: int = 512,
         cache_dir: str = None,
     ):
         """
         Args:
             model_name (str): The name of the model to use.
-            onnx_providers (List[str]): A list of ONNX providers to use.
             max_length (int, optional): The maximum number of tokens. Defaults to 512. Unknown behavior for values > 512.
 
         Raises:
             ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
         """
-
-        if onnx_providers is None:
-            onnx_providers = [ONNXProviders.CPU, ONNXProviders.Metal]
-
         if cache_dir is None:
             cache_dir = Path(".").resolve() / "local_cache"
             cache_dir.mkdir(parents=True, exist_ok=True)
-        so = ort.SessionOptions()
-        so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
         model_dir = self.retrieve_model(model_name, cache_dir)
-        tokenizer_path = model_dir / "tokenizer.json"
-        if not tokenizer_path.exists():
+        if not (model_dir / "tokenizer.json").exists():
             raise ValueError(f"Could not find tokenizer.json in {model_dir}")
-        model_path = model_dir / "model_optimized.onnx"
-        if not model_path.exists():
-            raise ValueError(f"Could not find model_optimized.onnx in {model_dir}")
-
-        self.tokenizer = Tokenizer.from_file(str(tokenizer_path))
-        self.tokenizer.enable_truncation(max_length=max_length)
-        self.tokenizer.enable_padding(pad_id=0, pad_token="[PAD]", length=max_length)
-        self.model = ort.InferenceSession(str(model_path), providers=onnx_providers, sess_options=so)
+        if not (model_dir / "model.onnx").exists():
+            raise ValueError(f"Could not find model.onnx in {model_dir}")
+        print(f"Loading model from {model_dir}")
+        self.tokenizer = AutoTokenizer.from_pretrained(str(model_dir))
+        self.model = ORTModelForFeatureExtraction.from_pretrained(str(model_dir))
 
     def onnx_embed(self, documents: List[str]) -> Iterable[np.ndarray]:
-        encoded = [self.tokenizer.encode(d) for d in documents]
-        input_ids = np.array([e.ids for e in encoded])
-        attention_mask = np.array([e.attention_mask for e in encoded])
-        onnx_input = {
-            "input_ids": np.array(input_ids, dtype=np.int64),
-            "attention_mask": np.array(attention_mask, dtype=np.int64),
-            "token_type_ids": np.array([np.zeros(len(e), dtype=np.int64) for e in input_ids], dtype=np.int64),
-        }
-        model_output = self.model.run(None, onnx_input)
-        last_hidden_state = model_output[0][:,0]
-        embeddings = normalize(last_hidden_state).astype(np.float32)
-        yield from embeddings
+        encoded_input = self.tokenizer(documents, padding=True, truncation=True, return_tensors='pt')
+        model_output = self.model(**encoded_input)
+        embeddings = model_output[0][:, 0]
+        return F.normalize(embeddings, p=2, dim=1)
 
     def embed(self, documents: List[str], batch_size: int = 256) -> Iterable[np.ndarray]:
         """
@@ -318,9 +281,9 @@ class DefaultEmbedding(FlagEmbedding):
         max_length: int = 512,
         cache_dir: str = None,
     ):
-        if onnx_providers is None:
-            onnx_providers = [ONNXProviders.CPU]
-        super().__init__(model_name, onnx_providers, max_length, cache_dir)
+        # if onnx_providers is None:
+        #     onnx_providers = [ONNXProviders.CPU]
+        super().__init__(model_name, max_length=max_length, cache_dir=cache_dir)
 
 
 class OpenAIEmbedding(Embedding):
