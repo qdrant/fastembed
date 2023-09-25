@@ -232,8 +232,12 @@ class FlagEmbedding(Embedding):
         if not (model_dir / "tokenizer.json").exists():
             raise ValueError(f"Could not find tokenizer.json in {model_dir}")
         if not (model_dir / "model.onnx").exists():
-            raise ValueError(f"Could not find model.onnx in {model_dir}")
-        print(f"Loading model from {model_dir}")
+            # Rename file model_optimized.onnx to model.onnx if it exists
+            if (model_dir / "model_optimized.onnx").exists():
+                (model_dir / "model_optimized.onnx").rename(model_dir / "model.onnx")
+            else:
+                raise ValueError(f"Could not find model.onnx in {model_dir}")
+
         self.tokenizer = AutoTokenizer.from_pretrained(str(model_dir))
         self.model = ORTModelForFeatureExtraction.from_pretrained(str(model_dir))
 
@@ -274,7 +278,7 @@ class DefaultEmbedding(FlagEmbedding):
 
     def __init__(
         self,
-        model_name: str = "BAAI/bge-small-en-v1.5",
+        model_name: str = "BAAI/bge-small-en",
         onnx_providers: List[str] = None,
         max_length: int = 512,
         cache_dir: str = None,
