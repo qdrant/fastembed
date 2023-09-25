@@ -1,7 +1,6 @@
 import os
 import shutil
 import tarfile
-import time
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Iterable, List
@@ -10,7 +9,6 @@ import numpy as np
 import requests
 import torch.nn.functional as F
 from optimum.onnxruntime import ORTModelForFeatureExtraction
-from tokenizers import Tokenizer
 from tqdm import tqdm
 from transformers import AutoTokenizer
 
