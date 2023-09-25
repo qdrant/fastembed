@@ -57,3 +57,6 @@ It's important we justify the "fast" in FastEmbed. FastEmbed is fast because:
 ### Why accurate?
 1. Better than OpenAI Ada-002
 2. Top of the Embedding leaderboards e.g. [MTEB](https://huggingface.co/spaces/mteb/leaderboard)
+
+#### Similar Work
+Ilyas M. wrote about using [FlagEmbeddings with Optimum](https://twitter.com/IlysMoutawwakil/status/1705215192425288017) over CUDA.
