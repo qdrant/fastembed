@@ -42,17 +42,16 @@ embedding_model = Embedding(model_name="BAAI/bge-base-en", max_length=512)
 embeddings: List[np.ndarray] = list(embedding_model.embed(documents))
 ```
 
-## 🚒 Under the hood
-
 ### Why fast?
 
 It's important we justify the "fast" in FastEmbed. FastEmbed is fast because:
 
 1. Quantized model weights
-2. ONNX Runtime which allows for inference on CPU, GPU, and other dedicated runtimes
+2. ONNX Runtime which allows for fast inference on CPU and other dedicated runtimes
 
 ### Why light?
 1. No hidden dependencies on PyTorch or TensorFlow via Huggingface Transformers
+2. We do use the tokenizer from Huggingface Transformers, but it's a light dependency
 
 ### Why accurate?
 1. Better than OpenAI Ada-002
