@@ -276,7 +276,7 @@ class DefaultEmbedding(FlagEmbedding):
 
     def __init__(
         self,
-        model_name: str = "BAAI/bge-small-en",
+        model_name: str = "BAAI/bge-small-en-v1.5",
         onnx_providers: List[str] = None,
         max_length: int = 512,
         cache_dir: str = None,
