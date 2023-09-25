@@ -147,19 +147,27 @@ class Embedding(ABC):
 
         assert "/" in model_name, "model_name must be in the format <org>/<model> e.g. BAAI/bge-base-en"
 
-        model_name = model_name.split("/")[-1]
-
-        fast_model_name = f"fast-{model_name}"
+        fast_model_name = f"fast-{model_name.split('/')[-1]}"
 
         model_dir = Path(cache_dir) / fast_model_name
         if model_dir.exists():
             return model_dir
 
         model_tar_gz = Path(cache_dir) / f"{fast_model_name}.tar.gz"
-        self.download_file_from_gcs(
-            f"https://storage.googleapis.com/qdrant-fastembed/{fast_model_name}.tar.gz",
+        try:
+            self.download_file_from_gcs(
+                f"https://storage.googleapis.com/qdrant-fastembed/{fast_model_name}.tar.gz",
             output_path=str(model_tar_gz),
-        )
+            )
+        except PermissionError:
+            simple_model_name = model_name.replace("/", "-")
+            print(f"Was not able to download {fast_model_name}.tar.gz, trying {simple_model_name}.tar.gz")
+            self.download_file_from_gcs(
+                f"https://storage.googleapis.com/qdrant-fastembed/{simple_model_name}.tar.gz",
+                output_path=str(model_tar_gz),
+            )
+        else:
+            raise ValueError(f"Could not find {model_tar_gz}")
 
         self.decompress_to_cache(targz_path=str(model_tar_gz), cache_dir=cache_dir)
         assert model_dir.exists(), f"Could not find {model_dir} in {cache_dir}"
