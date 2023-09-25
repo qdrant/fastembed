@@ -7,7 +7,7 @@ def test_default_embedding():
     model = DefaultEmbedding()
 
     docs = ["hello world", "flag embedding"]
-    embeddings = np.array(list(model.embed(docs)))
+    embeddings = np.array(model.embed(docs))
     assert embeddings.shape == (2, 384)
 
 test_default_embedding()
