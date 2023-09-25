@@ -172,8 +172,6 @@ class Embedding(ABC):
                 f"https://storage.googleapis.com/qdrant-fastembed/{simple_model_name}.tar.gz",
                 output_path=str(model_tar_gz),
             )
-        else:
-            raise ValueError(f"Could not find {model_tar_gz}")
 
         self.decompress_to_cache(targz_path=str(model_tar_gz), cache_dir=cache_dir)
         assert model_dir.exists(), f"Could not find {model_dir} in {cache_dir}"
