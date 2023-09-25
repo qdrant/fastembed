@@ -27,13 +27,9 @@ class Embedding(ABC):
         ABC ():
 
     Raises:
-        NotImplementedError: _description_
+        NotImplementedError: Raised when you call an abstract method that has not been implemented.
         PermissionError: _description_
-        ValueError: _description_
-        ValueError: _description_
-        ValueError: _description_
-        ValueError: _description_
-        ValueError: _description_
+        ValueError: Several possible reasons: 1) targz_path does not exist or is not a file, 2) targz_path is not a .tar.gz file, 3) An error occurred while decompressing targz_path, 4) Could not find model_dir in cache_dir, 5) Could not find tokenizer.json in model_dir, 6) Could not find model.onnx in model_dir.
         NotImplementedError: _description_
 
     Returns:
