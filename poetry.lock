@@ -2405,27 +2405,6 @@ protobuf = "*"
 sympy = "*"
 
 [[package]]
-name = "onnxruntime-silicon"
-version = "1.15.0"
-description = "ONNX Runtime is a runtime accelerator for Machine Learning models"
-optional = false
-python-versions = "*"
-files = [
-    {file = "onnxruntime_silicon-1.15.0-cp310-cp310-macosx_12_0_arm64.whl", hash = "sha256:2ed1fbbe320c8f409d7e72d15c92688da4f947e32e3365893669a2d706666a83"},
-    {file = "onnxruntime_silicon-1.15.0-cp311-cp311-macosx_12_0_arm64.whl", hash = "sha256:f5c2f9398bb21a6f283b19e96dcfb026c7efb922f3481bfc485f63b67b38ad7b"},
-    {file = "onnxruntime_silicon-1.15.0-cp38-cp38-macosx_12_0_arm64.whl", hash = "sha256:0c86a45dc6a5555e3d313cc6e36e3996ec5bd7e816dd0b0177304028e327af85"},
-    {file = "onnxruntime_silicon-1.15.0-cp39-cp39-macosx_12_0_arm64.whl", hash = "sha256:3324fa722773447367657b341bc745d0b9e009d501c37504291e9c72bdc3e2a1"},
-]
-
-[package.dependencies]
-coloredlogs = "*"
-flatbuffers = "*"
-numpy = ">=1.22.3"
-packaging = "*"
-protobuf = "*"
-sympy = "*"
-
-[[package]]
 name = "optimum"
 version = "1.13.2"
 description = "Optimum Library is an extension of the Hugging Face Transformers library, providing a framework to integrate third-party libraries from Hardware Partners and interface with their specific functionality."
@@ -4406,4 +4385,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.0,<3.12"
-content-hash = "c2a571c144c399a2f3fc8ebd46e94dbe369c4a1aef56bffc50dbe8c21e0afdfc"
+content-hash = "3494862f096987cf687ee8f1414502df3f56e395c65df5168e3d4b3c31ec4a03"

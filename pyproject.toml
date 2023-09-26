@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fastembed"
-version = "0.0.4"
+version = "0.0.5a1"
 description = "Fast, light, accurate library built for retrieval embedding generation"
 authors = ["NirantK <nirant.bits@gmail.com>"]
 license = "Apache License"
@@ -31,10 +31,6 @@ pillow = "^10.0.0"
 cairosvg = "^2.7.1"
 mknotebooks = "^0.8.0"
 pytest = "^7.4.0"
-
-[tool.poetry.dependencies.onnxruntime-silicon]
-version = "^1.15.0"
-markers = "sys_platform == 'darwin'"  # This makes it macOS specific
 
 [build-system]
 requires = ["poetry-core"]
