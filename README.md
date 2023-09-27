@@ -1,6 +1,6 @@
 # ⚡️ What is FastEmbed?
 
-FastEmbed is an easy to use -- lightweight, fast, Python library built for retrieval embedding generation. 
+FastEmbed is a lightweight, fast, Python library built for embedding generation. We [support popular text models](https://qdrant.github.io/fastembed/examples/Supported_Models/) and please [open an issue](https://github.com/qdrant/fastembed/issues/new) if you want us to add a new model.
 
 The default embedding supports "query" and "passage" prefixes for the input text. The default model is Flag Embedding, which is top of the [MTEB](https://huggingface.co/spaces/mteb/leaderboard) leaderboard. Here is an example for [Retrieval Embedding Generation](https://qdrant.github.io/fastembed/examples/Retrieval%20with%20FastEmbed/) and how to use [FastEmbed with Qdrant](https://qdrant.github.io/fastembed/examples/Usage_With_Qdrant/).
 
