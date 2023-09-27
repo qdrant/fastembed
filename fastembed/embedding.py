@@ -3,7 +3,7 @@ import shutil
 import tarfile
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Iterable, List
+from typing import Dict, Iterable, List, Union
 
 import numpy as np
 import requests
@@ -42,6 +42,35 @@ class Embedding(ABC):
     @abstractmethod
     def embed(self, texts: List[str]) -> List[np.ndarray]:
         raise NotImplementedError
+
+    @classmethod
+    def list_supported_models(cls) -> List[Dict[str, Union[str, int]]]:
+        """
+        Lists the supported models.
+        """
+        return [
+            {
+                "model": "BAAI/bge-small-en",
+                "dim": 384,
+                "description": "Fast and Default English model",
+            },
+            {
+                "model": "BAAI/bge-base-en",
+                "dim": 768,
+                "description": "Base English model",
+            },
+            {
+                "model": "sentence-transformers/all-MiniLM-L6-v2",
+                "dim": 384,
+                "description": "Sentence Transformer model, MiniLM-L6-v2",
+            },
+            {
+                "model": "intfloat/multilingual-e5-large",
+                "dim": 1024,
+                "description": "Multilingual model, e5-large. Recommend using this model for non-English languages. Recommend using this via Torch implementation of FastEmbed",
+            },
+        ]
+
 
     @classmethod
     def download_file_from_gcs(cls, url: str, output_path: str, show_progress: bool = True) -> str:
