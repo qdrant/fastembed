@@ -6,12 +6,12 @@ The default embedding supports "query" and "passage" prefixes for the input text
 
 1. Light
     - Quantized model weights
-    - ONNX Runtime for inference
-    - No hidden dependencies on PyTorch or TensorFlow via Huggingface Transformers
+    - ONNX Runtime for inference via [Optimum](github.com/huggingface/optimum)
 
 2. Accuracy/Recall
     - Better than OpenAI Ada-002
     - Default is Flag Embedding, which is top of the [MTEB](https://huggingface.co/spaces/mteb/leaderboard) leaderboard
+    - You can see our list of [supported models](https://qdrant.github.io/fastembed/examples/Supported_Models/)
 
 3. Fast
     - About 2x faster than Huggingface (PyTorch) transformers on single queries
