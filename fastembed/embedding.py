@@ -267,6 +267,8 @@ class FlagEmbedding(Embedding):
         Returns:
             List of embeddings, one per document
         """
+        if type(documents) == str:
+            documents = [documents]
         # TODO: Replace loop with parallelized batching
         if len(documents) >= batch_size:
             for i in range(0, len(documents), batch_size):
