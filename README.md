@@ -1,6 +1,6 @@
 # ⚡️ What is FastEmbed?
 
-FastEmbed is a lightweight, fast, Python library built for embedding generation. We [support popular text models](https://qdrant.github.io/fastembed/examples/Supported_Models/) and please [open an issue](https://github.com/qdrant/fastembed/issues/new) if you want us to add a new model.
+FastEmbed is a lightweight, fast, Python library built for embedding generation. We [support popular text models](https://qdrant.github.io/fastembed/examples/Supported_Models/). Please [open a Github issue](https://github.com/qdrant/fastembed/issues/new) if you want us to add a new model.
 
 The default embedding supports "query" and "passage" prefixes for the input text. The default model is Flag Embedding, which is top of the [MTEB](https://huggingface.co/spaces/mteb/leaderboard) leaderboard. Here is an example for [Retrieval Embedding Generation](https://qdrant.github.io/fastembed/examples/Retrieval%20with%20FastEmbed/) and how to use [FastEmbed with Qdrant](https://qdrant.github.io/fastembed/examples/Usage_With_Qdrant/).
 
@@ -30,8 +30,7 @@ documents: List[str] = [
     "passage: Hello, World!",
     "query: Hello, World!", # these are two different embedding
     "passage: This is an example passage.",
-    # You can leave out the prefix but it's recommended
-    "fastembed is supported by and maintained by Qdrant." 
+    "fastembed is supported by and maintained by Qdrant." # You can leave out the prefix but it's recommended
 ]
 embedding_model = Embedding(model_name="BAAI/bge-base-en", max_length=512) 
 embeddings: List[np.ndarray] = embedding_model.embed(documents) # If you use  
