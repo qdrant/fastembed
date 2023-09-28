@@ -1,10 +1,19 @@
 # ⚡️ What is FastEmbed?
 
-FastEmbed is an easy to use -- lightweight, fast, Python library built for retrieval embedding generation. 
+FastEmbed is a lightweight, fast, Python library built for embedding generation. We [support popular text models](https://qdrant.github.io/fastembed/examples/Supported_Models/). Please [open a Github issue](https://github.com/qdrant/fastembed/issues/new) if you want us to add a new model.
 
-The default embedding supports "query" and "passage" prefixes for the input text. The default model is [Flag Embedding](https://github.com/FlagOpen/FlagEmbedding), which is top of the [MTEB](https://huggingface.co/spaces/mteb/leaderboard) leaderboard. 
+The default embedding supports "query" and "passage" prefixes for the input text. The default model is Flag Embedding, which is top of the [MTEB](https://huggingface.co/spaces/mteb/leaderboard) leaderboard. Here is an example for [Retrieval Embedding Generation](https://qdrant.github.io/fastembed/examples/Retrieval%20with%20FastEmbed/) and how to use [FastEmbed with Qdrant](https://qdrant.github.io/fastembed/examples/Usage_With_Qdrant/).
 
-Advanced user? Skip ahead to [Retrieval with FastEmbed](https://qdrant.github.io/fastembed/examples/Retrieval_with_FastEmbed/)
+1. Light & Fast
+    - Quantized model weights
+    - ONNX Runtime for inference via [Optimum](github.com/huggingface/optimum)
+
+2. Accuracy/Recall
+    - Better than OpenAI Ada-002
+    - Default is Flag Embedding, which is top of the [MTEB](https://huggingface.co/spaces/mteb/leaderboard) leaderboard
+    - List of [supported models](https://qdrant.github.io/fastembed/examples/Supported_Models/) - including multilingual models
+
+## 🚀 Installation
 
 To install the FastEmbed library, pip works: 
 
@@ -15,31 +24,53 @@ pip install fastembed
 ## 📖 Usage
 
 ```python
-from fastembed.embedding import DefaultEmbedding
+from fastembed.embedding import FlagEmbedding as Embedding
 
 documents: List[str] = [
     "passage: Hello, World!",
     "query: Hello, World!", # these are two different embedding
     "passage: This is an example passage.",
-    # You can leave out the prefix but it's recommended
-    "fastembed is supported by and maintained by Qdrant." 
+    "fastembed is supported by and maintained by Qdrant." # You can leave out the prefix but it's recommended
 ]
-embedding_model = DefaultEmbedding() 
-embeddings: List[np.ndarray] = list(embedding_model.embed(documents))
+embedding_model = Embedding(model_name="BAAI/bge-base-en", max_length=512) 
+embeddings: List[np.ndarray] = embedding_model.embed(documents) # If you use  
 ```
 
-## 🚒 Under the hood
+## Usage with Qdrant
 
-### Why fast?
+Installation with Qdrant Client in Python:
 
-It's important we justify the "fast" in FastEmbed. FastEmbed is fast because:
+```bash
+pip install qdrant-client[fastembed]
+```
 
-1. Quantized model weights
-2. ONNX Runtime which allows for inference on CPU, GPU, and other dedicated runtimes
+Might have to use ```pip install 'qdrant-client[fastembed]'``` on zsh. 
 
-### Why light?
-1. No hidden dependencies on PyTorch or TensorFlow via Huggingface Transformers
+```python
+from qdrant_client import QdrantClient
 
-### Why accurate?
-1. Better than OpenAI Ada-002
-2. Top of the Embedding leaderboards e.g. [MTEB](https://huggingface.co/spaces/mteb/leaderboard)
+# Initialize the client
+client = QdrantClient(":memory:")  # or QdrantClient(path="path/to/db")
+
+# Prepare your documents, metadata, and IDs
+docs = ["Qdrant has Langchain integrations", "Qdrant also has Llama Index integrations"]
+metadata = [
+    {"source": "Langchain-docs"},
+    {"source": "Linkedin-docs"},
+]
+ids = [42, 2]
+
+# Use the new add method
+client.add(
+    collection_name="demo_collection",
+    documents=docs,
+    metadata=metadata,
+    ids=ids
+)
+
+search_result = client.query(
+    collection_name="demo_collection",
+    query_text="This is a query document"
+)
+print(search_result)
+```
