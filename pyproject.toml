@@ -14,8 +14,6 @@ keywords = ["vector", "embedding", "neural", "search", "qdrant", "sentence-trans
 python = ">=3.8.0,<3.12"
 onnx = "^1.11.0"
 onnxruntime = "^1.15.1"
-torch = ">=2.0.0, !=2.0.1"
-optimum = ">1.12.0"
 tqdm = "^4.65.0"
 requests = "^2.31.0"
 tokenizers = "^0.13.3"
