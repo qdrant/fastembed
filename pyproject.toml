@@ -12,11 +12,11 @@ keywords = ["vector", "embedding", "neural", "search", "qdrant", "sentence-trans
 
 [tool.poetry.dependencies]
 python = ">=3.8.0,<3.12"
-onnx = "^1.11.0"
-onnxruntime = "^1.15.1"
-tqdm = "^4.65.0"
-requests = "^2.31.0"
-tokenizers = "^0.13.3"
+onnx = "^1.11"
+onnxruntime = "^1.15"
+tqdm = "^4.65"
+requests = "^2.31"
+tokenizers = "^0.13"
 
 [tool.poetry.dev-dependencies]
 ruff = "^0.0.277"
