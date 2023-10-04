@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import tarfile
@@ -5,19 +6,20 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Dict, Iterable, List, Union
 
+import onnxruntime as ort
 import numpy as np
 import requests
-from optimum.onnxruntime import ORTModelForFeatureExtraction
+from tokenizers import Tokenizer, AddedToken
 from tqdm import tqdm
-from transformers import AutoTokenizer
 
 
-def normalize(input_array, p=2.0, dim=1, eps=1e-12):
+def normalize(input_array, p=2, dim=1, eps=1e-12):
     # Calculate the Lp norm along the specified dimension
     norm = np.linalg.norm(input_array, ord=p, axis=dim, keepdims=True)
-    norm = np.maximum(norm, eps) # Avoid division by zero
+    norm = np.maximum(norm, eps)  # Avoid division by zero
     normalized_array = input_array / norm
     return normalized_array
+
 
 class Embedding(ABC):
     """
@@ -67,10 +69,9 @@ class Embedding(ABC):
             {
                 "model": "intfloat/multilingual-e5-large",
                 "dim": 1024,
-                "description": "Multilingual model, e5-large. Recommend using this model for non-English languages. Recommend using this via Torch implementation of FastEmbed",
+                "description": "Multilingual model, e5-large. Recommend using this model for non-English languages",
             },
         ]
-
 
     @classmethod
     def download_file_from_gcs(cls, url: str, output_path: str, show_progress: bool = True) -> str:
@@ -188,7 +189,7 @@ class Embedding(ABC):
         try:
             self.download_file_from_gcs(
                 f"https://storage.googleapis.com/qdrant-fastembed/{fast_model_name}.tar.gz",
-            output_path=str(model_tar_gz),
+                output_path=str(model_tar_gz),
             )
         except PermissionError:
             simple_model_name = model_name.replace("/", "-")
@@ -248,6 +249,40 @@ class FlagEmbedding(Embedding):
         Embedding (_type_): _description_
     """
 
+    @classmethod
+    def load_tokenizer(cls, model_dir: Path, max_length: int = 512) -> Tokenizer:
+        config_path = model_dir / "config.json"
+        if not config_path.exists():
+            raise ValueError(f"Could not find config.json in {model_dir}")
+
+        tokenizer_path = model_dir / "tokenizer.json"
+        if not tokenizer_path.exists():
+            raise ValueError(f"Could not find tokenizer.json in {model_dir}")
+
+        tokenizer_config_path = model_dir / "tokenizer_config.json"
+        if not tokenizer_config_path.exists():
+            raise ValueError(f"Could not find tokenizer_config.json in {model_dir}")
+
+        tokens_map_path = model_dir / "special_tokens_map.json"
+        if not tokens_map_path.exists():
+            raise ValueError(f"Could not find special_tokens_map.json in {model_dir}")
+
+        config = json.load(open(str(config_path)))
+        tokenizer_config = json.load(open(str(tokenizer_config_path)))
+        tokens_map = json.load(open(str(tokens_map_path)))
+
+        tokenizer = Tokenizer.from_file(str(tokenizer_path))
+        tokenizer.enable_truncation(max_length=min(tokenizer_config["model_max_length"], max_length))
+        tokenizer.enable_padding(pad_id=config["pad_token_id"], pad_token=tokenizer_config["pad_token"])
+
+        for token in tokens_map.values():
+            if isinstance(token, str):
+                tokenizer.add_special_tokens([token])
+            elif isinstance(token, dict):
+                tokenizer.add_special_tokens([AddedToken(**token)])
+
+        return tokenizer
+
     def __init__(
         self,
         model_name: str = "BAAI/bge-small-en",
@@ -258,31 +293,63 @@ class FlagEmbedding(Embedding):
         Args:
             model_name (str): The name of the model to use.
             max_length (int, optional): The maximum number of tokens. Defaults to 512. Unknown behavior for values > 512.
+            cache_dir (str, optional): The path to the cache directory. Defaults to `local_cache` in the current directory.
 
         Raises:
             ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
         """
+        self.model_name = model_name
+
         if cache_dir is None:
             cache_dir = Path(".").resolve() / "local_cache"
             cache_dir.mkdir(parents=True, exist_ok=True)
+
         model_dir = self.retrieve_model(model_name, cache_dir)
-        if not (model_dir / "tokenizer.json").exists():
-            raise ValueError(f"Could not find tokenizer.json in {model_dir}")
-        if not (model_dir / "model.onnx").exists():
+
+        model_path = model_dir / "model.onnx"
+        optimized_model_path = model_dir / "model_optimized.onnx"
+
+        # List of Execution Providers: https://onnxruntime.ai/docs/execution-providers
+        onnx_providers = ["CPUExecutionProvider"]
+
+        if not model_path.exists():
             # Rename file model_optimized.onnx to model.onnx if it exists
-            if (model_dir / "model_optimized.onnx").exists():
-                (model_dir / "model_optimized.onnx").rename(model_dir / "model.onnx")
+            if optimized_model_path.exists():
+                optimized_model_path.rename(model_path)
             else:
                 raise ValueError(f"Could not find model.onnx in {model_dir}")
 
-        self.tokenizer = AutoTokenizer.from_pretrained(str(model_dir))
-        self.model = ORTModelForFeatureExtraction.from_pretrained(str(model_dir))
+        # Hacky support for multilingual model
+        self.exclude_token_type_ids = False
+        if model_name == "intfloat/multilingual-e5-large":
+            self.exclude_token_type_ids = True
 
-    def onnx_embed(self, documents: List[str]) -> Iterable[np.ndarray]:
-        encoded_input = self.tokenizer(documents, padding=True, truncation=True, return_tensors='pt')
-        model_output = self.model(**encoded_input)
-        embeddings = model_output[0][:, 0]
-        return normalize(embeddings, p=2, dim=1)
+        so = ort.SessionOptions()
+        so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+
+        self.tokenizer = self.load_tokenizer(model_dir, max_length=max_length)
+
+        self.model = ort.InferenceSession(str(model_path), providers=onnx_providers, sess_options=so)
+
+    def onnx_embed(self, documents: List[str]) -> np.ndarray:
+        encoded = self.tokenizer.encode_batch(documents)
+        input_ids = np.array([e.ids for e in encoded])
+        attention_mask = np.array([e.attention_mask for e in encoded])
+
+        onnx_input = {
+            "input_ids": np.array(input_ids, dtype=np.int64),
+            "attention_mask": np.array(attention_mask, dtype=np.int64),
+        }
+
+        if not self.exclude_token_type_ids:
+            onnx_input["token_type_ids"] = np.array(
+                [np.zeros(len(e), dtype=np.int64) for e in input_ids], dtype=np.int64
+            )
+
+        model_output = self.model.run(None, onnx_input)
+        last_hidden_state = model_output[0][:, 0]
+        embeddings = normalize(last_hidden_state).astype(np.float32)
+        return embeddings
 
     def embed(self, documents: List[str], batch_size: int = 256) -> Iterable[np.ndarray]:
         """
@@ -302,9 +369,10 @@ class FlagEmbedding(Embedding):
         if len(documents) >= batch_size:
             for i in range(0, len(documents), batch_size):
                 batch = documents[i : i + batch_size]
-                return self.onnx_embed(batch)
+                yield from self.onnx_embed(batch)
         else:
-            return self.onnx_embed(documents)
+            vectors = self.onnx_embed(documents)
+            yield from vectors
 
 
 class DefaultEmbedding(FlagEmbedding):
@@ -318,12 +386,9 @@ class DefaultEmbedding(FlagEmbedding):
     def __init__(
         self,
         model_name: str = "BAAI/bge-small-en",
-        onnx_providers: List[str] = None,
         max_length: int = 512,
         cache_dir: str = None,
     ):
-        # if onnx_providers is None:
-        #     onnx_providers = [ONNXProviders.CPU]
         super().__init__(model_name, max_length=max_length, cache_dir=cache_dir)
 
 
@@ -336,5 +401,4 @@ class OpenAIEmbedding(Embedding):
     def embed(self, texts):
         # Use your OpenAI model to embed the texts
         # return self.model.embed(texts)
-        raise NotImplementedError
         raise NotImplementedError

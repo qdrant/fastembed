@@ -6,7 +6,8 @@ The default embedding supports "query" and "passage" prefixes for the input text
 
 1. Light & Fast
     - Quantized model weights
-    - ONNX Runtime for inference via [Optimum](github.com/huggingface/optimum)
+    - ONNX Runtime, no PyTorch dependency
+    - CPU-first design
 
 2. Accuracy/Recall
     - Better than OpenAI Ada-002
@@ -33,7 +34,7 @@ documents: List[str] = [
     "fastembed is supported by and maintained by Qdrant." # You can leave out the prefix but it's recommended
 ]
 embedding_model = Embedding(model_name="BAAI/bge-base-en", max_length=512) 
-embeddings: List[np.ndarray] = embedding_model.embed(documents) # If you use  
+embeddings: List[np.ndarray] = list(embedding_model.embed(documents)) # If you use  
 ```
 
 ## Usage with Qdrant
@@ -76,4 +77,5 @@ print(search_result)
 ```
 
 #### Similar Work
+
 Ilyas M. wrote about using [FlagEmbeddings with Optimum](https://twitter.com/IlysMoutawwakil/status/1705215192425288017) over CUDA.
