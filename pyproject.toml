@@ -17,6 +17,10 @@ onnxruntime = "^1.15"
 tqdm = "^4.65"
 requests = "^2.31"
 tokenizers = "^0.13"
+numpy = [
+    { version = ">=1.21", python = "<3.12" },
+    { version = ">=1.26", python = ">=3.12" }
+]
 
 [tool.poetry.dev-dependencies]
 ruff = "^0.0.277"
