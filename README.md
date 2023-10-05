@@ -34,7 +34,7 @@ documents: List[str] = [
     "fastembed is supported by and maintained by Qdrant." # You can leave out the prefix but it's recommended
 ]
 embedding_model = Embedding(model_name="BAAI/bge-base-en", max_length=512) 
-embeddings: List[np.ndarray] = list(embedding_model.embed(documents)) # If you use  
+embeddings: List[np.ndarray] = list(embedding_model.embed(documents)) # Note the list() call - this is a generator 
 ```
 
 ## Usage with Qdrant
