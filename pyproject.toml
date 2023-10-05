@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fastembed"
-version = "0.0.5"
+version = "0.1.0"
 description = "Fast, light, accurate library built for retrieval embedding generation"
 authors = ["NirantK <nirant.bits@gmail.com>"]
 license = "Apache License"
@@ -11,7 +11,7 @@ repository = "https://github.com/qdrant/fastembed"
 keywords = ["vector", "embedding", "neural", "search", "qdrant", "sentence-transformers"]
 
 [tool.poetry.dependencies]
-python = ">=3.8.0,<3.12"
+python = ">=3.8.0,<3.13"
 onnx = "^1.11"
 onnxruntime = "^1.15"
 tqdm = "^4.65"
