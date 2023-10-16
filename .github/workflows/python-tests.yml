@@ -39,5 +39,7 @@ jobs:
           poetry config virtualenvs.create false
           poetry install --no-interaction --no-ansi
       - name: Run tests
-        run: pytest
+        run: |
+          export IS_UBUNTU_CI=$(test "${{ matrix.os }}" = "ubuntu-latest" && echo "true" || echo "false")
+          pytest
         shell: bash
