@@ -197,6 +197,12 @@ class Embedding(ABC):
                 "size_in_GB": 0.13
             },
             {
+                "model": "BAAI/bge-small-zh-v1.5",
+                "dim": 384,
+                "description": "Fast and recommended Chinese model",
+                "size_in_GB": 0.1
+            },
+            {
                 "model": "BAAI/bge-base-en",
                 "dim": 768,
                 "description": "Base English model",
