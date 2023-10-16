@@ -198,7 +198,7 @@ class Embedding(ABC):
             },
             {
                 "model": "BAAI/bge-small-zh-v1.5",
-                "dim": 384,
+                "dim": 512,
                 "description": "Fast and recommended Chinese model",
                 "size_in_GB": 0.1
             },
