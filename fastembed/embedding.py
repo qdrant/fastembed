@@ -179,7 +179,7 @@ class Embedding(ABC):
         raise NotImplementedError
 
     @classmethod
-    def list_supported_models(cls) -> List[Dict[str, Union[str, int]]]:
+    def list_supported_models(cls) -> List[Dict[str, Union[str, Union[int, float]]]]:
         """
         Lists the supported models.
         """
