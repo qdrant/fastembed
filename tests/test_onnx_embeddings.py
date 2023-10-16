@@ -19,7 +19,7 @@ def test_default_embedding():
     is_ubuntu_ci = os.getenv("IS_UBUNTU_CI")
 
     for model_desc in Embedding.list_supported_models():
-        if is_ubuntu_ci == "false" and model_desc["model"] == "intfloat/multilingual-e5-large":
+        if is_ubuntu_ci == "false" and model_desc["model"] != "BAAI/bge-small-en-v1.5":
             continue
 
         dim = model_desc["dim"]
@@ -51,8 +51,12 @@ def test_parallel_processing():
     embeddings = list(model.embed(docs, batch_size=10, parallel=2))
     embeddings = np.stack(embeddings, axis=0)
 
-    embeddings_2 = list(model.embed(docs, batch_size=10, parallel=0))
+    embeddings_2 = list(model.embed(docs, batch_size=10, parallel=None))
     embeddings_2 = np.stack(embeddings_2, axis=0)
+
+    embeddings_3 = list(model.embed(docs, batch_size=10, parallel=0))
+    embeddings_3 = np.stack(embeddings_3, axis=0)
 
     assert embeddings.shape == (200, 384)
     assert np.allclose(embeddings, embeddings_2, atol=1e-3)
+    assert np.allclose(embeddings, embeddings_3, atol=1e-3)
