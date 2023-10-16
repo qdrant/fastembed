@@ -19,7 +19,7 @@ def test_default_embedding():
     is_ubuntu_ci = os.getenv("IS_UBUNTU_CI")
 
     for model_desc in Embedding.list_supported_models():
-        if is_ubuntu_ci == "false" and model_desc["model"] != "BAAI/bge-small-en-v1.5":
+        if is_ubuntu_ci == "false" and model_desc["size_in_GB"] > 1:
             continue
 
         dim = model_desc["dim"]
