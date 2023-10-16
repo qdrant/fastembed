@@ -429,7 +429,7 @@ class FlagEmbedding(Embedding):
                                     max_threads=threads)
 
     def embed(
-            self, documents: Union[str, Iterable[str]], batch_size: int = 256, parallel: int = 0
+            self, documents: Union[str, Iterable[str]], batch_size: int = 256, parallel: int = None
     ) -> Iterable[np.ndarray]:
         """
         Encode a list of documents into list of embeddings.
@@ -440,17 +440,26 @@ class FlagEmbedding(Embedding):
             batch_size: Batch size for encoding -- higher values will use more memory, but be faster
             parallel:
                 If > 1, data-parallel encoding will be used, recommended for offline encoding of large datasets.
-                If 0, will use default threading configuration.
+                If 0, use all available cores.
+                If None, don't use data-parallel processing, use default onnxruntime threading instead.
 
         Returns:
             List of embeddings, one per document
         """
+        is_small = False
+
         if isinstance(documents, str):
             documents = [documents]
+            is_small = True
+
+        if isinstance(documents, list):
+            if len(documents) < batch_size:
+                is_small = True
+
         if parallel == 0:
             parallel = os.cpu_count()
 
-        if parallel == 0:
+        if parallel is None or is_small:
             for batch in iter_batch(documents, batch_size):
                 yield from self.model.onnx_embed(batch)
         else:
