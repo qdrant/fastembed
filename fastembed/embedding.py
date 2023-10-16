@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from itertools import islice
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Dict, Iterable, List, Union, Generator, Any, Tuple
+from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 import onnxruntime as ort
@@ -14,7 +14,7 @@ import requests
 from tokenizers import AddedToken, Tokenizer
 from tqdm import tqdm
 
-from fastembed.parallel_processor import Worker, ParallelWorkerPool
+from fastembed.parallel_processor import ParallelWorkerPool, Worker
 
 
 def iter_batch(iterable: Union[Iterable, Generator], size: int) -> Iterable:
@@ -471,7 +471,8 @@ class DefaultEmbedding(FlagEmbedding):
         self,
         model_name: str = "BAAI/bge-small-en-v1.5",
         max_length: int = 512,
-        cache_dir: str = None,
+        cache_dir: Optional[str] = None,
+        threads: Optional[int] = None,
     ):
         super().__init__(model_name, max_length=max_length, cache_dir=cache_dir, threads=threads)
 
