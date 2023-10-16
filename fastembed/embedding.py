@@ -6,10 +6,10 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Dict, Iterable, List, Union
 
-import onnxruntime as ort
 import numpy as np
+import onnxruntime as ort
 import requests
-from tokenizers import Tokenizer, AddedToken
+from tokenizers import AddedToken, Tokenizer
 from tqdm import tqdm
 
 
@@ -52,7 +52,7 @@ class Embedding(ABC):
         """
         return [
             {
-                "model": "BAAI/bge-small-en",
+                "model": "BAAI/bge-small-en-1.5",
                 "dim": 384,
                 "description": "Fast and Default English model",
             },
@@ -385,7 +385,7 @@ class DefaultEmbedding(FlagEmbedding):
 
     def __init__(
         self,
-        model_name: str = "BAAI/bge-small-en",
+        model_name: str = "BAAI/bge-small-en-1.5",
         max_length: int = 512,
         cache_dir: str = None,
     ):
