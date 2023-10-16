@@ -188,31 +188,37 @@ class Embedding(ABC):
                 "model": "BAAI/bge-small-en",
                 "dim": 384,
                 "description": "Fast English model",
+                "size_in_GB": 0.2
             },
             {
                 "model": "BAAI/bge-small-en-v1.5",
                 "dim": 384,
                 "description": "Fast and Default English model",
+                "size_in_GB": 0.13
             },
             {
                 "model": "BAAI/bge-base-en",
                 "dim": 768,
                 "description": "Base English model",
+                "size_in_GB": 0.5
             },
             {
                 "model": "BAAI/bge-base-en-v1.5",
                 "dim": 768,
                 "description": "Base English model, v1.5",
+                "size_in_GB": 0.44
             },
             {
                 "model": "sentence-transformers/all-MiniLM-L6-v2",
                 "dim": 384,
                 "description": "Sentence Transformer model, MiniLM-L6-v2",
+                "size_in_GB": 0.09
             },
             {
                 "model": "intfloat/multilingual-e5-large",
                 "dim": 1024,
                 "description": "Multilingual model, e5-large. Recommend using this model for non-English languages",
+                "size_in_GB": 2.24
             },
         ]
 
