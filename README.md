@@ -8,6 +8,7 @@ The default embedding supports "query" and "passage" prefixes for the input text
     - Quantized model weights
     - ONNX Runtime, no PyTorch dependency
     - CPU-first design
+    - Data-parallelism for encoding of large datasets
 
 2. Accuracy/Recall
     - Better than OpenAI Ada-002

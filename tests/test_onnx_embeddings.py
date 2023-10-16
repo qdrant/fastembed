@@ -1,4 +1,5 @@
 import numpy as np
+from tqdm import tqdm
 
 from fastembed.embedding import DefaultEmbedding, Embedding
 
@@ -33,3 +34,17 @@ def test_batch_embedding():
     embeddings = np.stack(embeddings, axis=0)
 
     assert embeddings.shape == (200, 384)
+
+
+def test_parallel_processing():
+    model = DefaultEmbedding()
+
+    docs = ["hello world", "flag embedding"] * 100
+    embeddings = list(model.embed(docs, batch_size=10, parallel=2))
+    embeddings = np.stack(embeddings, axis=0)
+
+    embeddings_2 = list(model.embed(docs, batch_size=10, parallel=0))
+    embeddings_2 = np.stack(embeddings_2, axis=0)
+
+    assert embeddings.shape == (200, 384)
+    assert np.allclose(embeddings, embeddings_2, atol=1e-3)
