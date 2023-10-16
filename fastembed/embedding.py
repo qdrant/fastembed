@@ -175,7 +175,7 @@ class Embedding(ABC):
     """
 
     @abstractmethod
-    def embed(self, texts: List[str]) -> List[np.ndarray]:
+    def embed(self, texts: Iterable[str], batch_size: int = 256, parallel: int = None) -> List[np.ndarray]:
         raise NotImplementedError
 
     @classmethod
@@ -355,21 +355,19 @@ class Embedding(ABC):
 
         return model_dir
 
-    def passage_embed(self, texts: List[str], batch_size: int = 256) -> Iterable[np.ndarray]:
+    def passage_embed(self, texts: Iterable[str], **kwargs) -> Iterable[np.ndarray]:
         """
         Embeds a list of text passages into a list of embeddings.
 
         Args:
-            texts (List[str]): The list of texts to embed.
-            batch_size (int, optional): The batch size. Defaults to 256.
+            texts (Iterable[str]): The list of texts to embed.
+            **kwargs: Additional keyword argument to pass to the embed method.
 
         Yields:
             Iterable[np.ndarray]: The embeddings.
         """
 
-        for i in range(0, len(texts), batch_size):
-            # Prepend "passage: " to each text
-            yield from self.embed([f"passage: {t}" for t in texts[i: i + batch_size]])
+        yield from self.embed((f"passage: {t}" for t in texts), **kwargs)
 
     def query_embed(self, query: str) -> Iterable[np.ndarray]:
         """
@@ -386,7 +384,6 @@ class Embedding(ABC):
         query = f"query: {query}"
         # Embed the query
         query_embedding = self.embed([query])
-        # Compute the cosine similarity between the query embedding and the document embeddings
         return query_embedding
 
 
@@ -483,11 +480,11 @@ class DefaultEmbedding(FlagEmbedding):
     """
 
     def __init__(
-        self,
-        model_name: str = "BAAI/bge-small-en-v1.5",
-        max_length: int = 512,
-        cache_dir: Optional[str] = None,
-        threads: Optional[int] = None,
+            self,
+            model_name: str = "BAAI/bge-small-en-v1.5",
+            max_length: int = 512,
+            cache_dir: Optional[str] = None,
+            threads: Optional[int] = None,
     ):
         super().__init__(model_name, max_length=max_length, cache_dir=cache_dir, threads=threads)
 
@@ -498,7 +495,7 @@ class OpenAIEmbedding(Embedding):
         # self.model = ...
         ...
 
-    def embed(self, texts):
+    def embed(self, texts, batch_size: int = 256, parallel: int = None):
         # Use your OpenAI model to embed the texts
         # return self.model.embed(texts)
         raise NotImplementedError
