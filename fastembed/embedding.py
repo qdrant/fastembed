@@ -403,7 +403,7 @@ class FlagEmbedding(Embedding):
 
     def __init__(
             self,
-            model_name: str = "BAAI/bge-small-en",
+            model_name: str = "BAAI/bge-small-en-v1.5",
             max_length: int = 512,
             cache_dir: str = None,
             threads: int = None,
