@@ -27,6 +27,8 @@ pip install fastembed
 
 ```python
 from fastembed.embedding import FlagEmbedding as Embedding
+from typing import List
+import numpy as np
 
 documents: List[str] = [
     "passage: Hello, World!",
