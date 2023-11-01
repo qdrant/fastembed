@@ -16,7 +16,7 @@ onnx = "^1.11"
 onnxruntime = "^1.15"
 tqdm = "^4.65"
 requests = "^2.31"
-tokenizers = "^0.13"
+tokenizers = "^0.14.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.2"
