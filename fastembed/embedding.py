@@ -38,7 +38,7 @@ def normalize(input_array, p=2, dim=1, eps=1e-12):
     return normalized_array
 
 
-class EmbeddingModel(ABC):
+class EmbeddingModel:
     @classmethod
     def load_tokenizer(cls, model_dir: Path, max_length: int = 512) -> Tokenizer:
         config_path = model_dir / "config.json"
@@ -158,8 +158,8 @@ class Embedding(ABC):
     """
     Abstract class for embeddings.
 
-    Args:
-        ABC ():
+    Inherits:
+        ABC: Abstract base class
 
     Raises:
         NotImplementedError: Raised when you call an abstract method that has not been implemented.
