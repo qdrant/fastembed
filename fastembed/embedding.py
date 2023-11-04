@@ -86,7 +86,7 @@ class EmbeddingModel:
         optimized_model_path = self.path / "model_optimized.onnx"
 
         # List of Execution Providers: https://onnxruntime.ai/docs/execution-providers
-        onnx_providers = ["CPUExecutionProvider"]
+        onnx_providers = ["CUDAExecutionProvider", "CPUExecutionProvider"]
 
         if not model_path.exists():
             # Rename file model_optimized.onnx to model.onnx if it exists
