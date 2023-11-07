@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from itertools import islice
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, Union, Literal
 
 import numpy as np
 import onnxruntime as ort
@@ -36,6 +36,22 @@ def normalize(input_array, p=2, dim=1, eps=1e-12):
     norm = np.maximum(norm, eps)  # Avoid division by zero
     normalized_array = input_array / norm
     return normalized_array
+
+
+def first_token_pooling(model_output, attention_mask):
+    print('FIRST TOKEN POOLING')
+    return model_output[:, 0]
+
+
+def mean_pooling(model_output, attention_mask):
+    print('MEAN POOLING')
+    token_embeddings = model_output
+    input_mask_expanded = (np.expand_dims(attention_mask, axis=-1)).astype(float)
+
+    sum_embeddings = np.sum(token_embeddings * input_mask_expanded, axis=1)
+    mask_sum = np.clip(np.sum(input_mask_expanded, axis=1), a_min=1e-9, a_max=None)
+
+    return sum_embeddings / mask_sum
 
 
 class EmbeddingModel:
@@ -74,14 +90,23 @@ class EmbeddingModel:
         return tokenizer
 
     def __init__(
-            self,
-            path: Path,
-            model_name: str,
-            max_length: int = 512,
-            max_threads: int = None,
+        self,
+        path: Path,
+        model_name: str,
+        max_length: int = 512,
+        max_threads: int = None,
+        pooling_strategy: Literal["first_token", "mean"] = "first_token",
     ):
         self.path = path
         self.model_name = model_name
+
+        if pooling_strategy == "first_token":
+            self._pooling_fn = first_token_pooling
+        elif pooling_strategy == "mean":
+            self._pooling_fn = mean_pooling
+        else:
+            raise ValueError(f"Unknown pooling strategy: {pooling_strategy}")
+
         model_path = self.path / "model.onnx"
         optimized_model_path = self.path / "model_optimized.onnx"
 
@@ -126,26 +151,37 @@ class EmbeddingModel:
             )
 
         model_output = self.model.run(None, onnx_input)
-        last_hidden_state = model_output[0][:, 0]
+        last_hidden_state = self._pooling_fn(model_output[0], attention_mask)
         embeddings = normalize(last_hidden_state).astype(np.float32)
         return embeddings
 
 
 class EmbeddingWorker(Worker):
     def __init__(
-            self,
-            path: Path,
-            model_name: str,
-            max_length: int = 512,
+        self,
+        path: Path,
+        model_name: str,
+        max_length: int = 512,
+        pooling_strategy: Literal["first_token", "mean"] = "first_token",
     ):
-        self.model = EmbeddingModel(path=path, model_name=model_name, max_length=max_length, max_threads=1)
+        self.model = EmbeddingModel(
+            path=path, model_name=model_name, max_length=max_length, max_threads=1, pooling_strategy=pooling_strategy
+        )
 
     @classmethod
-    def start(cls, path: Path, model_name: str, max_length: int = 512, **kwargs: Any) -> "EmbeddingWorker":
+    def start(
+        cls,
+        path: Path,
+        model_name: str,
+        max_length: int = 512,
+        pooling_strategy: Literal["first_token", "mean"] = "first_token",
+        **kwargs: Any,
+    ) -> "EmbeddingWorker":
         return cls(
             path=path,
             model_name=model_name,
             max_length=max_length,
+            pooling_strategy=pooling_strategy,
         )
 
     def process(self, items: Iterable[Tuple[int, Any]]) -> Iterable[Tuple[int, Any]]:
@@ -401,6 +437,8 @@ class FlagEmbedding(Embedding):
         Embedding (_type_): _description_
     """
 
+    pooling_strategy: Literal["first_token", "mean"] = "first_token"
+
     def __init__(
             self,
             model_name: str = "BAAI/bge-small-en-v1.5",
@@ -429,7 +467,7 @@ class FlagEmbedding(Embedding):
         self._max_length = max_length
 
         self.model = EmbeddingModel(self._model_dir, self.model_name, max_length=max_length,
-                                    max_threads=threads)
+                                    max_threads=threads, pooling_strategy=self.pooling_strategy)
 
     def embed(
             self, documents: Union[str, Iterable[str]], batch_size: int = 256, parallel: int = None
@@ -505,3 +543,66 @@ class OpenAIEmbedding(Embedding):
         # Use your OpenAI model to embed the texts
         # return self.model.embed(texts)
         raise NotImplementedError
+
+
+class JinaEmbeddings(FlagEmbedding):
+    pooling_strategy: Literal["first_token", "mean"] = "mean"
+
+    def __init__(
+        self,
+        model_name: str = "jinaai/jina-embeddings-v2-small-en",
+        max_length: int = 8192,
+        cache_dir: str = None,
+        threads: int = None,
+    ):
+        super().__init__(model_name, max_length=max_length, cache_dir=cache_dir, threads=threads)
+
+    @classmethod
+    def download_file_from_gcs(cls, url: str, output_path: str, show_progress: bool = True) -> str:
+        raise NotImplementedError("Jina models are not downloaded from GCS, but from HuggingFace Hub")
+
+    @classmethod
+    def decompress_to_cache(cls, targz_path: str, cache_dir: str):
+        raise NotImplementedError("Jina models are not decompressed, since they are not downloaded from GCS")
+
+    def retrieve_model(self, model_name: str, cache_dir: str) -> Path:
+        """
+        Retrieves a model from HuggingFace Hub.
+
+        Args:
+            model_name (str): The name of the model to retrieve.
+            cache_dir (str): The path to the cache directory.
+
+        Raises:
+            ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
+
+        Returns:
+            Path: The path to the model directory.
+        """
+
+        assert (
+            "/" in model_name
+        ), "model_name must be in the format <org>/<model> e.g. jinaai/jina-embeddings-v2-small-en"
+
+        return Path(self.download_files_from_huggingface(repod_id=model_name, cache_dir=cache_dir))
+
+    @classmethod
+    def download_files_from_huggingface(cls, repod_id: str, cache_dir: Optional[str] = None) -> str:
+        """
+        Downloads a model from HuggingFace Hub.
+
+        Args:
+            repod_id (str): The HF hub id (name) of the model to retrieve.
+            cache_dir (Optional[str]): The path to the cache directory.
+
+        Raises:
+            ValueError: If the model_name is not in the format <org>/<model> e.g. "jinaai/jina-embeddings-v2-small-en".
+
+        Returns:
+            Path: The path to the model directory.
+        """
+        from huggingface_hub import snapshot_download
+
+        return snapshot_download(
+            repo_id=repod_id, ignore_patterns=["model.safetensors", "pytorch_model.bin"], cache_dir=cache_dir
+        )
