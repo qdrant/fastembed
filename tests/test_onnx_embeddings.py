@@ -106,21 +106,8 @@ def test_parallel_processing_jina():
     embeddings_3 = list(model.embed(docs, batch_size=10, parallel=0))
     embeddings_3 = np.stack(embeddings_3, axis=0)
 
-    embeddings_4 = list(model.embed(docs[:10]))
-    embeddings_4 = np.stack(embeddings_4, axis=0)
-
     assert embeddings.shape == (200, 512)
-    print(embeddings[:5, :5])
-    print('----------')
-    print(embeddings_2[:5, :5])
-    print('----------')
-    print(embeddings_3[:5, :5])
-    print('----------')
-    print(embeddings_4[:5, :5])
     assert np.allclose(embeddings, embeddings_2, atol=1e-3)
     assert np.allclose(embeddings, embeddings_3, atol=1e-3)
 
-
-if __name__ == '__main__':
-    test_parallel_processing_jina()
 
