@@ -519,6 +519,7 @@ class FlagEmbedding(Embedding):
                 "path": self._model_dir,
                 "model_name": self.model_name,
                 "max_length": self._max_length,
+                "pooling_strategy": self.pooling_strategy,
             }
             pool = ParallelWorkerPool(parallel, EmbeddingWorker, start_method=start_method)
             for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
