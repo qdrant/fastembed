@@ -3,7 +3,7 @@ import os
 import numpy as np
 from tqdm import tqdm
 
-from fastembed.embedding import DefaultEmbedding, Embedding
+from fastembed.embedding import DefaultEmbedding, JinaEmbedding
 
 CANONICAL_VECTOR_VALUES = {
     "BAAI/bge-small-en": np.array([-0.0232, -0.0255,  0.0174, -0.0639, -0.0006]),
@@ -13,18 +13,39 @@ CANONICAL_VECTOR_VALUES = {
     "BAAI/bge-base-en-v1.5": np.array([0.01129394, 0.05493144, 0.02615099, 0.00328772, 0.02996045]),
     "sentence-transformers/all-MiniLM-L6-v2": np.array([0.0259,  0.0058,  0.0114,  0.0380, -0.0233]),
     "intfloat/multilingual-e5-large": np.array([0.0098,  0.0045,  0.0066, -0.0354,  0.0070]),
+    "jinaai/jina-embeddings-v2-small-en": np.array([-0.0455,  -0.0428,  -0.0122,  0.0613,  0.0015]),
+    "jinaai/jina-embeddings-v2-base-en": np.array([-0.0332, -0.0509, 0.0287, -0.0043, -0.0077]),
 }
 
 
 def test_default_embedding():
     is_ubuntu_ci = os.getenv("IS_UBUNTU_CI")
 
-    for model_desc in Embedding.list_supported_models():
+    for model_desc in DefaultEmbedding.list_supported_models():
         if is_ubuntu_ci == "false" and model_desc["size_in_GB"] > 1:
             continue
 
         dim = model_desc["dim"]
         model = DefaultEmbedding(model_name=model_desc["model"])
+
+        docs = ["hello world", "flag embedding"]
+        embeddings = list(model.embed(docs))
+        embeddings = np.stack(embeddings, axis=0)
+        assert embeddings.shape == (2, dim)
+
+        canonical_vector = CANONICAL_VECTOR_VALUES[model_desc["model"]]
+        assert np.allclose(embeddings[0, :canonical_vector.shape[0]], canonical_vector, atol=1e-3), model_desc["model"]
+
+
+def test_jina_embedding():
+    is_ubuntu_ci = os.getenv("IS_UBUNTU_CI")
+
+    for model_desc in JinaEmbedding.list_supported_models():
+        if is_ubuntu_ci == "false" and model_desc["size_in_GB"] > 1:
+            continue
+
+        dim = model_desc["dim"]
+        model = JinaEmbedding(model_name=model_desc["model"])
 
         docs = ["hello world", "flag embedding"]
         embeddings = list(model.embed(docs))
@@ -45,6 +66,15 @@ def test_batch_embedding():
     assert embeddings.shape == (200, 384)
 
 
+def test_batch_embedding_jina():
+    model = JinaEmbedding()
+
+    docs = ["hello world", "flag embedding"] * 100
+    embeddings = list(model.embed(docs, batch_size=10))
+    embeddings = np.stack(embeddings, axis=0)
+    assert embeddings.shape == (200, 512)
+
+
 def test_parallel_processing():
     model = DefaultEmbedding()
 
@@ -61,3 +91,36 @@ def test_parallel_processing():
     assert embeddings.shape == (200, 384)
     assert np.allclose(embeddings, embeddings_2, atol=1e-3)
     assert np.allclose(embeddings, embeddings_3, atol=1e-3)
+
+
+def test_parallel_processing_jina():
+    model = JinaEmbedding()
+
+    docs = ["hello world", "flag embedding"] * 100
+    embeddings = list(model.embed(docs, batch_size=10, parallel=2))
+    embeddings = np.stack(embeddings, axis=0)
+
+    embeddings_2 = list(model.embed(docs, batch_size=10, parallel=None))
+    embeddings_2 = np.stack(embeddings_2, axis=0)
+
+    embeddings_3 = list(model.embed(docs, batch_size=10, parallel=0))
+    embeddings_3 = np.stack(embeddings_3, axis=0)
+
+    embeddings_4 = list(model.embed(docs[:10]))
+    embeddings_4 = np.stack(embeddings_4, axis=0)
+
+    assert embeddings.shape == (200, 512)
+    print(embeddings[:5, :5])
+    print('----------')
+    print(embeddings_2[:5, :5])
+    print('----------')
+    print(embeddings_3[:5, :5])
+    print('----------')
+    print(embeddings_4[:5, :5])
+    assert np.allclose(embeddings, embeddings_2, atol=1e-3)
+    assert np.allclose(embeddings, embeddings_3, atol=1e-3)
+
+
+if __name__ == '__main__':
+    test_parallel_processing_jina()
+
