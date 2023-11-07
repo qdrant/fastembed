@@ -563,7 +563,7 @@ class OpenAIEmbedding(Embedding):
         raise NotImplementedError
 
 
-class JinaEmbeddings(FlagEmbedding):
+class JinaEmbedding(FlagEmbedding):
     pooling_strategy: Literal["first_token", "mean"] = "mean"
 
     def __init__(
