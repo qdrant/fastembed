@@ -524,6 +524,14 @@ class FlagEmbedding(Embedding):
             for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
                 yield from batch
 
+    @classmethod
+    def list_supported_models(cls) -> List[Dict[str, Union[str, Union[int, float]]]]:
+        """
+        Lists the supported models.
+        """
+        # jina models are not supported by this class
+        return [model for model in super().list_supported_models() if not model['model'].startswith('jinaai')]
+
 
 class DefaultEmbedding(FlagEmbedding):
     """
@@ -616,3 +624,11 @@ class JinaEmbeddings(FlagEmbedding):
         return snapshot_download(
             repo_id=repod_id, ignore_patterns=["model.safetensors", "pytorch_model.bin"], cache_dir=cache_dir
         )
+
+    @classmethod
+    def list_supported_models(cls) -> List[Dict[str, Union[str, Union[int, float]]]]:
+        """
+        Lists the supported models.
+        """
+        # only jina models are supported by this class
+        return [model for model in Embedding.list_supported_models() if model['model'].startswith('jinaai')]
