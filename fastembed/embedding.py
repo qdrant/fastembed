@@ -39,12 +39,10 @@ def normalize(input_array, p=2, dim=1, eps=1e-12):
 
 
 def first_token_pooling(model_output, attention_mask):
-    print('FIRST TOKEN POOLING')
     return model_output[:, 0]
 
 
 def mean_pooling(model_output, attention_mask):
-    print('MEAN POOLING')
     token_embeddings = model_output
     input_mask_expanded = (np.expand_dims(attention_mask, axis=-1)).astype(float)
 
