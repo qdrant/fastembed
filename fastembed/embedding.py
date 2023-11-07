@@ -267,7 +267,7 @@ class Embedding(ABC):
                 "size_in_GB": 0.55
             },
             {
-                "model": "jinaai/jina-embeddings-v2-base-en",
+                "model": "jinaai/jina-embeddings-v2-small-en",
                 "dim": 512,
                 "description": " English embedding model supporting 8192 sequence length",
                 "size_in_GB": 0.13
