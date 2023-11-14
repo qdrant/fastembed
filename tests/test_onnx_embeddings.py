@@ -1,5 +1,5 @@
 import os
-
+import pytest
 import numpy as np
 from tqdm import tqdm
 
@@ -18,15 +18,16 @@ CANONICAL_VECTOR_VALUES = {
 }
 
 
-def test_default_embedding():
+@pytest.mark.parametrize('embedding_class', [DefaultEmbedding, JinaEmbedding])
+def test_embedding(embedding_class):
     is_ubuntu_ci = os.getenv("IS_UBUNTU_CI")
 
-    for model_desc in DefaultEmbedding.list_supported_models():
+    for model_desc in embedding_class.list_supported_models():
         if is_ubuntu_ci == "false" and model_desc["size_in_GB"] > 1:
             continue
 
         dim = model_desc["dim"]
-        model = DefaultEmbedding(model_name=model_desc["model"])
+        model = embedding_class(model_name=model_desc["model"])
 
         docs = ["hello world", "flag embedding"]
         embeddings = list(model.embed(docs))
@@ -56,27 +57,20 @@ def test_jina_embedding():
         assert np.allclose(embeddings[0, :canonical_vector.shape[0]], canonical_vector, atol=1e-3), model_desc["model"]
 
 
-def test_batch_embedding():
-    model = DefaultEmbedding()
+@pytest.mark.parametrize('n_dims,embedding_class', [(384, DefaultEmbedding), (512, JinaEmbedding)])
+def test_batch_embedding(n_dims, embedding_class):
+    model = embedding_class()
 
     docs = ["hello world", "flag embedding"] * 100
     embeddings = list(model.embed(docs, batch_size=10))
     embeddings = np.stack(embeddings, axis=0)
 
-    assert embeddings.shape == (200, 384)
+    assert embeddings.shape == (200, n_dims)
 
 
-def test_batch_embedding_jina():
-    model = JinaEmbedding()
-
-    docs = ["hello world", "flag embedding"] * 100
-    embeddings = list(model.embed(docs, batch_size=10))
-    embeddings = np.stack(embeddings, axis=0)
-    assert embeddings.shape == (200, 512)
-
-
-def test_parallel_processing():
-    model = DefaultEmbedding()
+@pytest.mark.parametrize('n_dims,embedding_class', [(384, DefaultEmbedding), (512, JinaEmbedding)])
+def test_parallel_processing(n_dims, embedding_class):
+    model = embedding_class()
 
     docs = ["hello world", "flag embedding"] * 100
     embeddings = list(model.embed(docs, batch_size=10, parallel=2))
@@ -88,26 +82,6 @@ def test_parallel_processing():
     embeddings_3 = list(model.embed(docs, batch_size=10, parallel=0))
     embeddings_3 = np.stack(embeddings_3, axis=0)
 
-    assert embeddings.shape == (200, 384)
+    assert embeddings.shape == (200, n_dims)
     assert np.allclose(embeddings, embeddings_2, atol=1e-3)
     assert np.allclose(embeddings, embeddings_3, atol=1e-3)
-
-
-def test_parallel_processing_jina():
-    model = JinaEmbedding()
-
-    docs = ["hello world", "flag embedding"] * 100
-    embeddings = list(model.embed(docs, batch_size=10, parallel=2))
-    embeddings = np.stack(embeddings, axis=0)
-
-    embeddings_2 = list(model.embed(docs, batch_size=10, parallel=None))
-    embeddings_2 = np.stack(embeddings_2, axis=0)
-
-    embeddings_3 = list(model.embed(docs, batch_size=10, parallel=0))
-    embeddings_3 = np.stack(embeddings_3, axis=0)
-
-    assert embeddings.shape == (200, 512)
-    assert np.allclose(embeddings, embeddings_2, atol=1e-3)
-    assert np.allclose(embeddings, embeddings_3, atol=1e-3)
-
-
