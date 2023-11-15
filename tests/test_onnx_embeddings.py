@@ -46,9 +46,6 @@ def test_batch_embedding(n_dims, embedding_class):
     embeddings = list(model.embed(docs, batch_size=10))
     embeddings = np.stack(embeddings, axis=0)
 
-    print(embeddings.shape)
-    print(n_dims)
-    print(embedding_class)
     assert embeddings.shape == (200, n_dims)
 
 
