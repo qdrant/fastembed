@@ -38,20 +38,6 @@ def normalize(input_array, p=2, dim=1, eps=1e-12):
     return normalized_array
 
 
-def first_token_pooling(model_output, attention_mask):
-    return model_output[:, 0]
-
-
-def mean_pooling(model_output, attention_mask):
-    token_embeddings = model_output
-    input_mask_expanded = (np.expand_dims(attention_mask, axis=-1)).astype(float)
-
-    sum_embeddings = np.sum(token_embeddings * input_mask_expanded, axis=1)
-    mask_sum = np.clip(np.sum(input_mask_expanded, axis=1), a_min=1e-9, a_max=None)
-
-    return sum_embeddings / mask_sum
-
-
 class EmbeddingModel:
     @classmethod
     def load_tokenizer(cls, model_dir: Path, max_length: int = 512) -> Tokenizer:
@@ -93,17 +79,9 @@ class EmbeddingModel:
         model_name: str,
         max_length: int = 512,
         max_threads: int = None,
-        pooling_strategy: Literal["first_token", "mean"] = "first_token",
     ):
         self.path = path
         self.model_name = model_name
-
-        if pooling_strategy == "first_token":
-            self._pooling_fn = first_token_pooling
-        elif pooling_strategy == "mean":
-            self._pooling_fn = mean_pooling
-        else:
-            raise ValueError(f"Unknown pooling strategy: {pooling_strategy}")
 
         model_path = self.path / "model.onnx"
         optimized_model_path = self.path / "model_optimized.onnx"
@@ -133,7 +111,7 @@ class EmbeddingModel:
         self.tokenizer = self.load_tokenizer(self.path, max_length=max_length)
         self.model = ort.InferenceSession(str(model_path), providers=onnx_providers, sess_options=so)
 
-    def onnx_embed(self, documents: List[str]) -> np.ndarray:
+    def onnx_embed(self, documents: List[str]) -> Tuple[np.ndarray, np.ndarray]:
         encoded = self.tokenizer.encode_batch(documents)
         input_ids = np.array([e.ids for e in encoded])
         attention_mask = np.array([e.attention_mask for e in encoded])
@@ -149,9 +127,8 @@ class EmbeddingModel:
             )
 
         model_output = self.model.run(None, onnx_input)
-        last_hidden_state = self._pooling_fn(model_output[0], attention_mask)
-        embeddings = normalize(last_hidden_state).astype(np.float32)
-        return embeddings
+        embeddings = model_output[0]
+        return embeddings, attention_mask
 
 
 class EmbeddingWorker(Worker):
@@ -160,10 +137,9 @@ class EmbeddingWorker(Worker):
         path: Path,
         model_name: str,
         max_length: int = 512,
-        pooling_strategy: Literal["first_token", "mean"] = "first_token",
     ):
         self.model = EmbeddingModel(
-            path=path, model_name=model_name, max_length=max_length, max_threads=1, pooling_strategy=pooling_strategy
+            path=path, model_name=model_name, max_length=max_length, max_threads=1,
         )
 
     @classmethod
@@ -172,20 +148,18 @@ class EmbeddingWorker(Worker):
         path: Path,
         model_name: str,
         max_length: int = 512,
-        pooling_strategy: Literal["first_token", "mean"] = "first_token",
         **kwargs: Any,
     ) -> "EmbeddingWorker":
         return cls(
             path=path,
             model_name=model_name,
             max_length=max_length,
-            pooling_strategy=pooling_strategy,
         )
 
     def process(self, items: Iterable[Tuple[int, Any]]) -> Iterable[Tuple[int, Any]]:
         for idx, batch in items:
-            embeddings = self.model.onnx_embed(batch)
-            yield idx, embeddings
+            embeddings, attn_mask = self.model.onnx_embed(batch)
+            yield idx, (embeddings, attn_mask)
 
 
 class Embedding(ABC):
@@ -329,6 +303,27 @@ class Embedding(ABC):
         return output_path
 
     @classmethod
+    def download_files_from_huggingface(cls, repod_id: str, cache_dir: Optional[str] = None) -> str:
+        """
+        Downloads a model from HuggingFace Hub.
+
+        Args:
+            repod_id (str): The HF hub id (name) of the model to retrieve.
+            cache_dir (Optional[str]): The path to the cache directory.
+
+        Raises:
+            ValueError: If the model_name is not in the format <org>/<model> e.g. "jinaai/jina-embeddings-v2-small-en".
+
+        Returns:
+            Path: The path to the model directory.
+        """
+        from huggingface_hub import snapshot_download
+
+        return snapshot_download(
+            repo_id=repod_id, ignore_patterns=["model.safetensors", "pytorch_model.bin"], cache_dir=cache_dir
+        )
+
+    @classmethod
     def decompress_to_cache(cls, targz_path: str, cache_dir: str):
         """
         Decompresses a .tar.gz file to a cache directory.
@@ -363,7 +358,7 @@ class Embedding(ABC):
 
         return cache_dir
 
-    def retrieve_model(self, model_name: str, cache_dir: str) -> Path:
+    def retrieve_model_gcs(self, model_name: str, cache_dir: str) -> Path:
         """
         Retrieves a model from Google Cloud Storage.
 
@@ -407,6 +402,27 @@ class Embedding(ABC):
 
         return model_dir
 
+    def retrieve_model_hf(self, model_name: str, cache_dir: str) -> Path:
+        """
+        Retrieves a model from HuggingFace Hub.
+
+        Args:
+            model_name (str): The name of the model to retrieve.
+            cache_dir (str): The path to the cache directory.
+
+        Raises:
+            ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
+
+        Returns:
+            Path: The path to the model directory.
+        """
+
+        assert (
+            "/" in model_name
+        ), "model_name must be in the format <org>/<model> e.g. jinaai/jina-embeddings-v2-small-en"
+
+        return Path(self.download_files_from_huggingface(repod_id=model_name, cache_dir=cache_dir))
+
     def passage_embed(self, texts: Iterable[str], **kwargs) -> Iterable[np.ndarray]:
         """
         Embeds a list of text passages into a list of embeddings.
@@ -447,7 +463,6 @@ class FlagEmbedding(Embedding):
         Embedding (_type_): _description_
     """
 
-    pooling_strategy: Literal["first_token", "mean"] = "first_token"
 
     def __init__(
             self,
@@ -473,11 +488,11 @@ class FlagEmbedding(Embedding):
             cache_dir.mkdir(parents=True, exist_ok=True)
 
         self._cache_dir = cache_dir
-        self._model_dir = self.retrieve_model(model_name, cache_dir)
+        self._model_dir = self.retrieve_model_gcs(model_name, cache_dir)
         self._max_length = max_length
 
         self.model = EmbeddingModel(self._model_dir, self.model_name, max_length=max_length,
-                                    max_threads=threads, pooling_strategy=self.pooling_strategy)
+                                    max_threads=threads)
 
     def embed(
             self, documents: Union[str, Iterable[str]], batch_size: int = 256, parallel: int = None
@@ -512,18 +527,19 @@ class FlagEmbedding(Embedding):
 
         if parallel is None or is_small:
             for batch in iter_batch(documents, batch_size):
-                yield from self.model.onnx_embed(batch)
+                embeddings, _ = self.model.onnx_embed(batch)
+                yield from normalize(embeddings[:, 0]).astype(np.float32)
         else:
             start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
             params = {
                 "path": self._model_dir,
                 "model_name": self.model_name,
                 "max_length": self._max_length,
-                "pooling_strategy": self.pooling_strategy,
             }
             pool = ParallelWorkerPool(parallel, EmbeddingWorker, start_method=start_method)
             for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
-                yield from batch
+                embeddings, _ = batch
+                yield from normalize(embeddings[:, 0]).astype(np.float32)
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Union[str, Union[int, float]]]]:
@@ -564,67 +580,83 @@ class OpenAIEmbedding(Embedding):
         raise NotImplementedError
 
 
-class JinaEmbedding(FlagEmbedding):
-    pooling_strategy: Literal["first_token", "mean"] = "mean"
-
+class JinaEmbedding(Embedding):
     def __init__(
-        self,
-        model_name: str = "jinaai/jina-embeddings-v2-small-en",
-        max_length: int = 8192,
-        cache_dir: str = None,
-        threads: int = None,
+            self,
+            model_name: str = "jinaai/jina-embeddings-v2-base-en",
+            max_length: int = 512,
+            cache_dir: str = None,
+            threads: int = None,
     ):
-        super().__init__(model_name, max_length=max_length, cache_dir=cache_dir, threads=threads)
-
-    @classmethod
-    def download_file_from_gcs(cls, url: str, output_path: str, show_progress: bool = True) -> str:
-        raise NotImplementedError("Jina models are not downloaded from GCS, but from HuggingFace Hub")
-
-    @classmethod
-    def decompress_to_cache(cls, targz_path: str, cache_dir: str):
-        raise NotImplementedError("Jina models are not decompressed, since they are not downloaded from GCS")
-
-    def retrieve_model(self, model_name: str, cache_dir: str) -> Path:
         """
-        Retrieves a model from HuggingFace Hub.
-
         Args:
-            model_name (str): The name of the model to retrieve.
-            cache_dir (str): The path to the cache directory.
+            model_name (str): The name of the model to use.
+            max_length (int, optional): The maximum number of tokens. Defaults to 512. Unknown behavior for values > 512.
+            cache_dir (str, optional): The path to the cache directory. Defaults to `local_cache` in the current directory.
+            threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
 
         Raises:
             ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
-
-        Returns:
-            Path: The path to the model directory.
         """
+        self.model_name = model_name
 
-        assert (
-            "/" in model_name
-        ), "model_name must be in the format <org>/<model> e.g. jinaai/jina-embeddings-v2-small-en"
+        if cache_dir is None:
+            cache_dir = Path(".").resolve() / "local_cache"
+            cache_dir.mkdir(parents=True, exist_ok=True)
 
-        return Path(self.download_files_from_huggingface(repod_id=model_name, cache_dir=cache_dir))
+        self._cache_dir = cache_dir
+        self._model_dir = self.retrieve_model_hf(model_name, cache_dir)
+        self._max_length = max_length
 
-    @classmethod
-    def download_files_from_huggingface(cls, repod_id: str, cache_dir: Optional[str] = None) -> str:
+        self.model = EmbeddingModel(self._model_dir, self.model_name, max_length=max_length,
+                                    max_threads=threads)
+
+    def embed(
+            self, documents: Union[str, Iterable[str]], batch_size: int = 256, parallel: int = None
+    ) -> Iterable[np.ndarray]:
         """
-        Downloads a model from HuggingFace Hub.
+        Encode a list of documents into list of embeddings.
+        We use mean pooling with attention so that the model can handle variable-length inputs.
 
         Args:
-            repod_id (str): The HF hub id (name) of the model to retrieve.
-            cache_dir (Optional[str]): The path to the cache directory.
-
-        Raises:
-            ValueError: If the model_name is not in the format <org>/<model> e.g. "jinaai/jina-embeddings-v2-small-en".
+            documents: Iterator of documents or single document to embed
+            batch_size: Batch size for encoding -- higher values will use more memory, but be faster
+            parallel:
+                If > 1, data-parallel encoding will be used, recommended for offline encoding of large datasets.
+                If 0, use all available cores.
+                If None, don't use data-parallel processing, use default onnxruntime threading instead.
 
         Returns:
-            Path: The path to the model directory.
+            List of embeddings, one per document
         """
-        from huggingface_hub import snapshot_download
+        is_small = False
 
-        return snapshot_download(
-            repo_id=repod_id, ignore_patterns=["model.safetensors", "pytorch_model.bin"], cache_dir=cache_dir
-        )
+        if isinstance(documents, str):
+            documents = [documents]
+            is_small = True
+
+        if isinstance(documents, list):
+            if len(documents) < batch_size:
+                is_small = True
+
+        if parallel == 0:
+            parallel = os.cpu_count()
+
+        if parallel is None or is_small:
+            for batch in iter_batch(documents, batch_size):
+                embeddings, attn_mask = self.model.onnx_embed(batch)
+                yield from normalize(self.mean_pooling(embeddings, attn_mask)).astype(np.float32)
+        else:
+            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
+            params = {
+                "path": self._model_dir,
+                "model_name": self.model_name,
+                "max_length": self._max_length,
+            }
+            pool = ParallelWorkerPool(parallel, EmbeddingWorker, start_method=start_method)
+            for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
+                embeddings, attn_mask = batch
+                yield from normalize(self.mean_pooling(embeddings, attn_mask)).astype(np.float32)
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Union[str, Union[int, float]]]]:
@@ -633,3 +665,13 @@ class JinaEmbedding(FlagEmbedding):
         """
         # only jina models are supported by this class
         return [model for model in Embedding.list_supported_models() if model['model'].startswith('jinaai')]
+
+    @staticmethod
+    def mean_pooling(model_output, attention_mask):
+        token_embeddings = model_output
+        input_mask_expanded = (np.expand_dims(attention_mask, axis=-1)).astype(float)
+
+        sum_embeddings = np.sum(token_embeddings * input_mask_expanded, axis=1)
+        mask_sum = np.clip(np.sum(input_mask_expanded, axis=1), a_min=1e-9, a_max=None)
+
+        return sum_embeddings / mask_sum
