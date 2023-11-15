@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from itertools import islice
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, Union, Literal
+from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 import onnxruntime as ort
