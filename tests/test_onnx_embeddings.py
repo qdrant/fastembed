@@ -45,7 +45,7 @@ def test_batch_embedding(n_dims, embedding_class):
     embeddings = list(model.embed(docs, batch_size=10))
     embeddings = np.stack(embeddings, axis=0)
 
-    assert embeddings.shape == (200, 384)
+    assert embeddings.shape == (200, n_dims)
 
 
 @pytest.mark.parametrize('n_dims,embedding_class', [(384, DefaultEmbedding), (768, JinaEmbedding)])
