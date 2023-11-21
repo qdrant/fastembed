@@ -459,7 +459,9 @@ class FlagEmbedding(Embedding):
         Args:
             model_name (str): The name of the model to use.
             max_length (int, optional): The maximum number of tokens. Defaults to 512. Unknown behavior for values > 512.
-            cache_dir (str, optional): The path to the cache directory. Defaults to `local_cache` in the current directory.
+            cache_dir (str, optional): The path to the cache directory.
+                                       Can be set using the `FASTEMBED_CACHE_PATH` env variable.
+                                       Defaults to `local_cache` in the current directory.
             threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
 
         Raises:
@@ -468,7 +470,8 @@ class FlagEmbedding(Embedding):
         self.model_name = model_name
 
         if cache_dir is None:
-            cache_dir = Path(".").resolve() / "local_cache"
+            default_cache_dir = Path(".").resolve() / "local_cache"
+            cache_dir = Path(os.getenv("FASTEMBED_CACHE_PATH", default_cache_dir))
             cache_dir.mkdir(parents=True, exist_ok=True)
 
         self._cache_dir = cache_dir
@@ -576,7 +579,9 @@ class JinaEmbedding(Embedding):
         Args:
             model_name (str): The name of the model to use.
             max_length (int, optional): The maximum number of tokens. Defaults to 512. Unknown behavior for values > 512.
-            cache_dir (str, optional): The path to the cache directory. Defaults to `local_cache` in the current directory.
+            cache_dir (str, optional): The path to the cache directory.
+                                       Can be set using the `FASTEMBED_CACHE_PATH` env variable.
+                                       Defaults to `local_cache` in the current directory.
             threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
         Raises:
             ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
@@ -584,7 +589,8 @@ class JinaEmbedding(Embedding):
         self.model_name = model_name
 
         if cache_dir is None:
-            cache_dir = Path(".").resolve() / "local_cache"
+            default_cache_dir = Path(".").resolve() / "local_cache"
+            cache_dir = Path(os.getenv("FASTEMBED_CACHE_PATH", default_cache_dir))
             cache_dir.mkdir(parents=True, exist_ok=True)
 
         self._cache_dir = cache_dir
