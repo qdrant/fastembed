@@ -591,8 +591,8 @@ class JinaEmbedding(Embedding):
         self.model_name = model_name
 
         if cache_dir is None:
-            default_cache_dir = Path(".").resolve() / "local_cache"
-            cache_dir = default_cache_dir = os.path.join(tempfile.gettempdir(), "fastembed_cache")
+            default_cache_dir = os.path.join(tempfile.gettempdir(), "fastembed_cache")
+            cache_dir = Path(os.getenv("FASTEMBED_CACHE_PATH", default_cache_dir))
             cache_dir.mkdir(parents=True, exist_ok=True)
 
         self._cache_dir = cache_dir
