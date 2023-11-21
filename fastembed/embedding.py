@@ -2,6 +2,8 @@ import json
 import os
 import shutil
 import tarfile
+import tempfile
+
 from abc import ABC, abstractmethod
 from itertools import islice
 from multiprocessing import get_all_start_methods
@@ -461,7 +463,7 @@ class FlagEmbedding(Embedding):
             max_length (int, optional): The maximum number of tokens. Defaults to 512. Unknown behavior for values > 512.
             cache_dir (str, optional): The path to the cache directory.
                                        Can be set using the `FASTEMBED_CACHE_PATH` env variable.
-                                       Defaults to `local_cache` in the current directory.
+                                       Defaults to `fastembed_cache` in the system's temp directory.
             threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
 
         Raises:
@@ -470,7 +472,7 @@ class FlagEmbedding(Embedding):
         self.model_name = model_name
 
         if cache_dir is None:
-            default_cache_dir = Path(".").resolve() / "local_cache"
+            default_cache_dir = os.path.join(tempfile.gettempdir(), "fastembed_cache")
             cache_dir = Path(os.getenv("FASTEMBED_CACHE_PATH", default_cache_dir))
             cache_dir.mkdir(parents=True, exist_ok=True)
 
@@ -581,7 +583,7 @@ class JinaEmbedding(Embedding):
             max_length (int, optional): The maximum number of tokens. Defaults to 512. Unknown behavior for values > 512.
             cache_dir (str, optional): The path to the cache directory.
                                        Can be set using the `FASTEMBED_CACHE_PATH` env variable.
-                                       Defaults to `local_cache` in the current directory.
+                                       Defaults to `fastembed_cache` in the system's temp directory.
             threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
         Raises:
             ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
@@ -590,7 +592,7 @@ class JinaEmbedding(Embedding):
 
         if cache_dir is None:
             default_cache_dir = Path(".").resolve() / "local_cache"
-            cache_dir = Path(os.getenv("FASTEMBED_CACHE_PATH", default_cache_dir))
+            cache_dir = default_cache_dir = os.path.join(tempfile.gettempdir(), "fastembed_cache")
             cache_dir.mkdir(parents=True, exist_ok=True)
 
         self._cache_dir = cache_dir
