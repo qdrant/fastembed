@@ -1,4 +1,5 @@
 import json
+import math
 import os
 import shutil
 import tarfile
@@ -461,8 +462,8 @@ class FlagEmbedding(Embedding):
         Args:
             model_name (str): The name of the model to use.
             max_length (int, optional): The maximum number of tokens. Defaults to 512. Unknown behavior for values > 512.
-            cache_dir (str, optional): The path to the cache directory.
-                                       Can be set using the `FASTEMBED_CACHE_PATH` env variable.
+            cache_dir (str, optional): The path to the cache directory.                             \
+                                       Can be set using the `FASTEMBED_CACHE_PATH` env variable.    \
                                        Defaults to `fastembed_cache` in the system's temp directory.
             threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
 
@@ -484,7 +485,7 @@ class FlagEmbedding(Embedding):
                                     max_threads=threads)
 
     def embed(
-            self, documents: Union[str, Iterable[str]], batch_size: int = 256, parallel: int = None
+            self, documents: Union[str, Iterable[str]], batch_size: int = 256, parallel: int = None, show_progress: bool = True
     ) -> Iterable[np.ndarray]:
         """
         Encode a list of documents into list of embeddings.
@@ -497,6 +498,7 @@ class FlagEmbedding(Embedding):
                 If > 1, data-parallel encoding will be used, recommended for offline encoding of large datasets.
                 If 0, use all available cores.
                 If None, don't use data-parallel processing, use default onnxruntime threading instead.
+            show_progress (bool, optional): Whether to show a progress bar. Defaults to True.
 
         Returns:
             List of embeddings, one per document
@@ -514,10 +516,15 @@ class FlagEmbedding(Embedding):
         if parallel == 0:
             parallel = os.cpu_count()
 
+        batch_iterable = iter_batch(documents, batch_size)
+        progress_bar = tqdm(total=len(documents)) if show_progress else None
+        
         if parallel is None or is_small:
-            for batch in iter_batch(documents, batch_size):
+            for batch in batch_iterable:
                 embeddings, _ = self.model.onnx_embed(batch)
                 yield from normalize(embeddings[:, 0]).astype(np.float32)
+                if progress_bar:
+                    progress_bar.update(len(embeddings))
         else:
             start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
             params = {
@@ -526,9 +533,14 @@ class FlagEmbedding(Embedding):
                 "max_length": self._max_length,
             }
             pool = ParallelWorkerPool(parallel, EmbeddingWorker, start_method=start_method)
-            for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
+            for batch in pool.ordered_map(batch_iterable, **params):
                 embeddings, _ = batch
                 yield from normalize(embeddings[:, 0]).astype(np.float32)
+                if progress_bar:
+                    progress_bar.update(len(embeddings))
+        
+        if progress_bar: 
+            progress_bar.close()
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Union[str, Union[int, float]]]]:
@@ -581,8 +593,8 @@ class JinaEmbedding(Embedding):
         Args:
             model_name (str): The name of the model to use.
             max_length (int, optional): The maximum number of tokens. Defaults to 512. Unknown behavior for values > 512.
-            cache_dir (str, optional): The path to the cache directory.
-                                       Can be set using the `FASTEMBED_CACHE_PATH` env variable.
+            cache_dir (str, optional): The path to the cache directory.                             \
+                                       Can be set using the `FASTEMBED_CACHE_PATH` env variable.    \
                                        Defaults to `fastembed_cache` in the system's temp directory.
             threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
         Raises:
@@ -603,7 +615,7 @@ class JinaEmbedding(Embedding):
                                     max_threads=threads)
 
     def embed(
-            self, documents: Union[str, Iterable[str]], batch_size: int = 256, parallel: int = None
+            self, documents: Union[str, Iterable[str]], batch_size: int = 256, parallel: int = None, show_progress: bool = True
     ) -> Iterable[np.ndarray]:
         """
         Encode a list of documents into list of embeddings.
@@ -615,6 +627,7 @@ class JinaEmbedding(Embedding):
                 If > 1, data-parallel encoding will be used, recommended for offline encoding of large datasets.
                 If 0, use all available cores.
                 If None, don't use data-parallel processing, use default onnxruntime threading instead.
+            show_progress (bool, optional): Whether to show a progress bar. Defaults to True.
         Returns:
             List of embeddings, one per document
         """
@@ -631,10 +644,15 @@ class JinaEmbedding(Embedding):
         if parallel == 0:
             parallel = os.cpu_count()
 
+        batch_iterable = iter_batch(documents, batch_size)
+        progress_bar = tqdm(total=len(documents)) if show_progress else None
+        
         if parallel is None or is_small:
-            for batch in iter_batch(documents, batch_size):
+            for batch in batch_iterable:
                 embeddings, attn_mask = self.model.onnx_embed(batch)
                 yield from normalize(self.mean_pooling(embeddings, attn_mask)).astype(np.float32)
+                if progress_bar:
+                    progress_bar.update(len(embeddings))
         else:
             start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
             params = {
@@ -643,9 +661,14 @@ class JinaEmbedding(Embedding):
                 "max_length": self._max_length,
             }
             pool = ParallelWorkerPool(parallel, EmbeddingWorker, start_method=start_method)
-            for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
+            for batch in pool.ordered_map(batch_iterable, **params):
                 embeddings, attn_mask = batch
                 yield from normalize(self.mean_pooling(embeddings, attn_mask)).astype(np.float32)
+                if progress_bar:
+                    progress_bar.update(len(embeddings))
+        
+        if progress_bar:
+            progress_bar.close()
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Union[str, Union[int, float]]]]:
