@@ -517,30 +517,25 @@ class FlagEmbedding(Embedding):
             parallel = os.cpu_count()
 
         batch_iterable = iter_batch(documents, batch_size)
-        progress_bar = tqdm(total=len(documents)) if show_progress else None
         
-        if parallel is None or is_small:
-            for batch in batch_iterable:
-                embeddings, _ = self.model.onnx_embed(batch)
-                yield from normalize(embeddings[:, 0]).astype(np.float32)
-                if progress_bar:
+        with tqdm(total=len(documents), disable=not show_progress) as progress_bar:
+            if parallel is None or is_small:
+                for batch in batch_iterable:
+                    embeddings, _ = self.model.onnx_embed(batch)
+                    yield from normalize(embeddings[:, 0]).astype(np.float32)
                     progress_bar.update(len(embeddings))
-        else:
-            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
-            params = {
-                "path": self._model_dir,
-                "model_name": self.model_name,
-                "max_length": self._max_length,
-            }
-            pool = ParallelWorkerPool(parallel, EmbeddingWorker, start_method=start_method)
-            for batch in pool.ordered_map(batch_iterable, **params):
-                embeddings, _ = batch
-                yield from normalize(embeddings[:, 0]).astype(np.float32)
-                if progress_bar:
+            else:
+                start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
+                params = {
+                    "path": self._model_dir,
+                    "model_name": self.model_name,
+                    "max_length": self._max_length,
+                }
+                pool = ParallelWorkerPool(parallel, EmbeddingWorker, start_method=start_method)
+                for batch in pool.ordered_map(batch_iterable, **params):
+                    embeddings, _ = batch
+                    yield from normalize(embeddings[:, 0]).astype(np.float32)
                     progress_bar.update(len(embeddings))
-        
-        if progress_bar: 
-            progress_bar.close()
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Union[str, Union[int, float]]]]:
@@ -645,30 +640,25 @@ class JinaEmbedding(Embedding):
             parallel = os.cpu_count()
 
         batch_iterable = iter_batch(documents, batch_size)
-        progress_bar = tqdm(total=len(documents)) if show_progress else None
         
-        if parallel is None or is_small:
-            for batch in batch_iterable:
-                embeddings, attn_mask = self.model.onnx_embed(batch)
-                yield from normalize(self.mean_pooling(embeddings, attn_mask)).astype(np.float32)
-                if progress_bar:
+        with tqdm(total=len(documents), disable=not show_progress) as progress_bar:
+            if parallel is None or is_small:
+                for batch in batch_iterable:
+                    embeddings, attn_mask = self.model.onnx_embed(batch)
+                    yield from normalize(self.mean_pooling(embeddings, attn_mask)).astype(np.float32)
                     progress_bar.update(len(embeddings))
-        else:
-            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
-            params = {
-                "path": self._model_dir,
-                "model_name": self.model_name,
-                "max_length": self._max_length,
-            }
-            pool = ParallelWorkerPool(parallel, EmbeddingWorker, start_method=start_method)
-            for batch in pool.ordered_map(batch_iterable, **params):
-                embeddings, attn_mask = batch
-                yield from normalize(self.mean_pooling(embeddings, attn_mask)).astype(np.float32)
-                if progress_bar:
+            else:
+                start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
+                params = {
+                    "path": self._model_dir,
+                    "model_name": self.model_name,
+                    "max_length": self._max_length,
+                }
+                pool = ParallelWorkerPool(parallel, EmbeddingWorker, start_method=start_method)
+                for batch in pool.ordered_map(batch_iterable, **params):
+                    embeddings, attn_mask = batch
+                    yield from normalize(self.mean_pooling(embeddings, attn_mask)).astype(np.float32)
                     progress_bar.update(len(embeddings))
-        
-        if progress_bar:
-            progress_bar.close()
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Union[str, Union[int, float]]]]:
