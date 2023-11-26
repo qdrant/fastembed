@@ -515,10 +515,9 @@ class FlagEmbedding(Embedding):
 
         if parallel == 0:
             parallel = os.cpu_count()
-
-        batch_iterable = iter_batch(documents, batch_size)
         
         with tqdm(total=len(documents), disable=not show_progress) as progress_bar:
+            batch_iterable = iter_batch(documents, batch_size)
             if parallel is None or is_small:
                 for batch in batch_iterable:
                     embeddings, _ = self.model.onnx_embed(batch)
@@ -639,9 +638,8 @@ class JinaEmbedding(Embedding):
         if parallel == 0:
             parallel = os.cpu_count()
 
-        batch_iterable = iter_batch(documents, batch_size)
-        
         with tqdm(total=len(documents), disable=not show_progress) as progress_bar:
+            batch_iterable = iter_batch(documents, batch_size)
             if parallel is None or is_small:
                 for batch in batch_iterable:
                     embeddings, attn_mask = self.model.onnx_embed(batch)
