@@ -1,30 +1,32 @@
 import os
-
+import pytest
 import numpy as np
-from tqdm import tqdm
 
-from fastembed.embedding import DefaultEmbedding, Embedding
+from fastembed.embedding import DefaultEmbedding, JinaEmbedding
 
 CANONICAL_VECTOR_VALUES = {
-    "BAAI/bge-small-en": np.array([-0.0232, -0.0255,  0.0174, -0.0639, -0.0006]),
-    "BAAI/bge-small-en-v1.5": np.array([0.01522374, -0.02271799,  0.00860278, -0.07424029,  0.00386434]),
-    "BAAI/bge-small-zh-v1.5": np.array([-0.01023294,  0.07634465,  0.0691722 , -0.04458365, -0.03160762]),
-    "BAAI/bge-base-en": np.array([0.0115,  0.0372,  0.0295,  0.0121,  0.0346]),
+    "BAAI/bge-small-en": np.array([-0.0232, -0.0255, 0.0174, -0.0639, -0.0006]),
+    "BAAI/bge-small-en-v1.5": np.array([0.01522374, -0.02271799, 0.00860278, -0.07424029, 0.00386434]),
+    "BAAI/bge-small-zh-v1.5": np.array([-0.01023294, 0.07634465, 0.0691722, -0.04458365, -0.03160762]),
+    "BAAI/bge-base-en": np.array([0.0115, 0.0372, 0.0295, 0.0121, 0.0346]),
     "BAAI/bge-base-en-v1.5": np.array([0.01129394, 0.05493144, 0.02615099, 0.00328772, 0.02996045]),
-    "sentence-transformers/all-MiniLM-L6-v2": np.array([0.0259,  0.0058,  0.0114,  0.0380, -0.0233]),
-    "intfloat/multilingual-e5-large": np.array([0.0098,  0.0045,  0.0066, -0.0354,  0.0070]),
+    "sentence-transformers/all-MiniLM-L6-v2": np.array([0.0259, 0.0058, 0.0114, 0.0380, -0.0233]),
+    "intfloat/multilingual-e5-large": np.array([0.0098, 0.0045, 0.0066, -0.0354, 0.0070]),
+    "jinaai/jina-embeddings-v2-small-en": np.array([-0.0455, -0.0428, -0.0122, 0.0613, 0.0015]),
+    "jinaai/jina-embeddings-v2-base-en": np.array([-0.0332, -0.0509, 0.0287, -0.0043, -0.0077]),
 }
 
 
-def test_default_embedding():
+@pytest.mark.parametrize('embedding_class', [DefaultEmbedding, JinaEmbedding])
+def test_embedding(embedding_class):
     is_ubuntu_ci = os.getenv("IS_UBUNTU_CI")
 
-    for model_desc in Embedding.list_supported_models():
+    for model_desc in embedding_class.list_supported_models():
         if is_ubuntu_ci == "false" and model_desc["size_in_GB"] > 1:
             continue
 
         dim = model_desc["dim"]
-        model = DefaultEmbedding(model_name=model_desc["model"])
+        model = embedding_class(model_name=model_desc["model"])
 
         docs = ["hello world", "flag embedding"]
         embeddings = list(model.embed(docs))
@@ -35,18 +37,20 @@ def test_default_embedding():
         assert np.allclose(embeddings[0, :canonical_vector.shape[0]], canonical_vector, atol=1e-3), model_desc["model"]
 
 
-def test_batch_embedding():
-    model = DefaultEmbedding()
+@pytest.mark.parametrize('n_dims,embedding_class', [(384, DefaultEmbedding), (768, JinaEmbedding)])
+def test_batch_embedding(n_dims, embedding_class):
+    model = embedding_class()
 
     docs = ["hello world", "flag embedding"] * 100
     embeddings = list(model.embed(docs, batch_size=10))
     embeddings = np.stack(embeddings, axis=0)
 
-    assert embeddings.shape == (200, 384)
+    assert embeddings.shape == (200, n_dims)
 
 
-def test_parallel_processing():
-    model = DefaultEmbedding()
+@pytest.mark.parametrize('n_dims,embedding_class', [(384, DefaultEmbedding), (768, JinaEmbedding)])
+def test_parallel_processing(n_dims, embedding_class):
+    model = embedding_class()
 
     docs = ["hello world", "flag embedding"] * 100
     embeddings = list(model.embed(docs, batch_size=10, parallel=2))
@@ -58,6 +62,6 @@ def test_parallel_processing():
     embeddings_3 = list(model.embed(docs, batch_size=10, parallel=0))
     embeddings_3 = np.stack(embeddings_3, axis=0)
 
-    assert embeddings.shape == (200, 384)
+    assert embeddings.shape == (200, n_dims)
     assert np.allclose(embeddings, embeddings_2, atol=1e-3)
     assert np.allclose(embeddings, embeddings_3, atol=1e-3)
