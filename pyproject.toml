@@ -16,7 +16,7 @@ onnx = "^1.11"
 onnxruntime = "^1.15"
 tqdm = "^4.65"
 requests = "^2.31"
-tokenizers = ">=0.14"
+tokenizers = "^0.15.0"
 huggingface-hub = "0.19.4"
 
 [tool.poetry.group.dev.dependencies]
