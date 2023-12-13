@@ -1,0 +1,2166 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+        <meta name="author" content="Nirant Kasliwal">
+      
+      
+        <link rel="canonical" href="https://qdrant.github.io/fastembed/experimental/Binary%20Quantization%20with%20Qdrant/">
+      
+      
+        <link rel="prev" href="../Binary%20Quantization%20from%20Scratch/">
+      
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.2">
+    
+    
+      
+        <title>Binary Quantization with Qdrant - FastEmbed</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.50c56a3b.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../css/ansi-colours.css">
+    
+      <link rel="stylesheet" href="../../css/jupyter-cells.css">
+    
+      <link rel="stylesheet" href="../../css/pandas-dataframe.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#binary-quantization-with-qdrant" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+        <aside class="md-banner">
+          <div class="md-banner__inner md-grid md-typeset">
+            
+              <button class="md-banner__button md-icon" aria-label="Don't show this again">
+                
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+              </button>
+            
+            
+<div style="text-align: center">
+    If you're using FastEmbed from Qdrant, join the
+    <a rel="me" href="https://discord.gg/Qy6HCJK9Dc">
+        <span class="twemoji mastodon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M524.531 69.836a1.5 1.5 0 0 0-.764-.7A485.065 485.065 0 0 0 404.081 32.03a1.816 1.816 0 0 0-1.923.91 337.461 337.461 0 0 0-14.9 30.6 447.848 447.848 0 0 0-134.426 0 309.541 309.541 0 0 0-15.135-30.6 1.89 1.89 0 0 0-1.924-.91 483.689 483.689 0 0 0-119.688 37.107 1.712 1.712 0 0 0-.788.676C39.068 183.651 18.186 294.69 28.43 404.354a2.016 2.016 0 0 0 .765 1.375 487.666 487.666 0 0 0 146.825 74.189 1.9 1.9 0 0 0 2.063-.676A348.2 348.2 0 0 0 208.12 430.4a1.86 1.86 0 0 0-1.019-2.588 321.173 321.173 0 0 1-45.868-21.853 1.885 1.885 0 0 1-.185-3.126 251.047 251.047 0 0 0 9.109-7.137 1.819 1.819 0 0 1 1.9-.256c96.229 43.917 200.41 43.917 295.5 0a1.812 1.812 0 0 1 1.924.233 234.533 234.533 0 0 0 9.132 7.16 1.884 1.884 0 0 1-.162 3.126 301.407 301.407 0 0 1-45.89 21.83 1.875 1.875 0 0 0-1 2.611 391.055 391.055 0 0 0 30.014 48.815 1.864 1.864 0 0 0 2.063.7A486.048 486.048 0 0 0 610.7 405.729a1.882 1.882 0 0 0 .765-1.352c12.264-126.783-20.532-236.912-86.934-334.541ZM222.491 337.58c-28.972 0-52.844-26.587-52.844-59.239s23.409-59.241 52.844-59.241c29.665 0 53.306 26.82 52.843 59.239 0 32.654-23.41 59.241-52.843 59.241Zm195.38 0c-28.971 0-52.843-26.587-52.843-59.239s23.409-59.241 52.843-59.241c29.667 0 53.307 26.82 52.844 59.239 0 32.654-23.177 59.241-52.844 59.241Z"/></svg>
+        </span>
+        <strong>Qdrant Discord server</strong>
+    </a>
+    to get help and share your work! Or check out <a rel="me"
+        href="https://cloud.qdrant.io?utm_source=twitter&utm_medium=website&utm_campaign=fastembed">Qdrant Cloud</a> to
+    get started with vector search!
+</div>
+
+          </div>
+          
+            <script>var content,el=document.querySelector("[data-md-component=announce]");el&&(content=el.querySelector(".md-typeset"),__md_hash(content.innerHTML)===__md_get("__announce")&&(el.hidden=!0))</script>
+          
+        </aside>
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="FastEmbed" class="md-header__button md-logo" aria-label="FastEmbed" data-md-component="logo">
+      
+  <img src="../../assets/favicon.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            FastEmbed
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Binary Quantization with Qdrant
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12c0-2.42-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/qdrant/fastembed/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    qdrant/fastembed
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="FastEmbed" class="md-nav__button md-logo" aria-label="FastEmbed" data-md-component="logo">
+      
+  <img src="../../assets/favicon.png" alt="logo">
+
+    </a>
+    FastEmbed
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/qdrant/fastembed/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    qdrant/fastembed
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ⚡️ What is FastEmbed?
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Getting%20Started/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Getting Started
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+      
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Examples
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Examples
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/FastEmbed_vs_HF_Comparison/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    FastEmbed vs HF Comparison
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/Retrieval_with_FastEmbed/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Retrieval with FastEmbed
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/Supported_Models/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Supported Models
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/Usage_With_Qdrant/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Usage With Qdrant
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+      
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Experimental
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Experimental
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Binary%20Quantization%20from%20Scratch/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Binary Quantization from Scratch
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Binary Quantization with Qdrant
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Binary Quantization with Qdrant
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      Table of Contents
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-imports" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Imports
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-download-and-slice-dataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Download and Slice Dataset
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#oversampling-vs-recall" class="md-nav__link">
+    <span class="md-ellipsis">
+      Oversampling vs Recall
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Oversampling vs Recall">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#preparing-a-query-dataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      Preparing a query dataset
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      Table of Contents
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-imports" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Imports
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-download-and-slice-dataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Download and Slice Dataset
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#oversampling-vs-recall" class="md-nav__link">
+    <span class="md-ellipsis">
+      Oversampling vs Recall
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Oversampling vs Recall">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#preparing-a-query-dataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      Preparing a query dataset
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+ 
+
+
+                  
+
+  
+  
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script>
+(function() {
+  function addWidgetsRenderer() {
+    var requireJsScript = document.createElement('script');
+    requireJsScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js';
+
+    var mimeElement = document.querySelector('script[type="application/vnd.jupyter.widget-view+json"]');
+    var jupyterWidgetsScript = document.createElement('script');
+    var widgetRendererSrc = 'https://unpkg.com/@jupyter-widgets/html-manager@*/dist/embed-amd.js';
+    var widgetState;
+
+    // Fallback for older version:
+    try {
+      widgetState = mimeElement && JSON.parse(mimeElement.innerHTML);
+
+      if (widgetState && (widgetState.version_major < 2 || !widgetState.version_major)) {
+        widgetRendererSrc = 'jupyter-js-widgets@*/dist/embed.js';
+      }
+    } catch(e) {}
+
+    jupyterWidgetsScript.src = widgetRendererSrc;
+
+    document.body.appendChild(requireJsScript);
+    document.body.appendChild(jupyterWidgetsScript);
+  }
+
+  document.addEventListener('DOMContentLoaded', addWidgetsRenderer);
+}());
+</script>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h1 id="binary-quantization-with-qdrant">Binary Quantization with Qdrant</h1>
+<p>Binary Quantization is a promising approach to improve retrieval speeds and reduce memory footprint of vector search engines. In this notebook we will show how to use Qdrant to perform binary quantization of vectors and perform fast similarity search on the resulting index.</p>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li>Imports</li>
+<li>Download and Slice Dataset</li>
+<li>Create Qdrant Collection</li>
+<li>Indexing</li>
+<li>Search</li>
+</ol>
+<h2 id="1-imports">1. Imports</h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="c1"># !pip install qdrant-client==1.5.1 pandas dataset --quiet --upgrade</span>
+</code></pre></div>
+
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">uuid</span>
+<span class="kn">from</span> <span class="nn">qdrant_client</span> <span class="kn">import</span> <span class="n">QdrantClient</span>
+<span class="kn">from</span> <span class="nn">qdrant_client.http</span> <span class="kn">import</span> <span class="n">models</span>
+<span class="kn">from</span> <span class="nn">qdrant_client.http.models</span> <span class="kn">import</span> <span class="n">PointStruct</span>
+</code></pre></div>
+
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="2-download-and-slice-dataset">2. Download and Slice Dataset</h2>
+<p>We will be using the <a href="https://huggingface.co/datasets/KShivendu/dbpedia-entities-openai-1M">dbpedia-entitis-openai-1M</a> dataset from the <a href="https://huggingface.co/datasets">HuggingFace Datasets</a> library. This contains 1M vectors of 1536 dimensions each. We will be using the first 100K vectors here.</p>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">datasets</span>
+<span class="n">dataset</span> <span class="o">=</span> <span class="n">datasets</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="s2">&quot;KShivendu/dbpedia-entities-openai-1M&quot;</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">&quot;train[0:100000]&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+</div>
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area">
+<div class="output_text output_subarea">
+<pre>
+<code>Resolving data files:   0%|          | 0/26 [00:00&lt;?, ?it/s]</code>
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="c1"># !wget https://huggingface.co/datasets/KShivendu/dbpedia-entities-openai-1M/resolve/main/data/train-00000-of-00026-3c7b99d1c7eda36e.parquet -O train.parquet</span>
+</code></pre></div>
+
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="c1"># df = pd.read_parquet(&#39;train.parquet&#39;)</span>
+<span class="c1"># len(df)</span>
+<span class="c1"># dataset = df[:30000]</span>
+<span class="c1"># del df</span>
+</code></pre></div>
+
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+<span class="c1"># dataset[0]</span>
+</code></pre></div>
+
+</div>
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area">
+<div class="output_text output_subarea output_execute_result">
+<pre>
+<code>100000</code>
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">qdrant_client</span> <span class="kn">import</span> <span class="n">QdrantClient</span>
+
+<span class="c1"># client = QdrantClient(</span>
+<span class="c1">#     url=&quot;https://2aaa9439-b209-4ba6-8beb-d0b61dbd9388.us-east-1-0.aws.cloud.qdrant.io:6333&quot;, </span>
+<span class="c1">#     api_key=&quot;FCF8_ADVuSRrtNGeg_rBJvAMJecEDgQhzuXMZGW8F7OzvaC9wYOPeQ&quot;,</span>
+<span class="c1">#     prefer_grpc=True</span>
+<span class="c1"># )</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">QdrantClient</span><span class="p">(</span>
+    <span class="n">url</span><span class="o">=</span><span class="s2">&quot;http://localhost:6334&quot;</span><span class="p">,</span>
+    <span class="n">timeout</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>
+    <span class="n">prefer_grpc</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">collection_name</span> <span class="o">=</span> <span class="s2">&quot;binary-quantization&quot;</span>
+<span class="n">client</span><span class="o">.</span><span class="n">recreate_collection</span><span class="p">(</span>
+    <span class="n">collection_name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">collection_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="n">vectors_config</span><span class="o">=</span><span class="n">models</span><span class="o">.</span><span class="n">VectorParams</span><span class="p">(</span>
+        <span class="n">size</span><span class="o">=</span><span class="mi">1536</span><span class="p">,</span>
+        <span class="n">distance</span><span class="o">=</span><span class="n">models</span><span class="o">.</span><span class="n">Distance</span><span class="o">.</span><span class="n">DOT</span><span class="p">,</span>
+        <span class="n">on_disk</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">optimizers_config</span><span class="o">=</span><span class="n">models</span><span class="o">.</span><span class="n">OptimizersConfigDiff</span><span class="p">(</span>
+        <span class="n">default_segment_number</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+        <span class="n">indexing_threshold</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">quantization_config</span><span class="o">=</span><span class="n">models</span><span class="o">.</span><span class="n">BinaryQuantization</span><span class="p">(</span>
+        <span class="n">binary</span><span class="o">=</span><span class="n">models</span><span class="o">.</span><span class="n">BinaryQuantizationConfig</span><span class="p">(</span><span class="n">always_ram</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+</code></pre></div>
+
+</div>
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area">
+<div class="output_text output_subarea output_execute_result">
+<pre>
+<code>True</code>
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="c1"># client.upsert(collection_name, points)</span>
+<span class="n">bs</span> <span class="o">=</span> <span class="mi">10000</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">),</span> <span class="n">bs</span><span class="p">):</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">upload_collection</span><span class="p">(</span>
+        <span class="n">collection_name</span><span class="o">=</span><span class="n">collection_name</span><span class="p">,</span> 
+        <span class="n">ids</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="n">bs</span><span class="p">),</span>
+        <span class="n">vectors</span><span class="o">=</span><span class="n">dataset</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="n">bs</span><span class="p">][</span><span class="s2">&quot;openai&quot;</span><span class="p">],</span>
+        <span class="n">payload</span><span class="o">=</span><span class="p">[</span>
+            <span class="p">{</span><span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">x</span><span class="p">}</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="n">bs</span><span class="p">][</span><span class="s2">&quot;text&quot;</span><span class="p">]</span>
+        <span class="p">],</span>
+        <span class="n">parallel</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="p">)</span>
+</code></pre></div>
+
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="n">client</span><span class="o">.</span><span class="n">update_collection</span><span class="p">(</span>
+    <span class="n">collection_name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">collection_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="n">optimizer_config</span><span class="o">=</span><span class="n">models</span><span class="o">.</span><span class="n">OptimizersConfigDiff</span><span class="p">(</span>
+        <span class="n">indexing_threshold</span><span class="o">=</span><span class="mi">20000</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+</code></pre></div>
+
+</div>
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area">
+<div class="output_text output_subarea output_execute_result">
+<pre>
+<code>True</code>
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="n">collection_info</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_collection</span><span class="p">(</span><span class="n">collection_name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">collection_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="n">collection_info</span><span class="o">.</span><span class="n">dict</span><span class="p">()</span>
+</code></pre></div>
+
+</div>
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area">
+<div class="output_subarea output_stream output_stderr output_text">
+<pre>
+<code>/var/folders/b4/grpbcmrd36gc7q5_11whbn540000gn/T/ipykernel_22713/850845717.py:2: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.1.1/migration/
+  collection_info.dict()
+</code>
+</pre>
+</div>
+</div>
+<div class="output_area">
+<div class="output_text output_subarea output_execute_result">
+<pre>
+<code>{'status': &lt;CollectionStatus.YELLOW: 'yellow'&gt;,
+ 'optimizer_status': &lt;OptimizersStatusOneOf.OK: 'ok'&gt;,
+ 'vectors_count': 100000,
+ 'indexed_vectors_count': 0,
+ 'points_count': 100000,
+ 'segments_count': 5,
+ 'config': {'params': {'vectors': {'size': 1536,
+    'distance': &lt;Distance.DOT: 'Dot'&gt;,
+    'hnsw_config': None,
+    'quantization_config': None,
+    'on_disk': True},
+   'shard_number': 1,
+   'replication_factor': 1,
+   'write_consistency_factor': 1,
+   'on_disk_payload': True},
+  'hnsw_config': {'m': 16,
+   'ef_construct': 100,
+   'full_scan_threshold': 10000,
+   'max_indexing_threads': 0,
+   'on_disk': False,
+   'payload_m': None},
+  'optimizer_config': {'deleted_threshold': 0.2,
+   'vacuum_min_vector_number': 1000,
+   'default_segment_number': 5,
+   'max_segment_size': None,
+   'memmap_threshold': None,
+   'indexing_threshold': 20000,
+   'flush_interval_sec': 5,
+   'max_optimization_threads': 1},
+  'wal_config': {'wal_capacity_mb': 32, 'wal_segments_ahead': 0},
+  'quantization_config': {'binary': {'always_ram': True}}},
+ 'payload_schema': {}}</code>
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="oversampling-vs-recall">Oversampling vs Recall</h2>
+<h3 id="preparing-a-query-dataset">Preparing a query dataset</h3>
+<p>For the purpose of this illustration, we'll take a few vectors which we know are already in the index and query them. We should get the same vectors back as results from the Qdrant index. </p>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">from</span> <span class="nn">random</span> <span class="kn">import</span> <span class="n">randint</span>
+<span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">37</span><span class="p">)</span>
+
+<span class="n">query_indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">))</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">)]</span>
+<span class="n">query_indices</span>
+<span class="n">query_dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="n">query_indices</span><span class="p">]</span>
+</code></pre></div>
+
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="c1">## Add Gaussian noise to any vector</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">37</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">add_noise</span><span class="p">(</span><span class="n">vector</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="mf">0.05</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">vector</span> <span class="o">+</span> <span class="n">noise</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="o">*</span><span class="n">vector</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</code></pre></div>
+
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">time</span>
+<span class="k">def</span> <span class="nf">correct</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+    <span class="n">result_texts</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">payload</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">results</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">result_texts</span>
+
+
+<span class="k">def</span> <span class="nf">count_correct</span><span class="p">(</span><span class="n">query_dataset</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">oversampling</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">rescore</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="n">correct_results</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">qv</span><span class="p">,</span> <span class="n">text</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">query_dataset</span><span class="p">[</span><span class="s2">&quot;openai&quot;</span><span class="p">],</span> <span class="n">query_dataset</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]):</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
+            <span class="n">collection_name</span><span class="o">=</span><span class="n">collection_name</span><span class="p">,</span>
+            <span class="n">query_vector</span><span class="o">=</span><span class="n">add_noise</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">qv</span><span class="p">)),</span>
+            <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span>
+            <span class="n">search_params</span><span class="o">=</span><span class="n">models</span><span class="o">.</span><span class="n">SearchParams</span><span class="p">(</span>
+                <span class="n">quantization</span><span class="o">=</span><span class="n">models</span><span class="o">.</span><span class="n">QuantizationSearchParams</span><span class="p">(</span>
+                    <span class="n">ignore</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                    <span class="n">rescore</span><span class="o">=</span><span class="n">rescore</span><span class="p">,</span>
+                    <span class="n">oversampling</span><span class="o">=</span><span class="n">oversampling</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">correct_results</span> <span class="o">+=</span> <span class="n">correct</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">correct_results</span>
+
+
+<span class="n">limit_grid</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">50</span><span class="p">]</span>
+<span class="c1"># limit_grid = [1, 3, 5]</span>
+<span class="n">oversampling_grid</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">]</span>
+<span class="c1"># oversampling_grid = [1.0, 1.5, 2.0]</span>
+<span class="n">rescore_grid</span> <span class="o">=</span> <span class="p">[</span><span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">]</span>
+<span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">limit</span> <span class="ow">in</span> <span class="n">limit_grid</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">oversampling</span> <span class="ow">in</span> <span class="n">oversampling_grid</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">rescore</span> <span class="ow">in</span> <span class="n">rescore_grid</span><span class="p">:</span>
+            <span class="c1"># print(f&quot;limit={limit}, oversampling={oversampling}, rescore={rescore}&quot;)</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+            <span class="n">correct_results</span> <span class="o">=</span> <span class="n">count_correct</span><span class="p">(</span><span class="n">query_dataset</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span> <span class="n">oversampling</span><span class="o">=</span><span class="n">oversampling</span><span class="p">,</span> <span class="n">rescore</span><span class="o">=</span><span class="n">rescore</span><span class="p">)</span>
+            <span class="n">end</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                <span class="s2">&quot;limit&quot;</span><span class="p">:</span> <span class="n">limit</span><span class="p">,</span>
+                <span class="s2">&quot;oversampling&quot;</span><span class="p">:</span> <span class="n">oversampling</span><span class="p">,</span>
+                <span class="s2">&quot;rescore&quot;</span><span class="p">:</span> <span class="n">rescore</span><span class="p">,</span>
+                <span class="s2">&quot;correct&quot;</span><span class="p">:</span> <span class="n">correct_results</span><span class="p">,</span>
+                <span class="s2">&quot;total queries&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">query_dataset</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]),</span>
+                <span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">,</span>
+            <span class="p">})</span>
+
+<span class="n">results_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+<span class="n">results_df</span>
+</code></pre></div>
+
+</div>
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area">
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+<thead>
+<tr style="text-align: right;">
+<th></th>
+<th>limit</th>
+<th>oversampling</th>
+<th>rescore</th>
+<th>correct</th>
+<th>total queries</th>
+<th>time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>1</td>
+<td>1.0</td>
+<td>False</td>
+<td>75</td>
+<td>4</td>
+<td>234.632868</td>
+</tr>
+<tr>
+<th>1</th>
+<td>1</td>
+<td>1.0</td>
+<td>True</td>
+<td>88</td>
+<td>4</td>
+<td>0.298480</td>
+</tr>
+<tr>
+<th>2</th>
+<td>1</td>
+<td>1.5</td>
+<td>False</td>
+<td>75</td>
+<td>4</td>
+<td>0.225124</td>
+</tr>
+<tr>
+<th>3</th>
+<td>1</td>
+<td>1.5</td>
+<td>True</td>
+<td>83</td>
+<td>4</td>
+<td>0.268409</td>
+</tr>
+<tr>
+<th>4</th>
+<td>1</td>
+<td>2.0</td>
+<td>False</td>
+<td>90</td>
+<td>4</td>
+<td>0.227887</td>
+</tr>
+<tr>
+<th>5</th>
+<td>1</td>
+<td>2.0</td>
+<td>True</td>
+<td>90</td>
+<td>4</td>
+<td>0.368640</td>
+</tr>
+<tr>
+<th>6</th>
+<td>1</td>
+<td>3.0</td>
+<td>False</td>
+<td>78</td>
+<td>4</td>
+<td>0.202784</td>
+</tr>
+<tr>
+<th>7</th>
+<td>1</td>
+<td>3.0</td>
+<td>True</td>
+<td>92</td>
+<td>4</td>
+<td>0.427767</td>
+</tr>
+<tr>
+<th>8</th>
+<td>1</td>
+<td>5.0</td>
+<td>False</td>
+<td>72</td>
+<td>4</td>
+<td>0.196870</td>
+</tr>
+<tr>
+<th>9</th>
+<td>1</td>
+<td>5.0</td>
+<td>True</td>
+<td>96</td>
+<td>4</td>
+<td>0.556918</td>
+</tr>
+<tr>
+<th>10</th>
+<td>3</td>
+<td>1.0</td>
+<td>False</td>
+<td>89</td>
+<td>4</td>
+<td>0.284389</td>
+</tr>
+<tr>
+<th>11</th>
+<td>3</td>
+<td>1.0</td>
+<td>True</td>
+<td>92</td>
+<td>4</td>
+<td>0.469356</td>
+</tr>
+<tr>
+<th>12</th>
+<td>3</td>
+<td>1.5</td>
+<td>False</td>
+<td>92</td>
+<td>4</td>
+<td>0.239615</td>
+</tr>
+<tr>
+<th>13</th>
+<td>3</td>
+<td>1.5</td>
+<td>True</td>
+<td>97</td>
+<td>4</td>
+<td>0.538105</td>
+</tr>
+<tr>
+<th>14</th>
+<td>3</td>
+<td>2.0</td>
+<td>False</td>
+<td>91</td>
+<td>4</td>
+<td>0.231395</td>
+</tr>
+<tr>
+<th>15</th>
+<td>3</td>
+<td>2.0</td>
+<td>True</td>
+<td>93</td>
+<td>4</td>
+<td>0.676558</td>
+</tr>
+<tr>
+<th>16</th>
+<td>3</td>
+<td>3.0</td>
+<td>False</td>
+<td>96</td>
+<td>4</td>
+<td>0.229494</td>
+</tr>
+<tr>
+<th>17</th>
+<td>3</td>
+<td>3.0</td>
+<td>True</td>
+<td>95</td>
+<td>4</td>
+<td>0.894687</td>
+</tr>
+<tr>
+<th>18</th>
+<td>3</td>
+<td>5.0</td>
+<td>False</td>
+<td>92</td>
+<td>4</td>
+<td>0.228185</td>
+</tr>
+<tr>
+<th>19</th>
+<td>3</td>
+<td>5.0</td>
+<td>True</td>
+<td>97</td>
+<td>4</td>
+<td>1.418588</td>
+</tr>
+<tr>
+<th>20</th>
+<td>5</td>
+<td>1.0</td>
+<td>False</td>
+<td>93</td>
+<td>4</td>
+<td>0.251973</td>
+</tr>
+<tr>
+<th>21</th>
+<td>5</td>
+<td>1.0</td>
+<td>True</td>
+<td>95</td>
+<td>4</td>
+<td>0.702272</td>
+</tr>
+<tr>
+<th>22</th>
+<td>5</td>
+<td>1.5</td>
+<td>False</td>
+<td>88</td>
+<td>4</td>
+<td>0.247825</td>
+</tr>
+<tr>
+<th>23</th>
+<td>5</td>
+<td>1.5</td>
+<td>True</td>
+<td>97</td>
+<td>4</td>
+<td>0.832820</td>
+</tr>
+<tr>
+<th>24</th>
+<td>5</td>
+<td>2.0</td>
+<td>False</td>
+<td>95</td>
+<td>4</td>
+<td>0.247442</td>
+</tr>
+<tr>
+<th>25</th>
+<td>5</td>
+<td>2.0</td>
+<td>True</td>
+<td>96</td>
+<td>4</td>
+<td>0.934421</td>
+</tr>
+<tr>
+<th>26</th>
+<td>5</td>
+<td>3.0</td>
+<td>False</td>
+<td>92</td>
+<td>4</td>
+<td>0.234346</td>
+</tr>
+<tr>
+<th>27</th>
+<td>5</td>
+<td>3.0</td>
+<td>True</td>
+<td>97</td>
+<td>4</td>
+<td>1.309440</td>
+</tr>
+<tr>
+<th>28</th>
+<td>5</td>
+<td>5.0</td>
+<td>False</td>
+<td>89</td>
+<td>4</td>
+<td>0.234266</td>
+</tr>
+<tr>
+<th>29</th>
+<td>5</td>
+<td>5.0</td>
+<td>True</td>
+<td>97</td>
+<td>4</td>
+<td>2.010821</td>
+</tr>
+<tr>
+<th>30</th>
+<td>10</td>
+<td>1.0</td>
+<td>False</td>
+<td>96</td>
+<td>4</td>
+<td>0.326593</td>
+</tr>
+<tr>
+<th>31</th>
+<td>10</td>
+<td>1.0</td>
+<td>True</td>
+<td>96</td>
+<td>4</td>
+<td>1.025037</td>
+</tr>
+<tr>
+<th>32</th>
+<td>10</td>
+<td>1.5</td>
+<td>False</td>
+<td>89</td>
+<td>4</td>
+<td>0.304709</td>
+</tr>
+<tr>
+<th>33</th>
+<td>10</td>
+<td>1.5</td>
+<td>True</td>
+<td>96</td>
+<td>4</td>
+<td>1.299685</td>
+</tr>
+<tr>
+<th>34</th>
+<td>10</td>
+<td>2.0</td>
+<td>False</td>
+<td>93</td>
+<td>4</td>
+<td>0.308194</td>
+</tr>
+<tr>
+<th>35</th>
+<td>10</td>
+<td>2.0</td>
+<td>True</td>
+<td>98</td>
+<td>4</td>
+<td>1.680287</td>
+</tr>
+<tr>
+<th>36</th>
+<td>10</td>
+<td>3.0</td>
+<td>False</td>
+<td>94</td>
+<td>4</td>
+<td>0.316083</td>
+</tr>
+<tr>
+<th>37</th>
+<td>10</td>
+<td>3.0</td>
+<td>True</td>
+<td>94</td>
+<td>4</td>
+<td>2.348110</td>
+</tr>
+<tr>
+<th>38</th>
+<td>10</td>
+<td>5.0</td>
+<td>False</td>
+<td>97</td>
+<td>4</td>
+<td>0.334111</td>
+</tr>
+<tr>
+<th>39</th>
+<td>10</td>
+<td>5.0</td>
+<td>True</td>
+<td>96</td>
+<td>4</td>
+<td>3.689124</td>
+</tr>
+<tr>
+<th>40</th>
+<td>20</td>
+<td>1.0</td>
+<td>False</td>
+<td>95</td>
+<td>4</td>
+<td>0.470449</td>
+</tr>
+<tr>
+<th>41</th>
+<td>20</td>
+<td>1.0</td>
+<td>True</td>
+<td>98</td>
+<td>4</td>
+<td>1.808852</td>
+</tr>
+<tr>
+<th>42</th>
+<td>20</td>
+<td>1.5</td>
+<td>False</td>
+<td>93</td>
+<td>4</td>
+<td>0.435893</td>
+</tr>
+<tr>
+<th>43</th>
+<td>20</td>
+<td>1.5</td>
+<td>True</td>
+<td>94</td>
+<td>4</td>
+<td>2.496987</td>
+</tr>
+<tr>
+<th>44</th>
+<td>20</td>
+<td>2.0</td>
+<td>False</td>
+<td>96</td>
+<td>4</td>
+<td>0.473800</td>
+</tr>
+<tr>
+<th>45</th>
+<td>20</td>
+<td>2.0</td>
+<td>True</td>
+<td>95</td>
+<td>4</td>
+<td>3.306971</td>
+</tr>
+<tr>
+<th>46</th>
+<td>20</td>
+<td>3.0</td>
+<td>False</td>
+<td>97</td>
+<td>4</td>
+<td>0.473543</td>
+</tr>
+<tr>
+<th>47</th>
+<td>20</td>
+<td>3.0</td>
+<td>True</td>
+<td>100</td>
+<td>4</td>
+<td>4.618521</td>
+</tr>
+<tr>
+<th>48</th>
+<td>20</td>
+<td>5.0</td>
+<td>False</td>
+<td>96</td>
+<td>4</td>
+<td>0.459217</td>
+</tr>
+<tr>
+<th>49</th>
+<td>20</td>
+<td>5.0</td>
+<td>True</td>
+<td>97</td>
+<td>4</td>
+<td>7.186773</td>
+</tr>
+<tr>
+<th>50</th>
+<td>50</td>
+<td>1.0</td>
+<td>False</td>
+<td>95</td>
+<td>4</td>
+<td>0.891328</td>
+</tr>
+<tr>
+<th>51</th>
+<td>50</td>
+<td>1.0</td>
+<td>True</td>
+<td>95</td>
+<td>4</td>
+<td>4.245011</td>
+</tr>
+<tr>
+<th>52</th>
+<td>50</td>
+<td>1.5</td>
+<td>False</td>
+<td>96</td>
+<td>4</td>
+<td>0.702362</td>
+</tr>
+<tr>
+<th>53</th>
+<td>50</td>
+<td>1.5</td>
+<td>True</td>
+<td>98</td>
+<td>4</td>
+<td>5.981293</td>
+</tr>
+<tr>
+<th>54</th>
+<td>50</td>
+<td>2.0</td>
+<td>False</td>
+<td>96</td>
+<td>4</td>
+<td>0.779303</td>
+</tr>
+<tr>
+<th>55</th>
+<td>50</td>
+<td>2.0</td>
+<td>True</td>
+<td>94</td>
+<td>4</td>
+<td>7.743587</td>
+</tr>
+<tr>
+<th>56</th>
+<td>50</td>
+<td>3.0</td>
+<td>False</td>
+<td>94</td>
+<td>4</td>
+<td>0.816802</td>
+</tr>
+<tr>
+<th>57</th>
+<td>50</td>
+<td>3.0</td>
+<td>True</td>
+<td>97</td>
+<td>4</td>
+<td>10.909127</td>
+</tr>
+<tr>
+<th>58</th>
+<td>50</td>
+<td>5.0</td>
+<td>False</td>
+<td>96</td>
+<td>4</td>
+<td>0.842580</td>
+</tr>
+<tr>
+<th>59</th>
+<td>50</td>
+<td>5.0</td>
+<td>True</td>
+<td>99</td>
+<td>4</td>
+<td>17.818811</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="n">df</span> <span class="o">=</span> <span class="n">results_df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">df</span><span class="p">[</span><span class="s2">&quot;candidates&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;oversampling&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;limit&quot;</span><span class="p">]</span>
+<span class="n">df</span><span class="p">[[</span><span class="s2">&quot;candidates&quot;</span><span class="p">,</span> <span class="s2">&quot;rescore&quot;</span><span class="p">,</span> <span class="s2">&quot;time&quot;</span><span class="p">]]</span>
+<span class="c1"># df.to_csv(&quot;candidates-rescore-time.csv&quot;, index=False)</span>
+</code></pre></div>
+
+</div>
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area">
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+<thead>
+<tr style="text-align: right;">
+<th></th>
+<th>candidates</th>
+<th>rescore</th>
+<th>time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>1.0</td>
+<td>False</td>
+<td>234.632868</td>
+</tr>
+<tr>
+<th>1</th>
+<td>1.0</td>
+<td>True</td>
+<td>0.298480</td>
+</tr>
+<tr>
+<th>2</th>
+<td>1.5</td>
+<td>False</td>
+<td>0.225124</td>
+</tr>
+<tr>
+<th>3</th>
+<td>1.5</td>
+<td>True</td>
+<td>0.268409</td>
+</tr>
+<tr>
+<th>4</th>
+<td>2.0</td>
+<td>False</td>
+<td>0.227887</td>
+</tr>
+<tr>
+<th>5</th>
+<td>2.0</td>
+<td>True</td>
+<td>0.368640</td>
+</tr>
+<tr>
+<th>6</th>
+<td>3.0</td>
+<td>False</td>
+<td>0.202784</td>
+</tr>
+<tr>
+<th>7</th>
+<td>3.0</td>
+<td>True</td>
+<td>0.427767</td>
+</tr>
+<tr>
+<th>8</th>
+<td>5.0</td>
+<td>False</td>
+<td>0.196870</td>
+</tr>
+<tr>
+<th>9</th>
+<td>5.0</td>
+<td>True</td>
+<td>0.556918</td>
+</tr>
+<tr>
+<th>10</th>
+<td>3.0</td>
+<td>False</td>
+<td>0.284389</td>
+</tr>
+<tr>
+<th>11</th>
+<td>3.0</td>
+<td>True</td>
+<td>0.469356</td>
+</tr>
+<tr>
+<th>12</th>
+<td>4.5</td>
+<td>False</td>
+<td>0.239615</td>
+</tr>
+<tr>
+<th>13</th>
+<td>4.5</td>
+<td>True</td>
+<td>0.538105</td>
+</tr>
+<tr>
+<th>14</th>
+<td>6.0</td>
+<td>False</td>
+<td>0.231395</td>
+</tr>
+<tr>
+<th>15</th>
+<td>6.0</td>
+<td>True</td>
+<td>0.676558</td>
+</tr>
+<tr>
+<th>16</th>
+<td>9.0</td>
+<td>False</td>
+<td>0.229494</td>
+</tr>
+<tr>
+<th>17</th>
+<td>9.0</td>
+<td>True</td>
+<td>0.894687</td>
+</tr>
+<tr>
+<th>18</th>
+<td>15.0</td>
+<td>False</td>
+<td>0.228185</td>
+</tr>
+<tr>
+<th>19</th>
+<td>15.0</td>
+<td>True</td>
+<td>1.418588</td>
+</tr>
+<tr>
+<th>20</th>
+<td>5.0</td>
+<td>False</td>
+<td>0.251973</td>
+</tr>
+<tr>
+<th>21</th>
+<td>5.0</td>
+<td>True</td>
+<td>0.702272</td>
+</tr>
+<tr>
+<th>22</th>
+<td>7.5</td>
+<td>False</td>
+<td>0.247825</td>
+</tr>
+<tr>
+<th>23</th>
+<td>7.5</td>
+<td>True</td>
+<td>0.832820</td>
+</tr>
+<tr>
+<th>24</th>
+<td>10.0</td>
+<td>False</td>
+<td>0.247442</td>
+</tr>
+<tr>
+<th>25</th>
+<td>10.0</td>
+<td>True</td>
+<td>0.934421</td>
+</tr>
+<tr>
+<th>26</th>
+<td>15.0</td>
+<td>False</td>
+<td>0.234346</td>
+</tr>
+<tr>
+<th>27</th>
+<td>15.0</td>
+<td>True</td>
+<td>1.309440</td>
+</tr>
+<tr>
+<th>28</th>
+<td>25.0</td>
+<td>False</td>
+<td>0.234266</td>
+</tr>
+<tr>
+<th>29</th>
+<td>25.0</td>
+<td>True</td>
+<td>2.010821</td>
+</tr>
+<tr>
+<th>30</th>
+<td>10.0</td>
+<td>False</td>
+<td>0.326593</td>
+</tr>
+<tr>
+<th>31</th>
+<td>10.0</td>
+<td>True</td>
+<td>1.025037</td>
+</tr>
+<tr>
+<th>32</th>
+<td>15.0</td>
+<td>False</td>
+<td>0.304709</td>
+</tr>
+<tr>
+<th>33</th>
+<td>15.0</td>
+<td>True</td>
+<td>1.299685</td>
+</tr>
+<tr>
+<th>34</th>
+<td>20.0</td>
+<td>False</td>
+<td>0.308194</td>
+</tr>
+<tr>
+<th>35</th>
+<td>20.0</td>
+<td>True</td>
+<td>1.680287</td>
+</tr>
+<tr>
+<th>36</th>
+<td>30.0</td>
+<td>False</td>
+<td>0.316083</td>
+</tr>
+<tr>
+<th>37</th>
+<td>30.0</td>
+<td>True</td>
+<td>2.348110</td>
+</tr>
+<tr>
+<th>38</th>
+<td>50.0</td>
+<td>False</td>
+<td>0.334111</td>
+</tr>
+<tr>
+<th>39</th>
+<td>50.0</td>
+<td>True</td>
+<td>3.689124</td>
+</tr>
+<tr>
+<th>40</th>
+<td>20.0</td>
+<td>False</td>
+<td>0.470449</td>
+</tr>
+<tr>
+<th>41</th>
+<td>20.0</td>
+<td>True</td>
+<td>1.808852</td>
+</tr>
+<tr>
+<th>42</th>
+<td>30.0</td>
+<td>False</td>
+<td>0.435893</td>
+</tr>
+<tr>
+<th>43</th>
+<td>30.0</td>
+<td>True</td>
+<td>2.496987</td>
+</tr>
+<tr>
+<th>44</th>
+<td>40.0</td>
+<td>False</td>
+<td>0.473800</td>
+</tr>
+<tr>
+<th>45</th>
+<td>40.0</td>
+<td>True</td>
+<td>3.306971</td>
+</tr>
+<tr>
+<th>46</th>
+<td>60.0</td>
+<td>False</td>
+<td>0.473543</td>
+</tr>
+<tr>
+<th>47</th>
+<td>60.0</td>
+<td>True</td>
+<td>4.618521</td>
+</tr>
+<tr>
+<th>48</th>
+<td>100.0</td>
+<td>False</td>
+<td>0.459217</td>
+</tr>
+<tr>
+<th>49</th>
+<td>100.0</td>
+<td>True</td>
+<td>7.186773</td>
+</tr>
+<tr>
+<th>50</th>
+<td>50.0</td>
+<td>False</td>
+<td>0.891328</td>
+</tr>
+<tr>
+<th>51</th>
+<td>50.0</td>
+<td>True</td>
+<td>4.245011</td>
+</tr>
+<tr>
+<th>52</th>
+<td>75.0</td>
+<td>False</td>
+<td>0.702362</td>
+</tr>
+<tr>
+<th>53</th>
+<td>75.0</td>
+<td>True</td>
+<td>5.981293</td>
+</tr>
+<tr>
+<th>54</th>
+<td>100.0</td>
+<td>False</td>
+<td>0.779303</td>
+</tr>
+<tr>
+<th>55</th>
+<td>100.0</td>
+<td>True</td>
+<td>7.743587</td>
+</tr>
+<tr>
+<th>56</th>
+<td>150.0</td>
+<td>False</td>
+<td>0.816802</td>
+</tr>
+<tr>
+<th>57</th>
+<td>150.0</td>
+<td>True</td>
+<td>10.909127</td>
+</tr>
+<tr>
+<th>58</th>
+<td>250.0</td>
+<td>False</td>
+<td>0.842580</td>
+</tr>
+<tr>
+<th>59</th>
+<td>250.0</td>
+<td>True</td>
+<td>17.818811</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="c1"># client.delete_collection(collection_name=f&quot;{collection_name}&quot;)</span>
+</code></pre></div>
+
+</div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+
+
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Maintained by <a href="https://github.com/qdrant">Qdrant</a>. Originally created by <a href="https://nirantk.com/about">Nirant Kasliwal</a>.
+
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["search.suggest", "search.highlight", "navigation.instant", "navigation.tracking", "navigation.expand", "navigation.sections", "content.code.annotate", "toc.follow", "header.autohide", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.f886a092.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7c377c4.min.js"></script>
+      
+    
+  </body>
+</html>
