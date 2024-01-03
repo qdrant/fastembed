@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
+from fastembed.splitter import FastEmbedRecursiveSplitter
 import onnxruntime as ort
 import requests
 from tokenizers import AddedToken, Tokenizer
@@ -81,6 +82,7 @@ class EmbeddingModel:
             model_name: str,
             max_length: int = 512,
             max_threads: int = None,
+            **splitter_kwargs: Any,
     ):
         self.path = path
         self.model_name = model_name
@@ -111,6 +113,7 @@ class EmbeddingModel:
 
         self.tokenizer = self.load_tokenizer(self.path, max_length=max_length)
         self.model = ort.InferenceSession(str(model_path), providers=onnx_providers, sess_options=so)
+        self.splitter = FastEmbedRecursiveSplitter(self.tokenizer, **splitter_kwargs)
 
     def onnx_embed(self, documents: List[str]) -> Tuple[np.ndarray, np.ndarray]:
         encoded = self.tokenizer.encode_batch(documents)
@@ -130,6 +133,9 @@ class EmbeddingModel:
         model_output = self.model.run(None, onnx_input)
         embeddings = model_output[0]
         return embeddings, attention_mask
+    
+    def split_text(self, text: str) -> List[str]:
+        return self.splitter.split_text(text)
 
 
 class EmbeddingWorker(Worker):
@@ -456,6 +462,7 @@ class FlagEmbedding(Embedding):
             max_length: int = 512,
             cache_dir: str = None,
             threads: int = None,
+            **splitter_kwargs: Any,
     ):
         """
         Args:
@@ -465,7 +472,13 @@ class FlagEmbedding(Embedding):
                                        Can be set using the `FASTEMBED_CACHE_PATH` env variable.
                                        Defaults to `fastembed_cache` in the system's temp directory.
             threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
-
+            **splitter_kwargs: Additional keyword arguments to pass to the text splitter.
+                              `chunk_size(int, optional)`: Maximum size of chunks based on the tokenizer encoding.
+                              `chunk_overlap(int, optional)`: Allowed overlap in characters between chunks.
+                              `strip_whitespace(bool, optional)`: If `True`, strips whitespace from the start and end.
+                              `separators(List[str], optional)`: A list of separator strings.
+                              `keep_separator(bool, optional)`: Whether to keep the separator in the chunks.
+                              `is_separator_regex(boolean, optional)`: If `True`, the separator is treated as a regex pattern.
         Raises:
             ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
         """
@@ -481,7 +494,7 @@ class FlagEmbedding(Embedding):
         self._max_length = max_length
 
         self.model = EmbeddingModel(self._model_dir, self.model_name, max_length=max_length,
-                                    max_threads=threads)
+                                    max_threads=threads, **splitter_kwargs)
 
     def embed(
             self, documents: Union[str, Iterable[str]], batch_size: int = 256, parallel: int = None
@@ -530,6 +543,9 @@ class FlagEmbedding(Embedding):
                 embeddings, _ = batch
                 yield from normalize(embeddings[:, 0]).astype(np.float32)
 
+    def split_text(self, text: str) -> List[str]:
+        return self.model.split_text(text)
+
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Union[str, Union[int, float]]]]:
         """
@@ -553,8 +569,9 @@ class DefaultEmbedding(FlagEmbedding):
             max_length: int = 512,
             cache_dir: Optional[str] = None,
             threads: Optional[int] = None,
+            **splitter_kwargs: Any,
     ):
-        super().__init__(model_name, max_length=max_length, cache_dir=cache_dir, threads=threads)
+        super().__init__(model_name, max_length=max_length, cache_dir=cache_dir, threads=threads, **splitter_kwargs)
 
 
 class OpenAIEmbedding(Embedding):
@@ -576,6 +593,7 @@ class JinaEmbedding(Embedding):
             max_length: int = 512,
             cache_dir: str = None,
             threads: int = None,
+            **splitter_kwargs: Any,
     ):
         """
         Args:
@@ -585,6 +603,14 @@ class JinaEmbedding(Embedding):
                                        Can be set using the `FASTEMBED_CACHE_PATH` env variable.
                                        Defaults to `fastembed_cache` in the system's temp directory.
             threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
+            **splitter_kwargs: Additional keyword arguments to pass to the text splitter.
+                              `chunk_size(int, optional)`: Maximum size of chunks based on the tokenizer encoding.
+                              `chunk_overlap(int, optional)`: Allowed overlap in characters between chunks.
+                              `strip_whitespace(bool, optional)`: If `True`, strips whitespace from the start and end.
+                              `separators(List[str], optional)`: A list of separator strings.
+                              `keep_separator(bool, optional)`: Whether to keep the separator in the chunks.
+                              `is_separator_regex(boolean, optional)`: If `True`, the separator is treated as a regex pattern.
+                                
         Raises:
             ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
         """
@@ -600,7 +626,7 @@ class JinaEmbedding(Embedding):
         self._max_length = max_length
 
         self.model = EmbeddingModel(self._model_dir, self.model_name, max_length=max_length,
-                                    max_threads=threads)
+                                    max_threads=threads, **splitter_kwargs)
 
     def embed(
             self, documents: Union[str, Iterable[str]], batch_size: int = 256, parallel: int = None
@@ -646,6 +672,9 @@ class JinaEmbedding(Embedding):
             for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
                 embeddings, attn_mask = batch
                 yield from normalize(self.mean_pooling(embeddings, attn_mask)).astype(np.float32)
+
+    def split_text(self, text: str) -> List[str]:
+        return self.model.split_text(text)
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Union[str, Union[int, float]]]]:
