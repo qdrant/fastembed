@@ -181,6 +181,8 @@ class Embedding(ABC):
         _type_: _description_
     """
 
+    model: EmbeddingModel
+
     @abstractmethod
     def embed(self, texts: Iterable[str], batch_size: int = 256, parallel: int = None) -> List[np.ndarray]:
         raise NotImplementedError
@@ -447,6 +449,18 @@ class Embedding(ABC):
         query_embedding = self.embed([query])
         return query_embedding
 
+    def split_text(self, text: str, chunk_size: Optional[int] = None, chunk_overlap: Optional[int] = None) -> List[str]:
+        """Splits text into chunks based on the tokenizer encoding size.
+
+        Args:
+            text (str): The text to split.
+            chunk_size (Optional[int], optional): Maximum size of chunks based on the tokenizer encoding.
+            chunk_overlap (Optional[int], optional): Allowed overlap in characters between chunks.
+
+        Returns:
+            List[str]: The list of strings.
+        """
+        return self.model.split_text(text, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
 
 class FlagEmbedding(Embedding):
     """
@@ -542,19 +556,6 @@ class FlagEmbedding(Embedding):
             for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
                 embeddings, _ = batch
                 yield from normalize(embeddings[:, 0]).astype(np.float32)
-
-    def split_text(self, text: str, chunk_size: Optional[int] = None, chunk_overlap: Optional[int] = None) -> List[str]:
-        """Splits text into chunks based on the tokenizer encoding size.
-
-        Args:
-            text (str): The text to split.
-            chunk_size (Optional[int], optional): Maximum size of chunks based on the tokenizer encoding.
-            chunk_overlap (Optional[int], optional): Allowed overlap in characters between chunks.
-
-        Returns:
-            List[str]: The list of strings.
-        """
-        return self.model.split_text(text, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Union[str, Union[int, float]]]]:
@@ -682,19 +683,6 @@ class JinaEmbedding(Embedding):
             for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
                 embeddings, attn_mask = batch
                 yield from normalize(self.mean_pooling(embeddings, attn_mask)).astype(np.float32)
-
-    def split_text(self, text: str, chunk_size: Optional[int] = None, chunk_overlap: Optional[int] = None) -> List[str]:
-        """Splits text into chunks based on the tokenizer encoding size.
-
-        Args:
-            text (str): The text to split.
-            chunk_size (Optional[int], optional): Maximum size of chunks based on the tokenizer encoding.
-            chunk_overlap (Optional[int], optional): Allowed overlap in characters between chunks.
-
-        Returns:
-            List[str]: The list of strings.
-        """
-        return self.model.split_text(text, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Union[str, Union[int, float]]]]:
