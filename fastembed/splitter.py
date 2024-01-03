@@ -1,3 +1,6 @@
+# Custom implementation based on Langchain's text splitter
+# Reference: https://python.langchain.com/docs/modules/data_connection/document_transformers/recursive_text_splitter
+
 import logging
 import re
 from abc import ABC, abstractmethod
@@ -11,7 +14,6 @@ from tokenizers import Tokenizer
 
 
 logger = logging.getLogger(__name__)
-
 
 def _split_text_with_regex(text: str, separator: str, keep_separator: bool) -> List[str]:
     # Now that we have the separator, split the text
