@@ -1,4 +1,4 @@
-# Custom implementation based on Langchain's text splitter
+# Custom implementation based on the Langchain text splitter
 # Reference: https://python.langchain.com/docs/modules/data_connection/document_transformers/recursive_text_splitter
 
 import logging
@@ -14,6 +14,7 @@ from tokenizers import Tokenizer
 
 
 logger = logging.getLogger(__name__)
+
 
 def _split_text_with_regex(text: str, separator: str, keep_separator: bool) -> List[str]:
     # Now that we have the separator, split the text
@@ -76,20 +77,29 @@ class TextSplitter(ABC):
         else:
             return text
 
-    def _merge_splits(self, splits: Iterable[str], separator: str) -> List[str]:
+    def _merge_splits(
+        self,
+        splits: Iterable[str],
+        separator: str,
+        chunk_size: Optional[int] = None,
+        chunk_overlap: Optional[int] = None,
+    ) -> List[str]:
         # We now want to combine these smaller pieces into medium size
         # chunks to send to the LLM.
         separator_len = self._length_function(separator)
+
+        chunk_size = chunk_size or self._chunk_size
+        chunk_overlap = chunk_overlap or self._chunk_overlap
 
         docs = []
         current_doc: List[str] = []
         total = 0
         for d in splits:
             _len = self._length_function(d)
-            if total + _len + (separator_len if len(current_doc) > 0 else 0) > self._chunk_size:
-                if total > self._chunk_size:
+            if total + _len + (separator_len if len(current_doc) > 0 else 0) > chunk_size:
+                if total > chunk_size:
                     logger.warning(
-                        f"Created a chunk of size {total}, " f"which is longer than the specified {self._chunk_size}"
+                        f"Created a chunk of size {total}, " f"which is longer than the specified {chunk_size}"
                     )
                 if len(current_doc) > 0:
                     doc = self._join_docs(current_doc, separator)
@@ -98,8 +108,8 @@ class TextSplitter(ABC):
                     # Keep on popping if:
                     # - we have a larger chunk than in the chunk overlap
                     # - or if we still have any chunks and the length is long
-                    while total > self._chunk_overlap or (
-                        total + _len + (separator_len if len(current_doc) > 0 else 0) > self._chunk_size and total > 0
+                    while total > chunk_overlap or (
+                        total + _len + (separator_len if len(current_doc) > 0 else 0) > chunk_size and total > 0
                     ):
                         total -= self._length_function(current_doc[0]) + (separator_len if len(current_doc) > 1 else 0)
                         current_doc = current_doc[1:]
@@ -146,8 +156,14 @@ class FastEmbedRecursiveSplitter(TextSplitter):
         self._separators = separators or ["\n\n", "\n", " ", ""]
         self._is_separator_regex = is_separator_regex
 
-    def _split_text(self, text: str, separators: List[str]) -> List[str]:
+    def _split_text(
+        self, text: str, separators: List[str], chunk_size: Optional[int] = None, chunk_overlap: Optional[int] = None
+    ) -> List[str]:
         """Split incoming text and return chunks."""
+
+        chunk_size = chunk_size or self._chunk_size
+        chunk_overlap = chunk_overlap or self._chunk_overlap
+
         final_chunks = []
         # Get appropriate separator to use
         separator = separators[-1]
@@ -169,11 +185,11 @@ class FastEmbedRecursiveSplitter(TextSplitter):
         _good_splits = []
         _separator = "" if self._keep_separator else separator
         for s in splits:
-            if self._length_function(s) < self._chunk_size:
+            if self._length_function(s) < chunk_size:
                 _good_splits.append(s)
             else:
                 if _good_splits:
-                    merged_text = self._merge_splits(_good_splits, _separator)
+                    merged_text = self._merge_splits(_good_splits, _separator, chunk_size, chunk_overlap)
                     final_chunks.extend(merged_text)
                     _good_splits = []
                 if not new_separators:
@@ -186,5 +202,5 @@ class FastEmbedRecursiveSplitter(TextSplitter):
             final_chunks.extend(merged_text)
         return final_chunks
 
-    def split_text(self, text: str) -> List[str]:
-        return self._split_text(text, self._separators)
+    def split_text(self, text: str, chunk_size: Optional[int] = None, chunk_overlap: Optional[int] = None) -> List[str]:
+        return self._split_text(text, self._separators, chunk_size, chunk_overlap)

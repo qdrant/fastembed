@@ -4,7 +4,6 @@ from pathlib import Path
 
 from fastembed.embedding import DefaultEmbedding
 
-
 @pytest.mark.parametrize(["chunk_size", "chunk_overlap"], [[500, 50], [1000, 100]])
 def test_embedding(chunk_size: int, chunk_overlap: int):
     is_ubuntu_ci = os.getenv("IS_UBUNTU_CI")

@@ -134,8 +134,8 @@ class EmbeddingModel:
         embeddings = model_output[0]
         return embeddings, attention_mask
     
-    def split_text(self, text: str) -> List[str]:
-        return self.splitter.split_text(text)
+    def split_text(self, text: str, chunk_size: Optional[int] = None, chunk_overlap: Optional[int] = None) -> List[str]:
+        return self.splitter.split_text(text=text, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
 
 
 class EmbeddingWorker(Worker):
@@ -543,8 +543,18 @@ class FlagEmbedding(Embedding):
                 embeddings, _ = batch
                 yield from normalize(embeddings[:, 0]).astype(np.float32)
 
-    def split_text(self, text: str) -> List[str]:
-        return self.model.split_text(text)
+    def split_text(self, text: str, chunk_size: Optional[int] = None, chunk_overlap: Optional[int] = None) -> List[str]:
+        """Splits text into chunks based on the tokenizer encoding size.
+
+        Args:
+            text (str): The text to split.
+            chunk_size (Optional[int], optional): Maximum size of chunks based on the tokenizer encoding.
+            chunk_overlap (Optional[int], optional): Allowed overlap in characters between chunks.
+
+        Returns:
+            List[str]: The list of strings.
+        """
+        return self.model.split_text(text, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Union[str, Union[int, float]]]]:
@@ -673,8 +683,18 @@ class JinaEmbedding(Embedding):
                 embeddings, attn_mask = batch
                 yield from normalize(self.mean_pooling(embeddings, attn_mask)).astype(np.float32)
 
-    def split_text(self, text: str) -> List[str]:
-        return self.model.split_text(text)
+    def split_text(self, text: str, chunk_size: Optional[int] = None, chunk_overlap: Optional[int] = None) -> List[str]:
+        """Splits text into chunks based on the tokenizer encoding size.
+
+        Args:
+            text (str): The text to split.
+            chunk_size (Optional[int], optional): Maximum size of chunks based on the tokenizer encoding.
+            chunk_overlap (Optional[int], optional): Allowed overlap in characters between chunks.
+
+        Returns:
+            List[str]: The list of strings.
+        """
+        return self.model.split_text(text, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Union[str, Union[int, float]]]]:
