@@ -4,6 +4,7 @@ from pathlib import Path
 
 from fastembed.embedding import DefaultEmbedding
 
+
 @pytest.mark.parametrize(["chunk_size", "chunk_overlap"], [[500, 50], [1000, 100]])
 def test_embedding(chunk_size: int, chunk_overlap: int):
     is_ubuntu_ci = os.getenv("IS_UBUNTU_CI")
@@ -13,7 +14,7 @@ def test_embedding(chunk_size: int, chunk_overlap: int):
             continue
 
         p = Path(__file__).with_name("state_of_the_union.txt")
-        with open(p) as f:
+        with open(p, encoding='utf-8') as f:
             text = f.read()
             embedding = DefaultEmbedding(
                 model_name=model_desc["model"],
