@@ -11,6 +11,7 @@ from typing import (
 )
 
 from tokenizers import Tokenizer
+
 from .types import TextSplitterConfig
 
 logger = logging.getLogger(__name__)
@@ -133,13 +134,8 @@ class FastEmbedRecursiveSplitter(TextSplitter):
         def _tokenizer_length(text: str) -> int:
             return len(tokenizer.encode(text))
 
-        super().__init__(
-            chunk_size=config.chunk_size,
-            chunk_overlap=config.chunk_overlap,
-            length_function=_tokenizer_length,
-            strip_whitespace=config.strip_whitespace,
-            keep_separator=config.keep_separator,
-        )
+        config.length_function = _tokenizer_length
+        super().__init__(config)
         self._separators = config.separators or ["\n\n", "\n", " ", ""]
         self._is_separator_regex = config.is_separator_regex
 

@@ -115,7 +115,9 @@ class EmbeddingModel:
 
         self.tokenizer = self.load_tokenizer(self.path, max_length=max_length)
         self.model = ort.InferenceSession(str(model_path), providers=onnx_providers, sess_options=so)
-        self.splitter = FastEmbedRecursiveSplitter(self.tokenizer, config=splitter_config)
+        if splitter_config:
+            splitter_config.tokenizer = self.tokenizer
+            self.splitter = FastEmbedRecursiveSplitter(config=splitter_config)
 
     def onnx_embed(self, documents: List[str]) -> Tuple[np.ndarray, np.ndarray]:
         encoded = self.tokenizer.encode_batch(documents)
@@ -495,7 +497,7 @@ class FlagEmbedding(Embedding):
         self._max_length = max_length
 
         self.model = EmbeddingModel(
-            self._model_dir, self.model_name, max_length=max_length, max_threads=threads, **splitter_kwargs
+            self._model_dir, self.model_name, max_length=max_length, max_threads=threads, splitter_config=splitter_config
         )
 
     def embed(
@@ -570,7 +572,9 @@ class DefaultEmbedding(FlagEmbedding):
         threads: Optional[int] = None,
         splitter_config: Optional[TextSplitterConfig] = None,
     ):
-        super().__init__(model_name, max_length=max_length, cache_dir=cache_dir, threads=threads, **splitter_config)
+        super().__init__(
+            model_name, max_length=max_length, cache_dir=cache_dir, threads=threads, splitter_config=splitter_config
+        )
 
 
 class OpenAIEmbedding(Embedding):
@@ -618,7 +622,7 @@ class JinaEmbedding(Embedding):
         self._max_length = max_length
 
         self.model = EmbeddingModel(
-            self._model_dir, self.model_name, max_length=max_length, max_threads=threads, **splitter_config
+            self._model_dir, self.model_name, max_length=max_length, max_threads=threads, splitter_config=splitter_config 
         )
 
     def embed(

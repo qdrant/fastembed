@@ -1,5 +1,6 @@
-from typing import Callable, Optional, List
-from pydantic import BaseModel, model_validator
+from typing import Callable, List, Optional
+
+from pydantic import BaseModel, ConfigDict, model_validator
 from tokenizers import Tokenizer
 
 """
@@ -21,9 +22,10 @@ class TextSplitterConfig(BaseModel):
         is_separator_regex (bool): Whether the separator is a regular expression. Default is False.
         separators (Optional[List[str]]): List of separators. Default is None.
     """
+    model_config: ConfigDict = ConfigDict(arbitrary_types_allowed=True)
 
-    chunk_size: int
-    chunk_overlap: int
+    chunk_size: Optional[int] = None
+    chunk_overlap: Optional[int] = None
     length_function: Callable[[str], int] = len
     keep_separator: bool = False
     strip_whitespace: bool = True
