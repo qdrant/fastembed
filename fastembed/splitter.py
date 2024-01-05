@@ -1,5 +1,6 @@
 # Custom implementation based on the Langchain text splitter
-# Reference: https://python.langchain.com/docs/modules/data_connection/document_transformers/recursive_text_splitter
+# Provided under standard MIT license by LangChain
+# https://github.com/hwchase17/langchain
 
 import logging
 import re
