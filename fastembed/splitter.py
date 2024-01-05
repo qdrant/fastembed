@@ -10,8 +10,8 @@ from typing import (
     List,
     Optional,
 )
-from tokenizers import Tokenizer
 
+from tokenizers import Tokenizer
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +38,8 @@ class TextSplitter(ABC):
 
     def __init__(
         self,
-        chunk_size: int = 4000,
-        chunk_overlap: int = 200,
+        chunk_size: int,
+        chunk_overlap: int,
         length_function: Callable[[str], int] = len,
         keep_separator: bool = False,
         strip_whitespace: bool = True,
@@ -47,8 +47,8 @@ class TextSplitter(ABC):
         """Create a new TextSplitter.
 
         Args:
-            chunk_size: Maximum size of chunks to return
-            chunk_overlap: Overlap in characters between chunks
+            chunk_size: Maximum token length per chunk
+            chunk_overlap: Overlap in tokens between chunks
             length_function: Function that measures the length of given chunks
             keep_separator: Whether to keep the separator in the chunks
             strip_whitespace: If `True`, strips whitespace from the start and end of
@@ -122,17 +122,17 @@ class TextSplitter(ABC):
 
 
 class FastEmbedRecursiveSplitter(TextSplitter):
-    """Splitting text by recursively looking at characters.
+    """
+    Splitting text into chunks recursively.
 
-    Recursively tries to split by different characters with
-    the tokenizer encoding to restrict length.
+    The splitter splits text into chunks of a maximum size, with a given overlap.    
     """
 
     def __init__(
         self,
         tokenizer: Tokenizer,
-        chunk_size: int = 4000,
-        chunk_overlap: int = 200,
+        chunk_size: int,
+        chunk_overlap: int,
         strip_whitespace: bool = True,
         separators: Optional[List[str]] = None,
         keep_separator: bool = True,
