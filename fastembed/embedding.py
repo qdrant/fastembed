@@ -3,7 +3,6 @@ import os
 import shutil
 import tarfile
 import tempfile
-
 from abc import ABC, abstractmethod
 from itertools import islice
 from multiprocessing import get_all_start_methods
@@ -17,6 +16,9 @@ from tokenizers import AddedToken, Tokenizer
 from tqdm import tqdm
 
 from fastembed.parallel_processor import ParallelWorkerPool, Worker
+from fastembed.splitter import FastEmbedRecursiveSplitter
+
+from .models import TextSplitterConfig
 
 
 def iter_batch(iterable: Union[Iterable, Generator], size: int) -> Iterable:
@@ -65,6 +67,7 @@ class EmbeddingModel:
 
         tokenizer = Tokenizer.from_file(str(tokenizer_path))
         tokenizer.enable_truncation(max_length=min(tokenizer_config["model_max_length"], max_length))
+        # TODO: Truncation should be enabled by default, but we need to disable this for when being used with chunking
         tokenizer.enable_padding(pad_id=config["pad_token_id"], pad_token=tokenizer_config["pad_token"])
 
         for token in tokens_map.values():
@@ -76,11 +79,12 @@ class EmbeddingModel:
         return tokenizer
 
     def __init__(
-            self,
-            path: Path,
-            model_name: str,
-            max_length: int = 512,
-            max_threads: int = None,
+        self,
+        path: Path,
+        model_name: str,
+        max_length: int = 512,
+        max_threads: int = None,
+        splitter_config: Optional[TextSplitterConfig] = None,
     ):
         self.path = path
         self.model_name = model_name
@@ -111,6 +115,9 @@ class EmbeddingModel:
 
         self.tokenizer = self.load_tokenizer(self.path, max_length=max_length)
         self.model = ort.InferenceSession(str(model_path), providers=onnx_providers, sess_options=so)
+        if splitter_config:
+            splitter_config.tokenizer = self.tokenizer
+            self.splitter = FastEmbedRecursiveSplitter(config=splitter_config)
 
     def onnx_embed(self, documents: List[str]) -> Tuple[np.ndarray, np.ndarray]:
         encoded = self.tokenizer.encode_batch(documents)
@@ -131,13 +138,16 @@ class EmbeddingModel:
         embeddings = model_output[0]
         return embeddings, attention_mask
 
+    def split_text(self, text: str, chunk_size: Optional[int] = None, chunk_overlap: Optional[int] = None) -> List[str]:
+        return self.splitter.split_text(text=text, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+
 
 class EmbeddingWorker(Worker):
     def __init__(
-            self,
-            path: Path,
-            model_name: str,
-            max_length: int = 512,
+        self,
+        path: Path,
+        model_name: str,
+        max_length: int = 512,
     ):
         self.model = EmbeddingModel(path=path, model_name=model_name, max_length=max_length, max_threads=1)
 
@@ -175,6 +185,8 @@ class Embedding(ABC):
         _type_: _description_
     """
 
+    model: EmbeddingModel
+
     @abstractmethod
     def embed(self, texts: Iterable[str], batch_size: int = 256, parallel: int = None) -> List[np.ndarray]:
         raise NotImplementedError
@@ -185,60 +197,50 @@ class Embedding(ABC):
         Lists the supported models.
         """
         return [
-            {
-                "model": "BAAI/bge-small-en",
-                "dim": 384,
-                "description": "Fast English model",
-                "size_in_GB": 0.2
-            },
+            {"model": "BAAI/bge-small-en", "dim": 384, "description": "Fast English model", "size_in_GB": 0.2},
             {
                 "model": "BAAI/bge-small-en-v1.5",
                 "dim": 384,
                 "description": "Fast and Default English model",
-                "size_in_GB": 0.13
+                "size_in_GB": 0.13,
             },
             {
                 "model": "BAAI/bge-small-zh-v1.5",
                 "dim": 512,
                 "description": "Fast and recommended Chinese model",
-                "size_in_GB": 0.1
+                "size_in_GB": 0.1,
             },
-            {
-                "model": "BAAI/bge-base-en",
-                "dim": 768,
-                "description": "Base English model",
-                "size_in_GB": 0.5
-            },
+            {"model": "BAAI/bge-base-en", "dim": 768, "description": "Base English model", "size_in_GB": 0.5},
             {
                 "model": "BAAI/bge-base-en-v1.5",
                 "dim": 768,
                 "description": "Base English model, v1.5",
-                "size_in_GB": 0.44
+                "size_in_GB": 0.44,
             },
             {
                 "model": "sentence-transformers/all-MiniLM-L6-v2",
                 "dim": 384,
                 "description": "Sentence Transformer model, MiniLM-L6-v2",
-                "size_in_GB": 0.09
+                "size_in_GB": 0.09,
             },
             {
                 "model": "intfloat/multilingual-e5-large",
                 "dim": 1024,
                 "description": "Multilingual model, e5-large. Recommend using this model for non-English languages",
-                "size_in_GB": 2.24
+                "size_in_GB": 2.24,
             },
             {
                 "model": "jinaai/jina-embeddings-v2-base-en",
                 "dim": 768,
                 "description": " English embedding model supporting 8192 sequence length",
-                "size_in_GB": 0.55
+                "size_in_GB": 0.55,
             },
             {
                 "model": "jinaai/jina-embeddings-v2-small-en",
                 "dim": 512,
                 "description": " English embedding model supporting 8192 sequence length",
-                "size_in_GB": 0.13
-            }
+                "size_in_GB": 0.13,
+            },
         ]
 
     @classmethod
@@ -405,7 +407,7 @@ class Embedding(ABC):
         """
 
         assert (
-                "/" in model_name
+            "/" in model_name
         ), "model_name must be in the format <org>/<model> e.g. jinaai/jina-embeddings-v2-small-en"
 
         return Path(self.download_files_from_huggingface(repod_id=model_name, cache_dir=cache_dir))
@@ -441,6 +443,19 @@ class Embedding(ABC):
         query_embedding = self.embed([query])
         return query_embedding
 
+    def split_text(self, text: str, chunk_size: Optional[int] = None, chunk_overlap: Optional[int] = None) -> List[str]:
+        """Splits text into chunks based on the tokenizer encoding size.
+
+        Args:
+            text (str): The text to split.
+            chunk_size (Optional[int], optional): Maximum size of chunks based on the tokenizer encoding.
+            chunk_overlap (Optional[int], optional): Allowed overlap in characters between chunks.
+
+        Returns:
+            List[str]: The list of strings.
+        """
+        return self.model.split_text(text, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+
 
 class FlagEmbedding(Embedding):
     """
@@ -451,11 +466,12 @@ class FlagEmbedding(Embedding):
     """
 
     def __init__(
-            self,
-            model_name: str = "BAAI/bge-small-en-v1.5",
-            max_length: int = 512,
-            cache_dir: str = None,
-            threads: int = None,
+        self,
+        model_name: str = "BAAI/bge-small-en-v1.5",
+        max_length: int = 512,
+        cache_dir: str = None,
+        threads: int = None,
+        splitter_config: Optional[TextSplitterConfig] = None,
     ):
         """
         Args:
@@ -465,7 +481,7 @@ class FlagEmbedding(Embedding):
                                        Can be set using the `FASTEMBED_CACHE_PATH` env variable.
                                        Defaults to `fastembed_cache` in the system's temp directory.
             threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
-
+            splitter_config (Optional[TextSplitterConfig], optional): The configuration for the text splitter. Defaults to None.
         Raises:
             ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
         """
@@ -480,11 +496,12 @@ class FlagEmbedding(Embedding):
         self._model_dir = self.retrieve_model_gcs(model_name, cache_dir)
         self._max_length = max_length
 
-        self.model = EmbeddingModel(self._model_dir, self.model_name, max_length=max_length,
-                                    max_threads=threads)
+        self.model = EmbeddingModel(
+            self._model_dir, self.model_name, max_length=max_length, max_threads=threads, splitter_config=splitter_config
+        )
 
     def embed(
-            self, documents: Union[str, Iterable[str]], batch_size: int = 256, parallel: int = None
+        self, documents: Union[str, Iterable[str]], batch_size: int = 256, parallel: int = None
     ) -> Iterable[np.ndarray]:
         """
         Encode a list of documents into list of embeddings.
@@ -536,25 +553,28 @@ class FlagEmbedding(Embedding):
         Lists the supported models.
         """
         # jina models are not supported by this class
-        return [model for model in super().list_supported_models() if not model['model'].startswith('jinaai')]
+        return [model for model in super().list_supported_models() if not model["model"].startswith("jinaai")]
 
 
 class DefaultEmbedding(FlagEmbedding):
     """
-    Implementation of the default Flag Embedding model.
+    FastEmbed Default Embedding model is BAAI/bge-small-en-v1.5. This is the recommended model for English.
 
     Args:
-        FlagEmbedding (_type_): _description_
+        FlagEmbedding (Embedding): The Flag Embedding model implementation.
     """
 
     def __init__(
-            self,
-            model_name: str = "BAAI/bge-small-en-v1.5",
-            max_length: int = 512,
-            cache_dir: Optional[str] = None,
-            threads: Optional[int] = None,
+        self,
+        model_name: str = "BAAI/bge-small-en-v1.5",
+        max_length: int = 512,
+        cache_dir: Optional[str] = None,
+        threads: Optional[int] = None,
+        splitter_config: Optional[TextSplitterConfig] = None,
     ):
-        super().__init__(model_name, max_length=max_length, cache_dir=cache_dir, threads=threads)
+        super().__init__(
+            model_name, max_length=max_length, cache_dir=cache_dir, threads=threads, splitter_config=splitter_config
+        )
 
 
 class OpenAIEmbedding(Embedding):
@@ -571,11 +591,12 @@ class OpenAIEmbedding(Embedding):
 
 class JinaEmbedding(Embedding):
     def __init__(
-            self,
-            model_name: str = "jinaai/jina-embeddings-v2-base-en",
-            max_length: int = 512,
-            cache_dir: str = None,
-            threads: int = None,
+        self,
+        model_name: str = "jinaai/jina-embeddings-v2-base-en",
+        max_length: int = 512,
+        cache_dir: str = None,
+        threads: int = None,
+        splitter_config: Optional[TextSplitterConfig] = None,
     ):
         """
         Args:
@@ -585,6 +606,7 @@ class JinaEmbedding(Embedding):
                                        Can be set using the `FASTEMBED_CACHE_PATH` env variable.
                                        Defaults to `fastembed_cache` in the system's temp directory.
             threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
+            splitter_config (Optional[TextSplitterConfig], optional): The configuration for the text splitter. Defaults to None.
         Raises:
             ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
         """
@@ -599,11 +621,12 @@ class JinaEmbedding(Embedding):
         self._model_dir = self.retrieve_model_hf(model_name, cache_dir)
         self._max_length = max_length
 
-        self.model = EmbeddingModel(self._model_dir, self.model_name, max_length=max_length,
-                                    max_threads=threads)
+        self.model = EmbeddingModel(
+            self._model_dir, self.model_name, max_length=max_length, max_threads=threads, splitter_config=splitter_config 
+        )
 
     def embed(
-            self, documents: Union[str, Iterable[str]], batch_size: int = 256, parallel: int = None
+        self, documents: Union[str, Iterable[str]], batch_size: int = 256, parallel: int = None
     ) -> Iterable[np.ndarray]:
         """
         Encode a list of documents into list of embeddings.
@@ -653,7 +676,7 @@ class JinaEmbedding(Embedding):
         Lists the supported models.
         """
         # only jina models are supported by this class
-        return [model for model in Embedding.list_supported_models() if model['model'].startswith('jinaai')]
+        return [model for model in Embedding.list_supported_models() if model["model"].startswith("jinaai")]
 
     @staticmethod
     def mean_pooling(model_output, attention_mask):
