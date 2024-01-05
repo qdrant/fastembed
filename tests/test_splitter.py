@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from fastembed.embedding import DefaultEmbedding
-from fastembed.types import TextSplitterConfig
+from fastembed.models import TextSplitterConfig
 
 
 @pytest.mark.parametrize(["chunk_size", "chunk_overlap"], [[500, 50], [1000, 100]])

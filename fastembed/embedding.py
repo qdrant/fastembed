@@ -18,7 +18,7 @@ from tqdm import tqdm
 from fastembed.parallel_processor import ParallelWorkerPool, Worker
 from fastembed.splitter import FastEmbedRecursiveSplitter
 
-from .types import TextSplitterConfig
+from .models import TextSplitterConfig
 
 
 def iter_batch(iterable: Union[Iterable, Generator], size: int) -> Iterable:

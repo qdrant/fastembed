@@ -12,7 +12,7 @@ from typing import (
 
 from tokenizers import Tokenizer
 
-from .types import TextSplitterConfig
+from .models import TextSplitterConfig
 
 logger = logging.getLogger(__name__)
 
