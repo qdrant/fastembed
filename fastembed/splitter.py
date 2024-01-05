@@ -5,13 +5,13 @@ import logging
 import re
 from abc import ABC, abstractmethod
 from typing import (
-    Callable,
     Iterable,
     List,
     Optional,
 )
 
 from tokenizers import Tokenizer
+from .types import TextSplitterConfig
 
 logger = logging.getLogger(__name__)
 
@@ -38,11 +38,7 @@ class TextSplitter(ABC):
 
     def __init__(
         self,
-        chunk_size: int,
-        chunk_overlap: int,
-        length_function: Callable[[str], int] = len,
-        keep_separator: bool = False,
-        strip_whitespace: bool = True,
+        config: TextSplitterConfig,
     ) -> None:
         """Create a new TextSplitter.
 
@@ -54,15 +50,12 @@ class TextSplitter(ABC):
             strip_whitespace: If `True`, strips whitespace from the start and end of
                               every document
         """
-        if chunk_overlap > chunk_size:
-            raise ValueError(
-                f"Got a larger chunk overlap ({chunk_overlap}) than chunk size " f"({chunk_size}), should be smaller."
-            )
-        self._chunk_size = chunk_size
-        self._chunk_overlap = chunk_overlap
-        self._length_function = length_function
-        self._keep_separator = keep_separator
-        self._strip_whitespace = strip_whitespace
+        self._config = config
+        self._chunk_size = config.chunk_size
+        self._chunk_overlap = config.chunk_overlap
+        self._length_function = config.length_function
+        self._keep_separator = config.keep_separator
+        self._strip_whitespace = config.strip_whitespace
 
     @abstractmethod
     def split_text(self, text: str) -> List[str]:
@@ -125,21 +118,15 @@ class FastEmbedRecursiveSplitter(TextSplitter):
     """
     Splitting text into chunks recursively.
 
-    The splitter splits text into chunks of a maximum size, with a given overlap.    
+    The splitter splits text into chunks of a maximum size, with a given overlap.
     """
 
     def __init__(
         self,
-        tokenizer: Tokenizer,
-        chunk_size: int,
-        chunk_overlap: int,
-        strip_whitespace: bool = True,
-        separators: Optional[List[str]] = None,
-        keep_separator: bool = True,
-        is_separator_regex: bool = False,
+        config: TextSplitterConfig,
     ) -> None:
         """Create a new TextSplitter."""
-
+        tokenizer = config.tokenizer
         if not isinstance(tokenizer, Tokenizer):
             raise ValueError("Tokenizer received was not an instance of tokenizers.Tokenizer")
 
@@ -147,14 +134,14 @@ class FastEmbedRecursiveSplitter(TextSplitter):
             return len(tokenizer.encode(text))
 
         super().__init__(
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
+            chunk_size=config.chunk_size,
+            chunk_overlap=config.chunk_overlap,
             length_function=_tokenizer_length,
-            strip_whitespace=strip_whitespace,
-            keep_separator=keep_separator,
+            strip_whitespace=config.strip_whitespace,
+            keep_separator=config.keep_separator,
         )
-        self._separators = separators or ["\n\n", "\n", " ", ""]
-        self._is_separator_regex = is_separator_regex
+        self._separators = config.separators or ["\n\n", "\n", " ", ""]
+        self._is_separator_regex = config.is_separator_regex
 
     def _split_text(
         self, text: str, separators: List[str], chunk_size: Optional[int] = None, chunk_overlap: Optional[int] = None
