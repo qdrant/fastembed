@@ -30,6 +30,9 @@ mkdocstrings = "^0.22.0"
 pillow = "^10.0.0"
 cairosvg = "^2.7.1"
 mknotebooks = "^0.8.0"
+optimum = "^1.16.1"
+sentence-transformers = "^2.2.2"
+python-dotenv = "^1.0.0"
 
 
 [build-system]
