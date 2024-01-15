@@ -1392,6 +1392,26 @@ docs = ["ipykernel", "myst-parser", "pydata-sphinx-theme", "sphinx (>=4)", "sphi
 test = ["coverage", "ipykernel (>=6.14)", "mypy", "paramiko", "pre-commit", "pytest", "pytest-cov", "pytest-jupyter[client] (>=0.4.1)", "pytest-timeout"]
 
 [[package]]
+name = "jupyter-contrib-core"
+version = "0.4.2"
+description = "Common utilities for jupyter-contrib projects."
+optional = false
+python-versions = "*"
+files = [
+    {file = "jupyter_contrib_core-0.4.2.tar.gz", hash = "sha256:1887212f3ca9d4487d624c0705c20dfdf03d5a0b9ea2557d3aaeeb4c38bdcabb"},
+]
+
+[package.dependencies]
+jupyter_core = "*"
+notebook = ">=4.0"
+setuptools = "*"
+tornado = "*"
+traitlets = "*"
+
+[package.extras]
+testing-utils = ["mock", "nose"]
+
+[[package]]
 name = "jupyter-core"
 version = "5.7.1"
 description = "Jupyter core package. A base package on which Jupyter projects rely."
@@ -1450,6 +1470,27 @@ files = [
 [package.dependencies]
 importlib-metadata = {version = ">=4.8.3", markers = "python_version < \"3.10\""}
 jupyter-server = ">=1.1.2"
+
+[[package]]
+name = "jupyter-nbextensions-configurator"
+version = "0.6.3"
+description = "jupyter serverextension providing configuration interfaces for nbextensions."
+optional = false
+python-versions = "*"
+files = [
+    {file = "jupyter_nbextensions_configurator-0.6.3-py2.py3-none-any.whl", hash = "sha256:cece496f3f62cf80bb0b04867ea463c32ed5db19ff5814fe18a3a7f1bb9da95b"},
+]
+
+[package.dependencies]
+jupyter-contrib-core = ">=0.3.3"
+jupyter-core = "*"
+notebook = ">=6.0"
+pyyaml = "*"
+tornado = "*"
+traitlets = "*"
+
+[package.extras]
+test = ["jupyter-contrib-core[testing-utils]", "mock", "nose", "requests", "selenium"]
 
 [[package]]
 name = "jupyter-server"
@@ -2505,8 +2546,8 @@ files = [
 [package.dependencies]
 numpy = [
     {version = ">=1.20.3", markers = "python_version < \"3.10\""},
-    {version = ">=1.21.0", markers = "python_version >= \"3.10\" and python_version < \"3.11\""},
     {version = ">=1.23.2", markers = "python_version >= \"3.11\""},
+    {version = ">=1.21.0", markers = "python_version >= \"3.10\" and python_version < \"3.11\""},
 ]
 python-dateutil = ">=2.8.2"
 pytz = ">=2020.1"
@@ -3810,6 +3851,22 @@ files = [
 ]
 
 [[package]]
+name = "setuptools"
+version = "69.0.3"
+description = "Easily download, build, install, upgrade, and uninstall Python packages"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "setuptools-69.0.3-py3-none-any.whl", hash = "sha256:385eb4edd9c9d5c17540511303e39a147ce2fc04bc55289c322b9e5904fe2c05"},
+    {file = "setuptools-69.0.3.tar.gz", hash = "sha256:be1af57fc409f93647f2e8e4573a142ed38724b8cdd389706a867bb4efcf1e78"},
+]
+
+[package.extras]
+docs = ["furo", "jaraco.packaging (>=9.3)", "jaraco.tidelift (>=1.4)", "pygments-github-lexers (==0.0.5)", "rst.linker (>=1.9)", "sphinx (<7.2.5)", "sphinx (>=3.5)", "sphinx-favicon", "sphinx-inline-tabs", "sphinx-lint", "sphinx-notfound-page (>=1,<2)", "sphinx-reredirects", "sphinxcontrib-towncrier"]
+testing = ["build[virtualenv]", "filelock (>=3.4.0)", "flake8-2020", "ini2toml[lite] (>=0.9)", "jaraco.develop (>=7.21)", "jaraco.envs (>=2.2)", "jaraco.path (>=3.2.0)", "pip (>=19.1)", "pytest (>=6)", "pytest-black (>=0.3.7)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-enabler (>=2.2)", "pytest-mypy (>=0.9.1)", "pytest-perf", "pytest-ruff", "pytest-timeout", "pytest-xdist", "tomli-w (>=1.0.0)", "virtualenv (>=13.0.0)", "wheel"]
+testing-integration = ["build[virtualenv] (>=1.0.3)", "filelock (>=3.4.0)", "jaraco.envs (>=2.2)", "jaraco.path (>=3.2.0)", "packaging (>=23.1)", "pytest", "pytest-enabler", "pytest-xdist", "tomli", "virtualenv (>=13.0.0)", "wheel"]
+
+[[package]]
 name = "six"
 version = "1.16.0"
 description = "Python 2 and 3 compatibility utilities"
@@ -4696,4 +4753,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.0,<3.12"
-content-hash = "94b4f675bc69985b5d65477e25f1520874b6a5badb34085893e74db7d95524a8"
+content-hash = "4b282576eb3543110f9cd723bff072683a38d4d23ffc833a45b6aec6c9e22345"
