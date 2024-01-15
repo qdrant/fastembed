@@ -2435,13 +2435,13 @@ sympy = "*"
 
 [[package]]
 name = "optimum"
-version = "1.16.1"
+version = "1.15.0"
 description = "Optimum Library is an extension of the Hugging Face Transformers library, providing a framework to integrate third-party libraries from Hardware Partners and interface with their specific functionality."
 optional = false
 python-versions = ">=3.7.0"
 files = [
-    {file = "optimum-1.16.1-py3-none-any.whl", hash = "sha256:c0d0cb5877ae7b8f40289c54885341297f61b30255a93a71f5e979bc86b03598"},
-    {file = "optimum-1.16.1.tar.gz", hash = "sha256:9a74bc5cbbe2373fc45f477257d5046fd28b725bce91c1f8846baadba57f2129"},
+    {file = "optimum-1.15.0-py3-none-any.whl", hash = "sha256:3639673740e28989aff075dcfbb1971f1492044894f4210b947d9b32eb7b9809"},
+    {file = "optimum-1.15.0.tar.gz", hash = "sha256:3cf16b1c04a4ac4e6c4175df921a05deac383f0150b0e4acab102180f610e7db"},
 ]
 
 [package.dependencies]
@@ -2457,7 +2457,7 @@ transformers = {version = ">=4.26.0", extras = ["sentencepiece"]}
 [package.extras]
 amd = ["optimum-amd"]
 benchmark = ["evaluate (>=0.2.0)", "optuna", "scikit-learn", "seqeval", "torchvision", "tqdm"]
-dev = ["Pillow", "accelerate", "black (>=23.1,<24.0)", "diffusers (>=0.17.0)", "einops", "invisible-watermark", "parameterized", "pytest", "pytest-xdist", "requests", "ruff (==0.1.5)", "sacremoses", "torchaudio", "torchvision"]
+dev = ["Pillow", "accelerate", "black (>=23.1,<24.0)", "diffusers (>=0.17.0)", "einops", "invisible-watermark", "parameterized", "pytest", "pytest-xdist", "requests", "ruff (>=0.0.241,<=0.0.259)", "sacremoses", "torchaudio", "torchvision"]
 diffusers = ["diffusers"]
 doc-build = ["accelerate"]
 exporters = ["onnx", "onnxruntime", "timm"]
@@ -2474,7 +2474,7 @@ nncf = ["optimum-intel[nncf] (>=1.12.0)"]
 onnxruntime = ["datasets (>=1.2.1)", "evaluate", "onnx", "onnxruntime (>=1.11.0)", "protobuf (>=3.20.1)"]
 onnxruntime-gpu = ["accelerate", "datasets (>=1.2.1)", "evaluate", "onnx", "onnxruntime-gpu (>=1.11.0)", "protobuf (>=3.20.1)"]
 openvino = ["optimum-intel[openvino] (>=1.12.0)"]
-quality = ["black (>=23.1,<24.0)", "ruff (==0.1.5)"]
+quality = ["black (>=23.1,<24.0)", "ruff (>=0.0.241,<=0.0.259)"]
 tests = ["Pillow", "accelerate", "diffusers (>=0.17.0)", "einops", "invisible-watermark", "parameterized", "pytest", "pytest-xdist", "requests", "sacremoses", "torchaudio", "torchvision"]
 
 [[package]]
@@ -4753,4 +4753,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.0,<3.12"
-content-hash = "4b282576eb3543110f9cd723bff072683a38d4d23ffc833a45b6aec6c9e22345"
+content-hash = "e1177c0bbc418d8b684f8a36873a1b2a101ceb1b98fb7d69d600cb477b448f2b"
