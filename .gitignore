@@ -177,3 +177,4 @@ fooling_around/fast-multilingual-e5-large/special_tokens_map.json
 fooling_around/fast-multilingual-e5-large/tokenizer_config.json
 fooling_around/fast-multilingual-e5-large/tokenizer.json
 docs/examples/saved_models/*
+docs/examples/local_cache/*
