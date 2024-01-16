@@ -1,6 +1,7 @@
 import os
-import pytest
+
 import numpy as np
+import pytest
 
 from fastembed.embedding import DefaultEmbedding, JinaEmbedding
 
@@ -17,7 +18,7 @@ CANONICAL_VECTOR_VALUES = {
 }
 
 
-@pytest.mark.parametrize('embedding_class', [DefaultEmbedding, JinaEmbedding])
+@pytest.mark.parametrize("embedding_class", [DefaultEmbedding, JinaEmbedding])
 def test_embedding(embedding_class):
     is_ubuntu_ci = os.getenv("IS_UBUNTU_CI")
 
@@ -34,10 +35,10 @@ def test_embedding(embedding_class):
         assert embeddings.shape == (2, dim)
 
         canonical_vector = CANONICAL_VECTOR_VALUES[model_desc["model"]]
-        assert np.allclose(embeddings[0, :canonical_vector.shape[0]], canonical_vector, atol=1e-3), model_desc["model"]
+        assert np.allclose(embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3), model_desc["model"]
 
 
-@pytest.mark.parametrize('n_dims,embedding_class', [(384, DefaultEmbedding), (768, JinaEmbedding)])
+@pytest.mark.parametrize("n_dims,embedding_class", [(384, DefaultEmbedding), (768, JinaEmbedding)])
 def test_batch_embedding(n_dims, embedding_class):
     model = embedding_class()
 
@@ -48,7 +49,7 @@ def test_batch_embedding(n_dims, embedding_class):
     assert embeddings.shape == (200, n_dims)
 
 
-@pytest.mark.parametrize('n_dims,embedding_class', [(384, DefaultEmbedding), (768, JinaEmbedding)])
+@pytest.mark.parametrize("n_dims,embedding_class", [(384, DefaultEmbedding), (768, JinaEmbedding)])
 def test_parallel_processing(n_dims, embedding_class):
     model = embedding_class()
 

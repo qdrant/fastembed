@@ -3,7 +3,6 @@ import os
 import shutil
 import tarfile
 import tempfile
-
 from abc import ABC, abstractmethod
 from itertools import islice
 from multiprocessing import get_all_start_methods
@@ -76,11 +75,11 @@ class EmbeddingModel:
         return tokenizer
 
     def __init__(
-            self,
-            path: Path,
-            model_name: str,
-            max_length: int = 512,
-            max_threads: int = None,
+        self,
+        path: Path,
+        model_name: str,
+        max_length: int = 512,
+        max_threads: int = None,
     ):
         self.path = path
         self.model_name = model_name
@@ -134,10 +133,10 @@ class EmbeddingModel:
 
 class EmbeddingWorker(Worker):
     def __init__(
-            self,
-            path: Path,
-            model_name: str,
-            max_length: int = 512,
+        self,
+        path: Path,
+        model_name: str,
+        max_length: int = 512,
     ):
         self.model = EmbeddingModel(path=path, model_name=model_name, max_length=max_length, max_threads=1)
 
@@ -189,56 +188,56 @@ class Embedding(ABC):
                 "model": "BAAI/bge-small-en",
                 "dim": 384,
                 "description": "Fast English model",
-                "size_in_GB": 0.2
+                "size_in_GB": 0.2,
             },
             {
                 "model": "BAAI/bge-small-en-v1.5",
                 "dim": 384,
                 "description": "Fast and Default English model",
-                "size_in_GB": 0.13
+                "size_in_GB": 0.13,
             },
             {
                 "model": "BAAI/bge-small-zh-v1.5",
                 "dim": 512,
                 "description": "Fast and recommended Chinese model",
-                "size_in_GB": 0.1
+                "size_in_GB": 0.1,
             },
             {
                 "model": "BAAI/bge-base-en",
                 "dim": 768,
                 "description": "Base English model",
-                "size_in_GB": 0.5
+                "size_in_GB": 0.5,
             },
             {
                 "model": "BAAI/bge-base-en-v1.5",
                 "dim": 768,
                 "description": "Base English model, v1.5",
-                "size_in_GB": 0.44
+                "size_in_GB": 0.44,
             },
             {
                 "model": "sentence-transformers/all-MiniLM-L6-v2",
                 "dim": 384,
                 "description": "Sentence Transformer model, MiniLM-L6-v2",
-                "size_in_GB": 0.09
+                "size_in_GB": 0.09,
             },
             {
                 "model": "intfloat/multilingual-e5-large",
                 "dim": 1024,
                 "description": "Multilingual model, e5-large. Recommend using this model for non-English languages",
-                "size_in_GB": 2.24
+                "size_in_GB": 2.24,
             },
             {
                 "model": "jinaai/jina-embeddings-v2-base-en",
                 "dim": 768,
                 "description": " English embedding model supporting 8192 sequence length",
-                "size_in_GB": 0.55
+                "size_in_GB": 0.55,
             },
             {
                 "model": "jinaai/jina-embeddings-v2-small-en",
                 "dim": 512,
                 "description": " English embedding model supporting 8192 sequence length",
-                "size_in_GB": 0.13
-            }
+                "size_in_GB": 0.13,
+            },
         ]
 
     @classmethod
@@ -310,7 +309,9 @@ class Embedding(ABC):
         from huggingface_hub import snapshot_download
 
         return snapshot_download(
-            repo_id=repod_id, ignore_patterns=["model.safetensors", "pytorch_model.bin"], cache_dir=cache_dir
+            repo_id=repod_id,
+            ignore_patterns=["model.safetensors", "pytorch_model.bin"],
+            cache_dir=cache_dir,
         )
 
     @classmethod
@@ -405,7 +406,7 @@ class Embedding(ABC):
         """
 
         assert (
-                "/" in model_name
+            "/" in model_name
         ), "model_name must be in the format <org>/<model> e.g. jinaai/jina-embeddings-v2-small-en"
 
         return Path(self.download_files_from_huggingface(repod_id=model_name, cache_dir=cache_dir))
@@ -451,11 +452,11 @@ class FlagEmbedding(Embedding):
     """
 
     def __init__(
-            self,
-            model_name: str = "BAAI/bge-small-en-v1.5",
-            max_length: int = 512,
-            cache_dir: str = None,
-            threads: int = None,
+        self,
+        model_name: str = "BAAI/bge-small-en-v1.5",
+        max_length: int = 512,
+        cache_dir: str = None,
+        threads: int = None,
     ):
         """
         Args:
@@ -480,11 +481,10 @@ class FlagEmbedding(Embedding):
         self._model_dir = self.retrieve_model_gcs(model_name, cache_dir)
         self._max_length = max_length
 
-        self.model = EmbeddingModel(self._model_dir, self.model_name, max_length=max_length,
-                                    max_threads=threads)
+        self.model = EmbeddingModel(self._model_dir, self.model_name, max_length=max_length, max_threads=threads)
 
     def embed(
-            self, documents: Union[str, Iterable[str]], batch_size: int = 256, parallel: int = None
+        self, documents: Union[str, Iterable[str]], batch_size: int = 256, parallel: int = None
     ) -> Iterable[np.ndarray]:
         """
         Encode a list of documents into list of embeddings.
@@ -536,7 +536,7 @@ class FlagEmbedding(Embedding):
         Lists the supported models.
         """
         # jina models are not supported by this class
-        return [model for model in super().list_supported_models() if not model['model'].startswith('jinaai')]
+        return [model for model in super().list_supported_models() if not model["model"].startswith("jinaai")]
 
 
 class DefaultEmbedding(FlagEmbedding):
@@ -548,11 +548,11 @@ class DefaultEmbedding(FlagEmbedding):
     """
 
     def __init__(
-            self,
-            model_name: str = "BAAI/bge-small-en-v1.5",
-            max_length: int = 512,
-            cache_dir: Optional[str] = None,
-            threads: Optional[int] = None,
+        self,
+        model_name: str = "BAAI/bge-small-en-v1.5",
+        max_length: int = 512,
+        cache_dir: Optional[str] = None,
+        threads: Optional[int] = None,
     ):
         super().__init__(model_name, max_length=max_length, cache_dir=cache_dir, threads=threads)
 
@@ -571,11 +571,11 @@ class OpenAIEmbedding(Embedding):
 
 class JinaEmbedding(Embedding):
     def __init__(
-            self,
-            model_name: str = "jinaai/jina-embeddings-v2-base-en",
-            max_length: int = 512,
-            cache_dir: str = None,
-            threads: int = None,
+        self,
+        model_name: str = "jinaai/jina-embeddings-v2-base-en",
+        max_length: int = 512,
+        cache_dir: str = None,
+        threads: int = None,
     ):
         """
         Args:
@@ -599,11 +599,10 @@ class JinaEmbedding(Embedding):
         self._model_dir = self.retrieve_model_hf(model_name, cache_dir)
         self._max_length = max_length
 
-        self.model = EmbeddingModel(self._model_dir, self.model_name, max_length=max_length,
-                                    max_threads=threads)
+        self.model = EmbeddingModel(self._model_dir, self.model_name, max_length=max_length, max_threads=threads)
 
     def embed(
-            self, documents: Union[str, Iterable[str]], batch_size: int = 256, parallel: int = None
+        self, documents: Union[str, Iterable[str]], batch_size: int = 256, parallel: int = None
     ) -> Iterable[np.ndarray]:
         """
         Encode a list of documents into list of embeddings.
@@ -653,7 +652,7 @@ class JinaEmbedding(Embedding):
         Lists the supported models.
         """
         # only jina models are supported by this class
-        return [model for model in Embedding.list_supported_models() if model['model'].startswith('jinaai')]
+        return [model for model in Embedding.list_supported_models() if model["model"].startswith("jinaai")]
 
     @staticmethod
     def mean_pooling(model_output, attention_mask):
