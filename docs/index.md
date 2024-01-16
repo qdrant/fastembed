@@ -15,7 +15,7 @@ The default embedding supports "query" and "passage" prefixes for the input text
 
 ## 🚀 Installation
 
-To install the FastEmbed library, pip works: 
+To install the FastEmbed library, pip works:
 
 ```bash
 pip install fastembed
@@ -32,8 +32,8 @@ documents: List[str] = [
     "passage: This is an example passage.",
     "fastembed is supported by and maintained by Qdrant." # You can leave out the prefix but it's recommended
 ]
-embedding_model = Embedding(model_name="BAAI/bge-base-en", max_length=512) 
-embeddings: List[np.ndarray] = embedding_model.embed(documents) # If you use  
+embedding_model = Embedding(model_name="BAAI/bge-base-en", max_length=512)
+embeddings: List[np.ndarray] = embedding_model.embed(documents) # If you use
 ```
 
 ## Usage with Qdrant
@@ -44,7 +44,7 @@ Installation with Qdrant Client in Python:
 pip install qdrant-client[fastembed]
 ```
 
-Might have to use ```pip install 'qdrant-client[fastembed]'``` on zsh. 
+Might have to use ```pip install 'qdrant-client[fastembed]'``` on zsh.
 
 ```python
 from qdrant_client import QdrantClient

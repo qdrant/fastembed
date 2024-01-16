@@ -2,7 +2,7 @@ site_name: FastEmbed
 site_url: https://qdrant.github.io/fastembed/
 site_author: Nirant Kasliwal
 repo_url: https://github.com/qdrant/fastembed/
-repo_name: qdrant/fastembed  
+repo_name: qdrant/fastembed
 
 remote_branch: gh-pages
 remote_name: origin
@@ -33,11 +33,11 @@ theme:
     # Text color for primary color
     text: "#ffffff"
 
-  palette: 
+  palette:
     # Palette toggle for light mode
     - scheme: default
       toggle:
-        icon: material/brightness-7 
+        icon: material/brightness-7
         name: Switch to dark mode
 
     # Palette toggle for dark mode
