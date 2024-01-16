@@ -1,0 +1,45 @@
+[
+    {
+        "name": "BAAI/bge-small-en-v1.5",
+        "sources": [
+            "Qdrant/bge-small-en-v1.5-onnx-Q"
+        ]
+    },
+    {
+        "name": "BAAI/bge-base-en-v1.5",
+        "sources": [
+            "Qdrant/bge-base-en-v1.5-onnx-Q"
+        ]
+    },
+    {
+        "name": "BAAI/bge-large-en-v1.5",
+        "sources": [
+            "Qdrant/bge-large-en-v1.5-onnx",
+            "Qdrant/bge-large-en-v1.5-onnx-Q"
+        ]
+    },
+    {
+        "name": "sentence-transformers/all-MiniLM-L6-v2",
+        "sources": [
+            "Qdrant/all-MiniLM-L6-v2-onnx"
+        ]
+    },
+    {
+        "name": "intfloat/multilingual-e5-large",
+        "sources": [
+            "Qdrant/multilingual-e5-large-onnx"
+        ]
+    },
+    {
+        "name": "jinaai/jina-embeddings-v2-base-en",
+        "sources": [
+            "jinaai/jina-embeddings-v2-base-en"
+        ]
+    },
+    {
+        "name": "jinaai/jina-embeddings-v2-small-en",
+        "sources": [
+            "jinaai/jina-embeddings-v2-small-en"
+        ]
+    }
+]

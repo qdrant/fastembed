@@ -1,4 +1,6 @@
+import functools
 import json
+import logging
 import os
 import shutil
 import tarfile
@@ -7,15 +9,19 @@ from abc import ABC, abstractmethod
 from itertools import islice
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Generator, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 import onnxruntime as ort
 import requests
 from tokenizers import AddedToken, Tokenizer
 from tqdm import tqdm
+from huggingface_hub import snapshot_download
+from huggingface_hub.utils import RepositoryNotFoundError
 
 from fastembed.parallel_processor import ParallelWorkerPool, Worker
+
+logger = logging.getLogger(__name__)
 
 
 def iter_batch(iterable: Union[Iterable, Generator], size: int) -> Iterable:
@@ -174,6 +180,23 @@ class Embedding(ABC):
         _type_: _description_
     """
 
+    # Internal helper decorator to maintain backward compatibility
+    # by supporting a fallback to download from Google Cloud Storage (GCS)
+    # if the model couldn't be downloaded from HuggingFace.
+    def gcs_fallback(hf_download_method: Callable) -> Callable:
+        @functools.wraps(hf_download_method)
+        def wrapper(self, *args, **kwargs):
+            try:
+                return hf_download_method(self, *args, **kwargs)
+            except (EnvironmentError, RepositoryNotFoundError, ValueError) as e:
+                logger.info(
+                    f"Could not download model from HuggingFace: {e}"
+                    "Falling back to download from Google Cloud Storage"
+                )
+                return self.retrieve_model_gcs(*args, **kwargs)
+
+        return wrapper
+
     @abstractmethod
     def embed(self, texts: Iterable[str], batch_size: int = 256, parallel: int = None) -> List[np.ndarray]:
         raise NotImplementedError
@@ -295,24 +318,30 @@ class Embedding(ABC):
         return output_path
 
     @classmethod
-    def download_files_from_huggingface(cls, repod_id: str, cache_dir: Optional[str] = None) -> str:
+    def download_files_from_huggingface(cls, repo_ids: List[str], cache_dir: Optional[str] = None) -> str:
         """
         Downloads a model from HuggingFace Hub.
         Args:
-            repod_id (str): The HF hub id (name) of the model to retrieve.
+            repo_id (str): The HF hub id (name) of the model to retrieve.
             cache_dir (Optional[str]): The path to the cache directory.
         Raises:
             ValueError: If the model_name is not in the format <org>/<model> e.g. "jinaai/jina-embeddings-v2-small-en".
         Returns:
             Path: The path to the model directory.
         """
-        from huggingface_hub import snapshot_download
 
-        return snapshot_download(
-            repo_id=repod_id,
-            ignore_patterns=["model.safetensors", "pytorch_model.bin"],
-            cache_dir=cache_dir,
-        )
+        for index, repo_id in enumerate(repo_ids):
+            try:
+                return snapshot_download(
+                    repo_id=repo_id,
+                    ignore_patterns=["model.safetensors", "pytorch_model.bin"],
+                    cache_dir=cache_dir,
+                )
+            except (RepositoryNotFoundError, EnvironmentError) as e:
+                logger.error(f"Failed to download model from HF source: {repo_id}: {e} ")
+                if repo_id == repo_ids[-1]:
+                    raise e
+                logger.info(f"Trying another source: {repo_ids[index+1]}")
 
     @classmethod
     def decompress_to_cache(cls, targz_path: str, cache_dir: str):
@@ -363,9 +392,6 @@ class Embedding(ABC):
         Returns:
             Path: The path to the model directory.
         """
-
-        assert "/" in model_name, "model_name must be in the format <org>/<model> e.g. BAAI/bge-base-en"
-
         fast_model_name = f"fast-{model_name.split('/')[-1]}"
 
         model_dir = Path(cache_dir) / fast_model_name
@@ -393,23 +419,25 @@ class Embedding(ABC):
 
         return model_dir
 
+    @gcs_fallback
     def retrieve_model_hf(self, model_name: str, cache_dir: str) -> Path:
         """
         Retrieves a model from HuggingFace Hub.
         Args:
             model_name (str): The name of the model to retrieve.
             cache_dir (str): The path to the cache directory.
-        Raises:
-            ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
         Returns:
             Path: The path to the model directory.
         """
+        models_file_path = Path(__file__).with_name("models.json")
+        models = json.load(open(str(models_file_path)))
 
-        assert (
-            "/" in model_name
-        ), "model_name must be in the format <org>/<model> e.g. jinaai/jina-embeddings-v2-small-en"
+        if model_name not in [model["name"] for model in models]:
+            raise ValueError(f"Could not find {model_name} in {models_file_path}")
 
-        return Path(self.download_files_from_huggingface(repod_id=model_name, cache_dir=cache_dir))
+        sources = [item for model in models if model["name"] == model_name for item in model["sources"]]
+
+        return Path(self.download_files_from_huggingface(repo_ids=sources, cache_dir=cache_dir))
 
     def passage_embed(self, texts: Iterable[str], **kwargs) -> Iterable[np.ndarray]:
         """
@@ -470,6 +498,8 @@ class FlagEmbedding(Embedding):
         Raises:
             ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
         """
+        assert "/" in model_name, "model_name must be in the format <org>/<model> e.g. BAAI/bge-base-en"
+
         self.model_name = model_name
 
         if cache_dir is None:
@@ -478,7 +508,7 @@ class FlagEmbedding(Embedding):
             cache_dir.mkdir(parents=True, exist_ok=True)
 
         self._cache_dir = cache_dir
-        self._model_dir = self.retrieve_model_gcs(model_name, cache_dir)
+        self._model_dir = self.retrieve_model_hf(model_name, cache_dir)
         self._max_length = max_length
 
         self.model = EmbeddingModel(self._model_dir, self.model_name, max_length=max_length, max_threads=threads)
@@ -586,8 +616,12 @@ class JinaEmbedding(Embedding):
                                        Defaults to `fastembed_cache` in the system's temp directory.
             threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
         Raises:
-            ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
+            ValueError: If the model_name is not in the format <org>/<model> e.g. jinaai/jina-embeddings-v2-base-en.
         """
+        assert (
+            "/" in model_name
+        ), "model_name must be in the format <org>/<model> e.g. jinaai/jina-embeddings-v2-base-en"
+
         self.model_name = model_name
 
         if cache_dir is None:
