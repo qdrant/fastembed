@@ -322,7 +322,7 @@ class Embedding(ABC):
         """
         Downloads a model from HuggingFace Hub.
         Args:
-            repo_id (str): The HF hub id (name) of the model to retrieve.
+            repo_ids (List[str]): A list of HF model IDs to download.
             cache_dir (Optional[str]): The path to the cache directory.
         Raises:
             ValueError: If the model_name is not in the format <org>/<model> e.g. "jinaai/jina-embeddings-v2-small-en".
