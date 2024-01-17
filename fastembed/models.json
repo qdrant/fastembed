@@ -15,7 +15,7 @@
         "description": "Base English model, v1.5",
         "size_in_GB": 0.44,
         "hf_sources": [
-            "Qdrant/bge-base-en-v1.5-onnx-Q"
+            "qdrant/bge-base-en-v1.5-onnx-q"
         ],
         "gcs_sources": [
             "qdrant-fastembed/fast-bge-base-en-v1.5.tar.gz"
@@ -27,8 +27,8 @@
         "description": "Large English model, v1.5",
         "size_in_GB": 1.34,
         "hf_sources": [
-            "Qdrant/bge-large-en-v1.5-onnx",
-            "Qdrant/bge-large-en-v1.5-onnx-Q"
+            "qdrant/bge-large-en-v1.5-onnx",
+            "qdrant/bge-large-en-v1.5-onnx-q"
         ],
         "gcs_sources": []
     },
@@ -49,7 +49,7 @@
         "description": "Fast and Default English model",
         "size_in_GB": 0.13,
         "hf_sources": [
-            "Qdrant/bge-small-en-v1.5-onnx-Q"
+            "qdrant/bge-small-en-v1.5-onnx-q"
         ],
         "gcs_sources": [
             "qdrant-fastembed/fast-bge-small-en-v1.5.tar.gz"
@@ -71,7 +71,7 @@
         "description": "Multilingual model, e5-large. Recommend using this model for non-English languages",
         "size_in_GB": 2.24,
         "hf_sources": [
-            "Qdrant/multilingual-e5-large-onnx"
+            "qdrant/multilingual-e5-large-onnx"
         ],
         "gcs_sources": [
             "qdrant-fastembed/intfloat-multilingual-e5-large.tar.gz"
@@ -103,7 +103,7 @@
         "description": "Sentence Transformer model, MiniLM-L6-v2",
         "size_in_GB": 0.09,
         "hf_sources": [
-            "Qdrant/all-MiniLM-L6-v2-onnx"
+            "qdrant/all-MiniLM-L6-v2-onnx"
         ],
         "gcs_sources": [
             "qdrant-fastembed/fast-all-MiniLM-L6-v2.tar.gz",
