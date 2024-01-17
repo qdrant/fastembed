@@ -206,62 +206,10 @@ class Embedding(ABC):
         """
         Lists the supported models.
         """
-        return [
-            {
-                "model": "BAAI/bge-small-en",
-                "dim": 384,
-                "description": "Fast English model",
-                "size_in_GB": 0.2,
-            },
-            {
-                "model": "BAAI/bge-small-en-v1.5",
-                "dim": 384,
-                "description": "Fast and Default English model",
-                "size_in_GB": 0.13,
-            },
-            {
-                "model": "BAAI/bge-small-zh-v1.5",
-                "dim": 512,
-                "description": "Fast and recommended Chinese model",
-                "size_in_GB": 0.1,
-            },
-            {
-                "model": "BAAI/bge-base-en",
-                "dim": 768,
-                "description": "Base English model",
-                "size_in_GB": 0.5,
-            },
-            {
-                "model": "BAAI/bge-base-en-v1.5",
-                "dim": 768,
-                "description": "Base English model, v1.5",
-                "size_in_GB": 0.44,
-            },
-            {
-                "model": "sentence-transformers/all-MiniLM-L6-v2",
-                "dim": 384,
-                "description": "Sentence Transformer model, MiniLM-L6-v2",
-                "size_in_GB": 0.09,
-            },
-            {
-                "model": "intfloat/multilingual-e5-large",
-                "dim": 1024,
-                "description": "Multilingual model, e5-large. Recommend using this model for non-English languages",
-                "size_in_GB": 2.24,
-            },
-            {
-                "model": "jinaai/jina-embeddings-v2-base-en",
-                "dim": 768,
-                "description": " English embedding model supporting 8192 sequence length",
-                "size_in_GB": 0.55,
-            },
-            {
-                "model": "jinaai/jina-embeddings-v2-small-en",
-                "dim": 512,
-                "description": " English embedding model supporting 8192 sequence length",
-                "size_in_GB": 0.13,
-            },
-        ]
+        models_file_path = Path(__file__).with_name("models.json")
+        models = json.load(open(str(models_file_path)))
+
+        return models
 
     @classmethod
     def download_file_from_gcs(cls, url: str, output_path: str, show_progress: bool = True) -> str:
@@ -318,19 +266,27 @@ class Embedding(ABC):
         return output_path
 
     @classmethod
-    def download_files_from_huggingface(cls, repo_ids: List[str], cache_dir: Optional[str] = None) -> str:
+    def download_files_from_huggingface(cls, model_name: str, cache_dir: Optional[str] = None) -> str:
         """
         Downloads a model from HuggingFace Hub.
         Args:
-            repo_ids (List[str]): A list of HF model IDs to download.
+            model_name (str): Name of the model to download.
             cache_dir (Optional[str]): The path to the cache directory.
         Raises:
             ValueError: If the model_name is not in the format <org>/<model> e.g. "jinaai/jina-embeddings-v2-small-en".
         Returns:
             Path: The path to the model directory.
         """
+        models = cls.list_supported_models()
 
-        for index, repo_id in enumerate(repo_ids):
+        hf_sources = [item for model in models if model["model"] == model_name for item in model["hf_sources"]]
+
+        # Check if the HF sources list is empty
+        # Raise an exception causing a fallback to GCS
+        if not hf_sources:
+            raise ValueError(f"No HuggingFace source for {model_name}")
+
+        for index, repo_id in enumerate(hf_sources):
             try:
                 return snapshot_download(
                     repo_id=repo_id,
@@ -339,9 +295,9 @@ class Embedding(ABC):
                 )
             except (RepositoryNotFoundError, EnvironmentError) as e:
                 logger.error(f"Failed to download model from HF source: {repo_id}: {e} ")
-                if repo_id == repo_ids[-1]:
+                if repo_id == hf_sources[-1]:
                     raise e
-                logger.info(f"Trying another source: {repo_ids[index+1]}")
+                logger.info(f"Trying another source: {hf_sources[index+1]}")
 
     @classmethod
     def decompress_to_cache(cls, targz_path: str, cache_dir: str):
@@ -399,18 +355,27 @@ class Embedding(ABC):
             return model_dir
 
         model_tar_gz = Path(cache_dir) / f"{fast_model_name}.tar.gz"
-        try:
-            self.download_file_from_gcs(
-                f"https://storage.googleapis.com/qdrant-fastembed/{fast_model_name}.tar.gz",
-                output_path=str(model_tar_gz),
-            )
-        except PermissionError:
-            simple_model_name = model_name.replace("/", "-")
-            print(f"Was not able to download {fast_model_name}.tar.gz, trying {simple_model_name}.tar.gz")
-            self.download_file_from_gcs(
-                f"https://storage.googleapis.com/qdrant-fastembed/{simple_model_name}.tar.gz",
-                output_path=str(model_tar_gz),
-            )
+
+        models = self.list_supported_models()
+
+        gcs_sources = [item for model in models if model["model"] == model_name for item in model["gcs_sources"]]
+
+        # Check if the GCS sources list is empty after falling back from HF
+        # A model should always have at least one source
+        if not gcs_sources:
+            raise ValueError(f"No GCS source for {model_name}")
+
+        for index, source in enumerate(gcs_sources):
+            try:
+                self.download_file_from_gcs(
+                    f"https://storage.googleapis.com/{source}",
+                    output_path=str(model_tar_gz),
+                )
+            except (RuntimeError, PermissionError) as e:
+                logger.error(f"Failed to download model from GCS source: {source}: {e} ")
+                if source == gcs_sources[-1]:
+                    raise e
+                logger.info(f"Trying another source: {gcs_sources[index+1]}")
 
         self.decompress_to_cache(targz_path=str(model_tar_gz), cache_dir=cache_dir)
         assert model_dir.exists(), f"Could not find {model_dir} in {cache_dir}"
@@ -429,15 +394,21 @@ class Embedding(ABC):
         Returns:
             Path: The path to the model directory.
         """
-        models_file_path = Path(__file__).with_name("models.json")
-        models = json.load(open(str(models_file_path)))
 
-        if model_name not in [model["name"] for model in models]:
-            raise ValueError(f"Could not find {model_name} in {models_file_path}")
+        return Path(self.download_files_from_huggingface(model_name=model_name, cache_dir=cache_dir))
 
-        sources = [item for model in models if model["name"] == model_name for item in model["sources"]]
+    @classmethod
+    def assert_model_name(cls, model_name: str):
+        assert "/" in model_name, "model_name must be in the format <org>/<model> e.g. BAAI/bge-base-en"
 
-        return Path(self.download_files_from_huggingface(repo_ids=sources, cache_dir=cache_dir))
+        models = cls.list_supported_models()
+        model_names = [model["model"] for model in models]
+        if model_name not in model_names:
+            raise ValueError(
+                f"{model_name} is not a supported model.\n"
+                f"Try one of {', '.join(model_names)}.\n"
+                f"Use the 'list_supported_models()' method to get the model information."
+            )
 
     def passage_embed(self, texts: Iterable[str], **kwargs) -> Iterable[np.ndarray]:
         """
@@ -498,7 +469,8 @@ class FlagEmbedding(Embedding):
         Raises:
             ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
         """
-        assert "/" in model_name, "model_name must be in the format <org>/<model> e.g. BAAI/bge-base-en"
+
+        self.assert_model_name(model_name)
 
         self.model_name = model_name
 
@@ -618,9 +590,7 @@ class JinaEmbedding(Embedding):
         Raises:
             ValueError: If the model_name is not in the format <org>/<model> e.g. jinaai/jina-embeddings-v2-base-en.
         """
-        assert (
-            "/" in model_name
-        ), "model_name must be in the format <org>/<model> e.g. jinaai/jina-embeddings-v2-base-en"
+        self.assert_model_name(model_name)
 
         self.model_name = model_name
 
