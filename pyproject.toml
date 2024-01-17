@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fastembed"
-version = "0.1.1"
+version = "0.1.2"
 description = "Fast, light, accurate library built for retrieval embedding generation"
 authors = ["NirantK <nirant.bits@gmail.com>"]
 license = "Apache License"
@@ -16,31 +16,24 @@ onnx = "^1.11"
 onnxruntime = "^1.15"
 tqdm = "^4.65"
 requests = "^2.31"
-tokenizers = ">=0.14"
+tokenizers = "^0.15.0"
 huggingface-hub = "0.19.4"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.2"
-ruff = "^0.0.277"
-isort = "^5.12.0"
-black = "^23.7.0"
+ruff = "^0.1.13"
 notebook = ">=7.0.2"
 mkdocs-material = "^9.1.21"
 mkdocstrings = "^0.22.0"
 pillow = "^10.0.0"
 cairosvg = "^2.7.1"
 mknotebooks = "^0.8.0"
+pre-commit = { version = "^3.6.0", python = ">=3.9,<3.12" }
 
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.black]
-line-length = 120
-
-[tool.isort]
-profile = "black"
 
 [tool.ruff]
 line-length = 120
