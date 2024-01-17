@@ -242,27 +242,14 @@ class Embedding(ABC):
         if total_size_in_bytes == 0:
             print(f"Warning: Content-length header is missing or zero in the response from {url}.")
 
-        # Initialize the progress bar
-        progress_bar = (
-            tqdm(total=total_size_in_bytes, unit="iB", unit_scale=True)
-            if total_size_in_bytes and show_progress
-            else None
-        )
+        show_progress = total_size_in_bytes and show_progress
 
-        # Attempt to download the file
-        try:
+        with tqdm(total=total_size_in_bytes, unit="iB", unit_scale=True, disable=not show_progress) as progress_bar:
             with open(output_path, "wb") as file:
-                for chunk in response.iter_content(chunk_size=1024):  # Adjust chunk size to your preference
+                for chunk in response.iter_content(chunk_size=1024):
                     if chunk:  # Filter out keep-alive new chunks
-                        if progress_bar is not None:
-                            progress_bar.update(len(chunk))
+                        progress_bar.update(len(chunk))
                         file.write(chunk)
-        except Exception as e:
-            print(f"An error occurred while trying to download the file: {str(e)}")
-            return
-        finally:
-            if progress_bar is not None:
-                progress_bar.close()
         return output_path
 
     @classmethod
