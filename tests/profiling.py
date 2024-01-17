@@ -1,27 +1,25 @@
 # %% [markdown]
 # # 🤗 Huggingface vs ⚡ FastEmbed️
-# 
+#
 # Comparing the performance of Huggingface's 🤗 Transformers and ⚡ FastEmbed️ on a simple task on the following machine: Apple M2 Max, 32 GB RAM
-# 
+#
 # ## 📦 Imports
-# 
+#
 # Importing the necessary libraries for this comparison.
 
 # %%
 import time
-from pathlib import Path
-from typing import Any, Callable, List, Tuple
+from typing import Callable, List, Tuple
 
-import numpy as np
+import matplotlib.pyplot as plt
 import torch.nn.functional as F
-from torch import Tensor
 from transformers import AutoModel, AutoTokenizer
 
 from fastembed.embedding import DefaultEmbedding
 
 # %% [markdown]
 # ## 📖 Data
-# 
+#
 # data is a list of strings, each string is a document.
 
 # %%
@@ -43,8 +41,9 @@ len(documents)
 
 # %% [markdown]
 # ## Setting up 🤗 Huggingface
-# 
+#
 # We'll be using the [Huggingface Transformers](https://huggingface.co/transformers/) with PyTorch library to generate embeddings. We'll be using the same model across both libraries for a fair(er?) comparison.
+
 
 # %%
 class HF:
@@ -64,12 +63,13 @@ class HF:
         sentence_embeddings = F.normalize(sentence_embeddings)
         return sentence_embeddings
 
+
 hf = HF(model_id="BAAI/bge-small-en")
 hf.embed(documents).shape
 
 # %% [markdown]
 # ## Setting up ⚡️FastEmbed
-# 
+#
 # Sorry, don't have a lot to set up here. We'll be using the default model, which is Flag Embedding, same as the Huggingface model.
 
 # %%
@@ -77,10 +77,11 @@ embedding_model = DefaultEmbedding()
 
 # %% [markdown]
 # ## 📊 Comparison
-# 
+#
 # We'll be comparing the following metrics: Minimum, Maximum, Mean, across k runs. Let's write a function to do that:
-# 
+#
 # ### 🚀 Calculating Stats
+
 
 # %%
 def calculate_time_stats(embed_func: Callable, documents: list, k: int) -> Tuple[float, float, float]:
@@ -88,7 +89,7 @@ def calculate_time_stats(embed_func: Callable, documents: list, k: int) -> Tuple
     for _ in range(k):
         # Timing the embed_func call
         start_time = time.time()
-        embeddings = embed_func(documents)
+        embed_func(documents)
         end_time = time.time()
 
         times.append(end_time - start_time)
@@ -96,14 +97,12 @@ def calculate_time_stats(embed_func: Callable, documents: list, k: int) -> Tuple
     # Returning mean, max, and min time for the call
     return (sum(times) / k, max(times), min(times))
 
+
 # %%
 hf_stats = calculate_time_stats(hf.embed, documents, k=2)
 print(f"Huggingface Transformers (Average, Max, Min): {hf_stats}")
 fst_stats = calculate_time_stats(lambda x: list(embedding_model.embed(x)), documents, k=2)
 print(f"FastEmbed (Average, Max, Min): {fst_stats}")
-
-# %%
-import matplotlib.pyplot as plt
 
 
 # %%
@@ -141,5 +140,3 @@ def plot_character_per_second_comparison(
 
 
 plot_character_per_second_comparison(hf_stats, fst_stats, documents)
-
-

@@ -7,7 +7,7 @@ from multiprocessing.context import BaseContext
 from multiprocessing.process import BaseProcess
 from multiprocessing.sharedctypes import Synchronized as BaseValue
 from queue import Empty
-from typing import Any, Dict, Iterable, List, Optional, Type, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Type
 
 # Single item should be processed in less than:
 processing_timeout = 10 * 60  # seconds
