@@ -32,6 +32,7 @@ optimum = "1.15"
 sentence-transformers = "^2.2.2"
 python-dotenv = "^1.0.0"
 jupyter-nbextensions-configurator = "^0.6.3"
+pre-commit = { version = "^3.6.0", python = ">=3.9,<3.12" }
 
 
 [build-system]
