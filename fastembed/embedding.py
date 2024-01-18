@@ -202,12 +202,20 @@ class Embedding(ABC):
         raise NotImplementedError
 
     @classmethod
-    def list_supported_models(cls) -> List[Dict[str, Union[str, Union[int, float]]]]:
-        """
-        Lists the supported models.
+    def list_supported_models(cls, exclude: List[str] = []) -> List[Dict[str, Any]]:
+        """Lists the supported models.
+
+        Args:
+            exclude (List[str], optional): Keys to exclude from the result. Defaults to [].
+
+        Returns:
+            List[Dict[str, Any]]: A list of dictionaries containing the model information.
         """
         models_file_path = Path(__file__).with_name("models.json")
-        models = json.load(open(str(models_file_path)))
+        with open(models_file_path, "r") as file:
+            models = json.load(file)
+
+        models = [{k: v for k, v in model.items() if k not in exclude} for model in models]
 
         return models
 
@@ -264,7 +272,7 @@ class Embedding(ABC):
         Returns:
             Path: The path to the model directory.
         """
-        models = cls.list_supported_models()
+        models = cls.list_supported_models(exclude=["gcs_sources"])
 
         hf_sources = [item for model in models if model["model"] == model_name for item in model["hf_sources"]]
 
@@ -343,7 +351,7 @@ class Embedding(ABC):
 
         model_tar_gz = Path(cache_dir) / f"{fast_model_name}.tar.gz"
 
-        models = self.list_supported_models()
+        models = self.list_supported_models(exclude=["hf_sources"])
 
         gcs_sources = [item for model in models if model["model"] == model_name for item in model["gcs_sources"]]
 
@@ -520,12 +528,19 @@ class FlagEmbedding(Embedding):
                 yield from normalize(embeddings[:, 0]).astype(np.float32)
 
     @classmethod
-    def list_supported_models(cls) -> List[Dict[str, Union[str, Union[int, float]]]]:
-        """
-        Lists the supported models.
+    def list_supported_models(cls, exclude: List[str] = ["gcs_sources", "hf_sources"]) -> List[Dict[str, Any]]:
+        """Lists the supported models.
+
+        Args:
+            exclude (List[str], optional): Keys to exclude from the result. Defaults to ["gcs_sources", "hf_sources"].
+
+        Returns:
+            List[Dict[str, Any]]: A list of dictionaries containing the model information.
         """
         # jina models are not supported by this class
-        return [model for model in super().list_supported_models() if not model["model"].startswith("jinaai")]
+        return [
+            model for model in super().list_supported_models(exclude=exclude) if not model["model"].startswith("jinaai")
+        ]
 
 
 class DefaultEmbedding(FlagEmbedding):
@@ -638,12 +653,19 @@ class JinaEmbedding(Embedding):
                 yield from normalize(self.mean_pooling(embeddings, attn_mask)).astype(np.float32)
 
     @classmethod
-    def list_supported_models(cls) -> List[Dict[str, Union[str, Union[int, float]]]]:
-        """
-        Lists the supported models.
+    def list_supported_models(cls, exclude: List[str] = ["gcs_sources", "hf_sources"]) -> List[Dict[str, Any]]:
+        """Lists the supported models.
+
+        Args:
+            exclude (List[str], optional): Keys to exclude from the result. Defaults to ["gcs_sources", "hf_sources"].
+
+        Returns:
+            List[Dict[str, Any]]: A list of dictionaries containing the model information.
         """
         # only jina models are supported by this class
-        return [model for model in Embedding.list_supported_models() if model["model"].startswith("jinaai")]
+        return [
+            model for model in Embedding.list_supported_models(exclude=exclude) if model["model"].startswith("jinaai")
+        ]
 
     @staticmethod
     def mean_pooling(model_output, attention_mask):
