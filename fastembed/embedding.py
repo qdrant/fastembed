@@ -58,9 +58,14 @@ class EmbeddingModel:
         if not tokens_map_path.exists():
             raise ValueError(f"Could not find special_tokens_map.json in {model_dir}")
 
-        config = json.load(open(str(config_path)))
-        tokenizer_config = json.load(open(str(tokenizer_config_path)))
-        tokens_map = json.load(open(str(tokens_map_path)))
+        with open(str(config_path)) as config_file:
+            config = json.load(config_file)
+
+        with open(str(tokenizer_config_path)) as tokenizer_config_file:
+            tokenizer_config = json.load(tokenizer_config_file)
+
+        with open(str(tokens_map_path)) as tokens_map_file:
+            tokens_map = json.load(tokens_map_file)
 
         tokenizer = Tokenizer.from_file(str(tokenizer_path))
         tokenizer.enable_truncation(max_length=min(tokenizer_config["model_max_length"], max_length))
