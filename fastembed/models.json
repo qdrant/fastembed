@@ -5,8 +5,8 @@
         "description": "Base English model",
         "size_in_GB": 0.5,
         "hf_sources": [],
-        "gcs_sources": [
-            "qdrant-fastembed/fast-bge-base-en.tar.gz"
+        "compressed_url_sources": [
+            "https://storage.googleapis.com/qdrant-fastembed/fast-bge-base-en.tar.gz"
         ]
     },
     {
@@ -17,8 +17,8 @@
         "hf_sources": [
             "qdrant/bge-base-en-v1.5-onnx-q"
         ],
-        "gcs_sources": [
-            "qdrant-fastembed/fast-bge-base-en-v1.5.tar.gz"
+        "compressed_url_sources": [
+            "https://storage.googleapis.com/qdrant-fastembed/fast-bge-base-en-v1.5.tar.gz"
         ]
     },
     {
@@ -30,7 +30,7 @@
             "qdrant/bge-large-en-v1.5-onnx",
             "qdrant/bge-large-en-v1.5-onnx-q"
         ],
-        "gcs_sources": []
+        "compressed_url_sources": []
     },
     {
         "model": "BAAI/bge-small-en",
@@ -38,9 +38,9 @@
         "description": "Fast English model",
         "size_in_GB": 0.2,
         "hf_sources": [],
-        "gcs_sources": [
-            "qdrant-fastembed/fast-bge-small-en.tar.gz",
-            "qdrant-fastembed/BAAI-bge-small-en.tar.gz"
+        "compressed_url_sources": [
+            "https://storage.googleapis.com/qdrant-fastembed/fast-bge-small-en.tar.gz",
+            "https://storage.googleapis.com/qdrant-fastembed/BAAI-bge-small-en.tar.gz"
         ]
     },
     {
@@ -51,8 +51,8 @@
         "hf_sources": [
             "qdrant/bge-small-en-v1.5-onnx-q"
         ],
-        "gcs_sources": [
-            "qdrant-fastembed/fast-bge-small-en-v1.5.tar.gz"
+        "compressed_url_sources": [
+            "https://storage.googleapis.com/qdrant-fastembed/fast-bge-small-en-v1.5.tar.gz"
         ]
     },
     {
@@ -61,8 +61,8 @@
         "description": "Fast and recommended Chinese model",
         "size_in_GB": 0.1,
         "hf_sources": [],
-        "gcs_sources": [
-            "qdrant-fastembed/fast-bge-small-zh-v1.5.tar.gz"
+        "compressed_url_sources": [
+            "https://storage.googleapis.com/qdrant-fastembed/fast-bge-small-zh-v1.5.tar.gz"
         ]
     },
     {
@@ -73,8 +73,8 @@
         "hf_sources": [
             "qdrant/multilingual-e5-large-onnx"
         ],
-        "gcs_sources": [
-            "qdrant-fastembed/intfloat-multilingual-e5-large.tar.gz"
+        "compressed_url_sources": [
+            "https://storage.googleapis.com/qdrant-fastembed/intfloat-multilingual-e5-large.tar.gz"
         ]
     },
     {
@@ -85,7 +85,7 @@
         "hf_sources": [
             "jinaai/jina-embeddings-v2-base-en"
         ],
-        "gcs_sources": []
+        "compressed_url_sources": []
     },
     {
         "model": "jinaai/jina-embeddings-v2-small-en",
@@ -95,7 +95,7 @@
         "hf_sources": [
             "jinaai/jina-embeddings-v2-small-en"
         ],
-        "gcs_sources": []
+        "compressed_url_sources": []
     },
     {
         "model": "sentence-transformers/all-MiniLM-L6-v2",
@@ -105,9 +105,9 @@
         "hf_sources": [
             "qdrant/all-MiniLM-L6-v2-onnx"
         ],
-        "gcs_sources": [
-            "qdrant-fastembed/fast-all-MiniLM-L6-v2.tar.gz",
-            "qdrant-fastembed/sentence-transformers-all-MiniLM-L6-v2.tar.gz"
+        "compressed_url_sources": [
+            "https://storage.googleapis.com/qdrant-fastembed/fast-all-MiniLM-L6-v2.tar.gz",
+            "https://storage.googleapis.com/qdrant-fastembed/sentence-transformers-all-MiniLM-L6-v2.tar.gz"
         ]
     }
 ]

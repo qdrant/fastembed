@@ -1,6 +1,5 @@
 import functools
 import json
-import logging
 import os
 import shutil
 import tarfile
@@ -18,10 +17,9 @@ from tokenizers import AddedToken, Tokenizer
 from tqdm import tqdm
 from huggingface_hub import snapshot_download
 from huggingface_hub.utils import RepositoryNotFoundError
+from loguru import logger
 
 from fastembed.parallel_processor import ParallelWorkerPool, Worker
-
-logger = logging.getLogger(__name__)
 
 
 def iter_batch(iterable: Union[Iterable, Generator], size: int) -> Iterable:
@@ -189,7 +187,7 @@ class Embedding(ABC):
             try:
                 return hf_download_method(self, *args, **kwargs)
             except (EnvironmentError, RepositoryNotFoundError, ValueError) as e:
-                logger.info(
+                logger.exception(
                     f"Could not download model from HuggingFace: {e}"
                     "Falling back to download from Google Cloud Storage"
                 )
@@ -272,7 +270,7 @@ class Embedding(ABC):
         Returns:
             Path: The path to the model directory.
         """
-        models = cls.list_supported_models(exclude=["gcs_sources"])
+        models = cls.list_supported_models(exclude=["compressed_url_sources"])
 
         hf_sources = [item for model in models if model["model"] == model_name for item in model["hf_sources"]]
 
@@ -289,7 +287,7 @@ class Embedding(ABC):
                     cache_dir=cache_dir,
                 )
             except (RepositoryNotFoundError, EnvironmentError) as e:
-                logger.error(f"Failed to download model from HF source: {repo_id}: {e} ")
+                logger.exception(f"Failed to download model from HF source: {repo_id}: {e} ")
                 if repo_id == hf_sources[-1]:
                     raise e
                 logger.info(f"Trying another source: {hf_sources[index+1]}")
@@ -353,24 +351,26 @@ class Embedding(ABC):
 
         models = self.list_supported_models(exclude=["hf_sources"])
 
-        gcs_sources = [item for model in models if model["model"] == model_name for item in model["gcs_sources"]]
+        compressed_url_sources = [
+            item for model in models if model["model"] == model_name for item in model["compressed_url_sources"]
+        ]
 
         # Check if the GCS sources list is empty after falling back from HF
         # A model should always have at least one source
-        if not gcs_sources:
+        if not compressed_url_sources:
             raise ValueError(f"No GCS source for {model_name}")
 
-        for index, source in enumerate(gcs_sources):
+        for index, source in enumerate(compressed_url_sources):
             try:
                 self.download_file_from_gcs(
-                    f"https://storage.googleapis.com/{source}",
+                    source,
                     output_path=str(model_tar_gz),
                 )
             except (RuntimeError, PermissionError) as e:
-                logger.error(f"Failed to download model from GCS source: {source}: {e} ")
-                if source == gcs_sources[-1]:
+                logger.exception(f"Failed to download model from GCS source: {source}: {e} ")
+                if source == compressed_url_sources[-1]:
                     raise e
-                logger.info(f"Trying another source: {gcs_sources[index+1]}")
+                logger.info(f"Trying another source: {compressed_url_sources[index+1]}")
 
         self.decompress_to_cache(targz_path=str(model_tar_gz), cache_dir=cache_dir)
         assert model_dir.exists(), f"Could not find {model_dir} in {cache_dir}"
@@ -528,11 +528,13 @@ class FlagEmbedding(Embedding):
                 yield from normalize(embeddings[:, 0]).astype(np.float32)
 
     @classmethod
-    def list_supported_models(cls, exclude: List[str] = ["gcs_sources", "hf_sources"]) -> List[Dict[str, Any]]:
+    def list_supported_models(
+        cls, exclude: List[str] = ["compressed_url_sources", "hf_sources"]
+    ) -> List[Dict[str, Any]]:
         """Lists the supported models.
 
         Args:
-            exclude (List[str], optional): Keys to exclude from the result. Defaults to ["gcs_sources", "hf_sources"].
+            exclude (List[str], optional): Keys to exclude from the result. Defaults to ["compressed_url_sources", "hf_sources"].
 
         Returns:
             List[Dict[str, Any]]: A list of dictionaries containing the model information.
@@ -653,11 +655,13 @@ class JinaEmbedding(Embedding):
                 yield from normalize(self.mean_pooling(embeddings, attn_mask)).astype(np.float32)
 
     @classmethod
-    def list_supported_models(cls, exclude: List[str] = ["gcs_sources", "hf_sources"]) -> List[Dict[str, Any]]:
+    def list_supported_models(
+        cls, exclude: List[str] = ["compressed_url_sources", "hf_sources"]
+    ) -> List[Dict[str, Any]]:
         """Lists the supported models.
 
         Args:
-            exclude (List[str], optional): Keys to exclude from the result. Defaults to ["gcs_sources", "hf_sources"].
+            exclude (List[str], optional): Keys to exclude from the result. Defaults to ["compressed_url_sources", "hf_sources"].
 
         Returns:
             List[Dict[str, Any]]: A list of dictionaries containing the model information.
