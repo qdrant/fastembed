@@ -115,7 +115,7 @@ class EmbeddingModel:
 
         # Hacky support for multilingual model
         self.exclude_token_type_ids = False
-        if model_name in ["intfloat/multilingual-e5-large", "xenova/multilingual-e5-large", "xenova/paraphrase-multilingual-mpnet-base-v2"]:
+        if "multilingual" in model_name:
             self.exclude_token_type_ids = True
 
         so = ort.SessionOptions()
