@@ -95,6 +95,9 @@ class EmbeddingModel:
         model_path = self.path / "model.onnx"
         optimized_model_path = self.path / "model_optimized.onnx"
 
+        xenova_model_path = self.path / "onnx" / "model.onnx"
+        xenova_optimized_model_path = self.path / "onnx" / "model_optimized.onnx"
+
         # List of Execution Providers: https://onnxruntime.ai/docs/execution-providers
         onnx_providers = ["CPUExecutionProvider"]
 
@@ -102,6 +105,16 @@ class EmbeddingModel:
             # Rename file model_optimized.onnx to model.onnx if it exists
             if optimized_model_path.exists():
                 optimized_model_path.rename(model_path)
+
+            # Patch for inconsistent repo structure at
+            # - https://huggingface.co/Xenova/jina-embeddings-v2-small-en
+            # - https://huggingface.co/Xenova/jina-embeddings-v2-base-en
+            elif xenova_model_path.exists():
+                model_path = xenova_model_path
+
+            elif xenova_optimized_model_path.exists():
+                model_path = xenova_optimized_model_path
+
             else:
                 raise ValueError(f"Could not find model.onnx in {self.path}")
 
