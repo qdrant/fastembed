@@ -35,6 +35,18 @@ def iter_batch(iterable: Union[Iterable, Generator], size: int) -> Iterable:
         yield b
 
 
+def locate_model_file(model_dir: Path, file_names: list):
+    if not model_dir.is_dir():
+        raise ValueError(f"Provided model path '{model_dir}' is not a directory.")
+
+    for path in model_dir.rglob("*"):
+        for file_name in file_names:
+            if path.is_file() and path.name == file_name:
+                return path
+
+    raise ValueError(f"Could not find model file in {model_dir}")
+
+
 def normalize(input_array, p=2, dim=1, eps=1e-12):
     # Calculate the Lp norm along the specified dimension
     norm = np.linalg.norm(input_array, ord=p, axis=dim, keepdims=True)
@@ -92,31 +104,10 @@ class EmbeddingModel:
     ):
         self.path = path
         self.model_name = model_name
-        model_path = self.path / "model.onnx"
-        optimized_model_path = self.path / "model_optimized.onnx"
-
-        xenova_model_path = self.path / "onnx" / "model.onnx"
-        xenova_optimized_model_path = self.path / "onnx" / "model_optimized.onnx"
+        model_path = locate_model_file(self.path, ["model.onnx", "model_optimized.onnx"])
 
         # List of Execution Providers: https://onnxruntime.ai/docs/execution-providers
         onnx_providers = ["CPUExecutionProvider"]
-
-        if not model_path.exists():
-            # Rename file model_optimized.onnx to model.onnx if it exists
-            if optimized_model_path.exists():
-                optimized_model_path.rename(model_path)
-
-            # Patch for inconsistent repo structure at
-            # - https://huggingface.co/Xenova/jina-embeddings-v2-small-en
-            # - https://huggingface.co/Xenova/jina-embeddings-v2-base-en
-            elif xenova_model_path.exists():
-                model_path = xenova_model_path
-
-            elif xenova_optimized_model_path.exists():
-                model_path = xenova_optimized_model_path
-
-            else:
-                raise ValueError(f"Could not find model.onnx in {self.path}")
 
         # Hacky support for multilingual model
         self.exclude_token_type_ids = False
