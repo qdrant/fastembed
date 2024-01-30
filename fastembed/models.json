@@ -83,7 +83,7 @@
         "description": " English embedding model supporting 8192 sequence length",
         "size_in_GB": 0.55,
         "hf_sources": [
-            "jinaai/jina-embeddings-v2-base-en"
+            "xenova/jina-embeddings-v2-base-en"
         ],
         "compressed_url_sources": []
     },
@@ -93,7 +93,7 @@
         "description": " English embedding model supporting 8192 sequence length",
         "size_in_GB": 0.13,
         "hf_sources": [
-            "jinaai/jina-embeddings-v2-small-en"
+            "xenova/jina-embeddings-v2-small-en"
         ],
         "compressed_url_sources": []
     },
