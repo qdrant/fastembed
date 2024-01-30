@@ -35,17 +35,18 @@ def iter_batch(iterable: Union[Iterable, Generator], size: int) -> Iterable:
         yield b
 
 
-def locate_model_file(model_dir: Path, file_names: List[str]):
+def locate_model_file(model_dir: Path, file_names: List[str]) -> Path:
     """
-    Find model path for both TransformerJS style `onnx`  subdirectory structure and direct model weights structure used by Optimum and Qdrant
+    Find model path recursively for both TransformerJS style `onnx`  subdirectory structure and direct model weights structure used by Optimum and Qdrant
     """
     if not model_dir.is_dir():
         raise ValueError(f"Provided model path '{model_dir}' is not a directory.")
 
-    for path in model_dir.rglob("*.onnx"):
-        for file_name in file_names:
-            if path.is_file() and path.name == file_name:
-                return path
+    for file_name in file_names:
+        file_paths = [path for path in model_dir.rglob(file_name) if path.is_file()]
+
+        if file_paths:
+            return file_paths[0]
 
     raise ValueError(f"Could not find either of {', '.join(file_names)} in {model_dir}")
 
@@ -114,7 +115,7 @@ class EmbeddingModel:
 
         # Hacky support for multilingual model
         self.exclude_token_type_ids = False
-        if model_name == "intfloat/multilingual-e5-large":
+        if model_name in ["intfloat/multilingual-e5-large", "xenova/multilingual-e5-large", "xenova/paraphrase-multilingual-mpnet-base-v2"]:
             self.exclude_token_type_ids = True
 
         so = ort.SessionOptions()
