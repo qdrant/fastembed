@@ -35,16 +35,19 @@ def iter_batch(iterable: Union[Iterable, Generator], size: int) -> Iterable:
         yield b
 
 
-def locate_model_file(model_dir: Path, file_names: list):
+def locate_model_file(model_dir: Path, file_names: List[str]):
+    """
+    Find model path for both TransformerJS style `onnx`  subdirectory structure and direct model weights structure used by Optimum and Qdrant
+    """
     if not model_dir.is_dir():
         raise ValueError(f"Provided model path '{model_dir}' is not a directory.")
 
-    for path in model_dir.rglob("*"):
+    for path in model_dir.rglob("*.onnx"):
         for file_name in file_names:
             if path.is_file() and path.name == file_name:
                 return path
 
-    raise ValueError(f"Could not find model file in {model_dir}")
+    raise ValueError(f"Could not find either of {', '.join(file_names)} in {model_dir}")
 
 
 def normalize(input_array, p=2, dim=1, eps=1e-12):
