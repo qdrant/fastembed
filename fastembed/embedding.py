@@ -213,7 +213,9 @@ class Embedding(ABC):
         raise NotImplementedError
 
     @classmethod
-    def list_supported_models(cls, exclude: List[str] = []) -> List[Dict[str, Any]]:
+    def list_supported_models(
+        cls, exclude: List[str] = ["compressed_url_sources", "hf_sources"]
+    ) -> List[Dict[str, Any]]:
         """Lists the supported models.
 
         Args:
