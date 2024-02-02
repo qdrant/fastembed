@@ -13,13 +13,12 @@ supported_multilingual_e5_models = [
         "sources": {
             "url": "https://storage.googleapis.com/qdrant-fastembed/fast-multilingual-e5-large.tar.gz",
             "hf": "qdrant/multilingual-e5-large-onnx",
-        }
+        },
     }
 ]
 
 
 class E5OnnxEmbedding(OnnxTextEmbedding):
-
     @classmethod
     def _get_worker_class(cls) -> Type["EmbeddingWorker"]:
         return E5OnnxEmbeddingWorker
@@ -43,8 +42,8 @@ class E5OnnxEmbedding(OnnxTextEmbedding):
 
 class E5OnnxEmbeddingWorker(OnnxTextEmbeddingWorker):
     def init_embedding(
-            self,
-            model_name: str,
-            cache_dir: str,
+        self,
+        model_name: str,
+        cache_dir: str,
     ) -> E5OnnxEmbedding:
         return E5OnnxEmbedding(model_name=model_name, cache_dir=cache_dir, threads=1)

@@ -10,23 +10,17 @@ class TextEmbeddingBase(ModelManagement):
     def list_supported_models(cls) -> List[Dict[str, Any]]:
         raise NotImplementedError()
 
-    def __init__(
-            self,
-            model_name: str,
-            cache_dir: Optional[str] = None,
-            threads: Optional[int] = None,
-            **kwargs
-    ):
+    def __init__(self, model_name: str, cache_dir: Optional[str] = None, threads: Optional[int] = None, **kwargs):
         self.model_name = model_name
         self.cache_dir = cache_dir
         self.threads = threads
 
     def embed(
-            self,
-            documents: Union[str, Iterable[str]],
-            batch_size: int = 256,
-            parallel: int = None,
-            **kwargs,
+        self,
+        documents: Union[str, Iterable[str]],
+        batch_size: int = 256,
+        parallel: int = None,
+        **kwargs,
     ) -> Iterable[np.ndarray]:
         raise NotImplementedError()
 
@@ -59,4 +53,3 @@ class TextEmbeddingBase(ModelManagement):
         # This is model-specific, so that different models can have specialized implementations
         query_embedding = list(self.embed([query], **kwargs))[0]
         return query_embedding
-

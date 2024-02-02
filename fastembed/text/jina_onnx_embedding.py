@@ -11,22 +11,19 @@ supported_jina_models = [
         "dim": 768,
         "description": "English embedding model supporting 8192 sequence length",
         "size_in_GB": 0.55,
-        "sources": {
-            "hf": "xenova/jina-embeddings-v2-base-en"
-        }
+        "sources": {"hf": "xenova/jina-embeddings-v2-base-en"},
     },
     {
         "model": "jinaai/jina-embeddings-v2-small-en",
         "dim": 512,
         "description": "English embedding model supporting 8192 sequence length",
         "size_in_GB": 0.13,
-        "sources": {"hf": "xenova/jina-embeddings-v2-small-en"}
-    }
+        "sources": {"hf": "xenova/jina-embeddings-v2-small-en"},
+    },
 ]
 
 
 class JinaOnnxEmbedding(OnnxTextEmbedding):
-
     @classmethod
     def _get_worker_class(cls) -> Type[EmbeddingWorker]:
         return JinaEmbeddingWorker
@@ -58,8 +55,8 @@ class JinaOnnxEmbedding(OnnxTextEmbedding):
 
 class JinaEmbeddingWorker(OnnxTextEmbeddingWorker):
     def init_embedding(
-            self,
-            model_name: str,
-            cache_dir: str,
+        self,
+        model_name: str,
+        cache_dir: str,
     ) -> OnnxTextEmbedding:
         return JinaOnnxEmbedding(model_name=model_name, cache_dir=cache_dir, threads=1)

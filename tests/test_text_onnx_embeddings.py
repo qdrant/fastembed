@@ -40,11 +40,7 @@ def test_embedding():
 
 
 @pytest.mark.parametrize(
-    "n_dims,model_name",
-    [
-        (384, "BAAI/bge-small-en-v1.5"),
-        (768, "jinaai/jina-embeddings-v2-base-en")
-    ]
+    "n_dims,model_name", [(384, "BAAI/bge-small-en-v1.5"), (768, "jinaai/jina-embeddings-v2-base-en")]
 )
 def test_batch_embedding(n_dims, model_name):
     model = TextEmbedding(model_name=model_name)
@@ -57,11 +53,7 @@ def test_batch_embedding(n_dims, model_name):
 
 
 @pytest.mark.parametrize(
-    "n_dims,model_name",
-    [
-        (384, "BAAI/bge-small-en-v1.5"),
-        (768, "jinaai/jina-embeddings-v2-base-en")
-    ]
+    "n_dims,model_name", [(384, "BAAI/bge-small-en-v1.5"), (768, "jinaai/jina-embeddings-v2-base-en")]
 )
 def test_parallel_processing(n_dims, model_name):
     model = TextEmbedding(model_name=model_name)

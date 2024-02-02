@@ -29,7 +29,7 @@ supported_flag_models = [
         "sources": {
             "url": "https://storage.googleapis.com/qdrant-fastembed/fast-bge-base-en-v1.5.tar.gz",
             "hf": "qdrant/bge-base-en-v1.5-onnx-q",
-        }
+        },
     },
     {
         "model": "BAAI/bge-large-en-v1.5-quantized",
@@ -38,7 +38,7 @@ supported_flag_models = [
         "size_in_GB": 1.34,
         "sources": {
             "hf": "qdrant/bge-large-en-v1.5-onnx-q",
-        }
+        },
     },
     {
         "model": "BAAI/bge-large-en-v1.5",
@@ -47,7 +47,7 @@ supported_flag_models = [
         "size_in_GB": 1.34,
         "sources": {
             "hf": "qdrant/bge-large-en-v1.5-onnx",
-        }
+        },
     },
     {
         "model": "BAAI/bge-small-en",
@@ -56,7 +56,7 @@ supported_flag_models = [
         "size_in_GB": 0.2,
         "sources": {
             "url": "https://storage.googleapis.com/qdrant-fastembed/BAAI-bge-small-en.tar.gz",
-        }
+        },
     },
     # {
     #     "model": "BAAI/bge-small-en",
@@ -77,7 +77,7 @@ supported_flag_models = [
         "sources": {
             "url": "https://storage.googleapis.com/qdrant-fastembed/fast-bge-small-en-v1.5.tar.gz",
             "hf": "qdrant/bge-small-en-v1.5-onnx-q",
-        }
+        },
     },
     {
         "model": "BAAI/bge-small-zh-v1.5",
@@ -86,7 +86,7 @@ supported_flag_models = [
         "size_in_GB": 0.1,
         "sources": {
             "url": "https://storage.googleapis.com/qdrant-fastembed/fast-bge-small-zh-v1.5.tar.gz",
-        }
+        },
     },
     {  # todo: it is not a flag embedding
         "model": "sentence-transformers/all-MiniLM-L6-v2",
@@ -96,7 +96,7 @@ supported_flag_models = [
         "sources": {
             "url": "https://storage.googleapis.com/qdrant-fastembed/sentence-transformers-all-MiniLM-L6-v2.tar.gz",
             "hf": "qdrant/all-MiniLM-L6-v2-onnx",
-        }
+        },
     },
     # {
     #     "model": "sentence-transformers/all-MiniLM-L6-v2",
@@ -147,11 +147,11 @@ class OnnxTextEmbedding(TextEmbeddingBase):
         raise ValueError(f"Model {model_name} is not supported in FlagEmbedding.")
 
     def __init__(
-            self,
-            model_name: str = "BAAI/bge-small-en-v1.5",
-            cache_dir: str = None,
-            threads: int = None,
-            **kwargs,
+        self,
+        model_name: str = "BAAI/bge-small-en-v1.5",
+        cache_dir: str = None,
+        threads: int = None,
+        **kwargs,
     ):
         """
         Args:
@@ -190,11 +190,11 @@ class OnnxTextEmbedding(TextEmbeddingBase):
         self.model = ort.InferenceSession(str(model_path), providers=onnx_providers, sess_options=so)
 
     def embed(
-            self,
-            documents: Union[str, Iterable[str]],
-            batch_size: int = 256,
-            parallel: int = None,
-            **kwargs,
+        self,
+        documents: Union[str, Iterable[str]],
+        batch_size: int = 256,
+        parallel: int = None,
+        **kwargs,
     ) -> Iterable[np.ndarray]:
         """
         Encode a list of documents into list of embeddings.
@@ -260,7 +260,7 @@ class OnnxTextEmbedding(TextEmbeddingBase):
         onnx_input = {
             "input_ids": np.array(input_ids, dtype=np.int64),
             "attention_mask": np.array(attention_mask, dtype=np.int64),
-            "token_type_ids": np.array([np.zeros(len(e), dtype=np.int64) for e in input_ids], dtype=np.int64)
+            "token_type_ids": np.array([np.zeros(len(e), dtype=np.int64) for e in input_ids], dtype=np.int64),
         }
 
         onnx_input = self._preprocess_onnx_input(onnx_input)
@@ -271,18 +271,17 @@ class OnnxTextEmbedding(TextEmbeddingBase):
 
 
 class EmbeddingWorker(Worker):
-
     def init_embedding(
-            self,
-            model_name: str,
-            cache_dir: str,
+        self,
+        model_name: str,
+        cache_dir: str,
     ) -> OnnxTextEmbedding:
         raise NotImplementedError()
 
     def __init__(
-            self,
-            model_name: str,
-            cache_dir: str,
+        self,
+        model_name: str,
+        cache_dir: str,
     ):
         self.model = self.init_embedding(model_name, cache_dir)
 
@@ -301,8 +300,8 @@ class EmbeddingWorker(Worker):
 
 class OnnxTextEmbeddingWorker(EmbeddingWorker):
     def init_embedding(
-            self,
-            model_name: str,
-            cache_dir: str,
+        self,
+        model_name: str,
+        cache_dir: str,
     ) -> OnnxTextEmbedding:
         return OnnxTextEmbedding(model_name=model_name, cache_dir=cache_dir, threads=1)

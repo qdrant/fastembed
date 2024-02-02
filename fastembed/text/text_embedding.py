@@ -45,11 +45,11 @@ class TextEmbedding(TextEmbeddingBase):
         return result
 
     def __init__(
-            self,
-            model_name: str = "BAAI/bge-small-en-v1.5",
-            cache_dir: Optional[str] = None,
-            threads: Optional[int] = None,
-            **kwargs
+        self,
+        model_name: str = "BAAI/bge-small-en-v1.5",
+        cache_dir: Optional[str] = None,
+        threads: Optional[int] = None,
+        **kwargs,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
 
@@ -67,11 +67,11 @@ class TextEmbedding(TextEmbeddingBase):
             )
 
     def embed(
-            self,
-            documents: Union[str, Iterable[str]],
-            batch_size: int = 256,
-            parallel: int = None,
-            **kwargs,
+        self,
+        documents: Union[str, Iterable[str]],
+        batch_size: int = 256,
+        parallel: int = None,
+        **kwargs,
     ) -> Iterable[np.ndarray]:
         """
         Encode a list of documents into list of embeddings.

@@ -28,7 +28,6 @@ def locate_model_file(model_dir: Path, file_names: List[str]):
 
 
 class ModelManagement:
-
     @classmethod
     def download_file_from_gcs(cls, url: str, output_path: str, show_progress: bool = True) -> str:
         """
@@ -124,12 +123,7 @@ class ModelManagement:
         return cache_dir
 
     @classmethod
-    def retrieve_model_gcs(
-            cls,
-            model_name: str,
-            source_url: str,
-            cache_dir: str
-    ) -> Path:
+    def retrieve_model_gcs(cls, model_name: str, source_url: str, cache_dir: str) -> Path:
         fast_model_name = f"fast-{model_name.split('/')[-1]}"
 
         cache_tmp_dir = Path(cache_dir) / "tmp"
@@ -191,21 +185,11 @@ class ModelManagement:
 
         if hf_source:
             try:
-                return Path(cls.download_files_from_huggingface(
-                    hf_source,
-                    cache_dir=str(cache_dir)
-                ))
+                return Path(cls.download_files_from_huggingface(hf_source, cache_dir=str(cache_dir)))
             except (EnvironmentError, RepositoryNotFoundError, ValueError) as e:
-                logger.error(
-                    f"Could not download model from HuggingFace: {e}"
-                    "Falling back to other sources."
-                )
+                logger.error(f"Could not download model from HuggingFace: {e}" "Falling back to other sources.")
 
         if url_source:
-            return cls.retrieve_model_gcs(
-                model["model"],
-                url_source,
-                str(cache_dir)
-            )
+            return cls.retrieve_model_gcs(model["model"], url_source, str(cache_dir))
 
         raise ValueError(f"Could not download model {model['model']} from any source.")
