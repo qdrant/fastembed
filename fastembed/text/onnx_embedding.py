@@ -11,7 +11,7 @@ from fastembed.common.utils import define_cache_dir, iter_batch
 from fastembed.parallel_processor import ParallelWorkerPool, Worker
 from fastembed.text.text_embedding_base import TextEmbeddingBase
 
-supported_flag_models = [
+supported_onnx_models = [
     {
         "model": "BAAI/bge-base-en",
         "dim": 768,
@@ -124,7 +124,7 @@ class OnnxTextEmbedding(TextEmbeddingBase):
         Returns:
             List[Dict[str, Any]]: A list of dictionaries containing the model information.
         """
-        return supported_flag_models
+        return supported_onnx_models
 
     @classmethod
     def _get_model_description(cls, model_name: str) -> Dict[str, Any]:
