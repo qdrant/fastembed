@@ -14,6 +14,24 @@ supported_multilingual_e5_models = [
             "url": "https://storage.googleapis.com/qdrant-fastembed/fast-multilingual-e5-large.tar.gz",
             "hf": "qdrant/multilingual-e5-large-onnx",
         },
+    },
+    {
+        "model": "xenova/multilingual-e5-large-quantized",
+        "dim": 1024,
+        "description": "Multilingual model. Recommended for non-English languages",
+        "size_in_GB": 2.24,
+        "sources": {
+            "hf": "xenova/multilingual-e5-large",
+        }
+    },
+    {
+        "model": "xenova/paraphrase-multilingual-mpnet-base-v2",
+        "dim": 768,
+        "description": "Sentence-transformers model for tasks like clustering or semantic search",
+        "size_in_GB": 1.11,
+        "sources": {
+            "hf": "xenova/paraphrase-multilingual-mpnet-base-v2",
+        }
     }
 ]
 
@@ -42,8 +60,8 @@ class E5OnnxEmbedding(OnnxTextEmbedding):
 
 class E5OnnxEmbeddingWorker(OnnxTextEmbeddingWorker):
     def init_embedding(
-        self,
-        model_name: str,
-        cache_dir: str,
+            self,
+            model_name: str,
+            cache_dir: str,
     ) -> E5OnnxEmbedding:
         return E5OnnxEmbedding(model_name=model_name, cache_dir=cache_dir, threads=1)
