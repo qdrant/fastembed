@@ -16,16 +16,7 @@ supported_multilingual_e5_models = [
         },
     },
     {
-        "model": "xenova/multilingual-e5-large-quantized",
-        "dim": 1024,
-        "description": "Multilingual model. Recommended for non-English languages",
-        "size_in_GB": 2.24,
-        "sources": {
-            "hf": "xenova/multilingual-e5-large",
-        }
-    },
-    {
-        "model": "xenova/paraphrase-multilingual-mpnet-base-v2",
+        "model": "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
         "dim": 768,
         "description": "Sentence-transformers model for tasks like clustering or semantic search",
         "size_in_GB": 1.11,
