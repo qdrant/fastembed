@@ -4,7 +4,25 @@ import numpy as np
 
 from fastembed.common.models import normalize
 from fastembed.text.onnx_embedding import OnnxTextEmbedding, EmbeddingWorker, OnnxTextEmbeddingWorker
-from fastembed.text.onnx_models import supported_jina_models
+
+supported_jina_models = [
+    {
+        "model": "jinaai/jina-embeddings-v2-base-en",
+        "dim": 768,
+        "description": "English embedding model supporting 8192 sequence length",
+        "size_in_GB": 0.55,
+        "sources": {
+            "hf": "xenova/jina-embeddings-v2-base-en"
+        }
+    },
+    {
+        "model": "jinaai/jina-embeddings-v2-small-en",
+        "dim": 512,
+        "description": "English embedding model supporting 8192 sequence length",
+        "size_in_GB": 0.13,
+        "sources": {"hf": "xenova/jina-embeddings-v2-small-en"}
+    }
+]
 
 
 class JinaOnnxEmbedding(OnnxTextEmbedding):

@@ -175,7 +175,7 @@ class ModelManagement:
                     "description": "Base English model, v1.5",
                     "size_in_GB": 0.44,
                     "sources": {
-                        "gcp": "https://storage.googleapis.com/qdrant-fastembed/fast-bge-base-en-v1.5.tar.gz",
+                        "url": "https://storage.googleapis.com/qdrant-fastembed/fast-bge-base-en-v1.5.tar.gz",
                         "hf": "qdrant/bge-base-en-v1.5-onnx-q",
                     }
                 }
@@ -187,7 +187,7 @@ class ModelManagement:
         """
 
         hf_source = model.get("sources", {}).get("hf")
-        gcp_source = model.get("sources", {}).get("gcp")
+        url_source = model.get("sources", {}).get("url")
 
         if hf_source:
             try:
@@ -201,10 +201,10 @@ class ModelManagement:
                     "Falling back to other sources."
                 )
 
-        if gcp_source:
+        if url_source:
             return cls.retrieve_model_gcs(
                 model["model"],
-                gcp_source,
+                url_source,
                 str(cache_dir)
             )
 

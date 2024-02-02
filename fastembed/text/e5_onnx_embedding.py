@@ -3,7 +3,19 @@ from typing import Type, List, Dict, Any
 import numpy as np
 
 from fastembed.text.onnx_embedding import OnnxTextEmbedding, OnnxTextEmbeddingWorker, EmbeddingWorker
-from fastembed.text.onnx_models import supported_multilingual_e5_models
+
+supported_multilingual_e5_models = [
+    {
+        "model": "intfloat/multilingual-e5-large",
+        "dim": 1024,
+        "description": "Multilingual model, e5-large. Recommend using this model for non-English languages",
+        "size_in_GB": 2.24,
+        "sources": {
+            "url": "https://storage.googleapis.com/qdrant-fastembed/fast-multilingual-e5-large.tar.gz",
+            "hf": "qdrant/multilingual-e5-large-onnx",
+        }
+    }
+]
 
 
 class E5OnnxEmbedding(OnnxTextEmbedding):
