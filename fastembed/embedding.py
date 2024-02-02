@@ -111,7 +111,7 @@ class EmbeddingModel:
         model_path = locate_model_file(self.path, ["model.onnx", "model_optimized.onnx"])
 
         # List of Execution Providers: https://onnxruntime.ai/docs/execution-providers
-        onnx_providers = ["CPUExecutionProvider"]
+        onnx_providers = ["CUDAExecutionProvider", "CPUExecutionProvider"]
 
         # Hacky support for multilingual model
         self.exclude_token_type_ids = False
