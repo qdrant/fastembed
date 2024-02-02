@@ -14,6 +14,10 @@ CANONICAL_VECTOR_VALUES = {
     "BAAI/bge-large-en-v1.5": np.array([0.03434538, 0.03316108, 0.02191251, -0.03713358, -0.01577825]),
     "sentence-transformers/all-MiniLM-L6-v2": np.array([0.0259, 0.0058, 0.0114, 0.0380, -0.0233]),
     "intfloat/multilingual-e5-large": np.array([0.0098, 0.0045, 0.0066, -0.0354, 0.0070]),
+    "xenova/multilingual-e5-large": np.array([0.00975464, 0.00446568, 0.00655449, -0.0354155, 0.00702112]),
+    "xenova/paraphrase-multilingual-mpnet-base-v2": np.array(
+        [-0.01341097, 0.0416553, -0.00480805, 0.02844842, 0.0505299]
+    ),
     "jinaai/jina-embeddings-v2-small-en": np.array([-0.0455, -0.0428, -0.0122, 0.0613, 0.0015]),
     "jinaai/jina-embeddings-v2-base-en": np.array([-0.0332, -0.0509, 0.0287, -0.0043, -0.0077]),
 }
