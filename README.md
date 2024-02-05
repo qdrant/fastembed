@@ -2,7 +2,7 @@
 
 FastEmbed is a lightweight, fast, Python library built for embedding generation. We [support popular text models](https://qdrant.github.io/fastembed/examples/Supported_Models/). Please [open a Github issue](https://github.com/qdrant/fastembed/issues/new) if you want us to add a new model.
 
-The default embedding supports "query" and "passage" prefixes for the input text. The default model is Flag Embedding, which is top of the [MTEB](https://huggingface.co/spaces/mteb/leaderboard) leaderboard. Here is an example for [Retrieval Embedding Generation](https://qdrant.github.io/fastembed/examples/Retrieval_with_FastEmbed/) and how to use [FastEmbed with Qdrant](https://qdrant.github.io/fastembed/examples/Usage_With_Qdrant/).
+The default text embedding (`TextEmbedding`) model is Flag Embedding, the top model in the [MTEB](https://huggingface.co/spaces/mteb/leaderboard) leaderboard. It supports "query" and "passage" prefixes for the input text. Here is an example for [Retrieval Embedding Generation](https://qdrant.github.io/fastembed/examples/Retrieval_with_FastEmbed/) and how to use [FastEmbed with Qdrant](https://qdrant.github.io/fastembed/examples/Usage_With_Qdrant/).
 
 1. Light & Fast
     - Quantized model weights
@@ -26,7 +26,7 @@ pip install fastembed
 ## 📖 Usage
 
 ```python
-from fastembed.embedding import FlagEmbedding as Embedding
+from fastembed import TextEmbedding
 from typing import List
 import numpy as np
 
@@ -36,7 +36,7 @@ documents: List[str] = [
     "passage: This is an example passage.",
     "fastembed is supported by and maintained by Qdrant." # You can leave out the prefix but it's recommended
 ]
-embedding_model = Embedding(model_name="BAAI/bge-base-en", max_length=512)
+embedding_model = TextEmbedding(model_name="BAAI/bge-base-en")
 embeddings: List[np.ndarray] = list(embedding_model.embed(documents)) # Note the list() call - this is a generator
 ```
 
@@ -54,13 +54,16 @@ Might have to use ```pip install 'qdrant-client[fastembed]'``` on zsh.
 from qdrant_client import QdrantClient
 
 # Initialize the client
-client = QdrantClient(":memory:")  # or QdrantClient(path="path/to/db")
+client = QdrantClient("localhost", port=6333) # For production
+# OR if you just want to try it out quickly:
+# client = QdrantClient(":memory:")
+# client = QdrantClient(path="path/to/db")
 
 # Prepare your documents, metadata, and IDs
 docs = ["Qdrant has Langchain integrations", "Qdrant also has Llama Index integrations"]
 metadata = [
     {"source": "Langchain-docs"},
-    {"source": "Linkedin-docs"},
+    {"source": "Llama-index-docs"},
 ]
 ids = [42, 2]
 
