@@ -67,6 +67,10 @@ metadata = [
 ]
 ids = [42, 2]
 
+# If you want to change the default model:
+# client.set_model("sentence-transformers/all-MiniLM-L6-v2")
+# List of supported models: https://qdrant.github.io/fastembed/examples/Supported_Models
+
 # Use the new add method
 client.add(
     collection_name="demo_collection",
@@ -74,6 +78,10 @@ client.add(
     metadata=metadata,
     ids=ids
 )
+# If you just want the embeddings:
+# from fastembed.embedding import TextEmbedding
+# model = TextEmbedding()
+# embeddings = model.embed(docs, batch_size=32)
 
 search_result = client.query(
     collection_name="demo_collection",
