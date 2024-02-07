@@ -52,6 +52,6 @@ class TextEmbeddingBase(ModelManagement):
 
         # This is model-specific, so that different models can have specialized implementations
         if isinstance(query, str):
-            yield from self.embed([f"Represent this sentence for searching relevant passages: {query}"], **kwargs)
+            yield from self.embed([query], **kwargs)
         if isinstance(query, Iterable):
-            yield from self.embed([f"Represent this sentence for searching relevant passages:: {text}" for text in query], **kwargs)
+            yield from self.embed(query, **kwargs)
