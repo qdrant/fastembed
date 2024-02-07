@@ -1,4 +1,4 @@
-from typing import Optional, Union, Iterable, List, Dict, Any
+from typing import Any, Dict, Iterable, List, Optional, Union
 
 import numpy as np
 
@@ -51,5 +51,7 @@ class TextEmbeddingBase(ModelManagement):
         """
 
         # This is model-specific, so that different models can have specialized implementations
-        query_embedding = list(self.embed([query], **kwargs))[0]
-        return query_embedding
+        if isinstance(query, str):
+            yield from self.embed([query], **kwargs)
+        if isinstance(query, Iterable):
+            yield from self.embed(query, **kwargs)
