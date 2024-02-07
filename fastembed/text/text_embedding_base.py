@@ -39,12 +39,12 @@ class TextEmbeddingBase(ModelManagement):
         # This is model-specific, so that different models can have specialized implementations
         yield from self.embed(texts, **kwargs)
 
-    def query_embed(self, query: str, **kwargs) -> np.ndarray:
+    def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> np.ndarray:
         """
-        Embeds a query
+        Embeds queries
 
         Args:
-            query (str): The query to search for.
+            query (Union[str, Iterable[str]]): The query to embed, or an iterable e.g. list of queries.
 
         Returns:
             np.ndarray: The embeddings.
