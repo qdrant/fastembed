@@ -1,3 +1,3 @@
 from .embedding import TextEmbedding
 
-all = [TextEmbedding]
+__all__ = [TextEmbedding]
