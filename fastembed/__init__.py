@@ -1,3 +1,3 @@
-from .embedding import TextEmbedding, DefaultEmbedding, FlagEmbedding, JinaEmbedding
+from .embedding import TextEmbedding
 
-__all__ = [TextEmbedding, DefaultEmbedding, FlagEmbedding, JinaEmbedding]
+all = [TextEmbedding]
