@@ -47,7 +47,7 @@ class TextEmbeddingBase(ModelManagement):
             query (Union[str, Iterable[str]]): The query to embed, or an iterable e.g. list of queries.
 
         Returns:
-            np.ndarray: The embeddings.
+            Iterable[np.ndarray]: The embeddings.
         """
 
         # This is model-specific, so that different models can have specialized implementations
