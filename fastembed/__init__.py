@@ -1,3 +1,3 @@
-from .embedding import TextEmbedding
+from fastembed.text.text_embedding import TextEmbedding
 
-__all__ = [TextEmbedding]
+__all__ = ["TextEmbedding"]

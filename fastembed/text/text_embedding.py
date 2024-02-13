@@ -53,24 +53,22 @@ class TextEmbedding(TextEmbeddingBase):
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
 
-        self.model = None
         for embedding in self.EMBEDDINGS_REGISTRY:
             supported_models = embedding.list_supported_models()
             if any(model_name == model["model"] for model in supported_models):
                 self.model = embedding(model_name, cache_dir, threads, **kwargs)
-                break
+                return
 
-        if self.model is None:
-            raise ValueError(
-                f"Model {model_name} is not supported in TextEmbedding."
-                "Please check the supported models using `TextEmbedding.list_supported_models()`"
-            )
+        raise ValueError(
+            f"Model {model_name} is not supported in TextEmbedding."
+            "Please check the supported models using `TextEmbedding.list_supported_models()`"
+        )
 
     def embed(
         self,
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
-        parallel: int = None,
+        parallel: Optional[int] = None,
         **kwargs,
     ) -> Iterable[np.ndarray]:
         """
