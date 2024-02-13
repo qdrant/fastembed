@@ -23,7 +23,7 @@ To install the FastEmbed library, pip works:
 pip install fastembed
 ```
 
-## 📖 Usage
+## 📖 Quickstart
 
 ```python
 from fastembed import TextEmbedding
@@ -55,9 +55,7 @@ from qdrant_client import QdrantClient
 
 # Initialize the client
 client = QdrantClient("localhost", port=6333) # For production
-# OR if you just want to try it out quickly:
-# client = QdrantClient(":memory:")
-# client = QdrantClient(path="path/to/db")
+# client = QdrantClient(":memory:") # For small experiments
 
 # Prepare your documents, metadata, and IDs
 docs = ["Qdrant has Langchain integrations", "Qdrant also has Llama Index integrations"]
@@ -67,7 +65,12 @@ metadata = [
 ]
 ids = [42, 2]
 
-# Use the new add method
+# If you want to change the model:
+# client.set_model("sentence-transformers/all-MiniLM-L6-v2")
+# List of supported models: https://qdrant.github.io/fastembed/examples/Supported_Models
+
+# Use the new add() instead of upsert()
+# This internally calls embed() of the configured embedding model
 client.add(
     collection_name="demo_collection",
     documents=docs,
