@@ -104,7 +104,7 @@ supported_onnx_models = [
         "description": "8192 context length english model",
         "size_in_GB": 0.54,
         "sources": {
-            "hf": "xenova/nomic-embed-text-v1",
+            "hf": "nomic-ai/nomic-embed-text-v1",
         },
     },
     # {
