@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 import numpy as np
-from tokenizers import Tokenizer, AddedToken
+from tokenizers import AddedToken, Tokenizer
 
 
 def load_tokenizer(model_dir: Path, max_length: int = 512) -> Tokenizer:
@@ -33,8 +33,8 @@ def load_tokenizer(model_dir: Path, max_length: int = 512) -> Tokenizer:
 
     tokenizer = Tokenizer.from_file(str(tokenizer_path))
     tokenizer.enable_truncation(max_length=min(tokenizer_config["model_max_length"], max_length))
-    tokenizer.enable_padding(pad_id=config["pad_token_id"], pad_token=tokenizer_config["pad_token"])
-
+    tokenizer.enable_padding(pad_id=config.get("pad_token_id", 0), pad_token=tokenizer_config["pad_token"]) # default pad_id is 0
+    
     for token in tokens_map.values():
         if isinstance(token, str):
             tokenizer.add_special_tokens([token])
