@@ -60,6 +60,15 @@ supported_onnx_models = [
             "hf": "qdrant/all-MiniLM-L6-v2-onnx",
         },
     },
+    {
+        "model": "nomic-ai/nomic-embed-text-v1",
+        "dim": 768,
+        "description": "8192 context length english model",
+        "size_in_GB": 0.54,
+        "sources": {
+            "hf": "nomic-ai/nomic-embed-text-v1",
+        },
+    },
 ]
 
 
