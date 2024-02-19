@@ -1,6 +1,6 @@
 import os
 from multiprocessing import get_all_start_methods
-from typing import List, Dict, Any, Tuple, Union, Iterable, Type
+from typing import List, Dict, Any, Optional, Tuple, Union, Iterable, Type
 
 import numpy as np
 import onnxruntime as ort
@@ -98,6 +98,15 @@ supported_onnx_models = [
             "hf": "qdrant/all-MiniLM-L6-v2-onnx",
         },
     },
+    {
+        "model": "nomic-ai/nomic-embed-text-v1",
+        "dim": 768,
+        "description": "8192 context length english model",
+        "size_in_GB": 0.54,
+        "sources": {
+            "hf": "nomic-ai/nomic-embed-text-v1",
+        },
+    },
     # {
     #     "model": "sentence-transformers/all-MiniLM-L6-v2",
     #     "dim": 384,
@@ -149,8 +158,8 @@ class OnnxTextEmbedding(TextEmbeddingBase):
     def __init__(
         self,
         model_name: str = "BAAI/bge-small-en-v1.5",
-        cache_dir: str = None,
-        threads: int = None,
+        cache_dir: Optional[str] = None,
+        threads: Optional[int] = None,
         **kwargs,
     ):
         """
@@ -193,7 +202,7 @@ class OnnxTextEmbedding(TextEmbeddingBase):
         self,
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
-        parallel: int = None,
+        parallel: Optional[int] = None,
         **kwargs,
     ) -> Iterable[np.ndarray]:
         """

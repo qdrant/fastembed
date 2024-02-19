@@ -19,7 +19,7 @@ class TextEmbeddingBase(ModelManagement):
         self,
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
-        parallel: int = None,
+        parallel: Optional[int] = None,
         **kwargs,
     ) -> Iterable[np.ndarray]:
         raise NotImplementedError()

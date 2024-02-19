@@ -1,6 +1,6 @@
 # ⚡️ What is FastEmbed?
 
-FastEmbed is a lightweight, fast, Python library built for embedding generation. We [support popular text models](https://qdrant.github.io/fastembed/examples/Supported_Models/). Please [open a Github issue](https://github.com/qdrant/fastembed/issues/new) if you want us to add a new model.
+FastEmbed is a lightweight, fast, Python library built for embedding generation. We [support popular text models](https://qdrant.github.io/fastembed/examples/Supported_Models/). Please [open a GitHub issue](https://github.com/qdrant/fastembed/issues/new) if you want us to add a new model.
 
 The default text embedding (`TextEmbedding`) model is Flag Embedding, the top model in the [MTEB](https://huggingface.co/spaces/mteb/leaderboard) leaderboard. It supports "query" and "passage" prefixes for the input text. Here is an example for [Retrieval Embedding Generation](https://qdrant.github.io/fastembed/examples/Retrieval_with_FastEmbed/) and how to use [FastEmbed with Qdrant](https://qdrant.github.io/fastembed/examples/Usage_With_Qdrant/).
 
@@ -48,7 +48,7 @@ Installation with Qdrant Client in Python:
 pip install qdrant-client[fastembed]
 ```
 
-Might have to use ```pip install 'qdrant-client[fastembed]'``` on zsh.
+You might have to use ```pip install 'qdrant-client[fastembed]'``` on zsh.
 
 ```python
 from qdrant_client import QdrantClient
