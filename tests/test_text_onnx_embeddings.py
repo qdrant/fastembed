@@ -20,6 +20,7 @@ CANONICAL_VECTOR_VALUES = {
     ),
     "jinaai/jina-embeddings-v2-small-en": np.array([-0.0455, -0.0428, -0.0122, 0.0613, 0.0015]),
     "jinaai/jina-embeddings-v2-base-en": np.array([-0.0332, -0.0509, 0.0287, -0.0043, -0.0077]),
+    "nomic-ai/nomic-embed-text-v1": np.array([0.0061, 0.0103, -0.0296, -0.0242, -0.0170]),
 }
 
 
