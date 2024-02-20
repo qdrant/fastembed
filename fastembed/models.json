@@ -111,6 +111,16 @@
         ]
     },
     {
+        "model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        "dim": 384,
+        "description": "Sentence Transformer model, paraphrase-multilingual-MiniLM-L12-v2",
+        "size_in_GB": 0.46,
+        "hf_sources": [
+            "qdrant/paraphrase-multilingual-MiniLM-L12-v2-onnx-Q"
+        ],
+        "compressed_url_sources": []
+    },
+    {
         "model": "xenova/multilingual-e5-large",
         "dim": 1024,
         "description": "Multilingual model. Recommended for non-English languages",
