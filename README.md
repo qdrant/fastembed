@@ -23,6 +23,9 @@ To install the FastEmbed library, pip works:
 pip install fastembed
 ```
 
+To install the library in Docker environment for API, use other library: 
+[michaelfeil/infinity](https://github.com/michaelfeil/infinity)
+
 ## 📖 Quickstart
 
 ```python
