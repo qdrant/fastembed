@@ -24,10 +24,10 @@ def define_cache_dir(cache_dir: Optional[str] = None) -> Path:
     """
     if cache_dir is None:
         default_cache_dir = os.path.join(tempfile.gettempdir(), "fastembed_cache")
-        cache_dir = Path(os.getenv("FASTEMBED_CACHE_PATH", default_cache_dir))
+        cache_path = Path(os.getenv("FASTEMBED_CACHE_PATH", default_cache_dir))
     else:
-        cache_dir = Path(cache_dir)
+        cache_path = Path(cache_dir)
 
-    cache_dir.mkdir(parents=True, exist_ok=True)
+    cache_path.mkdir(parents=True, exist_ok=True)
 
-    return cache_dir
+    return cache_path

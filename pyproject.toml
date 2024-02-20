@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fastembed"
-version = "0.1.2"
+version = "0.2.2"
 description = "Fast, light, accurate library built for retrieval embedding generation"
 authors = ["NirantK <nirant.bits@gmail.com>"]
 license = "Apache License"
@@ -26,14 +26,14 @@ numpy = [
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.2"
-ruff = "^0.1.13"
+ruff = "^0.2.2"
 notebook = ">=7.0.2"
-mkdocs-material = "^9.1.21"
-mkdocstrings = "^0.22.0"
-pillow = "^10.0.0"
+mkdocs-material = "^9.5.10"
+mkdocstrings = "^0.24.0"
+pillow = "^10.2.0"
 cairosvg = "^2.7.1"
 mknotebooks = "^0.8.0"
-pre-commit = { version = "^3.6.0", python = ">=3.9,<3.12" }
+pre-commit = {version = "^3.6.2", python = ">=3.9,<3.12" }
 
 
 [build-system]

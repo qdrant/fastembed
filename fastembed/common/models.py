@@ -33,7 +33,7 @@ def load_tokenizer(model_dir: Path, max_length: int = 512) -> Tokenizer:
 
     tokenizer = Tokenizer.from_file(str(tokenizer_path))
     tokenizer.enable_truncation(max_length=min(tokenizer_config["model_max_length"], max_length))
-    tokenizer.enable_padding(pad_id=config["pad_token_id"], pad_token=tokenizer_config["pad_token"])
+    tokenizer.enable_padding(pad_id=config.get("pad_token_id", 0), pad_token=tokenizer_config["pad_token"])
 
     for token in tokens_map.values():
         if isinstance(token, str):
