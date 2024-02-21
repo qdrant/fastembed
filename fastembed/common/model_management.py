@@ -131,7 +131,8 @@ class ModelManagement:
         model_tmp_dir = cache_tmp_dir / fast_model_name
         model_dir = Path(cache_dir) / fast_model_name
 
-        if model_dir.exists():
+        # check if the model_dir and the model files are both present for macOS
+        if model_dir.exists() and len(list(model_dir.glob("*"))) > 0:
             return model_dir
 
         if model_tmp_dir.exists():
