@@ -13,6 +13,7 @@ CANONICAL_VECTOR_VALUES = {
     "BAAI/bge-base-en-v1.5": np.array([0.01129394, 0.05493144, 0.02615099, 0.00328772, 0.02996045]),
     "BAAI/bge-large-en-v1.5": np.array([0.03434538, 0.03316108, 0.02191251, -0.03713358, -0.01577825]),
     "sentence-transformers/all-MiniLM-L6-v2": np.array([0.0259, 0.0058, 0.0114, 0.0380, -0.0233]),
+    "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2": np.array([0.0094,  0.0184,  0.0328,  0.0072, -0.0351]),
     "intfloat/multilingual-e5-large": np.array([0.0098, 0.0045, 0.0066, -0.0354, 0.0070]),
     "xenova/multilingual-e5-large": np.array([0.00975464, 0.00446568, 0.00655449, -0.0354155, 0.00702112]),
     "xenova/paraphrase-multilingual-mpnet-base-v2": np.array(
