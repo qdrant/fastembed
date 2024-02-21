@@ -99,6 +99,15 @@ supported_onnx_models = [
         },
     },
     {
+        "model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        "dim": 384,
+        "description": "Sentence Transformer model, paraphrase-multilingual-MiniLM-L12-v2",
+        "size_in_GB": 0.46,
+        "sources": {
+            "hf": "qdrant/paraphrase-multilingual-MiniLM-L12-v2-onnx-Q",
+        },
+    },
+    {
         "model": "nomic-ai/nomic-embed-text-v1",
         "dim": 768,
         "description": "8192 context length english model",
