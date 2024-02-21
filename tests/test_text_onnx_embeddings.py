@@ -14,7 +14,7 @@ CANONICAL_VECTOR_VALUES = {
     "BAAI/bge-large-en-v1.5": np.array([0.03434538, 0.03316108, 0.02191251, -0.03713358, -0.01577825]),
     "BAAI/bge-large-en-v1.5-quantized": np.array([0.03434538, 0.03316108, 0.02191251, -0.03713358, -0.01577825]),
     "sentence-transformers/all-MiniLM-L6-v2": np.array([0.0259, 0.0058, 0.0114, 0.0380, -0.0233]),
-    "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2": np.array([0.0094,  0.0184,  0.0328,  0.0072, -0.0351]),
+    "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2": np.array([0.0094, 0.0184, 0.0328, 0.0072, -0.0351]),
     "intfloat/multilingual-e5-large": np.array([0.0098, 0.0045, 0.0066, -0.0354, 0.0070]),
     "sentence-transformers/paraphrase-multilingual-mpnet-base-v2": np.array(
         [-0.01341097, 0.0416553, -0.00480805, 0.02844842, 0.0505299]
@@ -22,6 +22,10 @@ CANONICAL_VECTOR_VALUES = {
     "jinaai/jina-embeddings-v2-small-en": np.array([-0.0455, -0.0428, -0.0122, 0.0613, 0.0015]),
     "jinaai/jina-embeddings-v2-base-en": np.array([-0.0332, -0.0509, 0.0287, -0.0043, -0.0077]),
     "nomic-ai/nomic-embed-text-v1": np.array([0.0061, 0.0103, -0.0296, -0.0242, -0.0170]),
+    "nomic-ai/nomic-embed-text-v1.5": np.array(
+        [-1.6531514e-02, 8.5380634e-05, -1.8171231e-01, -3.9333291e-03, 1.2763254e-02]
+    ),
+    "thenlper/gte-large": np.array([-0.01920587, 0.00113156, -0.00708992, -0.00632304, -0.04025577]),
 }
 
 
