@@ -116,6 +116,24 @@ supported_onnx_models = [
             "hf": "nomic-ai/nomic-embed-text-v1",
         },
     },
+    {
+        "model": "nomic-ai/nomic-embed-text-v1.5",
+        "dim": 768,
+        "description": "8192 context length english model",
+        "size_in_GB": 0.54,
+        "sources": {
+            "hf": "nomic-ai/nomic-embed-text-v1.5",
+        },
+    },
+    {
+        "model": "thenlper/gte-large",
+        "dim": 1024,
+        "description": "Large general text embeddings model",
+        "size_in_GB": 1.34,
+        "sources": {
+            "hf": "qdrant/gte-large-onnx",
+        },
+    },
     # {
     #     "model": "sentence-transformers/all-MiniLM-L6-v2",
     #     "dim": 384,
