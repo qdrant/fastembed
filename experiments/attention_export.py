@@ -11,7 +11,7 @@ tokenizer = AutoTokenizer.from_pretrained(model_id)
 
 # export if the output model does not exist
 # try:
-#     sess = onnxruntime.InferenceSession(f"{output_dir}/{model_id.replace('/', '_')}.onnx")
+#     sess = onnxruntime.InferenceSession(f"{output_dir}/model.onnx")
 #     print("Model already exported")
 # except FileNotFoundError:
 print(f"Exporting model to {output_dir}")
