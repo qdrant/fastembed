@@ -6,7 +6,7 @@ The default text embedding (`TextEmbedding`) model is Flag Embedding, the top mo
 
 ## 📈 Why FastEmbed?
 
-1. Light: FastEmbed is a lightweight library with few external dependencies. Including on serverless runtimes like AWS Lambda. We don't require a GPU and don't download GBs of PyTorch dependencies, and instead use the ONNX Runtime.
+1. Light: FastEmbed is a lightweight library with few external dependencies. We don't require a GPU and don't download GBs of PyTorch dependencies, and instead use the ONNX Runtime. This makes it a great candidate for serverless runtimes like AWS Lambda. 
 
 2. Fast: FastEmbed is designed for speed. We use the ONNX Runtime, which is faster than PyTorch. We also use data-parallelism for encoding large datasets.
 
