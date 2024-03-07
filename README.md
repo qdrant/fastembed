@@ -4,16 +4,13 @@ FastEmbed is a lightweight, fast, Python library built for embedding generation.
 
 The default text embedding (`TextEmbedding`) model is Flag Embedding, the top model in the [MTEB](https://huggingface.co/spaces/mteb/leaderboard) leaderboard. It supports "query" and "passage" prefixes for the input text. Here is an example for [Retrieval Embedding Generation](https://qdrant.github.io/fastembed/examples/Retrieval_with_FastEmbed/) and how to use [FastEmbed with Qdrant](https://qdrant.github.io/fastembed/examples/Usage_With_Qdrant/).
 
-1. Light & Fast
-    - Quantized model weights
-    - ONNX Runtime, no PyTorch dependency
-    - CPU-first design
-    - Data-parallelism for encoding of large datasets
+## 📈 Why FastEmbed?
 
-2. Accuracy/Recall
-    - Better than OpenAI Ada-002
-    - Default is Flag Embedding, which is top of the [MTEB](https://huggingface.co/spaces/mteb/leaderboard) leaderboard
-    - List of [supported models](https://qdrant.github.io/fastembed/examples/Supported_Models/) - including multilingual models
+1. Light: FastEmbed is a lightweight library with few external dependencies. Including on serverless runtimes like AWS Lambda. We don't require a GPU and don't download GBs of PyTorch dependencies, and instead use the ONNX Runtime.
+
+2. Fast: FastEmbed is designed for speed. We use the ONNX Runtime, which is faster than PyTorch. We also use data-parallelism for encoding large datasets.
+
+3. Accurate: FastEmbed is better than OpenAI Ada-002. We also [supported](https://qdrant.github.io/fastembed/examples/Supported_Models/) an ever expanding set of models, including a few multilingual models.
 
 ## 🚀 Installation
 
@@ -26,18 +23,24 @@ pip install fastembed
 ## 📖 Quickstart
 
 ```python
+import numpy as np
 from fastembed import TextEmbedding
 from typing import List
-import numpy as np
 
+# Example list of documents
 documents: List[str] = [
-    "passage: Hello, World!",
-    "query: Hello, World!", # these are two different embedding
-    "passage: This is an example passage.",
-    "fastembed is supported by and maintained by Qdrant." # You can leave out the prefix but it's recommended
+    "This is built to be faster and lighter than other embedding libraries e.g. Transformers, Sentence-Transformers, etc.",
+    "fastembed is supported by and maintained by Qdrant.",
 ]
-embedding_model = TextEmbedding(model_name="BAAI/bge-base-en")
-embeddings: List[np.ndarray] = list(embedding_model.embed(documents)) # Note the list() call - this is a generator
+
+# This will trigger the model download and initialization
+embedding_model = TextEmbedding()
+print("The model BAAI/bge-small-en-v1.5 is ready to use.")
+
+embeddings_generator = embedding_model.embed(documents)  # reminder this is a generator
+embeddings_list = list(embedding_model.embed(documents))
+  # you can also convert the generator to a list, and that to a numpy array
+len(embeddings_list[0]) # Vector of 384 dimensions
 ```
 
 ## Usage with Qdrant
