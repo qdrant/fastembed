@@ -27,14 +27,15 @@ numpy = [
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.2"
 ruff = "^0.2.2"
+pre-commit = {version = "^3.6.2", python = ">=3.9,<3.12" }
+
+[tool.poetry.group.docs.dependencies]
 notebook = ">=7.0.2"
 mkdocs-material = "^9.5.10"
 mkdocstrings = "^0.24.0"
 pillow = "^10.2.0"
 cairosvg = "^2.7.1"
 mknotebooks = "^0.8.0"
-pre-commit = {version = "^3.6.2", python = ">=3.9,<3.12" }
-
 
 [build-system]
 requires = ["poetry-core"]
