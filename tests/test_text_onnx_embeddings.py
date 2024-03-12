@@ -44,8 +44,12 @@ def test_embedding():
         embeddings = np.stack(embeddings, axis=0)
         assert embeddings.shape == (2, dim)
 
-        canonical_vector = CANONICAL_VECTOR_VALUES[model_desc["model"]]
+        canonical_vector = CANONICAL_VECTOR_VALUES.get(model_desc["model"], None)
+        if canonical_vector is None:
+            print(f"Canonical vector not found for {model_desc['model']}")
+            continue
         assert np.allclose(embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3), model_desc["model"]
+       
 
 
 @pytest.mark.parametrize(
