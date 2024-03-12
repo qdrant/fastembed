@@ -11,7 +11,7 @@ from fastembed.text.onnx_embedding import (
 supported_splade_models = [
     {
         "model": "prithvida/SPLADE_PP_en_v1",
-        "dim": 30552,  # vocab size
+        "dim": 30522,  # vocab size
         "description": "Independent Implementation of SPLADE++ Model for English",
         "size_in_GB": 0.532,
         "sources": {
