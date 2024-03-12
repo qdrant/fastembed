@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional, Union
+from typing import Iterable, Optional, Union
 
 import numpy as np
 
@@ -6,9 +6,6 @@ from fastembed.common.model_management import ModelManagement
 
 
 class TextEmbeddingBase(ModelManagement):
-    @classmethod
-    def list_supported_models(cls) -> List[Dict[str, Any]]:
-        raise NotImplementedError()
 
     def __init__(self, model_name: str, cache_dir: Optional[str] = None, threads: Optional[int] = None, **kwargs):
         self.model_name = model_name

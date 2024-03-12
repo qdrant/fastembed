@@ -1,18 +1,12 @@
-from typing import Any, Dict, Iterable, List, Optional, Type, Union
+from typing import List, Type, Dict, Any, Union, Iterable, Optional
 
-import numpy as np
-
-from fastembed.text.e5_onnx_embedding import E5OnnxEmbedding
-from fastembed.text.jina_onnx_embedding import JinaOnnxEmbedding
-from fastembed.text.onnx_embedding import OnnxTextEmbedding
-from fastembed.text.text_embedding_base import TextEmbeddingBase
+from fastembed.sparse.sparse_embedding_base import SparseTextEmbeddingBase, SparseEmbedding
+from fastembed.sparse.splade_pp import SpladePP
 
 
-class TextEmbedding(TextEmbeddingBase):
-    EMBEDDINGS_REGISTRY: List[Type[TextEmbeddingBase]] = [
-        OnnxTextEmbedding,
-        E5OnnxEmbedding,
-        JinaOnnxEmbedding,
+class SparseTextEmbedding(SparseTextEmbeddingBase):
+    EMBEDDINGS_REGISTRY: List[Type[SparseTextEmbeddingBase]] = [
+        SpladePP,
     ]
 
     @classmethod
@@ -27,14 +21,13 @@ class TextEmbedding(TextEmbeddingBase):
                 ```
                 [
                     {
-                        "model": "intfloat/multilingual-e5-large",
-                        "dim": 1024,
-                        "description": "Multilingual model, e5-large. Recommend using this model for non-English languages",
-                        "size_in_GB": 2.24,
+                        "model": "prithvida/SPLADE_PP_en_v1",
+                        "vocab_size": 30522,
+                        "description": "Independent Implementation of SPLADE++ Model for English",
+                        "size_in_GB": 0.532,
                         "sources": {
-                            "gcp": "https://storage.googleapis.com/qdrant-fastembed/fast-multilingual-e5-large.tar.gz",
-                            "hf": "qdrant/multilingual-e5-large-onnx",
-                        }
+                            "hf": "qdrant/SPLADE_PP_en_v1",
+                        },
                     }
                 ]
                 ```
@@ -46,7 +39,7 @@ class TextEmbedding(TextEmbeddingBase):
 
     def __init__(
         self,
-        model_name: str = "BAAI/bge-small-en-v1.5",
+        model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         **kwargs,
@@ -60,8 +53,8 @@ class TextEmbedding(TextEmbeddingBase):
                 return
 
         raise ValueError(
-            f"Model {model_name} is not supported in TextEmbedding."
-            "Please check the supported models using `TextEmbedding.list_supported_models()`"
+            f"Model {model_name} is not supported in SparseTextEmbedding."
+            "Please check the supported models using `SparseTextEmbedding.list_supported_models()`"
         )
 
     def embed(
@@ -70,7 +63,7 @@ class TextEmbedding(TextEmbeddingBase):
         batch_size: int = 256,
         parallel: Optional[int] = None,
         **kwargs,
-    ) -> Iterable[np.ndarray]:
+    ) -> Iterable[SparseEmbedding]:
         """
         Encode a list of documents into list of embeddings.
         We use mean pooling with attention so that the model can handle variable-length inputs.
