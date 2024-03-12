@@ -6,7 +6,7 @@ The default embedding supports "query" and "passage" prefixes for the input text
 
 1. Light & Fast
     - Quantized model weights
-    - ONNX Runtime for inference via [Optimum](github.com/huggingface/optimum)
+    - ONNX Runtime for inference via [Optimum](https://github.com/huggingface/optimum)
 
 2. Accuracy/Recall
     - Better than OpenAI Ada-002
