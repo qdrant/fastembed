@@ -53,10 +53,10 @@ class TextEmbedding(TextEmbeddingBase):
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
 
-        for embedding in self.EMBEDDINGS_REGISTRY:
-            supported_models = embedding.list_supported_models()
+        for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
+            supported_models = EMBEDDING_MODEL_TYPE.list_supported_models()
             if any(model_name == model["model"] for model in supported_models):
-                self.model = embedding(model_name, cache_dir, threads, **kwargs)
+                self.model = EMBEDDING_MODEL_TYPE(model_name, cache_dir, threads, **kwargs)
                 return
 
         raise ValueError(
