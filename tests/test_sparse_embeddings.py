@@ -1,6 +1,6 @@
 import pytest
 
-from fastembed.text.text_embeddings import TextEmbedding
+from fastembed import TextEmbedding
 
 CANONICAL_COLUMN_VALUES = {
     "prithvida/SPLADE_PP_en_v1": [2040,
