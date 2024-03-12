@@ -1,10 +1,11 @@
-from typing import Optional, Union, Iterable, List, Dict, Any, Type
+from typing import Any, Dict, Iterable, List, Optional, Type, Union
 
 import numpy as np
 
 from fastembed.text.e5_onnx_embedding import E5OnnxEmbedding
 from fastembed.text.jina_onnx_embedding import JinaOnnxEmbedding
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
+from fastembed.text.sparse import SPLADE
 from fastembed.text.text_embedding_base import TextEmbeddingBase
 
 
@@ -13,6 +14,7 @@ class TextEmbedding(TextEmbeddingBase):
         OnnxTextEmbedding,
         E5OnnxEmbedding,
         JinaOnnxEmbedding,
+        SPLADE,
     ]
 
     @classmethod
