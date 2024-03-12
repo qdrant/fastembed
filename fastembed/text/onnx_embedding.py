@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Tuple, Union, Iterable, Type
+from typing import Dict, Optional, Tuple, Union, Iterable, Type, List, Any
 
 import numpy as np
 
@@ -148,6 +148,15 @@ supported_onnx_models = [
 
 class OnnxTextEmbedding(TextEmbeddingBase, OnnxModel[np.ndarray]):
     """Implementation of the Flag Embedding model."""
+    @classmethod
+    def list_supported_models(cls) -> List[Dict[str, Any]]:
+        """
+        Lists the supported models.
+
+        Returns:
+            List[Dict[str, Any]]: A list of dictionaries containing the model information.
+        """
+        return supported_onnx_models
 
     def __init__(
         self,
