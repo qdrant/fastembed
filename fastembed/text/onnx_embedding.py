@@ -1,14 +1,10 @@
-import os
-from multiprocessing import get_all_start_methods
-from typing import List, Dict, Any, Optional, Tuple, Union, Iterable, Type
+from typing import Dict, Optional, Tuple, Union, Iterable, Type, List, Any
 
 import numpy as np
-import onnxruntime as ort
 
-from fastembed.common.model_management import locate_model_file
-from fastembed.common.models import load_tokenizer, normalize
-from fastembed.common.utils import define_cache_dir, iter_batch
-from fastembed.parallel_processor import ParallelWorkerPool, Worker
+from fastembed.common.onnx_model import OnnxModel, EmbeddingWorker
+from fastembed.common.models import normalize
+from fastembed.common.utils import define_cache_dir
 from fastembed.text.text_embedding_base import TextEmbeddingBase
 
 supported_onnx_models = [
@@ -150,37 +146,18 @@ supported_onnx_models = [
 ]
 
 
-class OnnxTextEmbedding(TextEmbeddingBase):
+class OnnxTextEmbedding(TextEmbeddingBase, OnnxModel[np.ndarray]):
     """Implementation of the Flag Embedding model."""
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Any]]:
-        """Lists the supported models.
+        """
+        Lists the supported models.
 
         Returns:
             List[Dict[str, Any]]: A list of dictionaries containing the model information.
         """
         return supported_onnx_models
-
-    @classmethod
-    def _get_model_description(cls, model_name: str) -> Dict[str, Any]:
-        """
-        Gets the model description from the model_name.
-
-        Args:
-            model_name (str): The name of the model.
-
-        raises:
-            ValueError: If the model_name is not supported.
-
-        Returns:
-            Dict[str, Any]: The model description.
-        """
-        for model in cls.list_supported_models():
-            if model_name == model["model"]:
-                return model
-
-        raise ValueError(f"Model {model_name} is not supported in FlagEmbedding.")
 
     def __init__(
         self,
@@ -210,20 +187,7 @@ class OnnxTextEmbedding(TextEmbeddingBase):
         self._model_dir = self.download_model(self._model_description, self._cache_dir)
         self._max_length = 512
 
-        model_path = locate_model_file(self._model_dir, ["model.onnx", "model_optimized.onnx"])
-
-        # List of Execution Providers: https://onnxruntime.ai/docs/execution-providers
-        onnx_providers = ["CPUExecutionProvider"]
-
-        so = ort.SessionOptions()
-        so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-
-        if self.threads is not None:
-            so.intra_op_num_threads = self.threads
-            so.inter_op_num_threads = self.threads
-
-        self.tokenizer = load_tokenizer(model_dir=self._model_dir, max_length=self._max_length)
-        self.model = ort.InferenceSession(str(model_path), providers=onnx_providers, sess_options=so)
+        self.load_onnx_model(self._model_dir, self.threads, self._max_length)
 
     def embed(
         self,
@@ -247,31 +211,13 @@ class OnnxTextEmbedding(TextEmbeddingBase):
         Returns:
             List of embeddings, one per document
         """
-        is_small = False
-
-        if isinstance(documents, str):
-            documents = [documents]
-            is_small = True
-
-        if isinstance(documents, list):
-            if len(documents) < batch_size:
-                is_small = True
-
-        if parallel == 0:
-            parallel = os.cpu_count()
-
-        if parallel is None or is_small:
-            for batch in iter_batch(documents, batch_size):
-                yield from self._post_process_onnx_output(self.onnx_embed(batch))
-        else:
-            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
-            params = {
-                "model_name": self.model_name,
-                "cache_dir": str(self._cache_dir),
-            }
-            pool = ParallelWorkerPool(parallel, self._get_worker_class(), start_method=start_method)
-            for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
-                yield from self._post_process_onnx_output(batch)
+        yield from self._embed_documents(
+            model_name=self.model_name,
+            cache_dir=str(self._cache_dir),
+            documents=documents,
+            batch_size=batch_size,
+            parallel=parallel,
+        )
 
     @classmethod
     def _get_worker_class(cls) -> Type["EmbeddingWorker"]:
@@ -284,54 +230,9 @@ class OnnxTextEmbedding(TextEmbeddingBase):
         return onnx_input
 
     @classmethod
-    def _post_process_onnx_output(cls, output: Tuple[np.ndarray, np.ndarray]):
+    def _post_process_onnx_output(cls, output: Tuple[np.ndarray, np.ndarray]) -> Iterable[np.ndarray]:
         embeddings, _ = output
         return normalize(embeddings[:, 0]).astype(np.float32)
-
-    def onnx_embed(self, documents: List[str]) -> Tuple[np.ndarray, np.ndarray]:
-        encoded = self.tokenizer.encode_batch(documents)
-        input_ids = np.array([e.ids for e in encoded])
-        attention_mask = np.array([e.attention_mask for e in encoded])
-
-        onnx_input = {
-            "input_ids": np.array(input_ids, dtype=np.int64),
-            "attention_mask": np.array(attention_mask, dtype=np.int64),
-            "token_type_ids": np.array([np.zeros(len(e), dtype=np.int64) for e in input_ids], dtype=np.int64),
-        }
-
-        onnx_input = self._preprocess_onnx_input(onnx_input)
-
-        model_output = self.model.run(None, onnx_input)
-        embeddings = model_output[0]
-        return embeddings, attention_mask
-
-
-class EmbeddingWorker(Worker):
-    def init_embedding(
-        self,
-        model_name: str,
-        cache_dir: str,
-    ) -> OnnxTextEmbedding:
-        raise NotImplementedError()
-
-    def __init__(
-        self,
-        model_name: str,
-        cache_dir: str,
-    ):
-        self.model = self.init_embedding(model_name, cache_dir)
-
-    @classmethod
-    def start(cls, model_name: str, cache_dir: str, **kwargs: Any) -> "EmbeddingWorker":
-        return cls(
-            model_name=model_name,
-            cache_dir=cache_dir,
-        )
-
-    def process(self, items: Iterable[Tuple[int, Any]]) -> Iterable[Tuple[int, Any]]:
-        for idx, batch in items:
-            embeddings, attn_mask = self.model.onnx_embed(batch)
-            yield idx, (embeddings, attn_mask)
 
 
 class OnnxTextEmbeddingWorker(EmbeddingWorker):

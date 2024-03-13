@@ -2,7 +2,8 @@ from typing import Type, List, Dict, Any
 
 import numpy as np
 
-from fastembed.text.onnx_embedding import OnnxTextEmbedding, OnnxTextEmbeddingWorker, EmbeddingWorker
+from fastembed.common.onnx_model import EmbeddingWorker
+from fastembed.text.onnx_embedding import OnnxTextEmbedding, OnnxTextEmbeddingWorker
 
 supported_multilingual_e5_models = [
     {
