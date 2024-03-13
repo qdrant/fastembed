@@ -168,11 +168,5 @@ local_cache/*/*
 docs/experimental/*.parquet
 docs/experimental/*.bin
 qdrant_storage/*
-fooling_around/fast-multilingual-e5-large/config.json
-fooling_around/fast-multilingual-e5-large/model_optimized.onnx
-fooling_around/fast-multilingual-e5-large/model_optimized.onnx.data
-fooling_around/fast-multilingual-e5-large/ort_config.json
-fooling_around/fast-multilingual-e5-large/sentencepiece.bpe.model
-fooling_around/fast-multilingual-e5-large/special_tokens_map.json
-fooling_around/fast-multilingual-e5-large/tokenizer_config.json
-fooling_around/fast-multilingual-e5-large/tokenizer.json
+fooling_around/*
+experiments/models/*
