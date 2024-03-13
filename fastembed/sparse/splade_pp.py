@@ -32,10 +32,15 @@ class SpladePP(SparseTextEmbeddingBase, OnnxModel[SparseEmbedding]):
         # Score matrix of shape (batch_size, vocab_size)
         # Most of the values are 0, only a few are non-zero
         scores = np.squeeze(max_val)
-        for row_scores in scores:
-            indices = row_scores.nonzero()[0]
-            scores = row_scores[indices]
+        if np.ndim(scores) == 1:
+            indices = scores.nonzero()[0]
+            scores = scores[indices]
             yield SparseEmbedding(values=scores, indices=indices)
+        else:
+            for row_scores in scores:
+                indices = row_scores.nonzero()[0]
+                row_values = row_scores[indices]
+                yield SparseEmbedding(values=row_values, indices=indices)
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Any]]:
