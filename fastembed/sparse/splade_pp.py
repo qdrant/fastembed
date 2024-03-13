@@ -2,7 +2,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 
-from fastembed.common.onnx_model import OnnxModel, EmbeddingWorker
+from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel
 from fastembed.common.utils import define_cache_dir
 from fastembed.sparse.sparse_embedding_base import SparseEmbedding, SparseTextEmbeddingBase
 
@@ -13,7 +13,7 @@ supported_splade_models = [
         "description": "Independent Implementation of SPLADE++ Model for English",
         "size_in_GB": 0.532,
         "sources": {
-            "hf": "nirantk/SPLADE_PP_en_v1",
+            "hf": "Qdrant/SPLADE_PP_en_v1",
         },
     },
 ]
