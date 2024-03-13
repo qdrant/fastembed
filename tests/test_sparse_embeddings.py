@@ -40,3 +40,18 @@ def test_batch_embedding():
 
         for i, value in enumerate(result.values):
             assert pytest.approx(value, abs=0.001) == expected_result["values"][i]
+
+
+def test_single_embedding():
+    docs_to_embed = docs
+
+    for model_name, expected_result in CANONICAL_COLUMN_VALUES.items():
+        print("evaluating", model_name)
+        model = SparseTextEmbedding(model_name=model_name)
+        result = next(iter(model.embed(docs_to_embed, batch_size=6)))
+        print(result.indices)
+
+        assert result.indices.tolist() == expected_result["indices"]
+
+        for i, value in enumerate(result.values):
+            assert pytest.approx(value, abs=0.001) == expected_result["values"][i]

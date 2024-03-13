@@ -27,11 +27,10 @@ class SpladePP(SparseTextEmbeddingBase, OnnxModel[SparseEmbedding]):
 
         weighted_log = relu_log * np.expand_dims(attention_mask, axis=-1)
 
-        max_val = np.max(weighted_log, axis=1)
+        scores = np.max(weighted_log, axis=1)
 
         # Score matrix of shape (batch_size, vocab_size)
         # Most of the values are 0, only a few are non-zero
-        scores = np.squeeze(max_val)
         for row_scores in scores:
             indices = row_scores.nonzero()[0]
             scores = row_scores[indices]
