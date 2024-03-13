@@ -20,7 +20,6 @@ supported_splade_models = [
 
 
 class SpladePP(SparseTextEmbeddingBase, OnnxModel[SparseEmbedding]):
-
     @classmethod
     def _post_process_onnx_output(cls, output: Tuple[np.ndarray, np.ndarray]) -> Iterable[SparseEmbedding]:
         logits, attention_mask = output
@@ -48,11 +47,11 @@ class SpladePP(SparseTextEmbeddingBase, OnnxModel[SparseEmbedding]):
         return supported_splade_models
 
     def __init__(
-            self,
-            model_name: str,
-            cache_dir: Optional[str] = None,
-            threads: Optional[int] = None,
-            **kwargs,
+        self,
+        model_name: str,
+        cache_dir: Optional[str] = None,
+        threads: Optional[int] = None,
+        **kwargs,
     ):
         """
         Args:
@@ -72,18 +71,17 @@ class SpladePP(SparseTextEmbeddingBase, OnnxModel[SparseEmbedding]):
         self._model_description = self._get_model_description(model_name)
 
         self._cache_dir = define_cache_dir(cache_dir)
-        self._model_dir = self.download_model(
-            self._model_description, self._cache_dir)
+        self._model_dir = self.download_model(self._model_description, self._cache_dir)
         self._max_length = 512
 
         self.load_onnx_model(self._model_dir, self.threads, self._max_length)
 
     def embed(
-            self,
-            documents: Union[str, Iterable[str]],
-            batch_size: int = 256,
-            parallel: Optional[int] = None,
-            **kwargs,
+        self,
+        documents: Union[str, Iterable[str]],
+        batch_size: int = 256,
+        parallel: Optional[int] = None,
+        **kwargs,
     ) -> Iterable[SparseEmbedding]:
         """
         Encode a list of documents into list of embeddings.
@@ -111,8 +109,8 @@ class SpladePP(SparseTextEmbeddingBase, OnnxModel[SparseEmbedding]):
 
 class SpladePPEmbeddingWorker(EmbeddingWorker):
     def init_embedding(
-            self,
-            model_name: str,
-            cache_dir: str,
+        self,
+        model_name: str,
+        cache_dir: str,
     ) -> SpladePP:
         return SpladePP(model_name=model_name, cache_dir=cache_dir, threads=1)

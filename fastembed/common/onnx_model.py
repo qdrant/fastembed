@@ -12,15 +12,14 @@ from fastembed.common.utils import iter_batch
 from fastembed.parallel_processor import ParallelWorkerPool, Worker
 
 # Holds type of the embedding result
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class OnnxModel(Generic[T]):
-
     @classmethod
     def _get_worker_class(cls) -> Type["EmbeddingWorker"]:
         raise NotImplementedError("Subclasses must implement this method")
-    
+
     @classmethod
     def _post_process_onnx_output(cls, output: Tuple[np.ndarray, np.ndarray]) -> Iterable[T]:
         raise NotImplementedError("Subclasses must implement this method")
@@ -48,10 +47,8 @@ class OnnxModel(Generic[T]):
             so.intra_op_num_threads = threads
             so.inter_op_num_threads = threads
 
-        self.tokenizer = load_tokenizer(
-            model_dir=model_dir, max_length=max_length)
-        self.model = ort.InferenceSession(
-            str(model_path), providers=onnx_providers, sess_options=so)
+        self.tokenizer = load_tokenizer(model_dir=model_dir, max_length=max_length)
+        self.model = ort.InferenceSession(str(model_path), providers=onnx_providers, sess_options=so)
 
     def onnx_embed(self, documents: List[str]) -> Tuple[np.ndarray, np.ndarray]:
         encoded = self.tokenizer.encode_batch(documents)
@@ -100,8 +97,7 @@ class OnnxModel(Generic[T]):
                 "model_name": model_name,
                 "cache_dir": cache_dir,
             }
-            pool = ParallelWorkerPool(
-                parallel, self._get_worker_class(), start_method=start_method)
+            pool = ParallelWorkerPool(parallel, self._get_worker_class(), start_method=start_method)
             for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
                 yield from self._post_process_onnx_output(batch)
 

@@ -148,6 +148,7 @@ supported_onnx_models = [
 
 class OnnxTextEmbedding(TextEmbeddingBase, OnnxModel[np.ndarray]):
     """Implementation of the Flag Embedding model."""
+
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Any]]:
         """

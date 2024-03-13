@@ -3,9 +3,7 @@ from fastembed.sparse.sparse_text_embedding import SparseTextEmbedding
 
 CANONICAL_COLUMN_VALUES = {
     "prithvida/SPLADE_PP_en_v1": {
-        "indices": [
-            2040, 2047, 2088, 2299, 2748, 3011, 3376, 3795, 4774, 5304, 5798, 6160, 7592, 7632, 8484
-        ],
+        "indices": [2040, 2047, 2088, 2299, 2748, 3011, 3376, 3795, 4774, 5304, 5798, 6160, 7592, 7632, 8484],
         "values": [
             0.4219532012939453,
             0.4320072531700134,
@@ -21,7 +19,7 @@ CANONICAL_COLUMN_VALUES = {
             0.8142819404602051,
             2.803262710571289,
             2.1904349327087402,
-            1.0531445741653442
+            1.0531445741653442,
         ],
     }
 }
@@ -38,7 +36,7 @@ def test_batch_embedding():
         result = next(iter(model.embed(docs_to_embed, batch_size=6)))
         print(result.indices)
 
-        assert result.indices.tolist() == expected_result['indices']
+        assert result.indices.tolist() == expected_result["indices"]
 
         for i, value in enumerate(result.values):
-            assert pytest.approx(value, abs=0.001) == expected_result['values'][i]
+            assert pytest.approx(value, abs=0.001) == expected_result["values"][i]

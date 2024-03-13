@@ -1,7 +1,6 @@
 import numpy as np
 import onnx
 import onnxruntime
-from optimum.exporters.onnx import main_export
 from transformers import AutoTokenizer
 
 model_id = "sentence-transformers/paraphrase-MiniLM-L6-v2"

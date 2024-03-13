@@ -6,7 +6,6 @@ from fastembed.common.model_management import ModelManagement
 
 
 class TextEmbeddingBase(ModelManagement):
-
     def __init__(self, model_name: str, cache_dir: Optional[str] = None, threads: Optional[int] = None, **kwargs):
         self.model_name = model_name
         self.cache_dir = cache_dir
