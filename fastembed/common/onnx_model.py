@@ -1,14 +1,13 @@
-from multiprocessing import get_all_start_methods
 import os
+from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Dict, Generic, Iterable, List, Optional, Tuple, Type, TypeVar, Union, Any
+from typing import Any, Dict, Generic, Iterable, List, Optional, Tuple, Type, TypeVar, Union
+
+import numpy as np
+import onnxruntime as ort
 
 from fastembed.common.model_management import locate_model_file
 from fastembed.common.models import load_tokenizer
-import onnxruntime as ort
-
-import numpy as np
-
 from fastembed.common.utils import iter_batch
 from fastembed.parallel_processor import ParallelWorkerPool, Worker
 
@@ -34,7 +33,7 @@ class OnnxModel(Generic[T]):
         """
         Preprocess the onnx input.
         """
-        raise NotImplementedError("Subclasses must implement this method")
+        return onnx_input
 
     def load_onnx_model(self, model_dir: Path, threads: Optional[int], max_length: int) -> None:
         model_path = locate_model_file(model_dir, ["model.onnx", "model_optimized.onnx"])
