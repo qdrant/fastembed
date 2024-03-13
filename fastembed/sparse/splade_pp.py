@@ -78,12 +78,6 @@ class SpladePP(SparseTextEmbeddingBase, OnnxModel[SparseEmbedding]):
 
         self.load_onnx_model(self._model_dir, self.threads, self._max_length)
 
-    def _preprocess_onnx_input(self, onnx_input: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
-        """
-        Preprocess the onnx input.
-        """
-        return onnx_input
-
     def embed(
             self,
             documents: Union[str, Iterable[str]],
