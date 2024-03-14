@@ -1,0 +1,54 @@
+name: Bug/New Model Request
+description: File a bug report/Request a new Model
+title: "[Bug/Model Request]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Also tell us, what did you expect to happen?
+      placeholder: Tell us what you see!
+      value: "A bug happened!"
+    validations:
+      required: true
+  - type: dropdown
+    id: version
+    attributes:
+      label: Version
+      description: What version of FastEmbed are you running? python -c "import fastembed; print(fastembed.__version__)". If you're not on the latest, please upgrade and see if the problem persists.
+      options:
+        - 0.2.4 (Latest)
+        - 0.2.3 
+        - 0.2.2
+        - 0.2.1
+        - 0.1.x 
+      default: 0
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: What os are you seeing the problem on?
+      multiple: true
+      options:
+        - Linux
+        - MacOS
+        - Windows
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant stack traces and/or logs
+      description: Please copy and paste any relevant raised exceptions. This will be automatically formatted into code, so no need for backticks.
+      render: shell
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our [Code of Conduct](https://example.com)
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true
