@@ -59,7 +59,7 @@ Your first code contribution can be small bug fixes:
 1. This PR adds a small bug fix for a single input: https://github.com/qdrant/fastembed/pull/148
 2. This PR adds a check for the right file location and extension, specific to an OS: https://github.com/qdrant/fastembed/pull/128
 
-Even documentation improvements are most welcome:
+Even documentation improvements and tests are most welcome:
 1. This PR fixes a README link: https://github.com/qdrant/fastembed/pull/143
 
 ### Adding New Models
