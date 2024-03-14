@@ -14,6 +14,7 @@ The following is a set of guidelines for contributing to FastEmbed. These are mo
 
 [Styleguides](#styleguides)
   * [Code Lint](#code-lint)
+  * [Pre-Commit Hooks](#pre-commit-hooks)
  
 ## I don't want to read this whole thing I just have a question!!!
 
@@ -53,5 +54,24 @@ Unsure where to begin contributing to FastEmbed? You can start by looking throug
 
 The best way to learn about the mechanics of FastEmbed is to start working on it. 
 
-### Beginners
-You can start by adding new models to the FastEmbed. There are quite a few pull requests that were merged for this purpose and you can use them as a reference. You can find all the model requests [here](https://github.com/qdrant/fastembed/labels/model%20request).
+### Your First Code Contribution
+Your first code contribution can be small bug fixes:
+1. This PR adds a small bug fix for a single input: https://github.com/qdrant/fastembed/pull/148
+2. This PR adds a check for the right file location and extension, specific to an OS: https://github.com/qdrant/fastembed/pull/128
+
+Even documentation improvements are most welcome:
+1. This PR fixes a README link: https://github.com/qdrant/fastembed/pull/143
+
+### Adding New Models
+You can start by adding new models to the FastEmbed. You can find all the model requests [here](https://github.com/qdrant/fastembed/labels/model%20request). 
+
+
+There are quite a few pull requests that were merged for this purpose and you can use them as a reference. Here is an example: https://github.com/qdrant/fastembed/pull/129 
+
+## Styleguides
+
+### Code Lint
+We use ruff for code linting. It should be installed with poetry since it's a dev dependency.
+
+### Pre-Commit Hooks
+We use pre-commit hooks to ensure that the code is linted before it's committed. You can install pre-commit hooks by running `pre-commit install` in the root directory of the project.
