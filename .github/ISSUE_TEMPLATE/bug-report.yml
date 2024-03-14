@@ -44,11 +44,3 @@ body:
       label: Relevant stack traces and/or logs
       description: Please copy and paste any relevant raised exceptions. This will be automatically formatted into code, so no need for backticks.
       render: shell
-  - type: checkboxes
-    id: terms
-    attributes:
-      label: Code of Conduct
-      description: By submitting this issue, you agree to follow our [Code of Conduct](https://example.com)
-      options:
-        - label: I agree to follow this project's Code of Conduct
-          required: true
