@@ -130,6 +130,15 @@ supported_onnx_models = [
             "hf": "qdrant/gte-large-onnx",
         },
     },
+    {
+        "model": "intfloat/multilingual-e5-small",
+        "dim": 384,
+        "description": "Multilingual model, e5-small. Recommend using this model for non-English languages",
+        "size_in_GB": 0.5,
+        "sources": {
+            "hf": "intfloat/multilingual-e5-small",
+        },
+    },
     # {
     #     "model": "sentence-transformers/all-MiniLM-L6-v2",
     #     "dim": 384,
