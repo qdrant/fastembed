@@ -67,7 +67,7 @@ Even documentation improvements and tests are most welcome:
 2. There are quite a few pull requests that were merged for this purpose and you can use them as a reference. Here is an example: https://github.com/qdrant/fastembed/pull/129
 3. Make sure to add tests for the new model
     - The CANONICAL_VECTOR values must come from a reference implementation usually from Huggingface Transformers or Sentence Transformers
-    - Here is a reference [Colab Notebook](https://colab.research.google.com/drive/1tNdV3DsiwsJzu2AXnUnoeF5av1Hp8HF1?usp=sharing) for how I will evaluate whether your VECTOR values in the test are correct or not.
+    - Here is a reference [Colab Notebook](https://colab.research.google.com/drive/1tNdV3DsiwsJzu2AXnUnoeF5av1Hp8HF1?usp=sharing) for how we will evaluate whether your VECTOR values in the test are correct or not.
 
 ## Styleguides
 
