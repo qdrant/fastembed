@@ -63,10 +63,11 @@ Even documentation improvements and tests are most welcome:
 1. This PR fixes a README link: https://github.com/qdrant/fastembed/pull/143
 
 ### Adding New Models
-You can start by adding new models to the FastEmbed. You can find all the model requests [here](https://github.com/qdrant/fastembed/labels/model%20request). 
-
-
-There are quite a few pull requests that were merged for this purpose and you can use them as a reference. Here is an example: https://github.com/qdrant/fastembed/pull/129 
+1. Open Requests for New Models are [here](https://github.com/qdrant/fastembed/labels/model%20request). 
+2. There are quite a few pull requests that were merged for this purpose and you can use them as a reference. Here is an example: https://github.com/qdrant/fastembed/pull/129
+3. Make sure to add tests for the new model
+    - The CANONICAL_VECTOR values must come from a reference implementation usually from Huggingface Transformers or Sentence Transformers
+    - Here is a reference [Colab Notebook](https://colab.research.google.com/drive/1tNdV3DsiwsJzu2AXnUnoeF5av1Hp8HF1?usp=sharing) for how I will evaluate whether your VECTOR values in the test are correct or not.
 
 ## Styleguides
 
