@@ -2,8 +2,24 @@ import pytest
 from fastembed.sparse.sparse_text_embedding import SparseTextEmbedding
 
 CANONICAL_COLUMN_VALUES = {
-    "prithvida/SPLADE_PP_en_v1": {
-        "indices": [2040, 2047, 2088, 2299, 2748, 3011, 3376, 3795, 4774, 5304, 5798, 6160, 7592, 7632, 8484],
+    "prithvida/Splade_PP_en_v1": {
+        "indices": [
+            2040,
+            2047,
+            2088,
+            2299,
+            2748,
+            3011,
+            3376,
+            3795,
+            4774,
+            5304,
+            5798,
+            6160,
+            7592,
+            7632,
+            8484,
+        ],
         "values": [
             0.4219532012939453,
             0.4320072531700134,
