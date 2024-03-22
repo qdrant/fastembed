@@ -53,7 +53,7 @@ class ModelManagement:
             Dict[str, Any]: The model description.
         """
         for model in cls.list_supported_models():
-            if model_name == model["model"]:
+            if model_name.lower() == model["model"].lower():
                 return model
 
         raise ValueError(f"Model {model_name} is not supported in {cls.__name__}.")
