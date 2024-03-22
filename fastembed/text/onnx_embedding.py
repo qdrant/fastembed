@@ -146,7 +146,7 @@ supported_onnx_models = [
     {
     "model": "mixedbread-ai/mxbai-embed-large-v1",
     "dim": 1024,
-    "description": "base sentence embedding model",
+    "description": "MixedBread Base sentence embedding model, does well on MTEB",
     "size_in_GB": 1.34, 
     "sources": {
         "hf": "mixedbread-ai/mxbai-embed-large-v1",
