@@ -28,15 +28,11 @@ supported_multilingual_e5_models = [
     {
         "model": "intfloat/multilingual-e5-large-instruct",
         "dim": 1024,
-
         "description": "Multilingual model, e5-large-instruct. Recommend using this model for non-English languages",
         "size_in_GB": 1.14,
-        "sources": { "hf": "intfloat/multilingual-e5-large-instruct"}
+        "sources": {"hf": "intfloat/multilingual-e5-large-instruct"},
     },
 ]
-
-  
-
 
 
 class E5OnnxEmbedding(OnnxTextEmbedding):
@@ -53,7 +49,9 @@ class E5OnnxEmbedding(OnnxTextEmbedding):
         """
         return supported_multilingual_e5_models
 
-    def _preprocess_onnx_input(self, onnx_input: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+    def _preprocess_onnx_input(
+        self, onnx_input: Dict[str, np.ndarray]
+    ) -> Dict[str, np.ndarray]:
         """
         Preprocess the onnx input.
         """
