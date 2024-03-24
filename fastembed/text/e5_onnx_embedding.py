@@ -25,7 +25,18 @@ supported_multilingual_e5_models = [
             "hf": "xenova/paraphrase-multilingual-mpnet-base-v2",
         },
     },
+    {
+        "model": "intfloat/multilingual-e5-large-instruct",
+        "dim": 1024,
+
+        "description": "Multilingual model, e5-large-instruct. Recommend using this model for non-English languages",
+        "size_in_GB": 1.14,
+        "sources": { "hf": "intfloat/multilingual-e5-large-instruct"}
+    },
 ]
+
+  
+
 
 
 class E5OnnxEmbedding(OnnxTextEmbedding):
