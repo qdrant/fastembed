@@ -28,7 +28,7 @@ supported_multilingual_e5_models = [
     {
         "model": "intfloat/multilingual-e5-large-instruct",
         "dim": 1024,
-        "description": "Multilingual model, e5-large-instruct. Recommend using this model for non-English languages",
+        "description": "multilingual model, e5-large-instruct",
         "size_in_GB": 1.14,
         "sources": {"hf": "intfloat/multilingual-e5-large-instruct"},
     },
