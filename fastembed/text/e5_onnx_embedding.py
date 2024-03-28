@@ -25,6 +25,13 @@ supported_multilingual_e5_models = [
             "hf": "xenova/paraphrase-multilingual-mpnet-base-v2",
         },
     },
+    {
+        "model": "intfloat/multilingual-e5-large-instruct",
+        "dim": 1024,
+        "description": "multilingual model, e5-large-instruct",
+        "size_in_GB": 1.14,
+        "sources": {"hf": "intfloat/multilingual-e5-large-instruct"},
+    },
 ]
 
 
@@ -43,6 +50,7 @@ class E5OnnxEmbedding(OnnxTextEmbedding):
         return supported_multilingual_e5_models
 
     def _preprocess_onnx_input(self, onnx_input: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+
         """
         Preprocess the onnx input.
         """
