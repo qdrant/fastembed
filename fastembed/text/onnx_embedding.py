@@ -143,6 +143,15 @@ supported_onnx_models = [
     #         "https://storage.googleapis.com/qdrant-fastembed/sentence-transformers-all-MiniLM-L6-v2.tar.gz"
     #     ]
     # }
+    {
+    "model": "mixedbread-ai/mxbai-embed-large-v1",
+    "dim": 1024,
+    "description": "MixedBread Base sentence embedding model, does well on MTEB",
+    "size_in_GB": 1.34, 
+    "sources": {
+        "hf": "mixedbread-ai/mxbai-embed-large-v1",
+        },
+    },
 ]
 
 
