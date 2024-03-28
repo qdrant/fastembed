@@ -10,6 +10,15 @@ supported_splade_models = [
     {
         "model": "prithvida/Splade_PP_en_v1",
         "vocab_size": 30522,
+        "description": "Misspelled version of the model. Retained for backward compatibility. Independent Implementation of SPLADE++ Model for English",
+        "size_in_GB": 0.532,
+        "sources": {
+            "hf": "Qdrant/SPLADE_PP_en_v1",
+        },
+    },
+    {
+        "model": "prithivida/Splade_PP_en_v1",
+        "vocab_size": 30522,
         "description": "Independent Implementation of SPLADE++ Model for English",
         "size_in_GB": 0.532,
         "sources": {
