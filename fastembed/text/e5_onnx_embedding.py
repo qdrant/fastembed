@@ -30,7 +30,8 @@ supported_multilingual_e5_models = [
         "dim": 1024,
         "description": "multilingual model, e5-large-instruct",
         "size_in_GB": 1.03,
-        "sources": {"hf": "https://drive.google.com/file/d/1XSl4RantOvSTiZeta7tl8S6f9P6MMvSo/view?usp=sharing"},
+        "sources": {"url": "https://drive.google.com/file/d/1XSl4RantOvSTiZeta7tl8S6f9P6MMvSo/view?usp=sharing",
+            "hf": "multilingual-e5-large-instruct-onnx"},
     },
 
 ]
