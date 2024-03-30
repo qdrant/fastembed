@@ -144,12 +144,12 @@ supported_onnx_models = [
     #     ]
     # }
     {
-    "model": "mixedbread-ai/mxbai-embed-large-v1",
-    "dim": 1024,
-    "description": "MixedBread Base sentence embedding model, does well on MTEB",
-    "size_in_GB": 1.34, 
-    "sources": {
-        "hf": "mixedbread-ai/mxbai-embed-large-v1",
+        "model": "mixedbread-ai/mxbai-embed-large-v1",
+        "dim": 1024,
+        "description": "MixedBread Base sentence embedding model, does well on MTEB",
+        "size_in_GB": 1.34,
+        "sources": {
+            "hf": "mixedbread-ai/mxbai-embed-large-v1",
         },
     },
 ]
@@ -239,7 +239,9 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxModel[np.ndarray]):
         return onnx_input
 
     @classmethod
-    def _post_process_onnx_output(cls, output: Tuple[np.ndarray, np.ndarray]) -> Iterable[np.ndarray]:
+    def _post_process_onnx_output(
+        cls, output: Tuple[np.ndarray, np.ndarray]
+    ) -> Iterable[np.ndarray]:
         embeddings, _ = output
         return normalize(embeddings[:, 0]).astype(np.float32)
 
