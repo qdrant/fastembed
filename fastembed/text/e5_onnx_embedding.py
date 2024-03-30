@@ -29,11 +29,12 @@ supported_multilingual_e5_models = [
         "model": "intfloat/multilingual-e5-large-instruct",
         "dim": 1024,
         "description": "multilingual model, e5-large-instruct",
-        "size_in_GB": 1.14,
-        "sources": {"hf": "intfloat/multilingual-e5-large-instruct"},
+        "size_in_GB": 1.03,
+        "sources": {"hf": "https://drive.google.com/file/d/1XSl4RantOvSTiZeta7tl8S6f9P6MMvSo/view?usp=sharing"},
     },
-]
 
+]
+      
 
 class E5OnnxEmbedding(OnnxTextEmbedding):
     @classmethod
