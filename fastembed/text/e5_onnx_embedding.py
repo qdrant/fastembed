@@ -31,7 +31,7 @@ supported_multilingual_e5_models = [
         "description": "multilingual model, e5-large-instruct",
         "size_in_GB": 1.03,
         "sources": {
-            "url": "https://drive.google.com/file/d/1XSl4RantOvSTiZeta7tl8S6f9P6MMvSo/view?usp=sharing",
+            "url": "https://huggingface.co/yashvardhan7/multilingual-e5-large-instruct-onnx/blob/main/fast-multilingual-e5-large-instruct%20.tar.gz",
             "hf": "multilingual-e5-large-instruct-onnx",
         },
     },
