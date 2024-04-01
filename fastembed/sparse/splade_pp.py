@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, Type
 
 import numpy as np
 
@@ -113,6 +113,10 @@ class SpladePP(SparseTextEmbeddingBase, OnnxModel[SparseEmbedding]):
             batch_size=batch_size,
             parallel=parallel,
         )
+
+    @classmethod
+    def _get_worker_class(cls) -> Type[EmbeddingWorker]:
+        return SpladePPEmbeddingWorker
 
 
 class SpladePPEmbeddingWorker(EmbeddingWorker):
