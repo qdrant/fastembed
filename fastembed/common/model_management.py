@@ -175,6 +175,9 @@ class ModelManagement:
 
         model_tar_gz = Path(cache_dir) / f"{fast_model_name}.tar.gz"
 
+        if model_tar_gz.exists():
+            model_tar_gz.unlink()
+
         cls.download_file_from_gcs(
             source_url,
             output_path=str(model_tar_gz),
