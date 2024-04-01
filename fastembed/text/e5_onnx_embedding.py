@@ -51,7 +51,7 @@ supported_multilingual_e5_models = [
         "description": "French embedding model",
         "size_in_GB": 0.445,
         "sources": {
-            "url": "https://huggingface.co/yashvardhan7/dangvantuan-sentence-camembert-base-onxx/blob/main/fast-sentence-camembert-base.tar.gz",
+            "url": "https://huggingface.co/yashvardhan7/fast-sentence-camembert-base/blob/main/fast-sentence-camembert-base.tar.gz",
             "hf": "sentence-camembert-base-onnx",
         },
     },
