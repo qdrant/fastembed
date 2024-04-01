@@ -26,7 +26,7 @@ numpy = [
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.2"
-ruff = "^0.2.2"
+ruff = "^0.3.1"
 notebook = ">=7.0.2"
 pre-commit = {version = "^3.6.2", python = ">=3.9,<3.12" }
 
@@ -43,4 +43,4 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
-line-length = 120
+line-length = 99

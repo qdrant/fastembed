@@ -11,14 +11,14 @@ supported_jina_models = [
         "model": "jinaai/jina-embeddings-v2-base-en",
         "dim": 768,
         "description": "English embedding model supporting 8192 sequence length",
-        "size_in_GB": 0.55,
+        "size_in_GB": 0.52,
         "sources": {"hf": "xenova/jina-embeddings-v2-base-en"},
     },
     {
         "model": "jinaai/jina-embeddings-v2-small-en",
         "dim": 512,
         "description": "English embedding model supporting 8192 sequence length",
-        "size_in_GB": 0.13,
+        "size_in_GB": 0.12,
         "sources": {"hf": "xenova/jina-embeddings-v2-small-en"},
     },
 ]
@@ -49,7 +49,9 @@ class JinaOnnxEmbedding(OnnxTextEmbedding):
         return supported_jina_models
 
     @classmethod
-    def _post_process_onnx_output(cls, output: Tuple[np.ndarray, np.ndarray]) -> Iterable[np.ndarray]:
+    def _post_process_onnx_output(
+        cls, output: Tuple[np.ndarray, np.ndarray]
+    ) -> Iterable[np.ndarray]:
         embeddings, attn_mask = output
         return normalize(cls.mean_pooling(embeddings, attn_mask)).astype(np.float32)
 

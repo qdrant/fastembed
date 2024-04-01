@@ -20,7 +20,7 @@ supported_multilingual_e5_models = [
         "model": "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
         "dim": 768,
         "description": "Sentence-transformers model for tasks like clustering or semantic search",
-        "size_in_GB": 1.11,
+        "size_in_GB": 1.00,
         "sources": {
             "hf": "xenova/paraphrase-multilingual-mpnet-base-v2",
         },

@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, Type
 
 import numpy as np
 
@@ -30,7 +30,9 @@ supported_splade_models = [
 
 class SpladePP(SparseTextEmbeddingBase, OnnxModel[SparseEmbedding]):
     @classmethod
-    def _post_process_onnx_output(cls, output: Tuple[np.ndarray, np.ndarray]) -> Iterable[SparseEmbedding]:
+    def _post_process_onnx_output(
+        cls, output: Tuple[np.ndarray, np.ndarray]
+    ) -> Iterable[SparseEmbedding]:
         logits, attention_mask = output
         relu_log = np.log(1 + np.maximum(logits, 0))
 
@@ -113,6 +115,10 @@ class SpladePP(SparseTextEmbeddingBase, OnnxModel[SparseEmbedding]):
             batch_size=batch_size,
             parallel=parallel,
         )
+
+    @classmethod
+    def _get_worker_class(cls) -> Type[EmbeddingWorker]:
+        return SpladePPEmbeddingWorker
 
 
 class SpladePPEmbeddingWorker(EmbeddingWorker):
