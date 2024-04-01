@@ -247,7 +247,9 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxModel[np.ndarray]):
         return onnx_input
 
     @classmethod
-    def _post_process_onnx_output(cls, output: Tuple[np.ndarray, np.ndarray]) -> Iterable[np.ndarray]:
+    def _post_process_onnx_output(
+        cls, output: Tuple[np.ndarray, np.ndarray]
+    ) -> Iterable[np.ndarray]:
         embeddings, _ = output
         return normalize(embeddings[:, 0]).astype(np.float32)
 

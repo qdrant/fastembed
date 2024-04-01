@@ -92,7 +92,9 @@ class ModelManagement:
 
         show_progress = total_size_in_bytes and show_progress
 
-        with tqdm(total=total_size_in_bytes, unit="iB", unit_scale=True, disable=not show_progress) as progress_bar:
+        with tqdm(
+            total=total_size_in_bytes, unit="iB", unit_scale=True, disable=not show_progress
+        ) as progress_bar:
             with open(output_path, "wb") as file:
                 for chunk in response.iter_content(chunk_size=1024):
                     if chunk:  # Filter out keep-alive new chunks
@@ -101,7 +103,9 @@ class ModelManagement:
         return output_path
 
     @classmethod
-    def download_files_from_huggingface(cls, hf_source_repo: str, cache_dir: Optional[str] = None) -> str:
+    def download_files_from_huggingface(
+        cls, hf_source_repo: str, cache_dir: Optional[str] = None
+    ) -> str:
         """
         Downloads a model from HuggingFace Hub.
         Args:
@@ -216,9 +220,14 @@ class ModelManagement:
 
         if hf_source:
             try:
-                return Path(cls.download_files_from_huggingface(hf_source, cache_dir=str(cache_dir)))
+                return Path(
+                    cls.download_files_from_huggingface(hf_source, cache_dir=str(cache_dir))
+                )
             except (EnvironmentError, RepositoryNotFoundError, ValueError) as e:
-                logger.error(f"Could not download model from HuggingFace: {e}" "Falling back to other sources.")
+                logger.error(
+                    f"Could not download model from HuggingFace: {e}"
+                    "Falling back to other sources."
+                )
 
         if url_source:
             return cls.retrieve_model_gcs(model["model"], url_source, str(cache_dir))

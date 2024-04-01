@@ -48,7 +48,9 @@ class OnnxModel(Generic[T]):
             so.inter_op_num_threads = threads
 
         self.tokenizer = load_tokenizer(model_dir=model_dir, max_length=max_length)
-        self.model = ort.InferenceSession(str(model_path), providers=onnx_providers, sess_options=so)
+        self.model = ort.InferenceSession(
+            str(model_path), providers=onnx_providers, sess_options=so
+        )
 
     def onnx_embed(self, documents: List[str]) -> Tuple[np.ndarray, np.ndarray]:
         encoded = self.tokenizer.encode_batch(documents)
@@ -58,7 +60,9 @@ class OnnxModel(Generic[T]):
         onnx_input = {
             "input_ids": np.array(input_ids, dtype=np.int64),
             "attention_mask": np.array(attention_mask, dtype=np.int64),
-            "token_type_ids": np.array([np.zeros(len(e), dtype=np.int64) for e in input_ids], dtype=np.int64),
+            "token_type_ids": np.array(
+                [np.zeros(len(e), dtype=np.int64) for e in input_ids], dtype=np.int64
+            ),
         }
 
         onnx_input = self._preprocess_onnx_input(onnx_input)
@@ -97,7 +101,9 @@ class OnnxModel(Generic[T]):
                 "model_name": model_name,
                 "cache_dir": cache_dir,
             }
-            pool = ParallelWorkerPool(parallel, self._get_worker_class(), start_method=start_method)
+            pool = ParallelWorkerPool(
+                parallel, self._get_worker_class(), start_method=start_method
+            )
             for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
                 yield from self._post_process_onnx_output(batch)
 

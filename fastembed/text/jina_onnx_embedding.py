@@ -49,7 +49,9 @@ class JinaOnnxEmbedding(OnnxTextEmbedding):
         return supported_jina_models
 
     @classmethod
-    def _post_process_onnx_output(cls, output: Tuple[np.ndarray, np.ndarray]) -> Iterable[np.ndarray]:
+    def _post_process_onnx_output(
+        cls, output: Tuple[np.ndarray, np.ndarray]
+    ) -> Iterable[np.ndarray]:
         embeddings, attn_mask = output
         return normalize(cls.mean_pooling(embeddings, attn_mask)).astype(np.float32)
 
