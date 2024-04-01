@@ -28,15 +28,6 @@ supported_onnx_models = [
         },
     },
     {
-        "model": "BAAI/bge-large-en-v1.5-quantized",
-        "dim": 1024,
-        "description": "Large English model, v1.5",
-        "size_in_GB": 0.64,
-        "sources": {
-            "hf": "qdrant/bge-large-en-v1.5-onnx-q",
-        },
-    },
-    {
         "model": "BAAI/bge-large-en-v1.5",
         "dim": 1024,
         "description": "Large English model, v1.5",
@@ -70,15 +61,6 @@ supported_onnx_models = [
         "dim": 384,
         "description": "Fast and Default English model",
         "size_in_GB": 0.13,
-        "sources": {
-            "url": "https://storage.googleapis.com/qdrant-fastembed/fast-bge-small-en-v1.5.tar.gz",
-        },
-    },
-    {
-        "model": "BAAI/bge-small-en-v1.5-quantized",
-        "dim": 384,
-        "description": "Fast English model",
-        "size_in_GB": 0.06,
         "sources": {
             "hf": "qdrant/bge-small-en-v1.5-onnx-q",
         },
@@ -152,12 +134,12 @@ supported_onnx_models = [
     #     ]
     # }
     {
-    "model": "mixedbread-ai/mxbai-embed-large-v1",
-    "dim": 1024,
-    "description": "MixedBread Base sentence embedding model, does well on MTEB",
-    "size_in_GB": 0.64,
-    "sources": {
-        "hf": "mixedbread-ai/mxbai-embed-large-v1",
+        "model": "mixedbread-ai/mxbai-embed-large-v1",
+        "dim": 1024,
+        "description": "MixedBread Base sentence embedding model, does well on MTEB",
+        "size_in_GB": 0.64,
+        "sources": {
+            "hf": "mixedbread-ai/mxbai-embed-large-v1",
         },
     },
 ]
