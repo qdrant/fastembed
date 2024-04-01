@@ -35,6 +35,16 @@ supported_multilingual_e5_models = [
             "hf": "multilingual-e5-large-instruct-onnx",
         },
     },
+    {
+        "model": "intfloat/multilingual-e5-small",
+        "dim": 384,
+        "description": "multilingual model, e5-small",
+        "size_in_GB": 0.492,
+        "sources": {
+            "url": "https://huggingface.co/intfloat/multilingual-e5-small/tree/main/onnx",
+            "hf": "multilingual-e5-small-onnx",
+        },
+    },
 ]
 
 
