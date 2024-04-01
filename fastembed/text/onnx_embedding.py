@@ -60,7 +60,7 @@ supported_onnx_models = [
         "model": "BAAI/bge-small-en-v1.5",
         "dim": 384,
         "description": "Fast and Default English model",
-        "size_in_GB": 0.13,
+        "size_in_GB": 0.067,
         "sources": {
             "hf": "qdrant/bge-small-en-v1.5-onnx-q",
         },
