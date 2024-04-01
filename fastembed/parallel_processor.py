@@ -128,7 +128,9 @@ class ParallelWorkerPool:
                 yield buffer.pop(next_expected)
                 next_expected += 1
 
-    def semi_ordered_map(self, stream: Iterable[Any], *args: Any, **kwargs: Any) -> Iterable[Tuple[int, Any]]:
+    def semi_ordered_map(
+        self, stream: Iterable[Any], *args: Any, **kwargs: Any
+    ) -> Iterable[Tuple[int, Any]]:
         try:
             self.start(**kwargs)
 

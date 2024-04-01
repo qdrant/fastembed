@@ -30,7 +30,9 @@ supported_splade_models = [
 
 class SpladePP(SparseTextEmbeddingBase, OnnxModel[SparseEmbedding]):
     @classmethod
-    def _post_process_onnx_output(cls, output: Tuple[np.ndarray, np.ndarray]) -> Iterable[SparseEmbedding]:
+    def _post_process_onnx_output(
+        cls, output: Tuple[np.ndarray, np.ndarray]
+    ) -> Iterable[SparseEmbedding]:
         logits, attention_mask = output
         relu_log = np.log(1 + np.maximum(logits, 0))
 
