@@ -30,6 +30,7 @@ CANONICAL_VECTOR_VALUES = {
     "mixedbread-ai/mxbai-embed-large-v1": np.array([0.02295546, 0.03196154, 0.016512, -0.04031524, -0.0219634]),
     "intfloat/multilingual-e5-large-instruct": np.array([ 0.01020065,  0.0236722,   0.00117698, -0.04327101,  0.02887568]),
     "intfloat/multilingual-e5-small": np.array([ 0.03131692, 0.03093917, -0.03511662, -0.06727394,  0.08508427]),
+    "dangvantuan/sentence-camembert-base": np.array([ 0.0313169,   0.0309392,  -0.03511663, -0.06727394,  0.08508424]),
 }
 
 
