@@ -57,15 +57,16 @@ class OnnxModel(Generic[T]):
         input_ids = np.array([e.ids for e in encoded])
         attention_mask = np.array([e.attention_mask for e in encoded])
 
+        # Prepare the ONNX input dictionary
         onnx_input = {
-            "input_ids": np.array(input_ids, dtype=np.int64),
-            "attention_mask": np.array(attention_mask, dtype=np.int64),
-            "token_type_ids": np.array(
-                [np.zeros(len(e), dtype=np.int64) for e in input_ids], dtype=np.int64
-            ),
+            "input_ids": input_ids.astype(np.int64),
+            "attention_mask": attention_mask.astype(np.int64),
         }
 
-        onnx_input = self._preprocess_onnx_input(onnx_input)
+        # Check if 'token_type_ids' is expected by the model
+        if 'token_type_ids' in [input.name for input in self.model.get_inputs()]:
+            token_type_ids = np.zeros_like(input_ids)
+            onnx_input["token_type_ids"] = token_type_ids.astype(np.int64)
 
         model_output = self.model.run(None, onnx_input)
         embeddings = model_output[0]
