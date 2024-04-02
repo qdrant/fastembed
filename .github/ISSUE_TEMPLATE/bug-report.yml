@@ -28,7 +28,7 @@ body:
         - 0.2.2
         - 0.2.1
         - 0.1.x 
-      default: 0.2.4
+      default: 0
     validations:
       required: true
   - type: dropdown
