@@ -31,8 +31,7 @@ supported_multilingual_e5_models = [
         "description": "multilingual model, e5-large-instruct",
         "size_in_GB": 1.03,
         "sources": {
-            "url": "https://huggingface.co/yashvardhan7/fast-multilingual-e5-large-instruct/blob/main/fast-multilingual-e5-large-instruct%20.tar.gz",
-            "hf": "multilingual-e5-large-instruct-onnx",
+            "hf": "yashvardhan7/multilingual-e5-large-instruct",
         },
     },
     {
@@ -41,8 +40,7 @@ supported_multilingual_e5_models = [
         "description": "multilingual model, e5-small",
         "size_in_GB": 0.492,
         "sources": {
-            "url": "https://huggingface.co/intfloat/multilingual-e5-small/tree/main/onnx",
-            "hf": "multilingual-e5-small-onnx",
+            "hf": "intfloat/multilingual-e5-small",
         },
     },
 ]
