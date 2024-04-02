@@ -2,7 +2,6 @@ import os
 
 import numpy as np
 import pytest
-from typing import List, Tuple
 from fastembed.text.text_embedding import TextEmbedding
 
 CANONICAL_VECTOR_VALUES = {
