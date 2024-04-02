@@ -49,8 +49,6 @@ def test_embedding():
         assert embeddings.shape == (2, dim)
 
         canonical_vector = CANONICAL_VECTOR_VALUES[model_desc["model"]]
-        if not np.allclose(embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3):
-            print(f"Actual embeddings for {model_desc['model']}: {embeddings[0, : canonical_vector.shape[0]]}")
         assert np.allclose(embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3), model_desc["model"]
 
 
