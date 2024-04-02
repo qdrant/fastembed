@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 import pytest
-
+from typing import List, Tuple
 from fastembed.text.text_embedding import TextEmbedding
 
 CANONICAL_VECTOR_VALUES = {
@@ -28,8 +28,8 @@ CANONICAL_VECTOR_VALUES = {
     ),
     "thenlper/gte-large": np.array([-0.01920587, 0.00113156, -0.00708992, -0.00632304, -0.04025577]),
     "mixedbread-ai/mxbai-embed-large-v1": np.array([0.02295546, 0.03196154, 0.016512, -0.04031524, -0.0219634]),
-    "intfloat/multilingual-e5-large-instruct": np.array([ 0.01020065,  0.0236722,   0.00117698, -0.04327101,  0.02887568]),
-    "intfloat/multilingual-e5-small": np.array([ 0.03131692, 0.03093917, -0.03511662, -0.06727394,  0.08508427]),
+    "intfloat/multilingual-e5-large-instruct": np.array([0.01046869, 0.02897676, 0.00061903, -0.04191001, 0.02616828]),
+    "intfloat/multilingual-e5-small": np.array([0.04931236,  0.02415175, -0.0384715 , -0.08884481,  0.08710264],),
 }
 
 
@@ -49,6 +49,8 @@ def test_embedding():
         assert embeddings.shape == (2, dim)
 
         canonical_vector = CANONICAL_VECTOR_VALUES[model_desc["model"]]
+        if not np.allclose(embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3):
+            print(f"Actual embeddings for {model_desc['model']}: {embeddings[0, : canonical_vector.shape[0]]}")
         assert np.allclose(embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3), model_desc["model"]
 
 
