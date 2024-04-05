@@ -15,6 +15,14 @@ body:
       value: "A bug happened!"
     validations:
       required: true
+  - type: textarea
+    id: Python version
+    attributes:
+      label: What Python version are you on? e.g. python --version
+      description: Also tell us, what package manager are you using e.g. conda, pip, poetry?
+      placeholder: Python3.6
+    validations:
+      required: true
   - type: dropdown
     id: version
     attributes:
