@@ -20,7 +20,7 @@ body:
     attributes:
       label: What Python version are you on? e.g. python --version
       description: Also tell us, what package manager are you using e.g. conda, pip, poetry?
-      placeholder: Python3.6
+      placeholder: Python3.10
     validations:
       required: true
   - type: dropdown
