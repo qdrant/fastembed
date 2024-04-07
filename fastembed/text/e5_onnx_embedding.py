@@ -25,6 +25,15 @@ supported_multilingual_e5_models = [
             "hf": "xenova/paraphrase-multilingual-mpnet-base-v2",
         },
     },
+    {
+        "model": "intfloat/multilingual-e5-small",
+        "dim": 384,
+        "description": "multilingual model, e5-small",
+        "size_in_GB": 0.492,
+        "sources": {
+            "hf": "intfloat/multilingual-e5-small",
+        },
+    },
 ]
 
 
