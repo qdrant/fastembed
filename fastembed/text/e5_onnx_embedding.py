@@ -25,6 +25,15 @@ supported_multilingual_e5_models = [
             "hf": "xenova/paraphrase-multilingual-mpnet-base-v2",
         },
     },
+    {
+        "model": "intfloat/multilingual-e5-small",
+        "dim": 384,
+        "description": "multilingual model, e5-small",
+        "size_in_GB": 0.492,
+        "sources": {
+            "hf": "intfloat/multilingual-e5-small",
+        },
+    },
 ]
 class E5OnnxEmbedding(OnnxTextEmbedding):
     required_inputs = ["input_ids", "attention_mask", "token_type_ids"]  # Define required inputs here
@@ -45,10 +54,9 @@ class E5OnnxEmbedding(OnnxTextEmbedding):
         """
         Preprocess the onnx input.
         """
-        if TOKEN_TYPE_IDS not in self.required_inputs:
-            onnx_input.pop(TOKEN_TYPE_IDS, None)
+        if "token_type_ids" not in self.required_inputs:
+            onnx_input.pop("token_type_ids", None)
         return onnx_input
-
 
 class E5OnnxEmbeddingWorker(OnnxTextEmbeddingWorker):
     def init_embedding(
