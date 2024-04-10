@@ -50,7 +50,7 @@ class E5OnnxEmbedding(OnnxTextEmbedding):
         """
         return supported_multilingual_e5_models
 
-    def preprocess_input(self, onnx_input: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+    def _preprocess_onnx_input(self, onnx_input: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
         """
         Preprocess the onnx input.
         """
@@ -60,8 +60,8 @@ class E5OnnxEmbedding(OnnxTextEmbedding):
 
 class E5OnnxEmbeddingWorker(OnnxTextEmbeddingWorker):
     def init_embedding(
-            self,
-            model_name: str,
-            cache_dir: str,
+        self,
+        model_name: str,
+        cache_dir: str,
     ) -> E5OnnxEmbedding:
         return E5OnnxEmbedding(model_name=model_name, cache_dir=cache_dir, threads=1)
