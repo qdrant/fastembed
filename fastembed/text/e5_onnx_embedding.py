@@ -29,9 +29,9 @@ supported_multilingual_e5_models = [
         "model": "dangvantuan/sentence-camembert-base",
         "dim": 768,
         "description": "French embedding model",
-        "size_in_GB": 0.440,
+        "size_in_GB": 1.3,
         "sources": {
-            "hf": "yashvardhan7/sentence-camembert-base",
+            "hf": "Xenova/sentence-camembert-large",
         },
     },
 
