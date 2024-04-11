@@ -26,35 +26,15 @@ supported_multilingual_e5_models = [
         },
     },
     {
-        "model": "intfloat/multilingual-e5-large-instruct",
-        "dim": 1024,
-        "description": "multilingual model, e5-large-instruct",
-        "size_in_GB": 1.03,
-        "sources": {
-            "url": "https://huggingface.co/yashvardhan7/fast-multilingual-e5-large-instruct/blob/main/fast-multilingual-e5-large-instruct%20.tar.gz",
-            "hf": "multilingual-e5-large-instruct-onnx",
-        },
-    },
-    {
-        "model": "intfloat/multilingual-e5-small",
-        "dim": 384,
-        "description": "multilingual model, e5-small",
-        "size_in_GB": 0.492,
-        "sources": {
-            "url": "https://huggingface.co/intfloat/multilingual-e5-small/tree/main/onnx",
-            "hf": "multilingual-e5-small-onnx",
-        },
-    },
-    {
         "model": "dangvantuan/sentence-camembert-base",
         "dim": 768,
-        "description": "French embedding model",
-        "size_in_GB": 0.445,
+        "description": "Sentence-transformers model for tasks like clustering or semantic search",
+        "size_in_GB": 0.440,
         "sources": {
-            "url": "https://huggingface.co/yashvardhan7/fast-sentence-camembert-base/blob/main/fast-sentence-camembert-base.tar.gz",
-            "hf": "sentence-camembert-base-onnx",
+            "hf": "yashvardhan7/sentence-camembert-base",
         },
     },
+
 ]
 
 
