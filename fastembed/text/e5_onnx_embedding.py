@@ -29,7 +29,7 @@ supported_multilingual_e5_models = [
         "model": "dangvantuan/sentence-camembert-base",
         "dim": 768,
         "description": "French embedding model",
-        "size_in_GB": 1.3,
+        "size_in_GB": 1.34,
         "sources": {
             "hf": "Xenova/sentence-camembert-large",
         },
