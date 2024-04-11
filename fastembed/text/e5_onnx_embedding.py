@@ -28,7 +28,7 @@ supported_multilingual_e5_models = [
     {
         "model": "dangvantuan/sentence-camembert-base",
         "dim": 768,
-        "description": "Sentence-transformers model for tasks like clustering or semantic search",
+        "description": "French embedding model",
         "size_in_GB": 0.440,
         "sources": {
             "hf": "yashvardhan7/sentence-camembert-base",
