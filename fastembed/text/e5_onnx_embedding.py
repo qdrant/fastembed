@@ -31,7 +31,7 @@ supported_multilingual_e5_models = [
         "description": "French embedding model",
         "size_in_GB": 1.34,
         "sources": {
-            "hf": "Xenova/sentence-camembert-large",
+            "hf": "yashvardhan7/sentence-camembert-base_onnx",
         },
     },
 
