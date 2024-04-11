@@ -25,6 +25,16 @@ supported_multilingual_e5_models = [
             "hf": "xenova/paraphrase-multilingual-mpnet-base-v2",
         },
     },
+    {
+        "model": "dangvantuan/sentence-camembert-base",
+        "dim": 768,
+        "description": "Sentence-transformers model for tasks like clustering or semantic search",
+        "size_in_GB": 0.440,
+        "sources": {
+            "hf": "yashvardhan7/sentence-camembert-base",
+        },
+    },
+
 ]
 
 
