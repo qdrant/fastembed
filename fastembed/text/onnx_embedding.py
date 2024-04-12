@@ -75,6 +75,16 @@ supported_onnx_models = [
         },
     },
     {
+        "model": "BAAI/bge-m3",
+        "dim": 1024,
+        "description": "BGE-M3, which is distinguished for its versatility in Multi-Functionality, Multi-Linguality, and Multi-Granularity.	",
+        "size_in_GB": 2.27,
+        "sources": {
+            "hf": "yashvardhan7/bge-m3-onnx",
+        },
+    },
+    
+    {
         "model": "sentence-transformers/all-MiniLM-L6-v2",
         "dim": 384,
         "description": "Sentence Transformer model, MiniLM-L6-v2",
@@ -217,11 +227,29 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxModel[np.ndarray]):
             batch_size=batch_size,
             parallel=parallel,
         )
+    def onnx_embed(self, documents: List[str]) -> Tuple[np.ndarray, np.ndarray]:
+        encoded = self.tokenizer.encode_batch(documents)
+        input_ids = np.array([e.ids for e in encoded])
+        attention_mask = np.array([e.attention_mask for e in encoded])
 
+        # Prepare the ONNX input dictionary
+        onnx_input = {
+            "input_ids": input_ids.astype(np.int64),
+            "attention_mask": attention_mask.astype(np.int64),
+        }
+
+        # Check if 'token_type_ids' is expected by the model
+        if 'token_type_ids' in [input.name for input in self.model.get_inputs()]:
+            token_type_ids = np.zeros_like(input_ids)
+            onnx_input["token_type_ids"] = token_type_ids.astype(np.int64)
+
+        model_output = self.model.run(None, onnx_input)
+        embeddings = model_output[0]
+        return embeddings, attention_mask
     @classmethod
     def _get_worker_class(cls) -> Type["EmbeddingWorker"]:
         return OnnxTextEmbeddingWorker
-
+    
     def _preprocess_onnx_input(self, onnx_input: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
         """
         Preprocess the onnx input.
