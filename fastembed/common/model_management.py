@@ -119,7 +119,7 @@ class ModelManagement:
             repo_id=hf_source_repo,
             allow_patterns=[
                 "*.onnx",
-                ".onnx_data",
+                "*.onnx_data",
                 "config.json",
                 "tokenizer.json",
                 "tokenizer_config.json",
