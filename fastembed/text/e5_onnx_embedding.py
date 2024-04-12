@@ -27,9 +27,9 @@ supported_multilingual_e5_models = [
     },
     {
         "model": "dangvantuan/sentence-camembert-base",
-        "dim": 1024,
+        "dim": 768,
         "description": "French embedding model",
-        "size_in_GB": 1.34,
+        "size_in_GB": 0.440,
         "sources": {
             "hf": "yashvardhan7/sentence-camembert-base_onnx",
         },
