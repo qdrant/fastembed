@@ -117,7 +117,14 @@ class ModelManagement:
 
         return snapshot_download(
             repo_id=hf_source_repo,
-            ignore_patterns=["model.safetensors", "pytorch_model.bin"],
+            allow_patterns=[
+                "*.onnx",
+                "*.onnx_data",
+                "config.json",
+                "tokenizer.json",
+                "tokenizer_config.json",
+                "special_tokens_map.json",
+            ],
             cache_dir=cache_dir,
         )
 
