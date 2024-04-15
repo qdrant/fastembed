@@ -227,35 +227,28 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxModel[np.ndarray]):
             batch_size=batch_size,
             parallel=parallel,
         )
-    def onnx_embed(self, documents: List[str]) -> Tuple[np.ndarray, np.ndarray]:
-        encoded = self.tokenizer.encode_batch(documents)
-        input_ids = np.array([e.ids for e in encoded])
-        attention_mask = np.array([e.attention_mask for e in encoded])
 
-        # Prepare the ONNX input dictionary
-        onnx_input = {
-            "input_ids": input_ids.astype(np.int64),
-            "attention_mask": attention_mask.astype(np.int64),
-        }
-
-        # Check if 'token_type_ids' is expected by the model
-        if 'token_type_ids' in [input.name for input in self.model.get_inputs()]:
-            token_type_ids = np.zeros_like(input_ids)
-            onnx_input["token_type_ids"] = token_type_ids.astype(np.int64)
-
-        model_output = self.model.run(None, onnx_input)
-        embeddings = model_output[0]
-        return embeddings, attention_mask
     @classmethod
     def _get_worker_class(cls) -> Type["EmbeddingWorker"]:
         return OnnxTextEmbeddingWorker
     
     def _preprocess_onnx_input(self, onnx_input: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
         """
-        Preprocess the onnx input.
-        """
-        return onnx_input
+        Preprocess the ONNX input, conditionally including 'token_type_ids'.
 
+        Args:
+            onnx_input (Dict[str, np.ndarray]): The original ONNX input dictionary.
+
+        Returns:
+            Dict[str, np.ndarray]: The modified ONNX input dictionary.
+        """
+        # Check if 'token_type_ids' is expected by the model
+        expected_input_names = [input.name for input in self.model.get_inputs()]
+        if 'token_type_ids' not in expected_input_names:
+            # Remove 'token_type_ids' from the input if not expected by the model
+            onnx_input.pop('token_type_ids', None)
+
+        return onnx_input
     @classmethod
     def _post_process_onnx_output(
         cls, output: Tuple[np.ndarray, np.ndarray]
