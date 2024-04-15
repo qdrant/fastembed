@@ -41,6 +41,9 @@ class OnnxModel(Generic[T]):
         onnx_providers = ["CPUExecutionProvider"]
 
         so = ort.SessionOptions()
+        if os.getenv("SLURM_JOB_ID") != "":
+            so.intra_op_num_threads = os.getenv("SLURM_CPUS_ON_NODE")
+            so.inter_op_num_threads = os.getenv("SLURM_CPUS_ON_NODE")
         so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
 
         if threads is not None:
