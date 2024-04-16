@@ -16,7 +16,7 @@ supported_onnx_models = [
         "sources": {
             "hf": "yashvardhan7/bge-base-en-onnx",
         },
-        "model_file": "model.onnx",
+        "model_file": "onnx/model.onnx",
     },
     {
         "model": "BAAI/bge-base-en-v1.5",
