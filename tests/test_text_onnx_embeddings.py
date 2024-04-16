@@ -28,6 +28,9 @@ CANONICAL_VECTOR_VALUES = {
     ),
     "thenlper/gte-large": np.array([-0.01920587, 0.00113156, -0.00708992, -0.00632304, -0.04025577]),
     "mixedbread-ai/mxbai-embed-large-v1": np.array([0.02295546, 0.03196154, 0.016512, -0.04031524, -0.0219634]),
+    "nomic-ai/nomic-embed-text-v1.5-Q": np.array(
+        [-0.01554983,  0.0129992 , -0.17909265, -0.01062993,  0.00512859]
+    ),
 }
 
 

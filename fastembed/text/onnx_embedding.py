@@ -16,6 +16,7 @@ supported_onnx_models = [
         "sources": {
             "url": "https://storage.googleapis.com/qdrant-fastembed/fast-bge-base-en.tar.gz",
         },
+        "model_file": "model.onnx",
     },
     {
         "model": "BAAI/bge-base-en-v1.5",
@@ -26,6 +27,7 @@ supported_onnx_models = [
             "url": "https://storage.googleapis.com/qdrant-fastembed/fast-bge-base-en-v1.5.tar.gz",
             "hf": "qdrant/bge-base-en-v1.5-onnx-q",
         },
+        "model_file": "model_optimized.onnx",
     },
     {
         "model": "BAAI/bge-large-en-v1.5",
@@ -35,6 +37,7 @@ supported_onnx_models = [
         "sources": {
             "hf": "qdrant/bge-large-en-v1.5-onnx",
         },
+        "model_file": "model.onnx",
     },
     {
         "model": "BAAI/bge-small-en",
@@ -44,18 +47,8 @@ supported_onnx_models = [
         "sources": {
             "url": "https://storage.googleapis.com/qdrant-fastembed/BAAI-bge-small-en.tar.gz",
         },
+        "model_file": "onnx/model.onnx",
     },
-    # {
-    #     "model": "BAAI/bge-small-en",
-    #     "dim": 384,
-    #     "description": "Fast English model",
-    #     "size_in_GB": 0.2,
-    #     "hf_sources": [],
-    #     "compressed_url_sources": [
-    #         "https://storage.googleapis.com/qdrant-fastembed/fast-bge-small-en.tar.gz",
-    #         "https://storage.googleapis.com/qdrant-fastembed/BAAI-bge-small-en.tar.gz"
-    #     ]
-    # },
     {
         "model": "BAAI/bge-small-en-v1.5",
         "dim": 384,
@@ -64,6 +57,7 @@ supported_onnx_models = [
         "sources": {
             "hf": "qdrant/bge-small-en-v1.5-onnx-q",
         },
+        "model_file": "model_optimized.onnx",
     },
     {
         "model": "BAAI/bge-small-zh-v1.5",
@@ -73,6 +67,7 @@ supported_onnx_models = [
         "sources": {
             "url": "https://storage.googleapis.com/qdrant-fastembed/fast-bge-small-zh-v1.5.tar.gz",
         },
+        "model_file": "onnx/model.onnx",
     },
     {
         "model": "sentence-transformers/all-MiniLM-L6-v2",
@@ -83,6 +78,7 @@ supported_onnx_models = [
             "url": "https://storage.googleapis.com/qdrant-fastembed/sentence-transformers-all-MiniLM-L6-v2.tar.gz",
             "hf": "qdrant/all-MiniLM-L6-v2-onnx",
         },
+        "model_file": "model.onnx",
     },
     {
         "model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
@@ -92,6 +88,7 @@ supported_onnx_models = [
         "sources": {
             "hf": "qdrant/paraphrase-multilingual-MiniLM-L12-v2-onnx-Q",
         },
+        "model_file": "model_optimized.onnx",
     },
     {
         "model": "nomic-ai/nomic-embed-text-v1",
@@ -101,6 +98,7 @@ supported_onnx_models = [
         "sources": {
             "hf": "nomic-ai/nomic-embed-text-v1",
         },
+        "model_file": "onnx/model.onnx",
     },
     {
         "model": "nomic-ai/nomic-embed-text-v1.5",
@@ -110,6 +108,17 @@ supported_onnx_models = [
         "sources": {
             "hf": "nomic-ai/nomic-embed-text-v1.5",
         },
+        "model_file": "onnx/model.onnx",
+    },
+    {
+        "model": "nomic-ai/nomic-embed-text-v1.5-Q",
+        "dim": 768,
+        "description": "Quantized 8192 context length english model",
+        "size_in_GB": 0.13,
+        "sources": {
+            "hf": "nomic-ai/nomic-embed-text-v1.5",
+        },
+        "model_file": "onnx/model_quantized.onnx",
     },
     {
         "model": "thenlper/gte-large",
@@ -119,20 +128,8 @@ supported_onnx_models = [
         "sources": {
             "hf": "qdrant/gte-large-onnx",
         },
+        "model_file": "model.onnx",
     },
-    # {
-    #     "model": "sentence-transformers/all-MiniLM-L6-v2",
-    #     "dim": 384,
-    #     "description": "Sentence Transformer model, MiniLM-L6-v2",
-    #     "size_in_GB": 0.09,
-    #     "hf_sources": [
-    #         "qdrant/all-MiniLM-L6-v2-onnx"
-    #     ],
-    #     "compressed_url_sources": [
-    #         "https://storage.googleapis.com/qdrant-fastembed/fast-all-MiniLM-L6-v2.tar.gz",
-    #         "https://storage.googleapis.com/qdrant-fastembed/sentence-transformers-all-MiniLM-L6-v2.tar.gz"
-    #     ]
-    # }
     {
         "model": "mixedbread-ai/mxbai-embed-large-v1",
         "dim": 1024,
@@ -141,6 +138,7 @@ supported_onnx_models = [
         "sources": {
             "hf": "mixedbread-ai/mxbai-embed-large-v1",
         },
+        "model_file": "onnx/model.onnx",
     },
 ]
 
@@ -178,15 +176,19 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxModel[np.ndarray]):
         """
 
         super().__init__(model_name, cache_dir, threads, **kwargs)
+        
+        model_description = self._get_model_description(model_name)
+        cache_dir = define_cache_dir(cache_dir)
 
-        self.model_name = model_name
-        self._model_description = self._get_model_description(model_name)
+        model_dir, source = self.download_repo_files(model_description, cache_dir)
 
-        self._cache_dir = define_cache_dir(cache_dir)
-        self._model_dir = self.download_model(self._model_description, self._cache_dir)
-        self._max_length = 512
-
-        self.load_onnx_model(self._model_dir, self.threads, self._max_length)
+        self.load_onnx_model(
+            model_dir,
+            threads,
+            cache_dir,
+            model_description,
+            source,
+        )
 
     def embed(
         self,
@@ -212,7 +214,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxModel[np.ndarray]):
         """
         yield from self._embed_documents(
             model_name=self.model_name,
-            cache_dir=str(self._cache_dir),
+            cache_dir=str(self.cache_dir),
             documents=documents,
             batch_size=batch_size,
             parallel=parallel,

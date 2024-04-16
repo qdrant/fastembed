@@ -2,13 +2,15 @@ import os
 import shutil
 import tarfile
 from pathlib import Path
-from typing import List, Optional, Dict, Any
+from typing import List, Literal, Optional, Dict, Any, Tuple
 
 import requests
 from huggingface_hub import snapshot_download
 from huggingface_hub.utils import RepositoryNotFoundError
 from tqdm import tqdm
 from loguru import logger
+
+SOURCE = Literal["hf", "gcs"]
 
 
 def locate_model_file(model_dir: Path, file_names: List[str]) -> Path:
@@ -118,8 +120,6 @@ class ModelManagement:
         return snapshot_download(
             repo_id=hf_source_repo,
             allow_patterns=[
-                "*.onnx",
-                "*.onnx_data",
                 "config.json",
                 "tokenizer.json",
                 "tokenizer_config.json",
@@ -200,7 +200,7 @@ class ModelManagement:
         return model_dir
 
     @classmethod
-    def download_model(cls, model: Dict[str, Any], cache_dir: Path) -> Path:
+    def download_repo_files(cls, model: Dict[str, Any], cache_dir: Path) -> Tuple[Path, SOURCE]:
         """
         Downloads a model from HuggingFace Hub or Google Cloud Storage.
 
@@ -232,7 +232,7 @@ class ModelManagement:
             try:
                 return Path(
                     cls.download_files_from_huggingface(hf_source, cache_dir=str(cache_dir))
-                )
+                ), "hf"
             except (EnvironmentError, RepositoryNotFoundError, ValueError) as e:
                 logger.error(
                     f"Could not download model from HuggingFace: {e}"
@@ -240,6 +240,6 @@ class ModelManagement:
                 )
 
         if url_source:
-            return cls.retrieve_model_gcs(model["model"], url_source, str(cache_dir))
+            return cls.retrieve_model_gcs(model["model"], url_source, str(cache_dir)), "gcs"
 
         raise ValueError(f"Could not download model {model['model']} from any source.")
