@@ -14,7 +14,7 @@ supported_onnx_models = [
         "description": "Base English model",
         "size_in_GB": 0.42,
         "sources": {
-            "hf": "aident-ai/bge-base-en-onnx",
+            "hf": "yashvardhan7/bge-base-en-onnx",
         },
     },
     {
