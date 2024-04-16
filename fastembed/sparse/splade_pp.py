@@ -15,6 +15,7 @@ supported_splade_models = [
         "sources": {
             "hf": "Qdrant/SPLADE_PP_en_v1",
         },
+        "model_file": "model.onnx",
     },
     {
         "model": "prithivida/Splade_PP_en_v1",
@@ -24,6 +25,7 @@ supported_splade_models = [
         "sources": {
             "hf": "Qdrant/SPLADE_PP_en_v1",
         },
+        "model_file": "model.onnx",
     },
 ]
 
@@ -77,14 +79,11 @@ class SpladePP(SparseTextEmbeddingBase, OnnxModel[SparseEmbedding]):
 
         super().__init__(model_name, cache_dir, threads, **kwargs)
 
-        self.model_name = model_name
-        self._model_description = self._get_model_description(model_name)
-
-        self._cache_dir = define_cache_dir(cache_dir)
-        self._model_dir = self.download_model(self._model_description, self._cache_dir)
-        self._max_length = 512
-
-        self.load_onnx_model(self._model_dir, self.threads, self._max_length)
+        self.load_onnx_model(
+            self._get_model_description(model_name),
+            threads,
+            define_cache_dir(cache_dir),
+        )
 
     def embed(
         self,
@@ -110,7 +109,7 @@ class SpladePP(SparseTextEmbeddingBase, OnnxModel[SparseEmbedding]):
         """
         yield from self._embed_documents(
             model_name=self.model_name,
-            cache_dir=str(self._cache_dir),
+            cache_dir=str(self.cache_dir),
             documents=documents,
             batch_size=batch_size,
             parallel=parallel,

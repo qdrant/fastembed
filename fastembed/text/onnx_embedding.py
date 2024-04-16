@@ -16,6 +16,7 @@ supported_onnx_models = [
         "sources": {
             "hf": "aident-ai/bge-base-en-onnx",
         },
+        "model_file": "onnx/model.onnx",
     },
     {
         "model": "BAAI/bge-base-en-v1.5",
@@ -25,6 +26,7 @@ supported_onnx_models = [
         "sources": {
             "hf": "qdrant/bge-base-en-v1.5-onnx-q",
         },
+        "model_file": "model_optimized.onnx",
     },
     {
         "model": "BAAI/bge-large-en-v1.5",
@@ -34,6 +36,7 @@ supported_onnx_models = [
         "sources": {
             "hf": "qdrant/bge-large-en-v1.5-onnx",
         },
+        "model_file": "model.onnx",
     },
     {
         "model": "BAAI/bge-small-en",
@@ -43,6 +46,7 @@ supported_onnx_models = [
         "sources": {
             "hf": "ggrn/bge-small-en",
         },
+        "model_file": "onnx/model.onnx",
     },
     {
         "model": "BAAI/bge-small-en-v1.5",
@@ -52,6 +56,7 @@ supported_onnx_models = [
         "sources": {
             "hf": "qdrant/bge-small-en-v1.5-onnx-q",
         },
+        "model_file": "Qdrant/bge-small-en-v1.5-onnx-Q",
     },
     {
         "model": "BAAI/bge-small-zh-v1.5",
@@ -61,6 +66,7 @@ supported_onnx_models = [
         "sources": {
             "hf": "Xenova/bge-small-zh-v1.5",
         },
+        "model_file": "onnx/model.onnx",
     },
     {
         "model": "sentence-transformers/all-MiniLM-L6-v2",
@@ -70,6 +76,7 @@ supported_onnx_models = [
         "sources": {
             "hf": "qdrant/all-MiniLM-L6-v2-onnx",
         },
+        "model_file": "model.onnx",
     },
     {
         "model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
@@ -79,6 +86,7 @@ supported_onnx_models = [
         "sources": {
             "hf": "qdrant/paraphrase-multilingual-MiniLM-L12-v2-onnx-Q",
         },
+        "model_file": "model_optimized.onnx",
     },
     {
         "model": "nomic-ai/nomic-embed-text-v1",
@@ -88,6 +96,7 @@ supported_onnx_models = [
         "sources": {
             "hf": "nomic-ai/nomic-embed-text-v1",
         },
+        "model_file": "onnx/model.onnx",
     },
     {
         "model": "nomic-ai/nomic-embed-text-v1.5",
@@ -97,6 +106,17 @@ supported_onnx_models = [
         "sources": {
             "hf": "nomic-ai/nomic-embed-text-v1.5",
         },
+        "model_file": "onnx/model.onnx",
+    },
+    {
+        "model": "nomic-ai/nomic-embed-text-v1.5-Q",
+        "dim": 768,
+        "description": "Quantized 8192 context length english model",
+        "size_in_GB": 0.13,
+        "sources": {
+            "hf": "nomic-ai/nomic-embed-text-v1.5",
+        },
+        "model_file": "onnx/model_quantized.onnx",
     },
     {
         "model": "thenlper/gte-large",
@@ -106,6 +126,7 @@ supported_onnx_models = [
         "sources": {
             "hf": "qdrant/gte-large-onnx",
         },
+        "model_file": "model.onnx",
     },
     {
         "model": "mixedbread-ai/mxbai-embed-large-v1",
@@ -115,6 +136,7 @@ supported_onnx_models = [
         "sources": {
             "hf": "mixedbread-ai/mxbai-embed-large-v1",
         },
+        "model_file": "onnx/model.onnx",
     },
 ]
 
@@ -153,14 +175,11 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxModel[np.ndarray]):
 
         super().__init__(model_name, cache_dir, threads, **kwargs)
 
-        self.model_name = model_name
-        self._model_description = self._get_model_description(model_name)
-
-        self._cache_dir = define_cache_dir(cache_dir)
-        self._model_dir = self.download_model(self._model_description, self._cache_dir)
-        self._max_length = 512
-
-        self.load_onnx_model(self._model_dir, self.threads, self._max_length)
+        self.load_onnx_model(
+            self._get_model_description(model_name),
+            threads,
+            define_cache_dir(cache_dir),
+        )
 
     def embed(
         self,
@@ -186,7 +205,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxModel[np.ndarray]):
         """
         yield from self._embed_documents(
             model_name=self.model_name,
-            cache_dir=str(self._cache_dir),
+            cache_dir=str(self.cache_dir),
             documents=documents,
             batch_size=batch_size,
             parallel=parallel,

@@ -3,24 +3,25 @@ from pathlib import Path
 
 import numpy as np
 from tokenizers import Tokenizer, AddedToken
+from huggingface_hub import hf_hub_download
 
 
-def load_tokenizer(model_dir: Path, max_length: int = 512) -> Tokenizer:
-    config_path = model_dir / "config.json"
-    if not config_path.exists():
-        raise ValueError(f"Could not find config.json in {model_dir}")
+def load_tokenizer(repo_id: str, cache_dir: Path, max_length: int = 512) -> Tokenizer:
+    config_path = hf_hub_download(
+        repo_id=repo_id, filename="config.json", cache_dir=str(cache_dir)
+    )
 
-    tokenizer_path = model_dir / "tokenizer.json"
-    if not tokenizer_path.exists():
-        raise ValueError(f"Could not find tokenizer.json in {model_dir}")
+    tokenizer_path = hf_hub_download(
+        repo_id=repo_id, filename="tokenizer.json", cache_dir=str(cache_dir)
+    )
 
-    tokenizer_config_path = model_dir / "tokenizer_config.json"
-    if not tokenizer_config_path.exists():
-        raise ValueError(f"Could not find tokenizer_config.json in {model_dir}")
+    tokenizer_config_path = hf_hub_download(
+        repo_id=repo_id, filename="tokenizer_config.json", cache_dir=str(cache_dir)
+    )
 
-    tokens_map_path = model_dir / "special_tokens_map.json"
-    if not tokens_map_path.exists():
-        raise ValueError(f"Could not find special_tokens_map.json in {model_dir}")
+    tokens_map_path = hf_hub_download(
+        repo_id=repo_id, filename="special_tokens_map.json", cache_dir=str(cache_dir)
+    )
 
     with open(str(config_path)) as config_file:
         config = json.load(config_file)

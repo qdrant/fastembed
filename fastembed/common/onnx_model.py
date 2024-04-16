@@ -6,10 +6,11 @@ from typing import Any, Dict, Generic, Iterable, List, Optional, Tuple, Type, Ty
 import numpy as np
 import onnxruntime as ort
 
-from fastembed.common.model_management import locate_model_file
 from fastembed.common.models import load_tokenizer
 from fastembed.common.utils import iter_batch
 from fastembed.parallel_processor import ParallelWorkerPool, Worker
+
+from huggingface_hub import hf_hub_download
 
 # Holds type of the embedding result
 T = TypeVar("T")
@@ -34,8 +35,22 @@ class OnnxModel(Generic[T]):
         """
         return onnx_input
 
-    def load_onnx_model(self, model_dir: Path, threads: Optional[int], max_length: int) -> None:
-        model_path = locate_model_file(model_dir, ["model.onnx", "model_optimized.onnx"])
+    def load_onnx_model(
+        self, model_description: dict, threads: Optional[int], cache_dir: Path
+    ) -> None:
+        repo_id = model_description["sources"]["hf"]
+        model_file = model_description.get("model_file", "model.onnx")
+
+        # Some models require additional repo files.
+        # For eg: intfloat/multilingual-e5-large requires the model.onnx_data file.
+        # These can be specified within the "additional_files" option when describing the model properties
+        if additional_files := model_description.get("additional_files"):
+            for file in additional_files:
+                hf_hub_download(repo_id=repo_id, filename=file, cache_dir=str(cache_dir))
+
+        model_path = hf_hub_download(
+            repo_id=repo_id, filename=model_file, cache_dir=str(cache_dir)
+        )
 
         # List of Execution Providers: https://onnxruntime.ai/docs/execution-providers
         onnx_providers = ["CPUExecutionProvider"]
@@ -50,7 +65,7 @@ class OnnxModel(Generic[T]):
             so.intra_op_num_threads = threads
             so.inter_op_num_threads = threads
 
-        self.tokenizer = load_tokenizer(model_dir=model_dir, max_length=max_length)
+        self.tokenizer = load_tokenizer(repo_id, cache_dir)
         self.model = ort.InferenceSession(
             str(model_path), providers=onnx_providers, sess_options=so
         )
