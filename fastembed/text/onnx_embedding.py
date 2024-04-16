@@ -14,7 +14,7 @@ supported_onnx_models = [
         "description": "Base English model",
         "size_in_GB": 0.42,
         "sources": {
-            "url": "https://storage.googleapis.com/qdrant-fastembed/fast-bge-base-en.tar.gz",
+            "hf": "aident-ai/bge-base-en-onnx",
         },
     },
     {
@@ -23,7 +23,6 @@ supported_onnx_models = [
         "description": "Base English model, v1.5",
         "size_in_GB": 0.21,
         "sources": {
-            "url": "https://storage.googleapis.com/qdrant-fastembed/fast-bge-base-en-v1.5.tar.gz",
             "hf": "qdrant/bge-base-en-v1.5-onnx-q",
         },
     },
@@ -42,20 +41,9 @@ supported_onnx_models = [
         "description": "Fast English model",
         "size_in_GB": 0.13,
         "sources": {
-            "url": "https://storage.googleapis.com/qdrant-fastembed/BAAI-bge-small-en.tar.gz",
+            "hf": "ggrn/bge-small-en",
         },
     },
-    # {
-    #     "model": "BAAI/bge-small-en",
-    #     "dim": 384,
-    #     "description": "Fast English model",
-    #     "size_in_GB": 0.2,
-    #     "hf_sources": [],
-    #     "compressed_url_sources": [
-    #         "https://storage.googleapis.com/qdrant-fastembed/fast-bge-small-en.tar.gz",
-    #         "https://storage.googleapis.com/qdrant-fastembed/BAAI-bge-small-en.tar.gz"
-    #     ]
-    # },
     {
         "model": "BAAI/bge-small-en-v1.5",
         "dim": 384,
@@ -71,7 +59,7 @@ supported_onnx_models = [
         "description": "Fast and recommended Chinese model",
         "size_in_GB": 0.09,
         "sources": {
-            "url": "https://storage.googleapis.com/qdrant-fastembed/fast-bge-small-zh-v1.5.tar.gz",
+            "hf": "Xenova/bge-small-zh-v1.5",
         },
     },
     {
@@ -80,7 +68,6 @@ supported_onnx_models = [
         "description": "Sentence Transformer model, MiniLM-L6-v2",
         "size_in_GB": 0.09,
         "sources": {
-            "url": "https://storage.googleapis.com/qdrant-fastembed/sentence-transformers-all-MiniLM-L6-v2.tar.gz",
             "hf": "qdrant/all-MiniLM-L6-v2-onnx",
         },
     },
@@ -120,19 +107,6 @@ supported_onnx_models = [
             "hf": "qdrant/gte-large-onnx",
         },
     },
-    # {
-    #     "model": "sentence-transformers/all-MiniLM-L6-v2",
-    #     "dim": 384,
-    #     "description": "Sentence Transformer model, MiniLM-L6-v2",
-    #     "size_in_GB": 0.09,
-    #     "hf_sources": [
-    #         "qdrant/all-MiniLM-L6-v2-onnx"
-    #     ],
-    #     "compressed_url_sources": [
-    #         "https://storage.googleapis.com/qdrant-fastembed/fast-all-MiniLM-L6-v2.tar.gz",
-    #         "https://storage.googleapis.com/qdrant-fastembed/sentence-transformers-all-MiniLM-L6-v2.tar.gz"
-    #     ]
-    # }
     {
         "model": "mixedbread-ai/mxbai-embed-large-v1",
         "dim": 1024,

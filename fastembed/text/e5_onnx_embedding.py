@@ -12,7 +12,6 @@ supported_multilingual_e5_models = [
         "description": "Multilingual model, e5-large. Recommend using this model for non-English languages",
         "size_in_GB": 2.24,
         "sources": {
-            "url": "https://storage.googleapis.com/qdrant-fastembed/fast-multilingual-e5-large.tar.gz",
             "hf": "qdrant/multilingual-e5-large-onnx",
         },
     },
