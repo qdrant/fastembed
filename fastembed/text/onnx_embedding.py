@@ -16,7 +16,7 @@ supported_onnx_models = [
         "sources": {
             "hf": "yashvardhan7/bge-base-en-onnx",
         },
-        "model_file": "onnx/model.onnx",
+        "model_file": "model.onnx",
     },
     {
         "model": "BAAI/bge-base-en-v1.5",
@@ -56,7 +56,7 @@ supported_onnx_models = [
         "sources": {
             "hf": "qdrant/bge-small-en-v1.5-onnx-q",
         },
-        "model_file": "Qdrant/bge-small-en-v1.5-onnx-Q",
+        "model_file": "model_optimized.onnx",
     },
     {
         "model": "BAAI/bge-small-zh-v1.5",
