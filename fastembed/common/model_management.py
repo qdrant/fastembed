@@ -1,8 +1,9 @@
+from enum import Enum
 import os
 import shutil
 import tarfile
 from pathlib import Path
-from typing import List, Literal, Optional, Dict, Any, Tuple
+from typing import List, Optional, Dict, Any, Tuple
 
 import requests
 from huggingface_hub import snapshot_download
@@ -10,24 +11,7 @@ from huggingface_hub.utils import RepositoryNotFoundError
 from tqdm import tqdm
 from loguru import logger
 
-SOURCE = Literal["hf", "gcs"]
-
-
-def locate_model_file(model_dir: Path, file_names: List[str]) -> Path:
-    """
-    Find model path for both TransformerJS style `onnx`  subdirectory structure and direct model weights structure used
-    by Optimum and Qdrant
-    """
-    if not model_dir.is_dir():
-        raise ValueError(f"Provided model path '{model_dir}' is not a directory.")
-
-    for file_name in file_names:
-        file_paths = [path for path in model_dir.rglob(file_name) if path.is_file()]
-
-        if file_paths:
-            return file_paths[0]
-
-    raise ValueError(f"Could not find either of {', '.join(file_names)} in {model_dir}")
+Source = Enum("Source", ["HF", "GCS"])
 
 
 class ModelManagement:
@@ -200,7 +184,7 @@ class ModelManagement:
         return model_dir
 
     @classmethod
-    def download_repo_files(cls, model: Dict[str, Any], cache_dir: Path) -> Tuple[Path, SOURCE]:
+    def download_repo_files(cls, model: Dict[str, Any], cache_dir: Path) -> Tuple[Path, Source]:
         """
         Downloads a model from HuggingFace Hub or Google Cloud Storage.
 
@@ -232,7 +216,7 @@ class ModelManagement:
             try:
                 return Path(
                     cls.download_files_from_huggingface(hf_source, cache_dir=str(cache_dir))
-                ), "hf"
+                ), Source.HF
             except (EnvironmentError, RepositoryNotFoundError, ValueError) as e:
                 logger.error(
                     f"Could not download model from HuggingFace: {e}"
@@ -240,6 +224,6 @@ class ModelManagement:
                 )
 
         if url_source:
-            return cls.retrieve_model_gcs(model["model"], url_source, str(cache_dir)), "gcs"
+            return cls.retrieve_model_gcs(model["model"], url_source, str(cache_dir)), Source.GCS
 
         raise ValueError(f"Could not download model {model['model']} from any source.")

@@ -16,7 +16,7 @@ supported_onnx_models = [
         "sources": {
             "url": "https://storage.googleapis.com/qdrant-fastembed/fast-bge-base-en.tar.gz",
         },
-        "model_file": "model.onnx",
+        "model_file": "model_optimized.onnx",
     },
     {
         "model": "BAAI/bge-base-en-v1.5",
@@ -47,7 +47,7 @@ supported_onnx_models = [
         "sources": {
             "url": "https://storage.googleapis.com/qdrant-fastembed/BAAI-bge-small-en.tar.gz",
         },
-        "model_file": "onnx/model.onnx",
+        "model_file": "model_optimized.onnx",
     },
     {
         "model": "BAAI/bge-small-en-v1.5",
@@ -67,7 +67,7 @@ supported_onnx_models = [
         "sources": {
             "url": "https://storage.googleapis.com/qdrant-fastembed/fast-bge-small-zh-v1.5.tar.gz",
         },
-        "model_file": "onnx/model.onnx",
+        "model_file": "model_optimized.onnx",
     },
     {
         "model": "sentence-transformers/all-MiniLM-L6-v2",
@@ -176,7 +176,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxModel[np.ndarray]):
         """
 
         super().__init__(model_name, cache_dir, threads, **kwargs)
-        
+
         model_description = self._get_model_description(model_name)
         cache_dir = define_cache_dir(cache_dir)
 

@@ -6,7 +6,7 @@ from typing import Any, Dict, Generic, Iterable, List, Optional, Tuple, Type, Ty
 import numpy as np
 import onnxruntime as ort
 
-from fastembed.common.model_management import SOURCE, locate_model_file
+from fastembed.common.model_management import Source
 from fastembed.common.models import load_tokenizer
 from fastembed.common.utils import iter_batch
 from fastembed.parallel_processor import ParallelWorkerPool, Worker
@@ -42,14 +42,15 @@ class OnnxModel(Generic[T]):
         threads: Optional[int],
         cache_dir: Path,
         model_description: dict,
-        source: SOURCE,
+        source: Source,
     ) -> None:
-        if source == "gcs":
-            model_path = locate_model_file(model_dir, ["model.onnx", "model_optimized.onnx"])
-        elif source == "hf":
+        model_file = model_description["model_file"]
+
+        if source == Source.GCS:
+            model_path = model_dir.joinpath(model_file)
+        elif source == Source.HF:
             # For HuggingFace sources, the model file is conditionally downloaded
             repo_id = model_description["sources"]["hf"]
-            model_file = model_description["model_file"]
 
             # Some models require additional repo files.
             # For eg: intfloat/multilingual-e5-large requires the model.onnx_data file.
