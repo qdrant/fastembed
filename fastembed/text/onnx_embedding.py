@@ -161,6 +161,15 @@ supported_onnx_models = [
         },
     },
     {
+        "model": "snowflake/snowflake-arctic-embed-m",
+        "dim": 768,
+        "description": "Based on intfloat/e5-base-unsupervised model, provides the best retrieval without slowing down inference.",
+        "size_in_GB": 0.43,
+        "sources": {
+            "hf": "Snowflake/snowflake-arctic-embed-m",
+        },
+    },
+    {
         "model": "snowflake/snowflake-arctic-embed-m-long",
         "dim": 768,
         "description": "Based on nomic-ai/nomic-embed-text-v1-unsupervised model, 8192 context-length model",
