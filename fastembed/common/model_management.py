@@ -117,7 +117,14 @@ class ModelManagement:
 
         return snapshot_download(
             repo_id=hf_source_repo,
-            ignore_patterns=["model.safetensors", "pytorch_model.bin"],
+            allow_patterns=[
+                "*.onnx",
+                "*.onnx_data",
+                "config.json",
+                "tokenizer.json",
+                "tokenizer_config.json",
+                "special_tokens_map.json",
+            ],
             cache_dir=cache_dir,
         )
 
@@ -174,6 +181,9 @@ class ModelManagement:
         cache_tmp_dir.mkdir(parents=True, exist_ok=True)
 
         model_tar_gz = Path(cache_dir) / f"{fast_model_name}.tar.gz"
+
+        if model_tar_gz.exists():
+            model_tar_gz.unlink()
 
         cls.download_file_from_gcs(
             source_url,
