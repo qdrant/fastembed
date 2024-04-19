@@ -78,18 +78,16 @@ class SpladePP(SparseTextEmbeddingBase, OnnxModel[SparseEmbedding]):
         """
 
         super().__init__(model_name, cache_dir, threads, **kwargs)
-        
+
         model_description = self._get_model_description(model_name)
         cache_dir = define_cache_dir(cache_dir)
 
-        model_dir, source = self.download_repo_files(model_description, cache_dir)
+        model_dir = self.download_model(model_description, cache_dir)
 
         self.load_onnx_model(
-            model_dir,
-            threads,
-            cache_dir,
-            model_description,
-            source,
+            model_dir=model_dir,
+            model_file=model_description["model_file"],
+            threads=threads,
         )
 
     def embed(

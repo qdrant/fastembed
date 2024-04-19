@@ -1,17 +1,14 @@
-from enum import Enum
 import os
 import shutil
 import tarfile
 from pathlib import Path
-from typing import List, Optional, Dict, Any, Tuple
+from typing import List, Optional, Dict, Any
 
 import requests
 from huggingface_hub import snapshot_download
 from huggingface_hub.utils import RepositoryNotFoundError
 from tqdm import tqdm
 from loguru import logger
-
-Source = Enum("Source", ["HF", "GCS"])
 
 
 class ModelManagement:
@@ -90,25 +87,33 @@ class ModelManagement:
 
     @classmethod
     def download_files_from_huggingface(
-        cls, hf_source_repo: str, cache_dir: Optional[str] = None
+        cls,
+        hf_source_repo: str,
+        cache_dir: Optional[str] = None,
+        extra_patterns: Optional[List[str]] = None,
     ) -> str:
         """
         Downloads a model from HuggingFace Hub.
         Args:
             hf_source_repo (str): Name of the model on HuggingFace Hub, e.g. "qdrant/all-MiniLM-L6-v2-onnx".
             cache_dir (Optional[str]): The path to the cache directory.
+            extra_patterns (Optional[List[str]]): extra patterns to allow in the snapshot download, typically
+                includes the model's name and additional .onnx files
         Returns:
             Path: The path to the model directory.
         """
+        allow_patterns = [
+            "config.json",
+            "tokenizer.json",
+            "tokenizer_config.json",
+            "special_tokens_map.json",
+        ]
+        if extra_patterns is not None:
+            allow_patterns.extend(extra_patterns)
 
         return snapshot_download(
             repo_id=hf_source_repo,
-            allow_patterns=[
-                "config.json",
-                "tokenizer.json",
-                "tokenizer_config.json",
-                "special_tokens_map.json",
-            ],
+            allow_patterns=allow_patterns,
             cache_dir=cache_dir,
         )
 
@@ -184,7 +189,7 @@ class ModelManagement:
         return model_dir
 
     @classmethod
-    def download_repo_files(cls, model: Dict[str, Any], cache_dir: Path) -> Tuple[Path, Source]:
+    def download_model(cls, model: Dict[str, Any], cache_dir: Path) -> Path:
         """
         Downloads a model from HuggingFace Hub or Google Cloud Storage.
 
@@ -213,10 +218,16 @@ class ModelManagement:
         url_source = model.get("sources", {}).get("url")
 
         if hf_source:
+            extra_patterns = []
+            extra_patterns.extend([model["model_file"]])
+            extra_patterns.extend(model.get("additional_files", []))
+
             try:
                 return Path(
-                    cls.download_files_from_huggingface(hf_source, cache_dir=str(cache_dir))
-                ), Source.HF
+                    cls.download_files_from_huggingface(
+                        hf_source, cache_dir=str(cache_dir), extra_patterns=extra_patterns
+                    )
+                )
             except (EnvironmentError, RepositoryNotFoundError, ValueError) as e:
                 logger.error(
                     f"Could not download model from HuggingFace: {e}"
@@ -224,6 +235,6 @@ class ModelManagement:
                 )
 
         if url_source:
-            return cls.retrieve_model_gcs(model["model"], url_source, str(cache_dir)), Source.GCS
+            return cls.retrieve_model_gcs(model["model"], url_source, str(cache_dir))
 
         raise ValueError(f"Could not download model {model['model']} from any source.")
