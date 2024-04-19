@@ -6,12 +6,10 @@ from typing import Any, Dict, Generic, Iterable, List, Optional, Tuple, Type, Ty
 import numpy as np
 import onnxruntime as ort
 
-from fastembed.common.model_management import Source
 from fastembed.common.models import load_tokenizer
 from fastembed.common.utils import iter_batch
 from fastembed.parallel_processor import ParallelWorkerPool, Worker
 
-from huggingface_hub import hf_hub_download
 
 # Holds type of the embedding result
 T = TypeVar("T")
@@ -39,31 +37,10 @@ class OnnxModel(Generic[T]):
     def load_onnx_model(
         self,
         model_dir: Path,
+        model_file: str,
         threads: Optional[int],
-        cache_dir: Path,
-        model_description: dict,
-        source: Source,
     ) -> None:
-        model_file = model_description["model_file"]
-
-        if source == Source.GCS:
-            model_path = model_dir.joinpath(model_file)
-        elif source == Source.HF:
-            # For HuggingFace sources, the model file is conditionally downloaded
-            repo_id = model_description["sources"]["hf"]
-
-            # Some models require additional repo files.
-            # For eg: intfloat/multilingual-e5-large requires the model.onnx_data file.
-            # These can be specified within the "additional_files" option when describing the model properties
-            if additional_files := model_description.get("additional_files"):
-                for file in additional_files:
-                    hf_hub_download(repo_id=repo_id, filename=file, cache_dir=str(cache_dir))
-
-            model_path = hf_hub_download(
-                repo_id=repo_id, filename=model_file, cache_dir=str(cache_dir)
-            )
-        else:
-            raise ValueError(f"Unknown source: {source}")
+        model_path = model_dir / model_file
 
         # List of Execution Providers: https://onnxruntime.ai/docs/execution-providers
         onnx_providers = ["CPUExecutionProvider"]
