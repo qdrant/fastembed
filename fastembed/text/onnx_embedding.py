@@ -140,6 +140,51 @@ supported_onnx_models = [
         },
         "model_file": "onnx/model.onnx",
     },
+    {
+        "model": "snowflake/snowflake-arctic-embed-xs",
+        "dim": 384,
+        "description": "Based on all-MiniLM-L6-v2 model with only 22m parameters, ideal for latency/TCO budgets.",
+        "size_in_GB": 0.09,
+        "sources": {
+            "hf": "snowflake/snowflake-arctic-embed-xs",
+        },
+    },
+    {
+        "model": "snowflake/snowflake-arctic-embed-s",
+        "dim": 384,
+        "description": "Based on infloat/e5-small-unsupervised, does not trade off retrieval accuracy for its small size.",
+        "size_in_GB": 0.13,
+        "sources": {
+            "hf": "snowflake/snowflake-arctic-embed-s",
+        },
+    },
+    {
+        "model": "snowflake/snowflake-arctic-embed-m",
+        "dim": 768,
+        "description": "Based on intfloat/e5-base-unsupervised model, provides the best retrieval without slowing down inference.",
+        "size_in_GB": 0.43,
+        "sources": {
+            "hf": "Snowflake/snowflake-arctic-embed-m",
+        },
+    },
+    {
+        "model": "snowflake/snowflake-arctic-embed-m-long",
+        "dim": 768,
+        "description": "Based on nomic-ai/nomic-embed-text-v1-unsupervised model, 8192 context-length model",
+        "size_in_GB": 0.54,
+        "sources": {
+            "hf": "snowflake/snowflake-arctic-embed-m-long",
+        },
+    },
+    {
+        "model": "snowflake/snowflake-arctic-embed-l",
+        "dim": 1024,
+        "description": "Based on intfloat/e5-large-unsupervised, large model for most accurate retrieval.",
+        "size_in_GB": 1.02,
+        "sources": {
+            "hf": "snowflake/snowflake-arctic-embed-l",
+        },
+    },
 ]
 
 
