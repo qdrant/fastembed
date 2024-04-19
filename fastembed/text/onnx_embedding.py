@@ -148,6 +148,7 @@ supported_onnx_models = [
         "sources": {
             "hf": "snowflake/snowflake-arctic-embed-xs",
         },
+        "model_file": "onnx/model.onnx",
     },
     {
         "model": "snowflake/snowflake-arctic-embed-s",
@@ -157,6 +158,7 @@ supported_onnx_models = [
         "sources": {
             "hf": "snowflake/snowflake-arctic-embed-s",
         },
+        "model_file": "onnx/model.onnx",
     },
     {
         "model": "snowflake/snowflake-arctic-embed-m",
@@ -166,6 +168,7 @@ supported_onnx_models = [
         "sources": {
             "hf": "Snowflake/snowflake-arctic-embed-m",
         },
+        "model_file": "onnx/model.onnx",
     },
     {
         "model": "snowflake/snowflake-arctic-embed-m-long",
@@ -175,6 +178,7 @@ supported_onnx_models = [
         "sources": {
             "hf": "snowflake/snowflake-arctic-embed-m-long",
         },
+        "model_file": "onnx/model.onnx",
     },
     {
         "model": "snowflake/snowflake-arctic-embed-l",
@@ -184,6 +188,7 @@ supported_onnx_models = [
         "sources": {
             "hf": "snowflake/snowflake-arctic-embed-l",
         },
+        "model_file": "onnx/model.onnx",
     },
 ]
 
