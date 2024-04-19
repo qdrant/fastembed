@@ -98,7 +98,7 @@ class ModelManagement:
             hf_source_repo (str): Name of the model on HuggingFace Hub, e.g. "qdrant/all-MiniLM-L6-v2-onnx".
             cache_dir (Optional[str]): The path to the cache directory.
             extra_patterns (Optional[List[str]]): extra patterns to allow in the snapshot download, typically
-                includes the model's name and additional .onnx files
+                includes the required model files.
         Returns:
             Path: The path to the model directory.
         """
