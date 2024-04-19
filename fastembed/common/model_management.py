@@ -218,8 +218,7 @@ class ModelManagement:
         url_source = model.get("sources", {}).get("url")
 
         if hf_source:
-            extra_patterns = []
-            extra_patterns.extend([model["model_file"]])
+            extra_patterns = [model["model_file"]]
             extra_patterns.extend(model.get("additional_files", []))
 
             try:
