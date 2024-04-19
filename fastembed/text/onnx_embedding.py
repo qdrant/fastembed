@@ -75,6 +75,16 @@ supported_onnx_models = [
         },
     },
     {
+        "model": "BAAI/bge-m3",
+        "dim": 1024,
+        "description": "BGE-M3, which is distinguished for its versatility in Multi-Functionality, Multi-Linguality, and Multi-Granularity.	",
+        "size_in_GB": 2.27,
+        "sources": {
+            "hf": "BAAI/bge-m3",
+        },
+    },
+    
+    {
         "model": "sentence-transformers/all-MiniLM-L6-v2",
         "dim": 384,
         "description": "Sentence Transformer model, MiniLM-L6-v2",
@@ -221,13 +231,24 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxModel[np.ndarray]):
     @classmethod
     def _get_worker_class(cls) -> Type["EmbeddingWorker"]:
         return OnnxTextEmbeddingWorker
-
+    
     def _preprocess_onnx_input(self, onnx_input: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
         """
-        Preprocess the onnx input.
-        """
-        return onnx_input
+        Preprocess the ONNX input, conditionally including 'token_type_ids'.
 
+        Args:
+            onnx_input (Dict[str, np.ndarray]): The original ONNX input dictionary.
+
+        Returns:
+            Dict[str, np.ndarray]: The modified ONNX input dictionary.
+        """
+        # Check if 'token_type_ids' is expected by the model
+        expected_input_names = [input.name for input in self.model.get_inputs()]
+        if 'token_type_ids' not in expected_input_names:
+            # Remove 'token_type_ids' from the input if not expected by the model
+            onnx_input.pop('token_type_ids', None)
+
+        return onnx_input
     @classmethod
     def _post_process_onnx_output(
         cls, output: Tuple[np.ndarray, np.ndarray]
