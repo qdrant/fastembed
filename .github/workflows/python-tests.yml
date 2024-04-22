@@ -43,13 +43,13 @@ jobs:
           poetry install --no-interaction --no-ansi --without docs
 
       - name: Install Test Dependencies
-        run: pip install pytest pytest-md
+        run: pip install pytest pytest-md pytest-emoji
 
       - name: Run pytest
         uses: pavelzw/pytest-action@v2
         with:
             verbose: true
-            emoji: false
+            emoji: true
             job-summary: true
             custom-arguments: '-q'
             click-to-expand: true
