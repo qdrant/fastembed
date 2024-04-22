@@ -3,6 +3,8 @@ name: Tests
 on:
   push:
     branches: [ master, main ]
+  schedule:
+    - cron: 0 0 * * *
   pull_request:
 
 env:
@@ -39,8 +41,16 @@ jobs:
           python -m pip install poetry
           poetry config virtualenvs.create false
           poetry install --no-interaction --no-ansi --without docs
-      - name: Run tests
-        run: |
-          export IS_UBUNTU_CI=$(test "${{ matrix.os }}" = "ubuntu-latest" && echo "true" || echo "false")
-          pytest
-        shell: bash
+
+      - name: Install Test Dependencies
+        run: pip install pytest pytest-md
+
+      - name: Run pytest
+        uses: pavelzw/pytest-action@v2
+        with:
+            verbose: true
+            emoji: false
+            job-summary: true
+            custom-arguments: '-q'
+            click-to-expand: true
+            report-title: 'FastEmbed Test Report'
