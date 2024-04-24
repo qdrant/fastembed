@@ -1,7 +1,19 @@
 import os
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Dict, Generic, Iterable, List, Optional, Tuple, Type, TypeVar, Union
+from typing import (
+    Any,
+    Dict,
+    Generic,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    Sequence,
+)
 
 import numpy as np
 import onnxruntime as ort
@@ -39,11 +51,21 @@ class OnnxModel(Generic[T]):
         model_dir: Path,
         model_file: str,
         threads: Optional[int],
+        providers: Sequence[str | tuple[str, dict[Any, Any]]] | None = None,
     ) -> None:
         model_path = model_dir / model_file
 
         # List of Execution Providers: https://onnxruntime.ai/docs/execution-providers
-        onnx_providers = ["CPUExecutionProvider"]
+
+        onnx_providers = ["CPUExecutionProvider"] if providers is None else list(providers)
+        available_providers = ort.get_available_providers()
+        for provider in onnx_providers:
+            # check providers available
+            provider_name = provider if isinstance(provider, str) else provider[0]
+            if provider_name not in available_providers:
+                raise ValueError(
+                    f"Provider {provider_name} is not available. Available providers: {available_providers}"
+                )
 
         so = ort.SessionOptions()
         so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
