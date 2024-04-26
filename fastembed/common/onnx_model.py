@@ -51,7 +51,7 @@ class OnnxModel(Generic[T]):
         model_dir: Path,
         model_file: str,
         threads: Optional[int],
-        providers: Sequence[str | tuple[str, dict[Any, Any]]] | None = None,
+        providers: Optional[Sequence[Union[str, Tuple[str, Dict[Any, Any]]]]] = None,
     ) -> None:
         model_path = model_dir / model_file
 
