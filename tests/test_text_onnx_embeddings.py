@@ -39,10 +39,10 @@ CANONICAL_VECTOR_VALUES = {
 
 
 def test_embedding():
-    is_ubuntu_ci = os.getenv("IS_UBUNTU_CI")
+    is_ci = os.getenv("CI")
 
     for model_desc in TextEmbedding.list_supported_models():
-        if is_ubuntu_ci == "false" and model_desc["size_in_GB"] > 1:
+        if not is_ci and model_desc["size_in_GB"] > 1:
             continue
 
         dim = model_desc["dim"]
