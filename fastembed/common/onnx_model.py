@@ -6,10 +6,10 @@ from typing import Any, Dict, Generic, Iterable, List, Optional, Tuple, Type, Ty
 import numpy as np
 import onnxruntime as ort
 
-from fastembed.common.model_management import locate_model_file
 from fastembed.common.models import load_tokenizer
 from fastembed.common.utils import iter_batch
 from fastembed.parallel_processor import ParallelWorkerPool, Worker
+
 
 # Holds type of the embedding result
 T = TypeVar("T")
@@ -34,8 +34,13 @@ class OnnxModel(Generic[T]):
         """
         return onnx_input
 
-    def load_onnx_model(self, model_dir: Path, threads: Optional[int], max_length: int) -> None:
-        model_path = locate_model_file(model_dir, ["model.onnx", "model_optimized.onnx"])
+    def load_onnx_model(
+        self,
+        model_dir: Path,
+        model_file: str,
+        threads: Optional[int],
+    ) -> None:
+        model_path = model_dir / model_file
 
         # List of Execution Providers: https://onnxruntime.ai/docs/execution-providers
         onnx_providers = ["CPUExecutionProvider"]
@@ -50,7 +55,7 @@ class OnnxModel(Generic[T]):
             so.intra_op_num_threads = threads
             so.inter_op_num_threads = threads
 
-        self.tokenizer = load_tokenizer(model_dir=model_dir, max_length=max_length)
+        self.tokenizer = load_tokenizer(model_dir=model_dir)
         self.model = ort.InferenceSession(
             str(model_path), providers=onnx_providers, sess_options=so
         )

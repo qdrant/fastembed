@@ -15,6 +15,8 @@ supported_multilingual_e5_models = [
             "url": "https://storage.googleapis.com/qdrant-fastembed/fast-multilingual-e5-large.tar.gz",
             "hf": "qdrant/multilingual-e5-large-onnx",
         },
+        "model_file": "model.onnx",
+        "additional_files": ["model.onnx_data"],
     },
     {
         "model": "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
@@ -24,6 +26,7 @@ supported_multilingual_e5_models = [
         "sources": {
             "hf": "xenova/paraphrase-multilingual-mpnet-base-v2",
         },
+        "model_file": "onnx/model.onnx",
     },
 ]
 
