@@ -86,7 +86,3 @@ search_result = client.query(
 )
 print(search_result)
 ```
-
-#### Similar Work
-
-Ilyas M. wrote about using [FlagEmbeddings with Optimum](https://twitter.com/IlysMoutawwakil/status/1705215192425288017) over CUDA.
