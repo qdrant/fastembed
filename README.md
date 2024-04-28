@@ -53,7 +53,13 @@ len(embeddings_list[0]) # Vector of 384 dimensions
 FastEmbed is designed to work on a CPU. If you want to use it on a GPU, you can use the `onnxruntime-gpu` package. 
 
 ```python
-embedding_model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5", device="cuda")
+# !pip install fastembed[gpu] on a GPU machine
+import onnxruntime as ort
+if "CUDAExecutionProvider" in ort.get_available_providers():
+    embedding_model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5", providers=["CUDAExecutionProvider"])
+    print("The model BAAI/bge-small-en-v1.5 is ready to use on a GPU.")
+else:
+    raise Exception(f"CUDAExecutionProvider for GPU is not available. Available providers: {ort.get_available_providers()}")
 ```
 
 ## Usage with Qdrant
