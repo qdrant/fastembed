@@ -14,10 +14,16 @@ The default text embedding (`TextEmbedding`) model is Flag Embedding, presented 
 
 ## 🚀 Installation
 
-To install the FastEmbed library, pip works:
+To install the FastEmbed library, pip works best. You can install it with or without GPU support:
 
 ```bash
 pip install fastembed
+```
+
+### ⚡️ With GPU
+
+```bash
+pip install fastembed[gpu]
 ```
 
 ## 📖 Quickstart
@@ -40,6 +46,14 @@ embeddings_generator = embedding_model.embed(documents)  # reminder this is a ge
 embeddings_list = list(embedding_model.embed(documents))
   # you can also convert the generator to a list, and that to a numpy array
 len(embeddings_list[0]) # Vector of 384 dimensions
+```
+
+### ⚡️ FastEmbed on a GPU
+
+FastEmbed is designed to work on a CPU. If you want to use it on a GPU, you can use the `onnxruntime-gpu` package. 
+
+```python
+embedding_model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5", device="cuda")
 ```
 
 ## Usage with Qdrant
