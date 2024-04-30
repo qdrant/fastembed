@@ -23,6 +23,7 @@ numpy = [
     { version = ">=1.21", python = "<3.12" },
     { version = ">=1.26", python = ">=3.12" }
 ]
+pillow = "^10.3.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.2"
