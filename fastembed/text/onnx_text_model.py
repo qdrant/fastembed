@@ -16,7 +16,7 @@ T = TypeVar("T")
 
 class OnnxTextModel(OnnxModel[Generic[T]]):
     @classmethod
-    def _get_worker_class(cls) -> Type["EmbeddingWorker"]:
+    def _get_worker_class(cls) -> Type["TextEmbeddingWorker"]:
         raise NotImplementedError("Subclasses must implement this method")
 
     @classmethod
@@ -33,9 +33,14 @@ class OnnxTextModel(OnnxModel[Generic[T]]):
         """
         return onnx_input
 
-    def load_onnx_model(self, model_dir: Path, threads: Optional[int], max_length: int) -> None:
-        super().load_onnx_model(model_dir, threads, max_length)
-        self.tokenizer = load_tokenizer(model_dir=model_dir, max_length=max_length)
+    def load_onnx_model(
+        self,
+        model_dir: Path,
+        model_file: str,
+        threads: Optional[int],
+    ) -> None:
+        super().load_onnx_model(model_dir=model_dir, model_file=model_file, threads=threads)
+        self.tokenizer = load_tokenizer(model_dir=model_dir)
 
     def onnx_embed(self, documents: List[str]) -> Tuple[np.ndarray, np.ndarray]:
         encoded = self.tokenizer.encode_batch(documents)

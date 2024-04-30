@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Type, Union
 
 import numpy as np
@@ -7,9 +8,7 @@ from fastembed.image.onnx_embedding import OnnxImageEmbedding
 
 
 class ImageEmbedding(ImageEmbeddingBase):
-    EMBEDDINGS_REGISTRY: List[Type[ImageEmbeddingBase]] = [
-        OnnxImageEmbedding,
-    ]
+    EMBEDDINGS_REGISTRY: List[Type[ImageEmbeddingBase]] = [OnnxImageEmbedding]
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Any]]:
@@ -23,13 +22,12 @@ class ImageEmbedding(ImageEmbeddingBase):
                 ```
                 [
                     {
-                        "model": "intfloat/multilingual-e5-large",
-                        "dim": 1024,
-                        "description": "Multilingual model, e5-large. Recommend using this model for non-English languages",
-                        "size_in_GB": 2.24,
+                        "model": "canavar/clip-ViT-B-32-multilingual-v1-ONNX",
+                        "dim": 512,
+                        "description": "Multimodal (text, image) model",
+                        "size_in_GB": 0.5,
                         "sources": {
-                            "gcp": "https://storage.googleapis.com/qdrant-fastembed/fast-multilingual-e5-large.tar.gz",
-                            "hf": "qdrant/multilingual-e5-large-onnx",
+                            "hf": "canavar/clip-ViT-B-32-multilingual-v1-ONNX",
                         }
                     }
                 ]
@@ -42,7 +40,7 @@ class ImageEmbedding(ImageEmbeddingBase):
 
     def __init__(
         self,
-        model_name: str = "BAAI/bge-small-en-v1.5",
+        model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         **kwargs,
@@ -62,8 +60,8 @@ class ImageEmbedding(ImageEmbeddingBase):
 
     def embed(
         self,
-        documents: Union[str, Iterable[str]],
-        batch_size: int = 256,
+        images: Union[Union[str, Path], Iterable[Union[str, Path]]],
+        batch_size: int = 16,
         parallel: Optional[int] = None,
         **kwargs,
     ) -> Iterable[np.ndarray]:
@@ -72,7 +70,7 @@ class ImageEmbedding(ImageEmbeddingBase):
         We use mean pooling with attention so that the model can handle variable-length inputs.
 
         Args:
-            documents: Iterator of documents or single document to embed
+            images: Iterator of image paths or single image path to embed
             batch_size: Batch size for encoding -- higher values will use more memory, but be faster
             parallel:
                 If > 1, data-parallel encoding will be used, recommended for offline encoding of large datasets.
@@ -82,4 +80,4 @@ class ImageEmbedding(ImageEmbeddingBase):
         Returns:
             List of embeddings, one per document
         """
-        yield from self.model.embed(documents, batch_size, parallel, **kwargs)
+        yield from self.model.embed(images, batch_size, parallel, **kwargs)

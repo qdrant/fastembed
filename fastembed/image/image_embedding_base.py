@@ -21,7 +21,7 @@ class ImageEmbeddingBase(ModelManagement):
     def embed(
         self,
         images: Union[Union[str, Path], Iterable[Union[str, Path]]],
-        batch_size: int = 8,
+        batch_size: int = 16,
         parallel: Optional[int] = None,
         **kwargs,
     ) -> Iterable[np.ndarray]:

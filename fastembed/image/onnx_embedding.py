@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, Optional, Tuple, Union, Iterable, Type
+from typing import Dict, Optional, Union, Iterable, Type, List, Any
 
 import numpy as np
 
@@ -11,13 +11,14 @@ from fastembed.image.onnx_image_model import OnnxImageModel
 
 supported_onnx_models = [
     {
-        "model": "canavar/clip-ViT-B-32-multilingual-v1-ONNX",
+        "model": "jmzzomg/clip-vit-base-patch32-vision-onnx",
         "dim": 512,
         "description": "CLIP",
-        "size_in_GB": 0.51,
+        "size_in_GB": 0.33,
         "sources": {
-            "hf": "canavar/clip-ViT-B-32-multilingual-v1-ONNX",
+            "hf": "jmzzomg/clip-vit-base-patch32-vision-onnx",
         },
+        "model_file": "model.onnx",
     }
 ]
 
@@ -25,7 +26,7 @@ supported_onnx_models = [
 class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
     def __init__(
         self,
-        model_name: str = "...",
+        model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         **kwargs,
@@ -44,13 +45,25 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
 
         super().__init__(model_name, cache_dir, threads, **kwargs)
 
-        self.model_name = model_name
-        self._model_description = self._get_model_description(model_name)
+        model_description = self._get_model_description(model_name)
+        cache_dir = define_cache_dir(cache_dir)
+        model_dir = self.download_model(model_description, cache_dir)
 
-        self._cache_dir = define_cache_dir(cache_dir)
-        self._model_dir = self.download_model(self._model_description, self._cache_dir)
+        self.load_onnx_model(
+            model_dir=model_dir,
+            model_file=model_description["model_file"],
+            threads=threads,
+        )
 
-        self.load_onnx_model(self._model_dir, self.threads)
+    @classmethod
+    def list_supported_models(cls) -> List[Dict[str, Any]]:
+        """
+        Lists the supported models.
+
+        Returns:
+            List[Dict[str, Any]]: A list of dictionaries containing the model information.
+        """
+        return supported_onnx_models
 
     def embed(
         self,
@@ -76,7 +89,7 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
         """
         yield from self._embed_images(
             model_name=self.model_name,
-            cache_dir=str(self._cache_dir),
+            cache_dir=str(self.cache_dir),
             images=images,
             batch_size=batch_size,
             parallel=parallel,
@@ -90,14 +103,12 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
         """
         Preprocess the onnx input.
         """
+
         return onnx_input
 
     @classmethod
-    def _post_process_onnx_output(
-        cls, output: Tuple[np.ndarray, np.ndarray]
-    ) -> Iterable[np.ndarray]:
-        embeddings, _ = output
-        return normalize(embeddings[:, 0]).astype(np.float32)
+    def _post_process_onnx_output(cls, output: np.ndarray) -> Iterable[np.ndarray]:
+        return normalize(output).astype(np.float32)
 
 
 class OnnxImageEmbeddingWorker(EmbeddingWorker):

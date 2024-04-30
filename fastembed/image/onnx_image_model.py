@@ -1,10 +1,13 @@
 import os
+import contextlib
 from multiprocessing import get_all_start_methods
 from pathlib import Path
 from typing import Any, Dict, Generic, Iterable, List, Optional, Tuple, Type, TypeVar, Union
 
+from PIL import Image
 import numpy as np
 
+from fastembed.common.models import load_preprocessor
 from fastembed.common.onnx_model import OnnxModel, EmbeddingWorker
 from fastembed.common.utils import iter_batch
 from fastembed.parallel_processor import ParallelWorkerPool
@@ -24,6 +27,10 @@ class OnnxImageModel(OnnxModel[Generic[T]]):
 
     def __init__(self) -> None:
         super().__init__()
+        self.processor = None
+
+    def preprocess(self, images: List[Union[str, Path]]) -> np.ndarray:
+        raise NotImplementedError("Subclasses must implement this method")
 
     def _preprocess_onnx_input(self, onnx_input: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
         """
@@ -31,10 +38,25 @@ class OnnxImageModel(OnnxModel[Generic[T]]):
         """
         return onnx_input
 
-    def load_onnx_model(self, model_dir: Path, threads: Optional[int]) -> None:
-        super().load_onnx_model(model_dir, threads)
+    def load_onnx_model(
+        self,
+        model_dir: Path,
+        model_file: str,
+        threads: Optional[int],
+    ) -> None:
+        super().load_onnx_model(model_dir=model_dir, model_file=model_file, threads=threads)
+        self.processor = load_preprocessor(model_dir=model_dir)
 
-    def onnx_embed(self, images: List[Union[str, Path]]) -> Tuple[np.ndarray, np.ndarray]: ...
+    def onnx_embed(self, images: List[Union[str, Path]]) -> np.ndarray:
+        with contextlib.ExitStack():
+            image_files = [Image.open(image) for image in images]
+            encoded = self.processor(image_files)
+        onnx_input = {"pixel_values": encoded}
+        onnx_input = self._preprocess_onnx_input(onnx_input)
+
+        model_output = self.model.run(None, onnx_input)
+        embeddings = model_output[0]
+        return embeddings
 
     def _embed_images(
         self,

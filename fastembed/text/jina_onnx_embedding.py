@@ -3,8 +3,8 @@ from typing import Type, List, Dict, Any, Tuple, Iterable
 import numpy as np
 
 from fastembed.common.models import normalize
-from fastembed.common.onnx_model import EmbeddingWorker
 from fastembed.text.onnx_embedding import OnnxTextEmbedding, OnnxTextEmbeddingWorker
+from fastembed.text.onnx_text_model import TextEmbeddingWorker
 
 supported_jina_models = [
     {
@@ -28,7 +28,7 @@ supported_jina_models = [
 
 class JinaOnnxEmbedding(OnnxTextEmbedding):
     @classmethod
-    def _get_worker_class(cls) -> Type[EmbeddingWorker]:
+    def _get_worker_class(cls) -> Type[TextEmbeddingWorker]:
         return JinaEmbeddingWorker
 
     @classmethod

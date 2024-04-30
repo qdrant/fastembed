@@ -4,6 +4,8 @@ from pathlib import Path
 import numpy as np
 from tokenizers import Tokenizer, AddedToken
 
+from fastembed.image.transform.operators import Compose
+
 
 def load_tokenizer(model_dir: Path, max_length: int = 512) -> Tokenizer:
     config_path = model_dir / "config.json"
@@ -44,6 +46,17 @@ def load_tokenizer(model_dir: Path, max_length: int = 512) -> Tokenizer:
             tokenizer.add_special_tokens([AddedToken(**token)])
 
     return tokenizer
+
+
+def load_preprocessor(model_dir: Path) -> Compose:
+    preprocessor_config_path = model_dir / "preprocessor_config.json"
+    if not preprocessor_config_path.exists():
+        raise ValueError(f"Could not find preprocessor_config.json in {model_dir}")
+
+    with open(str(preprocessor_config_path)) as preprocessor_config_file:
+        preprocessor_config = json.load(preprocessor_config_file)
+        transforms = Compose.from_config(preprocessor_config)
+    return transforms
 
 
 def normalize(input_array, p=2, dim=1, eps=1e-12) -> np.ndarray:

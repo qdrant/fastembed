@@ -2,8 +2,8 @@ from typing import Type, List, Dict, Any
 
 import numpy as np
 
-from fastembed.common.onnx_model import EmbeddingWorker
 from fastembed.text.onnx_embedding import OnnxTextEmbedding, OnnxTextEmbeddingWorker
+from fastembed.text.onnx_text_model import TextEmbeddingWorker
 
 supported_multilingual_e5_models = [
     {
@@ -33,7 +33,7 @@ supported_multilingual_e5_models = [
 
 class E5OnnxEmbedding(OnnxTextEmbedding):
     @classmethod
-    def _get_worker_class(cls) -> Type["EmbeddingWorker"]:
+    def _get_worker_class(cls) -> Type["TextEmbeddingWorker"]:
         return E5OnnxEmbeddingWorker
 
     @classmethod
