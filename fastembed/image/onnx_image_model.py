@@ -2,23 +2,22 @@ import os
 import contextlib
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Dict, Generic, Iterable, List, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 
 from PIL import Image
 import numpy as np
 
 from fastembed.common.models import load_preprocessor
-from fastembed.common.onnx_model import OnnxModel, EmbeddingWorker
+from fastembed.common.onnx_model import OnnxModel, EmbeddingWorker, T
 from fastembed.common.utils import iter_batch
 from fastembed.parallel_processor import ParallelWorkerPool
 
 # Holds type of the embedding result
-T = TypeVar("T")
 
 
-class OnnxImageModel(OnnxModel[Generic[T]]):
+class OnnxImageModel(OnnxModel[T]):
     @classmethod
-    def _get_worker_class(cls) -> Type["EmbeddingWorker"]:
+    def _get_worker_class(cls) -> Type["ImageEmbeddingWorker"]:
         raise NotImplementedError("Subclasses must implement this method")
 
     @classmethod
