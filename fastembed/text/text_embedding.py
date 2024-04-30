@@ -3,6 +3,7 @@ from typing import Any, Dict, Iterable, List, Optional, Type, Union, Sequence
 import numpy as np
 
 from fastembed.common import OnnxProvider
+from fastembed.text.clip_embedding import CLIPOnnxEmbedding
 from fastembed.text.e5_onnx_embedding import E5OnnxEmbedding
 from fastembed.text.jina_onnx_embedding import JinaOnnxEmbedding
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
@@ -14,6 +15,7 @@ class TextEmbedding(TextEmbeddingBase):
         OnnxTextEmbedding,
         E5OnnxEmbedding,
         JinaOnnxEmbedding,
+        CLIPOnnxEmbedding,
     ]
 
     @classmethod

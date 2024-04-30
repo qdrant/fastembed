@@ -192,15 +192,6 @@ supported_onnx_models = [
         },
         "model_file": "onnx/model.onnx",
     },
-    {
-        "model": "jmzzomg/clip-vit-base-patch32-text-onnx",
-        "dim": 512,
-        "description": "Multimodal (text, image) model",
-        "size_in_GB": 0.23,
-        "sources": {
-            "hf": "jmzzomg/clip-vit-base-patch32-text-onnx",
-        },
-    },
 ]
 
 
