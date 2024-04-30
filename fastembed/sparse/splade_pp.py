@@ -2,10 +2,11 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, Type, Sequ
 
 import numpy as np
 
-from fastembed.common.onnx_model import EmbeddingWorker, OnnxProvider
+from fastembed.common.onnx_model import OnnxProvider
 from fastembed.common.utils import define_cache_dir
 from fastembed.sparse.sparse_embedding_base import SparseEmbedding, SparseTextEmbeddingBase
-from fastembed.text.onnx_text_model import OnnxTextModel
+from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
+
 
 supported_splade_models = [
     {
@@ -126,11 +127,11 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         )
 
     @classmethod
-    def _get_worker_class(cls) -> Type[EmbeddingWorker]:
+    def _get_worker_class(cls) -> Type[TextEmbeddingWorker]:
         return SpladePPEmbeddingWorker
 
 
-class SpladePPEmbeddingWorker(EmbeddingWorker):
+class SpladePPEmbeddingWorker(TextEmbeddingWorker):
     def init_embedding(
         self,
         model_name: str,
