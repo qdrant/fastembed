@@ -7,12 +7,12 @@ from fastembed.text.onnx_text_model import TextEmbeddingWorker
 
 supported_clip_models = [
     {
-        "model": "jmzzomg/clip-vit-base-patch32-text-onnx",
+        "model": "Qdrant/clip-ViT-B-32-text",
         "dim": 512,
-        "description": "Multimodal (text, image) model",
-        "size_in_GB": 0.23,
+        "description": "CLIP text encoder",
+        "size_in_GB": 0.25,
         "sources": {
-            "hf": "jmzzomg/clip-vit-base-patch32-text-onnx",
+            "hf": "Qdrant/clip-ViT-B-32-text",
         },
         "model_file": "model.onnx",
     },

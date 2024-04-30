@@ -10,12 +10,12 @@ from fastembed.image.onnx_image_model import OnnxImageModel, ImageEmbeddingWorke
 
 supported_onnx_models = [
     {
-        "model": "jmzzomg/clip-vit-base-patch32-vision-onnx",
+        "model": "Qdrant/clip-ViT-B-32-vision",
         "dim": 512,
-        "description": "CLIP",
-        "size_in_GB": 0.33,
+        "description": "CLIP vision encoder based on ViT-B/32",
+        "size_in_GB": 0.34,
         "sources": {
-            "hf": "jmzzomg/clip-vit-base-patch32-vision-onnx",
+            "hf": "Qdrant/clip-ViT-B-32-vision",
         },
         "model_file": "model.onnx",
     }

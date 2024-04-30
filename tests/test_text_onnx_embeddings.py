@@ -56,9 +56,7 @@ CANONICAL_VECTOR_VALUES = {
         [0.0080, -0.0266, -0.0335, 0.0282, 0.0143]
     ),
     "snowflake/snowflake-arctic-embed-l": np.array([0.0189, -0.0673, 0.0183, 0.0124, 0.0146]),
-    "jmzzomg/clip-vit-base-patch32-text-onnx": np.array(
-        [0.0083, 0.0103, -0.0138, 0.0199, -0.0069]
-    ),
+    "Qdrant/clip-ViT-B-32-text": np.array([0.0083, 0.0103, -0.0138, 0.0199, -0.0069]),
 }
 
 

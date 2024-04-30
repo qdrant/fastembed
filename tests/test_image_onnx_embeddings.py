@@ -7,9 +7,7 @@ from fastembed import ImageEmbedding
 from tests.config import TEST_MISC_DIR
 
 CANONICAL_VECTOR_VALUES = {
-    "jmzzomg/clip-vit-base-patch32-vision-onnx": np.array(
-        [-0.0098, 0.0128, -0.0274, 0.002, -0.0059]
-    ),
+    "Qdrant/clip-ViT-B-32-vision": np.array([-0.0098, 0.0128, -0.0274, 0.002, -0.0059]),
 }
 
 
@@ -35,7 +33,7 @@ def test_embedding():
         ), model_desc["model"]
 
 
-@pytest.mark.parametrize("n_dims,model_name", [(512, "jmzzomg/clip-vit-base-patch32-vision-onnx")])
+@pytest.mark.parametrize("n_dims,model_name", [(512, "Qdrant/clip-ViT-B-32-vision")])
 def test_batch_embedding(n_dims, model_name):
     model = ImageEmbedding(model_name=model_name)
     n_images = 32
@@ -49,7 +47,7 @@ def test_batch_embedding(n_dims, model_name):
     assert embeddings.shape == (n_images, n_dims)
 
 
-@pytest.mark.parametrize("n_dims,model_name", [(512, "jmzzomg/clip-vit-base-patch32-vision-onnx")])
+@pytest.mark.parametrize("n_dims,model_name", [(512, "Qdrant/clip-ViT-B-32-vision")])
 def test_parallel_processing(n_dims, model_name):
     model = ImageEmbedding(model_name=model_name)
 

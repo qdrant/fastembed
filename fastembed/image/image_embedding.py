@@ -22,13 +22,14 @@ class ImageEmbedding(ImageEmbeddingBase):
                 ```
                 [
                     {
-                        "model": "canavar/clip-ViT-B-32-multilingual-v1-ONNX",
+                        "model": "Qdrant/clip-ViT-B-32-vision",
                         "dim": 512,
-                        "description": "Multimodal (text, image) model",
-                        "size_in_GB": 0.5,
+                        "description": "CLIP vision encoder based on ViT-B/32",
+                        "size_in_GB": 0.33,
                         "sources": {
-                            "hf": "canavar/clip-ViT-B-32-multilingual-v1-ONNX",
-                        }
+                            "hf": "Qdrant/clip-ViT-B-32-vision",
+                        },
+                        "model_file": "model.onnx",
                     }
                 ]
                 ```
