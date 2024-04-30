@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from fastembed import ImageEmbedding
+from tests.config import TEST_MISC_DIR
 
 CANONICAL_VECTOR_VALUES = {
     "jmzzomg/clip-vit-base-patch32-vision-onnx": np.array(
@@ -23,7 +24,7 @@ def test_embedding():
 
         model = ImageEmbedding(model_name=model_desc["model"])
 
-        images = ["misc/image.jpeg", "misc/small_image.jpeg"]
+        images = [TEST_MISC_DIR / "image.jpeg", str(TEST_MISC_DIR / "small_image.jpeg")]
         embeddings = list(model.embed(images))
         embeddings = np.stack(embeddings, axis=0)
         assert embeddings.shape == (2, dim)
@@ -38,7 +39,9 @@ def test_embedding():
 def test_batch_embedding(n_dims, model_name):
     model = ImageEmbedding(model_name=model_name)
     n_images = 32
-    images = ["misc/image.jpeg", "misc/small_image.jpeg"] * (n_images // 2)
+    images = [TEST_MISC_DIR / "image.jpeg", str(TEST_MISC_DIR / "small_image.jpeg")] * (
+        n_images // 2
+    )
 
     embeddings = list(model.embed(images, batch_size=10))
     embeddings = np.stack(embeddings, axis=0)
@@ -51,7 +54,9 @@ def test_parallel_processing(n_dims, model_name):
     model = ImageEmbedding(model_name=model_name)
 
     n_images = 32
-    images = ["misc/image.jpeg", "misc/small_image.jpeg"] * (n_images // 2)
+    images = [TEST_MISC_DIR / "image.jpeg", str(TEST_MISC_DIR / "small_image.jpeg")] * (
+        n_images // 2
+    )
     embeddings = list(model.embed(images, batch_size=10, parallel=2))
     embeddings = np.stack(embeddings, axis=0)
 
