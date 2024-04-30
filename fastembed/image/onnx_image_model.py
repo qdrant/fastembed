@@ -29,9 +29,6 @@ class OnnxImageModel(OnnxModel[Generic[T]]):
         super().__init__()
         self.processor = None
 
-    def preprocess(self, images: List[Union[str, Path]]) -> np.ndarray:
-        raise NotImplementedError("Subclasses must implement this method")
-
     def _preprocess_onnx_input(self, onnx_input: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
         """
         Preprocess the onnx input.

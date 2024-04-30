@@ -3,11 +3,10 @@ from typing import Dict, Optional, Union, Iterable, Type, List, Any
 
 import numpy as np
 
-from fastembed.common.onnx_model import EmbeddingWorker
 from fastembed.common.models import normalize
 from fastembed.common.utils import define_cache_dir
 from fastembed.image.image_embedding_base import ImageEmbeddingBase
-from fastembed.image.onnx_image_model import OnnxImageModel
+from fastembed.image.onnx_image_model import OnnxImageModel, ImageEmbeddingWorker
 
 supported_onnx_models = [
     {
@@ -96,7 +95,7 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
         )
 
     @classmethod
-    def _get_worker_class(cls) -> Type["EmbeddingWorker"]:
+    def _get_worker_class(cls) -> Type["ImageEmbeddingWorker"]:
         return OnnxImageEmbeddingWorker
 
     def _preprocess_onnx_input(self, onnx_input: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
@@ -111,7 +110,7 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
         return normalize(output).astype(np.float32)
 
 
-class OnnxImageEmbeddingWorker(EmbeddingWorker):
+class OnnxImageEmbeddingWorker(ImageEmbeddingWorker):
     def init_embedding(
         self,
         model_name: str,
