@@ -21,16 +21,17 @@ jobs:
           - '3.10.x'
           - '3.11.x'
           - '3.12.x'
-        os: [ ubuntu-latest ]
+        os:
+          - ubuntu-latest
         include:
           - os: macos-latest
-            python-version: [ '3.8.x', '3.9.x', '3.10.x', '3.11.x', '3.12.x' ]
+            python-version: '3.8.x'
             if: >-
               ${{ !contains(github.ref, 'refs/heads/gpu') &&
                   github.event_name != 'pull_request' ||
                   github.event.pull_request.base.ref != 'gpu' }}
           - os: windows-latest
-            python-version: [ '3.8.x', '3.9.x', '3.10.x', '3.11.x', '3.12.x' ]
+            python-version: '3.8.x'
             if: >-
               ${{ !contains(github.ref, 'refs/heads/gpu') &&
                   github.event_name != 'pull_request' ||
