@@ -12,10 +12,14 @@ keywords = ["vector", "embedding", "neural", "search", "qdrant", "sentence-trans
 
 [tool.poetry.dependencies]
 python = ">=3.8.0,<3.13"
-onnx = "^1.15.0"
-onnxruntime = "^1.17.0"
+onnx = [
+    {version = "^1.15.0", optional = true, markers = "extra != 'gpu'"}
+]
+onnxruntime = [
+    {version = "^1.17.0", optional = true, markers = "extra != 'gpu'"}
+]
 onnxruntime-gpu = [
-    { version = "^1.17.0", optional = true, python = "<3.13" }
+    { version = "^1.17.0", optional = true, python = "<3.13", markers = "extra == 'gpu'" }
 ]
 
 tqdm = "^4.66"
