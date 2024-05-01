@@ -14,10 +14,6 @@ keywords = ["vector", "embedding", "neural", "search", "qdrant", "sentence-trans
 python = ">=3.8.0,<3.13"
 onnx = "^1.15.0"
 onnxruntime = "^1.17.0"
-onnxruntime-gpu = [
-    { version = "^1.17.0", optional = true, python = "<3.13" }
-]
-
 tqdm = "^4.66"
 requests = "^2.31"
 tokenizers = "^0.15.1"
@@ -41,8 +37,6 @@ pillow = "^10.2.0"
 cairosvg = "^2.7.1"
 mknotebooks = "^0.8.0"
 
-[tool.poetry.extras]
-gpu = ["onnxruntime-gpu"]
 
 [build-system]
 requires = ["poetry-core"]

@@ -23,7 +23,7 @@ pip install fastembed
 ### ⚡️ With GPU
 
 ```bash
-pip install fastembed[gpu]
+pip install fastembed-gpu
 ```
 
 ## 📖 Quickstart
@@ -50,16 +50,19 @@ len(embeddings_list[0]) # Vector of 384 dimensions
 
 ### ⚡️ FastEmbed on a GPU
 
-FastEmbed is designed to work on a CPU. If you want to use it on a GPU, you can use the `onnxruntime-gpu` package. 
+FastEmbed supports running on GPU devices. It requires installation of the `fastembed-gpu` package.
+Make sure not to have the `fastembed` package installed, as it might interfere with the `fastembed-gpu` package.
+
+```bash
+pip install fastembed-gpu
+``` 
 
 ```python
-# !pip install fastembed[gpu] on a GPU machine
-import onnxruntime as ort
-if "CUDAExecutionProvider" in ort.get_available_providers():
-    embedding_model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5", providers=["CUDAExecutionProvider"])
-    print("The model BAAI/bge-small-en-v1.5 is ready to use on a GPU.")
-else:
-    raise Exception(f"CUDAExecutionProvider for GPU is not available. Available providers: {ort.get_available_providers()}")
+from fastembed import TextEmbedding
+
+embedding_model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5", providers=["CUDAExecutionProvider"])
+print("The model BAAI/bge-small-en-v1.5 is ready to use on a GPU.")
+
 ```
 
 ## Usage with Qdrant
@@ -70,7 +73,13 @@ Installation with Qdrant Client in Python:
 pip install qdrant-client[fastembed]
 ```
 
-You might have to use ```pip install 'qdrant-client[fastembed]'``` on zsh.
+or 
+
+```bash
+pip install qdrant-client[fastembed-gpu]
+```
+
+You might have to use quotes ```pip install 'qdrant-client[fastembed]'``` on zsh.
 
 ```python
 from qdrant_client import QdrantClient
