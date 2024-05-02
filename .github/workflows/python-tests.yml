@@ -1,4 +1,5 @@
-name: Tests (gpu)
+name: Tests
+run-name: Tests (gpu)
 
 on:
   pull_request:
