@@ -9,7 +9,6 @@
 name: Upload GPU Python Package
 
 on:
-  workflow_dispatch:
   push:
     # Pattern matched against refs/tags
     tags:
