@@ -26,6 +26,8 @@ from fastembed.parallel_processor import ParallelWorkerPool, Worker
 # Holds type of the embedding result
 T = TypeVar("T")
 
+OnnxProvider = Union[str, Tuple[str, Dict[Any, Any]]]
+
 
 class OnnxModel(Generic[T]):
     @classmethod
@@ -51,7 +53,7 @@ class OnnxModel(Generic[T]):
         model_dir: Path,
         model_file: str,
         threads: Optional[int],
-        providers: Optional[Sequence[Union[str, Tuple[str, Dict[Any, Any]]]]] = None,
+        providers: Optional[Sequence[OnnxProvider]] = None,
     ) -> None:
         model_path = model_dir / model_file
 

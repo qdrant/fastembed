@@ -1,8 +1,8 @@
-from typing import Dict, Optional, Tuple, Union, Iterable, Type, List, Any
+from typing import Dict, Optional, Tuple, Union, Iterable, Type, List, Any, Sequence
 
 import numpy as np
 
-from fastembed.common.onnx_model import OnnxModel, EmbeddingWorker
+from fastembed.common.onnx_model import OnnxModel, EmbeddingWorker, OnnxProvider
 from fastembed.common.models import normalize
 from fastembed.common.utils import define_cache_dir
 from fastembed.text.text_embedding_base import TextEmbeddingBase
@@ -211,6 +211,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxModel[np.ndarray]):
         model_name: str = "BAAI/bge-small-en-v1.5",
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
+        providers: Optional[Sequence[OnnxProvider]] = None,
         **kwargs,
     ):
         """
@@ -235,6 +236,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxModel[np.ndarray]):
             model_dir=model_dir,
             model_file=model_description["model_file"],
             threads=threads,
+            providers=providers,
         )
 
     def embed(
