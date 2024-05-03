@@ -6,13 +6,14 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: Upload GPU Python Package
+name: Upload Python Package
 
 on:
+  workflow_dispatch:
   push:
     # Pattern matched against refs/tags
     tags:
-      - 'gpu-v*'           # Push events to every version tag
+      - 'v*'           # Push events to every version tag
 
 jobs:
   deploy:
