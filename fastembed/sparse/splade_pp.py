@@ -1,8 +1,8 @@
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, Type
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, Type, Sequence
 
 import numpy as np
 
-from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel
+from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxProvider
 from fastembed.common.utils import define_cache_dir
 from fastembed.sparse.sparse_embedding_base import SparseEmbedding, SparseTextEmbeddingBase
 
@@ -63,6 +63,7 @@ class SpladePP(SparseTextEmbeddingBase, OnnxModel[SparseEmbedding]):
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
+        providers: Optional[Sequence[OnnxProvider]] = None,
         **kwargs,
     ):
         """
@@ -90,6 +91,7 @@ class SpladePP(SparseTextEmbeddingBase, OnnxModel[SparseEmbedding]):
             model_dir=model_dir,
             model_file=model_description["model_file"],
             threads=threads,
+            providers=providers,
         )
 
     def embed(

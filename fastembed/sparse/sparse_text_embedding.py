@@ -1,5 +1,6 @@
-from typing import List, Type, Dict, Any, Union, Iterable, Optional
+from typing import List, Type, Dict, Any, Union, Iterable, Optional, Sequence
 
+from fastembed.common import OnnxProvider
 from fastembed.sparse.sparse_embedding_base import SparseTextEmbeddingBase, SparseEmbedding
 from fastembed.sparse.splade_pp import SpladePP
 
@@ -42,6 +43,7 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
+        providers: Optional[Sequence[OnnxProvider]] = None,
         **kwargs,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
@@ -49,7 +51,9 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
             supported_models = EMBEDDING_MODEL_TYPE.list_supported_models()
             if any(model_name.lower() == model["model"].lower() for model in supported_models):
-                self.model = EMBEDDING_MODEL_TYPE(model_name, cache_dir, threads, **kwargs)
+                self.model = EMBEDDING_MODEL_TYPE(
+                    model_name, cache_dir, threads, providers=providers, **kwargs
+                )
                 return
 
         raise ValueError(

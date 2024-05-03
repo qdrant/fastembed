@@ -1,7 +1,8 @@
-from typing import Any, Dict, Iterable, List, Optional, Type, Union
+from typing import Any, Dict, Iterable, List, Optional, Type, Union, Sequence
 
 import numpy as np
 
+from fastembed.common import OnnxProvider
 from fastembed.text.e5_onnx_embedding import E5OnnxEmbedding
 from fastembed.text.jina_onnx_embedding import JinaOnnxEmbedding
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
@@ -49,6 +50,7 @@ class TextEmbedding(TextEmbeddingBase):
         model_name: str = "BAAI/bge-small-en-v1.5",
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
+        providers: Optional[Sequence[OnnxProvider]] = None,
         **kwargs,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
@@ -56,7 +58,9 @@ class TextEmbedding(TextEmbeddingBase):
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
             supported_models = EMBEDDING_MODEL_TYPE.list_supported_models()
             if any(model_name.lower() == model["model"].lower() for model in supported_models):
-                self.model = EMBEDDING_MODEL_TYPE(model_name, cache_dir, threads, **kwargs)
+                self.model = EMBEDDING_MODEL_TYPE(
+                    model_name, cache_dir, threads, providers=providers, **kwargs
+                )
                 return
 
         raise ValueError(
