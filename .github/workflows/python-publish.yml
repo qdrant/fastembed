@@ -14,8 +14,6 @@ on:
     # Pattern matched against refs/tags
     tags:
       - 'v*'           # Push events to every version tag
-      - 'gpu-v*'       # gpu-v tags have to be pushed to `gpu` branch in order to publish fastembed-gpu
-
 
 jobs:
   deploy:
