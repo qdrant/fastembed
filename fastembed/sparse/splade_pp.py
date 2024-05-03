@@ -82,7 +82,9 @@ class SpladePP(SparseTextEmbeddingBase, OnnxModel[SparseEmbedding]):
         model_description = self._get_model_description(model_name)
         cache_dir = define_cache_dir(cache_dir)
 
-        model_dir = self.download_model(model_description, cache_dir)
+        model_dir = self.download_model(
+            model_description, cache_dir, local_files_only=self._local_files_only
+        )
 
         self.load_onnx_model(
             model_dir=model_dir,
