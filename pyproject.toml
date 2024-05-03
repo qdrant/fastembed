@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "fastembed"
+name = "fastembed-gpu"
 version = "0.7.4"
 description = "Fast, light, accurate library built for retrieval embedding generation"
 authors = ["Qdrant Team <info@qdrant.tech>", "NirantK <nirant.bits@gmail.com>"]
@@ -20,7 +20,7 @@ numpy = [
     { version = ">=2.1.0", python = ">=3.13,<3.14" },
     { version = ">=2.3.0", python = ">=3.14" },
 ]
-onnxruntime = [
+onnxruntime-gpu = [
     { version = ">=1.17.0,<1.20.0", python = "<3.10" },
     { version = ">1.20.0", python = ">=3.13" },
     { version = ">=1.17.0,!=1.20.0", python = ">=3.10,<3.13" },
