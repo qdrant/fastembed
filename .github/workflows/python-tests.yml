@@ -2,7 +2,7 @@ name: Tests
 
 on:
   push:
-    branches: [ master, main ]
+    branches: [ master, main, gpu ]
   schedule:
     - cron: 0 0 * * *
   pull_request:
