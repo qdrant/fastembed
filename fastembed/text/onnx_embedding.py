@@ -229,8 +229,9 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxModel[np.ndarray]):
 
         model_description = self._get_model_description(model_name)
         cache_dir = define_cache_dir(cache_dir)
-        local_files_only = kwargs.get('local_files_only', False)
-        model_dir = self.download_model(model_description, cache_dir, local_files_only=local_files_only)
+        model_dir = self.download_model(
+            model_description, cache_dir, local_files_only=self._local_files_only
+        )
 
         self.load_onnx_model(
             model_dir=model_dir,

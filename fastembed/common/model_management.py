@@ -91,7 +91,7 @@ class ModelManagement:
         hf_source_repo: str,
         cache_dir: Optional[str] = None,
         extra_patterns: Optional[List[str]] = None,
-        **kwargs
+        **kwargs,
     ) -> str:
         """
         Downloads a model from HuggingFace Hub.
@@ -116,7 +116,7 @@ class ModelManagement:
             repo_id=hf_source_repo,
             allow_patterns=allow_patterns,
             cache_dir=cache_dir,
-            local_files_only=kwargs.get('local_files_only', False)
+            local_files_only=kwargs.get("local_files_only", False),
         )
 
     @classmethod
@@ -226,8 +226,10 @@ class ModelManagement:
             try:
                 return Path(
                     cls.download_files_from_huggingface(
-                        hf_source, cache_dir=str(cache_dir), extra_patterns=extra_patterns,
-                        local_files_only = kwargs.get('local_files_only', False)
+                        hf_source,
+                        cache_dir=str(cache_dir),
+                        extra_patterns=extra_patterns,
+                        local_files_only=kwargs.get("local_files_only", False),
                     )
                 )
             except (EnvironmentError, RepositoryNotFoundError, ValueError) as e:
