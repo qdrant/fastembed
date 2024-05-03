@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "fastembed"
+name = "fastembed-gpu"
 version = "0.3.2"
 description = "Fast, light, accurate library built for retrieval embedding generation"
 authors = ["Qdrant Team <info@qdrant.tech>", "NirantK <nirant.bits@gmail.com>"]
@@ -12,8 +12,7 @@ keywords = ["vector", "embedding", "neural", "search", "qdrant", "sentence-trans
 
 [tool.poetry.dependencies]
 python = ">=3.8.0,<3.13"
-onnx = "^1.15.0"
-onnxruntime = "^1.17.0"
+onnxruntime-gpu = "^1.17.0"
 tqdm = "^4.66"
 requests = "^2.31"
 tokenizers = ">=0.15,<1.0"
