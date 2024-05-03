@@ -1,8 +1,9 @@
 from pathlib import Path
-from typing import Dict, Optional, Union, Iterable, Type, List, Any
+from typing import Dict, Optional, Union, Iterable, Type, List, Any, Sequence
 
 import numpy as np
 
+from fastembed.common import OnnxProvider
 from fastembed.common.models import normalize
 from fastembed.common.utils import define_cache_dir
 from fastembed.image.image_embedding_base import ImageEmbeddingBase
@@ -28,6 +29,7 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
+        providers: Optional[Sequence[OnnxProvider]] = None,
         **kwargs,
     ):
         """
@@ -46,12 +48,15 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
 
         model_description = self._get_model_description(model_name)
         cache_dir = define_cache_dir(cache_dir)
-        model_dir = self.download_model(model_description, cache_dir)
+        model_dir = self.download_model(
+            model_description, cache_dir, local_files_only=self._local_files_only
+        )
 
         self.load_onnx_model(
             model_dir=model_dir,
             model_file=model_description["model_file"],
             threads=threads,
+            providers=providers,
         )
 
     @classmethod

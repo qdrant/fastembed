@@ -1,8 +1,9 @@
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Type, Union
+from typing import Any, Dict, Iterable, List, Optional, Type, Union, Sequence
 
 import numpy as np
 
+from fastembed.common import OnnxProvider
 from fastembed.image.image_embedding_base import ImageEmbeddingBase
 from fastembed.image.onnx_embedding import OnnxImageEmbedding
 
@@ -44,6 +45,7 @@ class ImageEmbedding(ImageEmbeddingBase):
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
+        providers: Optional[Sequence[OnnxProvider]] = None,
         **kwargs,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
@@ -51,7 +53,9 @@ class ImageEmbedding(ImageEmbeddingBase):
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
             supported_models = EMBEDDING_MODEL_TYPE.list_supported_models()
             if any(model_name.lower() == model["model"].lower() for model in supported_models):
-                self.model = EMBEDDING_MODEL_TYPE(model_name, cache_dir, threads, **kwargs)
+                self.model = EMBEDDING_MODEL_TYPE(
+                    model_name, cache_dir, threads, providers=providers, **kwargs
+                )
                 return
 
         raise ValueError(
