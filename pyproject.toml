@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fastembed"
-version = "0.2.6"
+version = "0.2.7"
 description = "Fast, light, accurate library built for retrieval embedding generation"
 authors = ["NirantK <nirant.bits@gmail.com>"]
 license = "Apache License"
@@ -16,7 +16,7 @@ onnx = "^1.15.0"
 onnxruntime = "^1.17.0"
 tqdm = "^4.66"
 requests = "^2.31"
-tokenizers = "^0.15.1"
+tokenizers = "^0.15"
 huggingface-hub = "^0.20"
 loguru = "^0.7.2"
 numpy = [
