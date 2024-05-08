@@ -2,8 +2,7 @@ from typing import Any, Dict, Iterable, List, Optional, Type, Sequence
 
 import numpy as np
 
-from fastembed.common import OnnxProvider
-from fastembed.common.types import ImageInput
+from fastembed.common import ImageInput, OnnxProvider
 from fastembed.image.image_embedding_base import ImageEmbeddingBase
 from fastembed.image.onnx_embedding import OnnxImageEmbedding
 

@@ -2,10 +2,11 @@ from typing import Dict, Optional, Tuple, Union, Iterable, Type, List, Any, Sequ
 
 import numpy as np
 
-from fastembed.common.onnx_model import OnnxProvider
+from fastembed.common import OnnxProvider
 from fastembed.common.utils import normalize, define_cache_dir
 from fastembed.text.onnx_text_model import TextEmbeddingWorker, OnnxTextModel
 from fastembed.text.text_embedding_base import TextEmbeddingBase
+
 
 supported_onnx_models = [
     {

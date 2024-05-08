@@ -5,8 +5,9 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union, Sequ
 
 import numpy as np
 
+from fastembed.common import OnnxProvider
 from fastembed.common.preprocessor_utils import load_tokenizer
-from fastembed.common.onnx_model import OnnxModel, EmbeddingWorker, T, OnnxProvider
+from fastembed.common.onnx_model import OnnxModel, EmbeddingWorker, T
 from fastembed.common.utils import iter_batch
 from fastembed.parallel_processor import ParallelWorkerPool
 

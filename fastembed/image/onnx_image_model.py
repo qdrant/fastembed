@@ -8,8 +8,8 @@ from PIL import Image
 import numpy as np
 
 from fastembed.common.preprocessor_utils import load_preprocessor
-from fastembed.common.onnx_model import OnnxModel, EmbeddingWorker, T, OnnxProvider
-from fastembed.common.types import PathInput, ImageInput
+from fastembed.common.onnx_model import OnnxModel, EmbeddingWorker, T
+from fastembed.common import PathInput, ImageInput, OnnxProvider
 from fastembed.common.utils import iter_batch
 from fastembed.parallel_processor import ParallelWorkerPool
 

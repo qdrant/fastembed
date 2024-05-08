@@ -2,11 +2,8 @@ from typing import Dict, Optional, Iterable, Type, List, Any, Sequence
 
 import numpy as np
 
-from fastembed.common import OnnxProvider
-from fastembed.common.utils import normalize
-
-from fastembed.common.types import ImageInput
-from fastembed.common.utils import define_cache_dir
+from fastembed.common.utils import normalize, define_cache_dir
+from fastembed.common import ImageInput, OnnxProvider
 from fastembed.image.image_embedding_base import ImageEmbeddingBase
 from fastembed.image.onnx_image_model import OnnxImageModel, ImageEmbeddingWorker
 

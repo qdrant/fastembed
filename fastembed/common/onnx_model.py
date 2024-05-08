@@ -1,16 +1,15 @@
 from pathlib import Path
-from typing import Any, Dict, Generic, Iterable, Optional, Tuple, Type, TypeVar, Union, Sequence
+from typing import Any, Dict, Generic, Iterable, Optional, Tuple, Type, TypeVar, Sequence
 
 import numpy as np
 import onnxruntime as ort
 
+from fastembed.common.types import OnnxProvider
 from fastembed.parallel_processor import Worker
 
 
 # Holds type of the embedding result
 T = TypeVar("T")
-
-OnnxProvider = Union[str, Tuple[str, Dict[Any, Any]]]
 
 
 class OnnxModel(Generic[T]):
