@@ -2,13 +2,14 @@ import os
 import contextlib
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union, Sequence
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Sequence
 
 from PIL import Image
 import numpy as np
 
-from fastembed.common.models import load_preprocessor
+from fastembed.common.preprocessor_utils import load_preprocessor
 from fastembed.common.onnx_model import OnnxModel, EmbeddingWorker, T, OnnxProvider
+from fastembed.common.types import PathInput, ImageInput
 from fastembed.common.utils import iter_batch
 from fastembed.parallel_processor import ParallelWorkerPool
 
@@ -46,7 +47,7 @@ class OnnxImageModel(OnnxModel[T]):
         )
         self.processor = load_preprocessor(model_dir=model_dir)
 
-    def onnx_embed(self, images: List[Union[str, Path]]) -> np.ndarray:
+    def onnx_embed(self, images: List[PathInput]) -> np.ndarray:
         with contextlib.ExitStack():
             image_files = [Image.open(image) for image in images]
             encoded = self.processor(image_files)
@@ -61,7 +62,7 @@ class OnnxImageModel(OnnxModel[T]):
         self,
         model_name: str,
         cache_dir: str,
-        images: Union[Union[str, Path], Iterable[Union[str, Path]]],
+        images: ImageInput,
         batch_size: int = 256,
         parallel: Optional[int] = None,
     ) -> Iterable[T]:

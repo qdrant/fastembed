@@ -1,7 +1,6 @@
 import json
 from pathlib import Path
 
-import numpy as np
 from tokenizers import Tokenizer, AddedToken
 
 from fastembed.image.transform.operators import Compose
@@ -57,11 +56,3 @@ def load_preprocessor(model_dir: Path) -> Compose:
         preprocessor_config = json.load(preprocessor_config_file)
         transforms = Compose.from_config(preprocessor_config)
     return transforms
-
-
-def normalize(input_array, p=2, dim=1, eps=1e-12) -> np.ndarray:
-    # Calculate the Lp norm along the specified dimension
-    norm = np.linalg.norm(input_array, ord=p, axis=dim, keepdims=True)
-    norm = np.maximum(norm, eps)  # Avoid division by zero
-    normalized_array = input_array / norm
-    return normalized_array

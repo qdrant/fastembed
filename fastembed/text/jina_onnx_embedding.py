@@ -2,7 +2,7 @@ from typing import Type, List, Dict, Any, Tuple, Iterable
 
 import numpy as np
 
-from fastembed.common.models import normalize
+from fastembed.common.utils import normalize
 from fastembed.text.onnx_embedding import OnnxTextEmbedding, OnnxTextEmbeddingWorker
 from fastembed.text.onnx_text_model import TextEmbeddingWorker
 

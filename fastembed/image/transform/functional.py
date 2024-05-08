@@ -16,7 +16,7 @@ def convert_to_rgb(image: Image.Image) -> Image.Image:
 def center_crop(
     image: Image.Image,
     size: Tuple[int, int],
-) -> np.array:
+) -> np.ndarray:
     orig_height, orig_width = image.height, image.width
     crop_height, crop_width = size
 
@@ -60,8 +60,8 @@ def center_crop(
 
 def normalize(
     image: np.ndarray,
-    mean=Union[float, np.array],
-    std=Union[float, np.array],
+    mean=Union[float, np.ndarray],
+    std=Union[float, np.ndarray],
 ) -> np.ndarray:
     if not isinstance(image, np.ndarray):
         raise ValueError("image must be a numpy array")
@@ -113,5 +113,5 @@ def resize(
     return image.resize(new_size, Image.Resampling.BICUBIC)
 
 
-def rescale(image, scale, dtype=np.float32):
+def rescale(image: np.ndarray, scale: float, dtype=np.float32) -> np.ndarray:
     return (image * scale).astype(dtype)

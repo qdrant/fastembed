@@ -1,10 +1,11 @@
-from pathlib import Path
-from typing import Dict, Optional, Union, Iterable, Type, List, Any, Sequence
+from typing import Dict, Optional, Iterable, Type, List, Any, Sequence
 
 import numpy as np
 
 from fastembed.common import OnnxProvider
-from fastembed.common.models import normalize
+from fastembed.common.utils import normalize
+
+from fastembed.common.types import ImageInput
 from fastembed.common.utils import define_cache_dir
 from fastembed.image.image_embedding_base import ImageEmbeddingBase
 from fastembed.image.onnx_image_model import OnnxImageModel, ImageEmbeddingWorker
@@ -71,8 +72,8 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
 
     def embed(
         self,
-        images: Union[Union[str, Path], Iterable[Union[str, Path]]],
-        batch_size: int = 256,
+        images: ImageInput,
+        batch_size: int = 16,
         parallel: Optional[int] = None,
         **kwargs,
     ) -> Iterable[np.ndarray]:

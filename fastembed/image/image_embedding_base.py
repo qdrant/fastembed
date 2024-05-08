@@ -1,9 +1,9 @@
-from pathlib import Path
-from typing import Iterable, Optional, Union
+from typing import Iterable, Optional
 
 import numpy as np
 
 from fastembed.common.model_management import ModelManagement
+from fastembed.common.types import ImageInput
 
 
 class ImageEmbeddingBase(ModelManagement):
@@ -21,7 +21,7 @@ class ImageEmbeddingBase(ModelManagement):
 
     def embed(
         self,
-        images: Union[Union[str, Path], Iterable[Union[str, Path]]],
+        images: ImageInput,
         batch_size: int = 16,
         parallel: Optional[int] = None,
         **kwargs,

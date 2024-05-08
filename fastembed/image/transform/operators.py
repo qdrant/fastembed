@@ -1,5 +1,6 @@
 from typing import List, Tuple, Union, Any, Dict
 
+import numpy as np
 from PIL import Image
 
 from fastembed.image.transform.functional import (
@@ -12,12 +13,12 @@ from fastembed.image.transform.functional import (
 
 
 class Transform:
-    def __call__(self, image):
+    def __call__(self, images: List) -> Union[List[Image.Image], List[np.ndarray]]:
         raise NotImplementedError("Subclasses must implement this method")
 
 
 class ConvertToRGB(Transform):
-    def __call__(self, images):
+    def __call__(self, images: List[Image.Image]) -> List[Image.Image]:
         return [convert_to_rgb(image=image) for image in images]
 
 
@@ -25,7 +26,7 @@ class CenterCrop(Transform):
     def __init__(self, size: Tuple[int, int]):
         self.size = size
 
-    def __call__(self, images):
+    def __call__(self, images: List[Image.Image]) -> List[np.ndarray]:
         return [center_crop(image=image, size=self.size) for image in images]
 
 
@@ -34,7 +35,7 @@ class Normalize(Transform):
         self.mean = mean
         self.std = std
 
-    def __call__(self, images):
+    def __call__(self, images: List[np.ndarray]) -> List[np.ndarray]:
         return [normalize(image, mean=self.mean, std=self.std) for image in images]
 
 
@@ -47,7 +48,7 @@ class Resize(Transform):
         self.size = size
         self.resample = resample
 
-    def __call__(self, images):
+    def __call__(self, images: List[Image.Image]) -> List[Image.Image]:
         return [resize(image, size=self.size, resample=self.resample) for image in images]
 
 
@@ -55,7 +56,7 @@ class Rescale(Transform):
     def __init__(self, scale: float = 1 / 255):
         self.scale = scale
 
-    def __call__(self, images):
+    def __call__(self, images: List[np.ndarray]) -> List[np.ndarray]:
         return [rescale(image, scale=self.scale) for image in images]
 
 
@@ -63,13 +64,15 @@ class Compose:
     def __init__(self, transforms: List[Transform]):
         self.transforms = transforms
 
-    def __call__(self, images):
+    def __call__(
+        self, images: Union[List[Image.Image], List[np.ndarray]]
+    ) -> Union[List[np.ndarray], List[Image.Image]]:
         for transform in self.transforms:
             images = transform(images)
         return images
 
     @classmethod
-    def from_config(cls, config: Dict[str, Any]):
+    def from_config(cls, config: Dict[str, Any]) -> "Compose":
         transforms = [ConvertToRGB()]
         if config.get("do_resize", False):
             size = config["size"]
