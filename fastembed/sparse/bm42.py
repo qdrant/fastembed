@@ -1,6 +1,6 @@
+import string
+from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, Type, Sequence
-
-import numpy as np
 
 from fastembed.common import OnnxProvider
 from fastembed.common.onnx_model import OnnxOutputContext
@@ -18,23 +18,60 @@ supported_bm42_models = [
             "hf": "Qdrant/all_miniLM_L6_v2_with_attentions",
         },
         "model_file": "model.onnx",
+        "additional_files": [
+            "stopwords.txt"
+        ],
     },
 ]
 
+MODEL_TO_LANGUAGE = {
+    "Qdrant/bm42-all-minilm-l6-v2-attentions": "english",
+}
+
 
 class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
+
+    def _reconstruct_bpe(self, bpe_tokens: Iterable[Tuple[int, str]]) -> List[Tuple[str, List[int]]]:
+
+        result = []
+        acc = ""
+        acc_idx = []
+
+        continuing_subword_prefix = self.tokenizer.model.continuing_subword_prefix
+        continuing_subword_prefix_len = len(continuing_subword_prefix)
+
+        for idx, token in bpe_tokens:
+            if token in self.special_tokens:
+                continue
+
+            if token.startswith(continuing_subword_prefix):
+                acc += token[continuing_subword_prefix_len:]
+                acc_idx.append(idx)
+            else:
+                if acc:
+                    result.append((acc, acc_idx))
+                    acc_idx = []
+                acc = token
+                acc_idx.append(idx)
+
+        if acc:
+            result.append((acc, acc_idx))
+
+        return result
 
     def _post_process_onnx_output(
             self, output: OnnxOutputContext
     ) -> Iterable[SparseEmbedding]:
 
-        token_ids = output.input_ids
+        token_ids_batch = output.input_ids
 
-        print(token_ids)
+        for document_token_ids in token_ids_batch:
+            document_tokens_with_ids = ((token_id, self.invert_vocab[token_id]) for token_id in document_token_ids)
 
-        for document in token_ids:
-            for token_id in document:
-                print(token_id, self.invert_vocab[token_id])
+            reconstructed = self._reconstruct_bpe(document_tokens_with_ids)
+
+            for x in reconstructed:
+                print(x)
 
         raise NotImplementedError("TODO")
 
@@ -46,6 +83,15 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             List[Dict[str, Any]]: A list of dictionaries containing the model information.
         """
         return supported_bm42_models
+
+    @classmethod
+    def _load_stopwords(cls, model_dir: Path) -> List[str]:
+        stopwords_path = model_dir / "stopwords.txt"
+        if not stopwords_path.exists():
+            return []
+
+        with open(stopwords_path, "r") as f:
+            return f.read().splitlines()
 
     def __init__(
             self,
@@ -88,8 +134,10 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         for token, idx in self.tokenizer.get_vocab().items():
             self.invert_vocab[idx] = token
 
-        self.special_tokens = list(self.special_token_to_id.keys())
-        self.special_tokens_ids = list(self.special_token_to_id.values())
+        self.special_tokens = set(self.special_token_to_id.keys())
+        self.special_tokens_ids = set(self.special_token_to_id.values())
+        self.punctuation = set(string.punctuation)
+        self.stopwords = set(self._load_stopwords(model_dir))
 
     def embed(
             self,
