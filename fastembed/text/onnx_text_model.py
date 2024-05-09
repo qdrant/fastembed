@@ -13,6 +13,8 @@ from fastembed.parallel_processor import ParallelWorkerPool
 
 
 class OnnxTextModel(OnnxModel[T]):
+    ONNX_OUTPUT_NAMES: Optional[List[str]] = None
+
     @classmethod
     def _get_worker_class(cls) -> Type["TextEmbeddingWorker"]:
         raise NotImplementedError("Subclasses must implement this method")
@@ -32,11 +34,11 @@ class OnnxTextModel(OnnxModel[T]):
         return onnx_input
 
     def load_onnx_model(
-            self,
-            model_dir: Path,
-            model_file: str,
-            threads: Optional[int],
-            providers: Optional[Sequence[OnnxProvider]] = None,
+        self,
+        model_dir: Path,
+        model_file: str,
+        threads: Optional[int],
+        providers: Optional[Sequence[OnnxProvider]] = None,
     ) -> None:
         super().load_onnx_model(
             model_dir=model_dir, model_file=model_file, threads=threads, providers=providers
@@ -44,9 +46,8 @@ class OnnxTextModel(OnnxModel[T]):
         self.tokenizer, self.special_token_to_id = load_tokenizer(model_dir=model_dir)
 
     def onnx_embed(
-            self,
-            documents: List[str],
-            output_names: Optional[List[str]] = None
+        self,
+        documents: List[str],
     ) -> OnnxOutputContext:
         encoded = self.tokenizer.encode_batch(documents)
         input_ids = np.array([e.ids for e in encoded])
@@ -64,7 +65,7 @@ class OnnxTextModel(OnnxModel[T]):
 
         onnx_input = self._preprocess_onnx_input(onnx_input)
 
-        model_output = self.model.run(output_names, onnx_input)
+        model_output = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)
         return OnnxOutputContext(
             model_output=model_output[0],
             attention_mask=attention_mask,
@@ -72,12 +73,12 @@ class OnnxTextModel(OnnxModel[T]):
         )
 
     def _embed_documents(
-            self,
-            model_name: str,
-            cache_dir: str,
-            documents: Union[str, Iterable[str]],
-            batch_size: int = 256,
-            parallel: Optional[int] = None,
+        self,
+        model_name: str,
+        cache_dir: str,
+        documents: Union[str, Iterable[str]],
+        batch_size: int = 256,
+        parallel: Optional[int] = None,
     ) -> Iterable[T]:
         is_small = False
 
