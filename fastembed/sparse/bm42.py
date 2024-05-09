@@ -31,6 +31,14 @@ MODEL_TO_LANGUAGE = {
 
 class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
+    def _filter_pair_tokens(self, tokens: List[Tuple[str, Any]]) -> List[Tuple[str, Any]]:
+        result = []
+        for token, value in tokens:
+            if token in self.stopwords or token in self.punctuation:
+                continue
+            result.append((token, value))
+        return result
+
     def _reconstruct_bpe(self, bpe_tokens: Iterable[Tuple[int, str]]) -> List[Tuple[str, List[int]]]:
 
         result = []
@@ -69,6 +77,8 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             document_tokens_with_ids = ((token_id, self.invert_vocab[token_id]) for token_id in document_token_ids)
 
             reconstructed = self._reconstruct_bpe(document_tokens_with_ids)
+
+            filtered = self._filter_pair_tokens(reconstructed)
 
             for x in reconstructed:
                 print(x)
