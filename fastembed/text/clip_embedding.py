@@ -2,6 +2,7 @@ from typing import Type, List, Dict, Any, Tuple, Iterable
 
 import numpy as np
 
+from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.text.onnx_embedding import OnnxTextEmbedding, OnnxTextEmbeddingWorker
 from fastembed.text.onnx_text_model import TextEmbeddingWorker
 
@@ -33,12 +34,10 @@ class CLIPOnnxEmbedding(OnnxTextEmbedding):
         """
         return supported_clip_models
 
-    @classmethod
     def _post_process_onnx_output(
-        cls, output: Tuple[np.ndarray, np.ndarray]
+        self, output: OnnxOutputContext
     ) -> Iterable[np.ndarray]:
-        embeddings, attention_mask = output
-        return embeddings
+        return output.model_output
 
 
 class CLIPEmbeddingWorker(OnnxTextEmbeddingWorker):

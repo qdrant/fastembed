@@ -2,6 +2,7 @@ from typing import Type, List, Dict, Any, Tuple, Iterable
 
 import numpy as np
 
+from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.utils import normalize
 from fastembed.text.onnx_embedding import OnnxTextEmbedding, OnnxTextEmbeddingWorker
 from fastembed.text.onnx_text_model import TextEmbeddingWorker
@@ -50,12 +51,12 @@ class JinaOnnxEmbedding(OnnxTextEmbedding):
         """
         return supported_jina_models
 
-    @classmethod
     def _post_process_onnx_output(
-        cls, output: Tuple[np.ndarray, np.ndarray]
+        self, output: OnnxOutputContext
     ) -> Iterable[np.ndarray]:
-        embeddings, attn_mask = output
-        return normalize(cls.mean_pooling(embeddings, attn_mask)).astype(np.float32)
+        embeddings = output.model_output
+        attn_mask = output.attention_mask
+        return normalize(self.mean_pooling(embeddings, attn_mask)).astype(np.float32)
 
 
 class JinaEmbeddingWorker(OnnxTextEmbeddingWorker):
