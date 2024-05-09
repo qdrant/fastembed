@@ -2,6 +2,9 @@ import string
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, Type, Sequence
 
+import numpy as np
+from snowballstemmer import stemmer as get_stemmer
+
 from fastembed.common import OnnxProvider
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.utils import define_cache_dir
@@ -18,9 +21,7 @@ supported_bm42_models = [
             "hf": "Qdrant/all_miniLM_L6_v2_with_attentions",
         },
         "model_file": "model.onnx",
-        "additional_files": [
-            "stopwords.txt"
-        ],
+        "additional_files": ["stopwords.txt"],
     },
 ]
 
@@ -30,86 +31,15 @@ MODEL_TO_LANGUAGE = {
 
 
 class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
-
-    def _filter_pair_tokens(self, tokens: List[Tuple[str, Any]]) -> List[Tuple[str, Any]]:
-        result = []
-        for token, value in tokens:
-            if token in self.stopwords or token in self.punctuation:
-                continue
-            result.append((token, value))
-        return result
-
-    def _reconstruct_bpe(self, bpe_tokens: Iterable[Tuple[int, str]]) -> List[Tuple[str, List[int]]]:
-
-        result = []
-        acc = ""
-        acc_idx = []
-
-        continuing_subword_prefix = self.tokenizer.model.continuing_subword_prefix
-        continuing_subword_prefix_len = len(continuing_subword_prefix)
-
-        for idx, token in bpe_tokens:
-            if token in self.special_tokens:
-                continue
-
-            if token.startswith(continuing_subword_prefix):
-                acc += token[continuing_subword_prefix_len:]
-                acc_idx.append(idx)
-            else:
-                if acc:
-                    result.append((acc, acc_idx))
-                    acc_idx = []
-                acc = token
-                acc_idx.append(idx)
-
-        if acc:
-            result.append((acc, acc_idx))
-
-        return result
-
-    def _post_process_onnx_output(
-            self, output: OnnxOutputContext
-    ) -> Iterable[SparseEmbedding]:
-
-        token_ids_batch = output.input_ids
-
-        for document_token_ids in token_ids_batch:
-            document_tokens_with_ids = ((token_id, self.invert_vocab[token_id]) for token_id in document_token_ids)
-
-            reconstructed = self._reconstruct_bpe(document_tokens_with_ids)
-
-            filtered = self._filter_pair_tokens(reconstructed)
-
-            for x in reconstructed:
-                print(x)
-
-        raise NotImplementedError("TODO")
-
-    @classmethod
-    def list_supported_models(cls) -> List[Dict[str, Any]]:
-        """Lists the supported models.
-
-        Returns:
-            List[Dict[str, Any]]: A list of dictionaries containing the model information.
-        """
-        return supported_bm42_models
-
-    @classmethod
-    def _load_stopwords(cls, model_dir: Path) -> List[str]:
-        stopwords_path = model_dir / "stopwords.txt"
-        if not stopwords_path.exists():
-            return []
-
-        with open(stopwords_path, "r") as f:
-            return f.read().splitlines()
+    ONNX_OUTPUT_NAMES = ["attention_6"]
 
     def __init__(
-            self,
-            model_name: str,
-            cache_dir: Optional[str] = None,
-            threads: Optional[int] = None,
-            providers: Optional[Sequence[OnnxProvider]] = None,
-            **kwargs,
+        self,
+        model_name: str,
+        cache_dir: Optional[str] = None,
+        threads: Optional[int] = None,
+        providers: Optional[Sequence[OnnxProvider]] = None,
+        **kwargs,
     ):
         """
         Args:
@@ -148,13 +78,113 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         self.special_tokens_ids = set(self.special_token_to_id.values())
         self.punctuation = set(string.punctuation)
         self.stopwords = set(self._load_stopwords(model_dir))
+        self.stemmer = get_stemmer(MODEL_TO_LANGUAGE[model_name])
+
+    def _filter_pair_tokens(self, tokens: List[Tuple[str, Any]]) -> List[Tuple[str, Any]]:
+        result = []
+        for token, value in tokens:
+            if token in self.stopwords or token in self.punctuation:
+                continue
+            result.append((token, value))
+        return result
+
+    def _stem_pair_tokens(self, tokens: List[Tuple[str, Any]]) -> List[Tuple[str, Any]]:
+        result = []
+        for token, value in tokens:
+            processed_token = self.stemmer.stemWord(token)
+            result.append((processed_token, value))
+        return result
+
+    @classmethod
+    def _aggregate_weights(
+        cls, tokens: List[Tuple[str, List[int]]], weights: Dict[int, float]
+    ) -> List[Tuple[str, float]]:
+        result = []
+        for token, idxs in tokens:
+            sum_weight = sum(weights[idx] for idx in idxs)
+            result.append((token, sum_weight))
+        return result
+
+    def _reconstruct_bpe(
+        self, bpe_tokens: Iterable[Tuple[int, str]]
+    ) -> List[Tuple[str, List[int]]]:
+        result = []
+        acc = ""
+        acc_idx = []
+
+        continuing_subword_prefix = self.tokenizer.model.continuing_subword_prefix
+        continuing_subword_prefix_len = len(continuing_subword_prefix)
+
+        for idx, token in bpe_tokens:
+            if token in self.special_tokens:
+                continue
+
+            if token.startswith(continuing_subword_prefix):
+                acc += token[continuing_subword_prefix_len:]
+                acc_idx.append(idx)
+            else:
+                if acc:
+                    result.append((acc, acc_idx))
+                    acc_idx = []
+                acc = token
+                acc_idx.append(idx)
+
+        if acc:
+            result.append((acc, acc_idx))
+
+        return result
+
+    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[SparseEmbedding]:
+        token_ids_batch = output.input_ids
+
+        for document_token_ids, attention_value, attention_mask in zip(
+            token_ids_batch, output.model_output, output.attention_mask
+        ):
+            document_tokens_with_ids = (
+                (token_id, self.invert_vocab[token_id]) for token_id in document_token_ids
+            )
+
+            reconstructed = self._reconstruct_bpe(document_tokens_with_ids)
+
+            filtered = self._filter_pair_tokens(reconstructed)
+
+            stemmed = self._stem_pair_tokens(filtered)
+
+            pooled_attention = np.mean(attention_value[:, :, 0], axis=0) * attention_mask
+
+            weighted = self._aggregate_weights(
+                stemmed,
+                {token_id: pooled_attention[i] for i, token_id in enumerate(document_token_ids)},
+            )
+            for x in weighted:
+                print(x)
+
+        raise NotImplementedError("TODO")
+
+    @classmethod
+    def list_supported_models(cls) -> List[Dict[str, Any]]:
+        """Lists the supported models.
+
+        Returns:
+            List[Dict[str, Any]]: A list of dictionaries containing the model information.
+        """
+        return supported_bm42_models
+
+    @classmethod
+    def _load_stopwords(cls, model_dir: Path) -> List[str]:
+        stopwords_path = model_dir / "stopwords.txt"
+        if not stopwords_path.exists():
+            return []
+
+        with open(stopwords_path, "r") as f:
+            return f.read().splitlines()
 
     def embed(
-            self,
-            documents: Union[str, Iterable[str]],
-            batch_size: int = 256,
-            parallel: Optional[int] = None,
-            **kwargs,
+        self,
+        documents: Union[str, Iterable[str]],
+        batch_size: int = 256,
+        parallel: Optional[int] = None,
+        **kwargs,
     ) -> Iterable[SparseEmbedding]:
         """
         Encode a list of documents into list of embeddings.
@@ -181,18 +211,18 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
     @classmethod
     def _get_worker_class(cls) -> Type[TextEmbeddingWorker]:
-        return Bm42EmbeddingWorker
+        return TextEmbeddingWorker
 
 
-class Bm42EmbeddingWorker(TextEmbeddingWorker):
-    def init_embedding(
-            self,
-            model_name: str,
-            cache_dir: str,
-    ) -> Bm42:
-        return Bm42(model_name=model_name, cache_dir=cache_dir, threads=1)
-
-    def process(self, items: Iterable[Tuple[int, Any]]) -> Iterable[Tuple[int, Any]]:
-        for idx, batch in items:
-            onnx_output = self.model.onnx_embed(batch, ["attention_6"])
-            yield idx, onnx_output
+# class Bm42EmbeddingWorker(TextEmbeddingWorker):
+#     def init_embedding(
+#         self,
+#         model_name: str,
+#         cache_dir: str,
+#     ) -> Bm42:
+#         return Bm42(model_name=model_name, cache_dir=cache_dir, threads=1)
+#
+#     def process(self, items: Iterable[Tuple[int, Any]]) -> Iterable[Tuple[int, Any]]:
+#         for idx, batch in items:
+#             onnx_output = self.model.onnx_embed(batch, ["attention_6"])
+#             yield idx, onnx_output
