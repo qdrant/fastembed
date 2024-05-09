@@ -108,6 +108,7 @@ class ModelManagement:
             "tokenizer.json",
             "tokenizer_config.json",
             "special_tokens_map.json",
+            "preprocessor_config.json",
         ]
         if extra_patterns is not None:
             allow_patterns.extend(extra_patterns)

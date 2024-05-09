@@ -1,22 +1,14 @@
-from typing import Any, Dict, Iterable, List, Optional, Type, Union, Sequence
+from typing import Any, Dict, Iterable, List, Optional, Type, Sequence
 
 import numpy as np
 
-from fastembed.common import OnnxProvider
-from fastembed.text.clip_embedding import CLIPOnnxEmbedding
-from fastembed.text.e5_onnx_embedding import E5OnnxEmbedding
-from fastembed.text.jina_onnx_embedding import JinaOnnxEmbedding
-from fastembed.text.onnx_embedding import OnnxTextEmbedding
-from fastembed.text.text_embedding_base import TextEmbeddingBase
+from fastembed.common import ImageInput, OnnxProvider
+from fastembed.image.image_embedding_base import ImageEmbeddingBase
+from fastembed.image.onnx_embedding import OnnxImageEmbedding
 
 
-class TextEmbedding(TextEmbeddingBase):
-    EMBEDDINGS_REGISTRY: List[Type[TextEmbeddingBase]] = [
-        OnnxTextEmbedding,
-        E5OnnxEmbedding,
-        JinaOnnxEmbedding,
-        CLIPOnnxEmbedding,
-    ]
+class ImageEmbedding(ImageEmbeddingBase):
+    EMBEDDINGS_REGISTRY: List[Type[ImageEmbeddingBase]] = [OnnxImageEmbedding]
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Any]]:
@@ -30,14 +22,14 @@ class TextEmbedding(TextEmbeddingBase):
                 ```
                 [
                     {
-                        "model": "intfloat/multilingual-e5-large",
-                        "dim": 1024,
-                        "description": "Multilingual model, e5-large. Recommend using this model for non-English languages",
-                        "size_in_GB": 2.24,
+                        "model": "Qdrant/clip-ViT-B-32-vision",
+                        "dim": 512,
+                        "description": "CLIP vision encoder based on ViT-B/32",
+                        "size_in_GB": 0.33,
                         "sources": {
-                            "gcp": "https://storage.googleapis.com/qdrant-fastembed/fast-multilingual-e5-large.tar.gz",
-                            "hf": "qdrant/multilingual-e5-large-onnx",
-                        }
+                            "hf": "Qdrant/clip-ViT-B-32-vision",
+                        },
+                        "model_file": "model.onnx",
                     }
                 ]
                 ```
@@ -49,7 +41,7 @@ class TextEmbedding(TextEmbeddingBase):
 
     def __init__(
         self,
-        model_name: str = "BAAI/bge-small-en-v1.5",
+        model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
@@ -72,8 +64,8 @@ class TextEmbedding(TextEmbeddingBase):
 
     def embed(
         self,
-        documents: Union[str, Iterable[str]],
-        batch_size: int = 256,
+        images: ImageInput,
+        batch_size: int = 16,
         parallel: Optional[int] = None,
         **kwargs,
     ) -> Iterable[np.ndarray]:
@@ -82,7 +74,7 @@ class TextEmbedding(TextEmbeddingBase):
         We use mean pooling with attention so that the model can handle variable-length inputs.
 
         Args:
-            documents: Iterator of documents or single document to embed
+            images: Iterator of image paths or single image path to embed
             batch_size: Batch size for encoding -- higher values will use more memory, but be faster
             parallel:
                 If > 1, data-parallel encoding will be used, recommended for offline encoding of large datasets.
@@ -92,4 +84,4 @@ class TextEmbedding(TextEmbeddingBase):
         Returns:
             List of embeddings, one per document
         """
-        yield from self.model.embed(documents, batch_size, parallel, **kwargs)
+        yield from self.model.embed(images, batch_size, parallel, **kwargs)
