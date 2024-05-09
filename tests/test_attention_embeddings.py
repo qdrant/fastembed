@@ -4,6 +4,13 @@ from fastembed.sparse.bm42 import Bm42
 def test_attention_embeddings():
     model = Bm42(model_name="Qdrant/bm42-all-minilm-l6-v2-attentions")
 
+    output = list(model.query_embed([
+        "I must not fear. Fear is the mind-killer.",
+    ]))
+
+    for result in output:
+        print(result)
+
     output = list(model.embed([
         "I must not fear. Fear is the mind-killer.",
         "All animals are equal, but some animals are more equal than others.",

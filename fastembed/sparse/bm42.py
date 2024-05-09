@@ -33,6 +33,21 @@ MODEL_TO_LANGUAGE = {
 
 
 class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
+    """
+    Bm42 is an extension of BM25, which tries to better evaluate importance of tokens in the documents,
+    by extracting attention weights from the transformer model.
+
+    Traditional BM25 uses a count of tokens in the document to evaluate the importance of the token,
+    but this approach doesn't work well with short documents or chunks of text, as almost all tokens
+    there are unique.
+
+    BM42 addresses this issue by replacing the token count with the attention weights from the transformer model.
+    This allows sparse embeddings to work well with short documents, handle rare tokens and leverage traditional NLP
+    techniques like stemming and stopwords.
+
+    WARNING: This model is expected to be used with `modifier="idf"` in the sparse vector index of Qdrant.
+    """
+    
     ONNX_OUTPUT_NAMES = ["attention_6"]
 
     def __init__(
@@ -230,6 +245,32 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             batch_size=batch_size,
             parallel=parallel,
         )
+
+    @classmethod
+    def _query_rehash(cls, tokens: Iterable[str]) -> Dict[int, float]:
+        result = {}
+        for token in tokens:
+            token_id = abs(mmh3.hash(token))
+            result[token_id] = 1.0
+        return result
+
+    def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> Iterable[SparseEmbedding]:
+        """
+        To emulate BM25 behaviour, we don't need to use smart weights in the query, and
+        it's enough to just hash the tokens and assign a weight of 1.0 to them.
+        It is also faster, as we don't need to run the model for the query.
+        """
+        if isinstance(query, str):
+            query = [query]
+
+        for text in query:
+            encoded = self.tokenizer.encode(text)
+            document_tokens_with_ids = enumerate(encoded.tokens)
+            reconstructed = self._reconstruct_bpe(document_tokens_with_ids)
+            filtered = self._filter_pair_tokens(reconstructed)
+            stemmed = self._stem_pair_tokens(filtered)
+
+            yield SparseEmbedding.from_dict(self._query_rehash(token for token, _ in stemmed))
 
     @classmethod
     def _get_worker_class(cls) -> Type[TextEmbeddingWorker]:
