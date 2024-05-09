@@ -1,8 +1,10 @@
+import math
 import string
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, Type, Sequence
 
 import numpy as np
+import mmh3
 from snowballstemmer import stemmer as get_stemmer
 
 from fastembed.common import OnnxProvider
@@ -34,12 +36,12 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
     ONNX_OUTPUT_NAMES = ["attention_6"]
 
     def __init__(
-        self,
-        model_name: str,
-        cache_dir: Optional[str] = None,
-        threads: Optional[int] = None,
-        providers: Optional[Sequence[OnnxProvider]] = None,
-        **kwargs,
+            self,
+            model_name: str,
+            cache_dir: Optional[str] = None,
+            threads: Optional[int] = None,
+            providers: Optional[Sequence[OnnxProvider]] = None,
+            **kwargs,
     ):
         """
         Args:
@@ -96,9 +98,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         return result
 
     @classmethod
-    def _aggregate_weights(
-        cls, tokens: List[Tuple[str, List[int]]], weights: Dict[int, float]
-    ) -> List[Tuple[str, float]]:
+    def _aggregate_weights(cls, tokens: List[Tuple[str, List[int]]], weights: List[float]) -> List[Tuple[str, float]]:
         result = []
         for token, idxs in tokens:
             sum_weight = sum(weights[idx] for idx in idxs)
@@ -106,7 +106,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         return result
 
     def _reconstruct_bpe(
-        self, bpe_tokens: Iterable[Tuple[int, str]]
+            self, bpe_tokens: Iterable[Tuple[int, str]]
     ) -> List[Tuple[str, List[int]]]:
         result = []
         acc = ""
@@ -134,14 +134,36 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
         return result
 
+    @classmethod
+    def _rescore_vector(cls, vector: Dict[str, float]) -> Dict[int, float]:
+        """
+        Orders all tokens in the vector by their importance and generates a new score based on the importance order.
+        So that the scoring doesn't depend on absolute values assigned by the model, but on the relative importance.
+        """
+
+        sorted_vector = sorted(vector.items(), key=lambda x: x[1], reverse=True)
+        new_vector = {}
+
+        for num, (token, value) in enumerate(sorted_vector):
+            token_id = abs(mmh3.hash(token))
+            # Examples:
+            # Num 0: Log(1/1 + 1) = 0.6931471805599453
+            # Num 1: Log(1/2 + 1) = 0.4054651081081644
+            # Num 2: Log(1/3 + 1) = 0.28768207245178085
+            new_vector[token_id] = math.log(1. / (num + 1.) + 1.)  # value
+
+        return new_vector
+
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[SparseEmbedding]:
         token_ids_batch = output.input_ids
 
-        for document_token_ids, attention_value, attention_mask in zip(
-            token_ids_batch, output.model_output, output.attention_mask
-        ):
+        # attention_value shape: (batch_size, num_heads, num_tokens, num_tokens)
+        pooled_attention = np.mean(output.model_output[:, :, 0], axis=1) * output.attention_mask
+
+        for document_token_ids, attention_value in zip(token_ids_batch, pooled_attention):
             document_tokens_with_ids = (
-                (token_id, self.invert_vocab[token_id]) for token_id in document_token_ids
+                (idx, self.invert_vocab[token_id])
+                for idx, token_id in enumerate(document_token_ids)
             )
 
             reconstructed = self._reconstruct_bpe(document_tokens_with_ids)
@@ -150,16 +172,16 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
             stemmed = self._stem_pair_tokens(filtered)
 
-            pooled_attention = np.mean(attention_value[:, :, 0], axis=0) * attention_mask
+            weighted = self._aggregate_weights(stemmed, attention_value)
 
-            weighted = self._aggregate_weights(
-                stemmed,
-                {token_id: pooled_attention[i] for i, token_id in enumerate(document_token_ids)},
-            )
-            for x in weighted:
-                print(x)
+            max_token_weight = {}
 
-        raise NotImplementedError("TODO")
+            for token, weight in weighted:
+                max_token_weight[token] = max(max_token_weight.get(token, 0), weight)
+
+            rescored = self._rescore_vector(max_token_weight)
+
+            yield SparseEmbedding.from_dict(rescored)
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Any]]:
@@ -180,11 +202,11 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             return f.read().splitlines()
 
     def embed(
-        self,
-        documents: Union[str, Iterable[str]],
-        batch_size: int = 256,
-        parallel: Optional[int] = None,
-        **kwargs,
+            self,
+            documents: Union[str, Iterable[str]],
+            batch_size: int = 256,
+            parallel: Optional[int] = None,
+            **kwargs,
     ) -> Iterable[SparseEmbedding]:
         """
         Encode a list of documents into list of embeddings.
@@ -212,17 +234,3 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
     @classmethod
     def _get_worker_class(cls) -> Type[TextEmbeddingWorker]:
         return TextEmbeddingWorker
-
-
-# class Bm42EmbeddingWorker(TextEmbeddingWorker):
-#     def init_embedding(
-#         self,
-#         model_name: str,
-#         cache_dir: str,
-#     ) -> Bm42:
-#         return Bm42(model_name=model_name, cache_dir=cache_dir, threads=1)
-#
-#     def process(self, items: Iterable[Tuple[int, Any]]) -> Iterable[Tuple[int, Any]]:
-#         for idx, batch in items:
-#             onnx_output = self.model.onnx_embed(batch, ["attention_6"])
-#             yield idx, onnx_output

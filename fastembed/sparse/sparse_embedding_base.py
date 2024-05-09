@@ -20,6 +20,11 @@ class SparseEmbedding:
     def as_dict(self) -> Dict[int, float]:
         return {i: v for i, v in zip(self.indices, self.values)}
 
+    @classmethod
+    def from_dict(cls, data: Dict[int, float]) -> "SparseEmbedding":
+        indices, values = zip(*data.items())
+        return cls(values=np.array(values), indices=np.array(indices))
+
 
 class SparseTextEmbeddingBase(ModelManagement):
     def __init__(
