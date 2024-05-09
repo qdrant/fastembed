@@ -8,7 +8,7 @@ from PIL import Image
 import numpy as np
 
 from fastembed.common.preprocessor_utils import load_preprocessor
-from fastembed.common.onnx_model import OnnxModel, EmbeddingWorker, T
+from fastembed.common.onnx_model import OnnxModel, EmbeddingWorker, T, OnnxOutputContext
 from fastembed.common import PathInput, ImageInput, OnnxProvider
 from fastembed.common.utils import iter_batch
 from fastembed.parallel_processor import ParallelWorkerPool
@@ -21,8 +21,7 @@ class OnnxImageModel(OnnxModel[T]):
     def _get_worker_class(cls) -> Type["ImageEmbeddingWorker"]:
         raise NotImplementedError("Subclasses must implement this method")
 
-    @classmethod
-    def _post_process_onnx_output(cls, output: np.ndarray) -> Iterable[T]:
+    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[T]:
         raise NotImplementedError("Subclasses must implement this method")
 
     def __init__(self) -> None:
@@ -47,7 +46,7 @@ class OnnxImageModel(OnnxModel[T]):
         )
         self.processor = load_preprocessor(model_dir=model_dir)
 
-    def onnx_embed(self, images: List[PathInput]) -> np.ndarray:
+    def onnx_embed(self, images: List[PathInput]) -> OnnxOutputContext:
         with contextlib.ExitStack():
             image_files = [Image.open(image) for image in images]
             encoded = self.processor(image_files)
@@ -56,7 +55,9 @@ class OnnxImageModel(OnnxModel[T]):
 
         model_output = self.model.run(None, onnx_input)
         embeddings = model_output[0]
-        return embeddings
+        return OnnxOutputContext(
+            model_output=embeddings
+        )
 
     def _embed_images(
         self,

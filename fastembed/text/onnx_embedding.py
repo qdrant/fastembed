@@ -3,6 +3,7 @@ from typing import Dict, Optional, Tuple, Union, Iterable, Type, List, Any, Sequ
 import numpy as np
 
 from fastembed.common import OnnxProvider
+from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.utils import normalize, define_cache_dir
 from fastembed.text.onnx_text_model import TextEmbeddingWorker, OnnxTextModel
 from fastembed.text.text_embedding_base import TextEmbeddingBase
@@ -282,11 +283,10 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
         """
         return onnx_input
 
-    @classmethod
     def _post_process_onnx_output(
-        cls, output: Tuple[np.ndarray, np.ndarray]
+        self, output: OnnxOutputContext
     ) -> Iterable[np.ndarray]:
-        embeddings, _ = output
+        embeddings = output.model_output
         return normalize(embeddings[:, 0]).astype(np.float32)
 
 
