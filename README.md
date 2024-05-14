@@ -61,12 +61,13 @@ pip install fastembed-gpu
 
 By default, `fastembed` is shipped with `onnxruntime-gpu` compiled for CUDA 11.8. 
 
-CUDA 12.x requires `onnxruntime-gpu` to be installed with:
+CUDA 12.x requires `onnxruntime-gpu` to be installed with the following command:
 
 ```bash
 pip install onnxruntime-gpu --extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/
 ```
 
+*Note*: It is better to install it before `fastembed-gpu`, otherwise it might be required to uninstall `onnxruntime-gpu` first.
  
 
 ```python
