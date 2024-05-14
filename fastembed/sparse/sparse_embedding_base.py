@@ -32,6 +32,7 @@ class SparseTextEmbeddingBase(ModelManagement):
         self.model_name = model_name
         self.cache_dir = cache_dir
         self.threads = threads
+        self._local_files_only = kwargs.pop("local_files_only", False)
 
     def embed(
         self,

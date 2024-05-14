@@ -76,15 +76,18 @@ def test_single_embedding():
 def test_parallel_processing():
     import numpy as np
 
-    model = SparseTextEmbedding(
-        model_name="prithivida/Splade_PP_en_v1",
-    )
+    model = SparseTextEmbedding(model_name="prithivida/Splade_PP_en_v1")
     docs = ["hello world", "flag embedding"] * 30
     sparse_embeddings_duo = list(model.embed(docs, batch_size=10, parallel=2))
     sparse_embeddings_all = list(model.embed(docs, batch_size=10, parallel=0))
     sparse_embeddings = list(model.embed(docs, batch_size=10, parallel=None))
 
-    assert len(sparse_embeddings) == len(sparse_embeddings_duo) == len(sparse_embeddings_all) == len(docs)
+    assert (
+        len(sparse_embeddings)
+        == len(sparse_embeddings_duo)
+        == len(sparse_embeddings_all)
+        == len(docs)
+    )
 
     for sparse_embedding, sparse_embedding_duo, sparse_embedding_all in zip(
         sparse_embeddings, sparse_embeddings_duo, sparse_embeddings_all

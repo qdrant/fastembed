@@ -91,6 +91,7 @@ class ModelManagement:
         hf_source_repo: str,
         cache_dir: Optional[str] = None,
         extra_patterns: Optional[List[str]] = None,
+        **kwargs,
     ) -> str:
         """
         Downloads a model from HuggingFace Hub.
@@ -107,6 +108,7 @@ class ModelManagement:
             "tokenizer.json",
             "tokenizer_config.json",
             "special_tokens_map.json",
+            "preprocessor_config.json",
         ]
         if extra_patterns is not None:
             allow_patterns.extend(extra_patterns)
@@ -115,6 +117,7 @@ class ModelManagement:
             repo_id=hf_source_repo,
             allow_patterns=allow_patterns,
             cache_dir=cache_dir,
+            local_files_only=kwargs.get("local_files_only", False),
         )
 
     @classmethod
@@ -189,7 +192,7 @@ class ModelManagement:
         return model_dir
 
     @classmethod
-    def download_model(cls, model: Dict[str, Any], cache_dir: Path) -> Path:
+    def download_model(cls, model: Dict[str, Any], cache_dir: Path, **kwargs) -> Path:
         """
         Downloads a model from HuggingFace Hub or Google Cloud Storage.
 
@@ -224,7 +227,10 @@ class ModelManagement:
             try:
                 return Path(
                     cls.download_files_from_huggingface(
-                        hf_source, cache_dir=str(cache_dir), extra_patterns=extra_patterns
+                        hf_source,
+                        cache_dir=str(cache_dir),
+                        extra_patterns=extra_patterns,
+                        local_files_only=kwargs.get("local_files_only", False),
                     )
                 )
             except (EnvironmentError, RepositoryNotFoundError, ValueError) as e:
