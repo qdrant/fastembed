@@ -50,17 +50,32 @@ len(embeddings_list[0]) # Vector of 384 dimensions
 
 ### ⚡️ FastEmbed on a GPU
 
-FastEmbed supports running on GPU devices. It requires installation of the `fastembed-gpu` package.
-Make sure not to have the `fastembed` package installed, as it might interfere with the `fastembed-gpu` package.
+FastEmbed supports running on GPU devices.
+It requires installation of the `fastembed-gpu` package.
 
 ```bash
 pip install fastembed-gpu
-``` 
+```
+
+*IMPORTANT*: Make sure not to have the `fastembed` package installed, as it interferes with the `fastembed-gpu` package.
+
+By default, `fastembed` is shipped with `onnxruntime-gpu` compiled for CUDA 11.8. 
+
+CUDA 12.x requires `onnxruntime-gpu` to be installed with:
+
+```bash
+pip install onnxruntime-gpu --extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/
+```
+
+ 
 
 ```python
 from fastembed import TextEmbedding
 
-embedding_model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5", providers=["CUDAExecutionProvider"])
+embedding_model = TextEmbedding(
+    model_name="BAAI/bge-small-en-v1.5", 
+    providers=["CUDAExecutionProvider"]
+)
 print("The model BAAI/bge-small-en-v1.5 is ready to use on a GPU.")
 
 ```

@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Any, Dict, Generic, Iterable, Optional, Tuple, Type, TypeVar, Sequence
+import warnings
 
 import numpy as np
 import onnxruntime as ort
@@ -39,14 +40,15 @@ class OnnxModel(Generic[T]):
         providers: Optional[Sequence[OnnxProvider]] = None,
     ) -> None:
         model_path = model_dir / model_file
-
         # List of Execution Providers: https://onnxruntime.ai/docs/execution-providers
 
         onnx_providers = ["CPUExecutionProvider"] if providers is None else list(providers)
         available_providers = ort.get_available_providers()
+        requested_provider_names = []
         for provider in onnx_providers:
             # check providers available
             provider_name = provider if isinstance(provider, str) else provider[0]
+            requested_provider_names.append(provider_name)
             if provider_name not in available_providers:
                 raise ValueError(
                     f"Provider {provider_name} is not available. Available providers: {available_providers}"
@@ -62,6 +64,13 @@ class OnnxModel(Generic[T]):
         self.model = ort.InferenceSession(
             str(model_path), providers=onnx_providers, sess_options=so
         )
+        if "CUDAExecutionProvider" in requested_provider_names:
+            current_providers = self.model.get_providers()
+            if "CUDAExecutionProvider" not in current_providers:
+                warnings.warn(
+                    f"Attempt to set CUDAExecutionProvider failed. Current providers: {current_providers}."
+                    "If you are using CUDA 12.x, install onnxruntime-gpu via `pip install onnxruntime-gpu --extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/`"
+                )
 
     def onnx_embed(self, *args, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
         raise NotImplementedError("Subclasses must implement this method")
