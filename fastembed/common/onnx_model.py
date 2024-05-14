@@ -69,7 +69,9 @@ class OnnxModel(Generic[T]):
             if "CUDAExecutionProvider" not in current_providers:
                 warnings.warn(
                     f"Attempt to set CUDAExecutionProvider failed. Current providers: {current_providers}."
-                    "If you are using CUDA 12.x, install onnxruntime-gpu via `pip install onnxruntime-gpu --extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/`"
+                    "If you are using CUDA 12.x, install onnxruntime-gpu via "
+                    "`pip install onnxruntime-gpu --extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/`",
+                    RuntimeWarning,
                 )
 
     def onnx_embed(self, *args, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
