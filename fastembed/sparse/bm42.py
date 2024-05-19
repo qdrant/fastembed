@@ -56,6 +56,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             cache_dir: Optional[str] = None,
             threads: Optional[int] = None,
             providers: Optional[Sequence[OnnxProvider]] = None,
+            alpha: float = 0.5,
             **kwargs,
     ):
         """
@@ -65,6 +66,10 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
                                        Can be set using the `FASTEMBED_CACHE_PATH` env variable.
                                        Defaults to `fastembed_cache` in the system's temp directory.
             threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
+            providers (Optional[Sequence[OnnxProvider]], optional): The providers to use for onnxruntime.
+            alpha (float, optional): Parameter, that defines the importance of the token weight in the document
+                versus the importance of the token frequency in the corpus. Defaults to 0.5, based on empirical testing.
+                It is recommended to only change this parameter based on training data for a specific dataset.
 
         Raises:
             ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
@@ -96,6 +101,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         self.punctuation = set(string.punctuation)
         self.stopwords = set(self._load_stopwords(model_dir))
         self.stemmer = get_stemmer(MODEL_TO_LANGUAGE[model_name])
+        self.alpha = alpha
 
     def _filter_pair_tokens(self, tokens: List[Tuple[str, Any]]) -> List[Tuple[str, Any]]:
         result = []
@@ -149,23 +155,21 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
         return result
 
-    @classmethod
-    def _rescore_vector(cls, vector: Dict[str, float]) -> Dict[int, float]:
+    def _rescore_vector(self, vector: Dict[str, float]) -> Dict[int, float]:
         """
         Orders all tokens in the vector by their importance and generates a new score based on the importance order.
         So that the scoring doesn't depend on absolute values assigned by the model, but on the relative importance.
         """
 
-        sorted_vector = sorted(vector.items(), key=lambda x: x[1], reverse=True)
         new_vector = {}
 
-        for num, (token, value) in enumerate(sorted_vector):
+        for token, value in vector:
             token_id = abs(mmh3.hash(token))
             # Examples:
             # Num 0: Log(1/1 + 1) = 0.6931471805599453
             # Num 1: Log(1/2 + 1) = 0.4054651081081644
             # Num 2: Log(1/3 + 1) = 0.28768207245178085
-            new_vector[token_id] = math.log(1. / (num + 1.) + 1.)  # value
+            new_vector[token_id] = math.log(1. + value) ** self.alpha  # value
 
         return new_vector
 
