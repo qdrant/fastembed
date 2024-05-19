@@ -8,10 +8,12 @@ def test_attention_embeddings():
         "I must not fear. Fear is the mind-killer.",
     ]))
 
-    for result in output:
-        print(result)
+    assert len(output) == 1
 
-    output = list(model.embed([
+    for result in output:
+        assert len(result.indices) == len(result.values)
+
+    quotes = [
         "I must not fear. Fear is the mind-killer.",
         "All animals are equal, but some animals are more equal than others.",
         "It was a pleasure to burn.",
@@ -23,7 +25,23 @@ def test_attention_embeddings():
         "We're not in Infinity; we're in the suburbs.",
         "I was a thousand times more evil than thou!",
         "History is merely a list of surprises... It can only prepare us to be surprised yet again.",
-    ]))
+    ]
+
+    output = list(model.embed(quotes))
+
+    assert len(output) == len(quotes)
 
     for result in output:
-        print(result)
+        assert len(result.indices) == len(result.values)
+        assert len(result.indices) > 0
+
+    # Test support for unknown languages
+    output = list(model.query_embed([
+        "привет мир!",
+    ]))
+
+    assert len(output) == 1
+
+    for result in output:
+        assert len(result.indices) == len(result.values)
+        assert len(result.indices) == 2

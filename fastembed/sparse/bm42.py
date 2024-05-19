@@ -163,7 +163,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
         new_vector = {}
 
-        for token, value in vector:
+        for token, value in vector.items():
             token_id = abs(mmh3.hash(token))
             # Examples:
             # Num 0: Log(1/1 + 1) = 0.6931471805599453
