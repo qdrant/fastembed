@@ -16,7 +16,7 @@ onnx = "^1.15.0"
 onnxruntime = "^1.17.0"
 tqdm = "^4.66"
 requests = "^2.31"
-tokenizers = "^0.15"
+tokenizers = ">=0.15,<1.0"
 huggingface-hub = "^0.20"
 loguru = "^0.7.2"
 numpy = [
