@@ -47,11 +47,14 @@ class OnnxImageModel(OnnxModel[T]):
         )
         self.processor = load_preprocessor(model_dir=model_dir)
 
+    def _build_onnx_input(self, encoded: np.ndarray) -> Dict[str, np.ndarray]:
+        return {node.name: encoded for node in self.model.get_inputs()}
+
     def onnx_embed(self, images: List[PathInput]) -> np.ndarray:
         with contextlib.ExitStack():
             image_files = [Image.open(image) for image in images]
             encoded = self.processor(image_files)
-        onnx_input = {"pixel_values": encoded}
+        onnx_input = self._build_onnx_input(encoded)
         onnx_input = self._preprocess_onnx_input(onnx_input)
 
         model_output = self.model.run(None, onnx_input)
