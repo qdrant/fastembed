@@ -1,17 +1,24 @@
-from fastembed.sparse.bm42 import Bm42
+import numpy as np
+
+from fastembed import SparseTextEmbedding
 
 
 def test_attention_embeddings():
-    model = Bm42(model_name="Qdrant/bm42-all-minilm-l6-v2-attentions")
+    model = SparseTextEmbedding(model_name="Qdrant/bm42-all-minilm-l6-v2-attentions")
 
-    output = list(model.query_embed([
-        "I must not fear. Fear is the mind-killer.",
-    ]))
+    output = list(
+        model.query_embed(
+            [
+                "I must not fear. Fear is the mind-killer.",
+            ]
+        )
+    )
 
     assert len(output) == 1
 
     for result in output:
         assert len(result.indices) == len(result.values)
+        assert np.allclose(result.values, np.ones(len(result.values)))
 
     quotes = [
         "I must not fear. Fear is the mind-killer.",
@@ -36,9 +43,13 @@ def test_attention_embeddings():
         assert len(result.indices) > 0
 
     # Test support for unknown languages
-    output = list(model.query_embed([
-        "привет мир!",
-    ]))
+    output = list(
+        model.query_embed(
+            [
+                "привет мир!",
+            ]
+        )
+    )
 
     assert len(output) == 1
 
