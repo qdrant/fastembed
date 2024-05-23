@@ -115,3 +115,9 @@ def resize(
 
 def rescale(image: np.ndarray, scale: float, dtype=np.float32) -> np.ndarray:
     return (image * scale).astype(dtype)
+
+
+def pil2ndarray(image: Union[Image.Image, np.ndarray]):
+    if isinstance(image, Image.Image):
+        return np.asarray(image).swapaxes(2, 0)
+    return image

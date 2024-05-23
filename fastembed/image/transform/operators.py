@@ -9,6 +9,7 @@ from fastembed.image.transform.functional import (
     resize,
     convert_to_rgb,
     rescale,
+    pil2ndarray
 )
 
 
@@ -61,7 +62,7 @@ class Rescale(Transform):
 
 class PILtoNDarray:
     def __call__(self, images: List[Union[Image.Image, np.ndarray]]) -> List[np.ndarray]:
-        return [np.asarray(image).swapaxes(2, 0) if isinstance(image, Image.Image) else image for image in images]
+        return [pil2ndarray(image) for image in images]
 
 class Compose:
     def __init__(self, transforms: List[Transform]):
