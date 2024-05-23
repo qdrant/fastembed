@@ -59,9 +59,9 @@ class Rescale(Transform):
     def __call__(self, images: List[np.ndarray]) -> List[np.ndarray]:
         return [rescale(image, scale=self.scale) for image in images]
 
-class PILtoNDarray(Transform):
-    def __call__(self, images: List[np.ndarray]) -> List[np.ndarray]:
-        return [np.asarray(image).swapaxes(2, 1) for image in images]
+class PILtoNDarray:
+    def __call__(self, images: List[Union[Image.Image, np.ndarray]]) -> List[np.ndarray]:
+        return [np.asarray(image).swapaxes(2, 0) if isinstance(image, Image.Image) else image for image in images]
 
 class Compose:
     def __init__(self, transforms: List[Transform]):
@@ -99,8 +99,9 @@ class Compose:
             else:
                 raise ValueError(f"Invalid crop size: {crop_size}")
             transforms.append(CenterCrop(size=crop_size))
-        if config.get("PIL_to_ndarray", False):
-            transforms.append(PILtoNDarray())
+
+        transforms.append(PILtoNDarray())
+
         if config.get("do_rescale", True):
             rescale_factor = config.get("rescale_factor", 1 / 255)
             transforms.append(Rescale(scale=rescale_factor))
