@@ -73,6 +73,28 @@ class Compose:
 
     @classmethod
     def from_config(cls, config: Dict[str, Any]) -> "Compose":
+        """Creates processor from a config dict.
+
+        Args:
+            config (Dict[str, Any]): Configuration dictionary.
+
+                Valid keys:
+                    - do_resize
+                    - size
+                    - do_center_crop
+                    - crop_size
+                    - do_rescale
+                    - rescale_factor
+                    - do_normalize
+                    - image_mean
+                    - image_std
+                Valid size keys (nested):
+                    - {"height", "width"}
+                    - {"shortest_edge"}
+
+        Returns:
+            Compose: Image processor.
+        """
         transforms = [ConvertToRGB()]
         if config.get("do_resize", False):
             size = config["size"]
