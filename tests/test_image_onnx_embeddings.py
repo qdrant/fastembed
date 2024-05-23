@@ -8,6 +8,7 @@ from tests.config import TEST_MISC_DIR
 
 CANONICAL_VECTOR_VALUES = {
     "Qdrant/clip-ViT-B-32-vision": np.array([-0.0098, 0.0128, -0.0274, 0.002, -0.0059]),
+    "AndrewOgn/resnet_onnx": np.array([0.0405, 0.0043, 0.01536, 0.0259, 0.0054])
 }
 
 
@@ -15,6 +16,7 @@ def test_embedding():
     is_ci = os.getenv("CI")
 
     for model_desc in ImageEmbedding.list_supported_models():
+        print(model_desc)
         if not is_ci and model_desc["size_in_GB"] > 1:
             continue
 
@@ -28,6 +30,7 @@ def test_embedding():
         assert embeddings.shape == (2, dim)
 
         canonical_vector = CANONICAL_VECTOR_VALUES[model_desc["model"]]
+        print(embeddings[0, : canonical_vector.shape[0]])
         assert np.allclose(
             embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3
         ), model_desc["model"]
