@@ -24,6 +24,9 @@ numpy = [
     { version = ">=1.26", python = ">=3.12" }
 ]
 pillow = "^10.3.0"
+snowballstemmer = "^2.2.0"
+PyStemmer = "^2.2.0"
+mmh3 = "^4.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.2"

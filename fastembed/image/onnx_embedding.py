@@ -2,6 +2,7 @@ from typing import Dict, Optional, Iterable, Type, List, Any, Sequence
 
 import numpy as np
 
+from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.utils import normalize, define_cache_dir
 from fastembed.common import ImageInput, OnnxProvider
 from fastembed.image.image_embedding_base import ImageEmbeddingBase
@@ -108,9 +109,8 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
 
         return onnx_input
 
-    @classmethod
-    def _post_process_onnx_output(cls, output: np.ndarray) -> Iterable[np.ndarray]:
-        return normalize(output).astype(np.float32)
+    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
+        return normalize(output.model_output).astype(np.float32)
 
 
 class OnnxImageEmbeddingWorker(ImageEmbeddingWorker):

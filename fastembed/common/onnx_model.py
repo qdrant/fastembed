@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Generic, Iterable, Optional, Tuple, Type, TypeVar, Sequence
 import warnings
@@ -13,13 +14,19 @@ from fastembed.parallel_processor import Worker
 T = TypeVar("T")
 
 
+@dataclass
+class OnnxOutputContext:
+    model_output: np.ndarray
+    attention_mask: Optional[np.ndarray] = None
+    input_ids: Optional[np.ndarray] = None
+
+
 class OnnxModel(Generic[T]):
     @classmethod
     def _get_worker_class(cls) -> Type["EmbeddingWorker"]:
         raise NotImplementedError("Subclasses must implement this method")
 
-    @classmethod
-    def _post_process_onnx_output(cls, output: Tuple[np.ndarray, np.ndarray]) -> Iterable[T]:
+    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[T]:
         raise NotImplementedError("Subclasses must implement this method")
 
     def __init__(self) -> None:
@@ -74,7 +81,7 @@ class OnnxModel(Generic[T]):
                     RuntimeWarning,
                 )
 
-    def onnx_embed(self, *args, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
+    def onnx_embed(self, *args, **kwargs) -> OnnxOutputContext:
         raise NotImplementedError("Subclasses must implement this method")
 
 

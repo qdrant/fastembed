@@ -1,6 +1,7 @@
 from typing import List, Type, Dict, Any, Union, Iterable, Optional, Sequence
 
 from fastembed.common import OnnxProvider
+from fastembed.sparse.bm42 import Bm42
 from fastembed.sparse.sparse_embedding_base import SparseTextEmbeddingBase, SparseEmbedding
 from fastembed.sparse.splade_pp import SpladePP
 
@@ -8,6 +9,7 @@ from fastembed.sparse.splade_pp import SpladePP
 class SparseTextEmbedding(SparseTextEmbeddingBase):
     EMBEDDINGS_REGISTRY: List[Type[SparseTextEmbeddingBase]] = [
         SpladePP,
+        Bm42,
     ]
 
     @classmethod
@@ -84,3 +86,15 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
             List of embeddings, one per document
         """
         yield from self.model.embed(documents, batch_size, parallel, **kwargs)
+
+    def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> Iterable[SparseEmbedding]:
+        """
+        Embeds queries
+
+        Args:
+            query (Union[str, Iterable[str]]): The query to embed, or an iterable e.g. list of queries.
+
+        Returns:
+            Iterable[SparseEmbedding]: The sparse embeddings.
+        """
+        yield from self.model.query_embed(query, **kwargs)
