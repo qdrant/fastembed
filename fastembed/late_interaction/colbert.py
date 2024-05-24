@@ -29,7 +29,7 @@ supported_colbert_models = [
 class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
     QUERY_MARKER_TOKEN_ID = 1
     DOCUMENT_MARKER_TOKEN_ID = 2
-    MIN_QUERY_LENGTH = 32  # colbert recommends to pad queries with [MASK] for query augmentation
+    MIN_QUERY_LENGTH = 32
     MASK_TOKEN = "[MASK]"
 
     @classmethod
@@ -53,8 +53,10 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         )
 
     def _tokenize_query(self, query: str) -> List[Encoding]:
+        # ". " is added to a query to be replaced with a special query token
         query = [f". {query}"]
         encoded = self.tokenizer.encode_batch(query)
+        # colbert authors recommend to pad queries with [MASK] tokens for query augmentation to improve performance
         if len(encoded[0].ids) < self.MIN_QUERY_LENGTH:
             self.tokenizer.enable_padding(
                 pad_token=self.MASK_TOKEN, pad_id=self.mask_token_id, length=self.MIN_QUERY_LENGTH
@@ -64,6 +66,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         return encoded
 
     def _tokenize_documents(self, documents: List[str]) -> List[Encoding]:
+        # ". " is added to a document to be replaced with a special document token
         documents = [". " + doc for doc in documents]
         encoded = self.tokenizer.encode_batch(documents)
         return encoded
