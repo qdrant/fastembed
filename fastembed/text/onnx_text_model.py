@@ -1,4 +1,5 @@
 import os
+from multiprocessing import get_all_start_methods
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union, Sequence
 
@@ -103,8 +104,7 @@ class OnnxTextModel(OnnxModel[T]):
             for batch in iter_batch(documents, batch_size):
                 yield from self._post_process_onnx_output(self.onnx_embed(batch))
         else:
-            # start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
-            start_method = "fork"
+            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
             params = {
                 "model_name": model_name,
                 "cache_dir": cache_dir,
