@@ -28,7 +28,9 @@ class OnnxImageModel(OnnxModel[T]):
         super().__init__()
         self.processor = None
 
-    def _preprocess_onnx_input(self, onnx_input: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+    def _preprocess_onnx_input(
+        self, onnx_input: Dict[str, np.ndarray], **kwargs
+    ) -> Dict[str, np.ndarray]:
         """
         Preprocess the onnx input.
         """
@@ -49,16 +51,14 @@ class OnnxImageModel(OnnxModel[T]):
     def _build_onnx_input(self, encoded: np.ndarray) -> Dict[str, np.ndarray]:
         return {node.name: encoded for node in self.model.get_inputs()}
 
-    def onnx_embed(self, images: List[PathInput]) -> OnnxOutputContext:
+    def onnx_embed(self, images: List[PathInput], **kwargs) -> OnnxOutputContext:
         with contextlib.ExitStack():
             image_files = [Image.open(image) for image in images]
             encoded = self.processor(image_files)
         onnx_input = self._build_onnx_input(encoded)
         onnx_input = self._preprocess_onnx_input(onnx_input)
         model_output = self.model.run(None, onnx_input)
-
         embeddings = model_output[0].reshape(len(images), -1)
-
         return OnnxOutputContext(
             model_output=embeddings
         )

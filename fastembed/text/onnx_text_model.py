@@ -1,9 +1,9 @@
 import os
-from multiprocessing import get_all_start_methods
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union, Sequence
 
 import numpy as np
+from tokenizers import Encoding
 
 from fastembed.common import OnnxProvider
 from fastembed.common.preprocessor_utils import load_tokenizer
@@ -27,7 +27,9 @@ class OnnxTextModel(OnnxModel[T]):
         self.tokenizer = None
         self.special_token_to_id = {}
 
-    def _preprocess_onnx_input(self, onnx_input: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+    def _preprocess_onnx_input(
+        self, onnx_input: Dict[str, np.ndarray], **kwargs
+    ) -> Dict[str, np.ndarray]:
         """
         Preprocess the onnx input.
         """
@@ -45,11 +47,15 @@ class OnnxTextModel(OnnxModel[T]):
         )
         self.tokenizer, self.special_token_to_id = load_tokenizer(model_dir=model_dir)
 
+    def tokenize(self, documents: List[str], **kwargs) -> List[Encoding]:
+        return self.tokenizer.encode_batch(documents)
+
     def onnx_embed(
         self,
         documents: List[str],
+        **kwargs,
     ) -> OnnxOutputContext:
-        encoded = self.tokenizer.encode_batch(documents)
+        encoded = self.tokenize(documents, **kwargs)
         input_ids = np.array([e.ids for e in encoded])
         attention_mask = np.array([e.attention_mask for e in encoded])
         input_names = {node.name for node in self.model.get_inputs()}
@@ -63,7 +69,7 @@ class OnnxTextModel(OnnxModel[T]):
                 [np.zeros(len(e), dtype=np.int64) for e in input_ids], dtype=np.int64
             )
 
-        onnx_input = self._preprocess_onnx_input(onnx_input)
+        onnx_input = self._preprocess_onnx_input(onnx_input, **kwargs)
 
         model_output = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)
         return OnnxOutputContext(
@@ -97,7 +103,8 @@ class OnnxTextModel(OnnxModel[T]):
             for batch in iter_batch(documents, batch_size):
                 yield from self._post_process_onnx_output(self.onnx_embed(batch))
         else:
-            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
+            # start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
+            start_method = "fork"
             params = {
                 "model_name": model_name,
                 "cache_dir": cache_dir,
