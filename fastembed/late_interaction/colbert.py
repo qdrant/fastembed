@@ -58,11 +58,17 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         encoded = self.tokenizer.encode_batch(query)
         # colbert authors recommend to pad queries with [MASK] tokens for query augmentation to improve performance
         if len(encoded[0].ids) < self.MIN_QUERY_LENGTH:
+            prev_padding = None
+            if self.tokenizer.padding:
+                prev_padding = self.tokenizer.padding
             self.tokenizer.enable_padding(
                 pad_token=self.MASK_TOKEN, pad_id=self.mask_token_id, length=self.MIN_QUERY_LENGTH
             )
             encoded = self.tokenizer.encode_batch(query)
-            self.tokenizer.no_padding()
+            if prev_padding is None:
+                self.tokenizer.no_padding()
+            else:
+                self.tokenizer.enable_padding(**prev_padding)
         return encoded
 
     def _tokenize_documents(self, documents: List[str]) -> List[Encoding]:
