@@ -2,7 +2,6 @@ from typing import List, Tuple, Union, Any, Dict
 
 import numpy as np
 from PIL import Image
-
 from fastembed.image.transform.functional import (
     center_crop,
     normalize,
@@ -40,7 +39,7 @@ class Normalize(Transform):
         return [normalize(image, mean=self.mean, std=self.std) for image in images]
 
 
-class Resize(Transform):
+class ClipResize(Transform):
     def __init__(
         self,
         size: Union[int, Tuple[int, int]],
@@ -65,32 +64,58 @@ class PILtoNDarray:
         return [pil2ndarray(image) for image in images]
 
 class Compose:
-    def __init__(self, transforms: List[Transform]):
+    def __init__(self, transforms: List['Transform']):
         self.transforms = transforms
 
-    def __call__(
-        self, images: Union[List[Image.Image], List[np.ndarray]]
-    ) -> Union[List[np.ndarray], List[Image.Image]]:
+    def __call__(self, images: Union[List[Image.Image], List[np.ndarray]]) -> Union[List[np.ndarray], List[Image.Image]]:
         for transform in self.transforms:
             images = transform(images)
         return images
 
     @classmethod
     def from_config(cls, config: Dict[str, Any]) -> "Compose":
-        transforms = [ConvertToRGB()]
-        if config.get("do_resize", False):
-            size = config["size"]
-            if "shortest_edge" in size:
-                size = size["shortest_edge"]
-            elif "height" in size and "width" in size:
-                size = (size["height"], size["width"])
+        transforms = []
+        cls._get_convert_to_rgb(transforms, config)
+        cls._get_resize(transforms, config)
+        cls._get_center_crop(transforms, config)
+        cls._get_pil2ndarray(transforms, config)
+        cls._get_rescale(transforms, config)
+        cls._get_normalize(transforms, config)
+        return cls(transforms=transforms)
+
+    @staticmethod
+    def _get_convert_to_rgb(transforms: List['Transform'], config: Dict[str, Any]):
+        transforms.append(ConvertToRGB())
+
+    @staticmethod
+    def _get_resize(transforms: List['Transform'], config: Dict[str, Any]):
+        mode = config.get('image_processor_type', 'CLIPImageProcessor')
+        if mode == 'CLIPImageProcessor':
+            if config.get("do_resize", False):
+                size = config["size"]
+                if "shortest_edge" in size:
+                    size = size["shortest_edge"]
+                elif "height" in size and "width" in size:
+                    size = (size["height"], size["width"])
+                else:
+                    raise ValueError("Size must contain either 'shortest_edge' or 'height' and 'width'.")
+                transforms.append(ClipResize(size=size, resample=config.get("resample", Image.Resampling.BICUBIC)))
+        elif mode == 'ConvNextFeatureExtractor':
+            if 'size' in config and "shortest_edge" not in config['size']:
+                raise ValueError(f"Size dictionary must contain 'shortest_edge' key. Got {size.keys()}")
+            shortest_edge = config['size']["shortest_edge"]
+            crop_pct = config.get("crop_pct", 0.875)
+            if shortest_edge < 384:
+                # maintain same ratio, resizing shortest edge to shortest_edge/crop_pct
+                resize_shortest_edge = int(shortest_edge / crop_pct)
+                transforms.append(ClipResize(size=resize_shortest_edge, resample=config.get("resample", Image.Resampling.BICUBIC)))
+                transforms.append(CenterCrop(size=(shortest_edge, shortest_edge)))
             else:
-                raise ValueError(
-                    "Size must contain either 'shortest_edge' or 'height' and 'width'."
-                )
-            transforms.append(
-                Resize(size=size, resample=config.get("resample", Image.Resampling.BICUBIC))
-            )
+                # warping (no cropping) when evaluated at 384 or larger
+                transforms.append(ClipResize(size=(shortest_edge, shortest_edge), resample=config.get("resample", Image.Resampling.BICUBIC)))
+
+    @staticmethod
+    def _get_center_crop(transforms: List['Transform'], config: Dict[str, Any]):
         if config.get("do_center_crop", False):
             crop_size = config["crop_size"]
             if isinstance(crop_size, int):
@@ -101,11 +126,17 @@ class Compose:
                 raise ValueError(f"Invalid crop size: {crop_size}")
             transforms.append(CenterCrop(size=crop_size))
 
+    @staticmethod
+    def _get_pil2ndarray(transforms: List['Transform'], config: Dict[str, Any]):
         transforms.append(PILtoNDarray())
 
+    @staticmethod
+    def _get_rescale(transforms: List['Transform'], config: Dict[str, Any]):
         if config.get("do_rescale", True):
             rescale_factor = config.get("rescale_factor", 1 / 255)
             transforms.append(Rescale(scale=rescale_factor))
+
+    @staticmethod
+    def _get_normalize(transforms: List['Transform'], config: Dict[str, Any]):
         if config.get("do_normalize", False):
             transforms.append(Normalize(mean=config["image_mean"], std=config["image_std"]))
-        return cls(transforms=transforms)

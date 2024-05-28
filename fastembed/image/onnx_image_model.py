@@ -83,7 +83,6 @@ class OnnxImageModel(OnnxModel[T]):
 
         if parallel is None or is_small:
             for batch in iter_batch(images, batch_size):
-                # open and preprocess images
                 yield from self._post_process_onnx_output(self.onnx_embed(batch))
         else:
             start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
