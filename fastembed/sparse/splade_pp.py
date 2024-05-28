@@ -3,6 +3,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, Type, Sequ
 import numpy as np
 
 from fastembed.common import OnnxProvider
+from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.utils import define_cache_dir
 from fastembed.sparse.sparse_embedding_base import SparseEmbedding, SparseTextEmbeddingBase
 from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
@@ -33,14 +34,12 @@ supported_splade_models = [
 
 
 class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
-    @classmethod
     def _post_process_onnx_output(
-        cls, output: Tuple[np.ndarray, np.ndarray]
+        self, output: OnnxOutputContext
     ) -> Iterable[SparseEmbedding]:
-        logits, attention_mask = output
-        relu_log = np.log(1 + np.maximum(logits, 0))
+        relu_log = np.log(1 + np.maximum(output.model_output, 0))
 
-        weighted_log = relu_log * np.expand_dims(attention_mask, axis=-1)
+        weighted_log = relu_log * np.expand_dims(output.attention_mask, axis=-1)
 
         scores = np.max(weighted_log, axis=1)
 
