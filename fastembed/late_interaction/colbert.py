@@ -1,10 +1,11 @@
 from typing import Any, Dict, Iterable, List, Optional, Union, Type, Sequence
+import string
 
 import numpy as np
 from tokenizers import Encoding
 
 from fastembed.common import OnnxProvider
-from fastembed.common.onnx_model import OnnxOutputContext, T
+from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.utils import define_cache_dir
 from fastembed.late_interaction.late_interaction_embedding_base import (
     LateInteractionTextEmbeddingBase,
@@ -32,8 +33,21 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
     MIN_QUERY_LENGTH = 32
     MASK_TOKEN = "[MASK]"
 
-    @classmethod
-    def _post_process_onnx_output(cls, output: OnnxOutputContext) -> Iterable[T]:
+    def _post_process_onnx_output(
+        self, output: OnnxOutputContext, is_doc: bool = True
+    ) -> Iterable[np.ndarray]:
+        if not is_doc:
+            return output.model_output.astype(np.float32)
+
+        for i, token_sequence in enumerate(output.input_ids):
+            for j, token_id in enumerate(token_sequence):
+                if token_id in self.skip_list or token_id == self.pad_token_id:
+                    output.attention_mask[i, j] = 0
+
+        output.model_output *= np.expand_dims(output.attention_mask, 2).astype(np.float32)
+        norm = np.linalg.norm(output.model_output, ord=2, axis=2, keepdims=True)
+        norm_clamped = np.maximum(norm, 1e-12)
+        output.model_output /= norm_clamped
         return output.model_output.astype(np.float32)
 
     def _preprocess_onnx_input(
@@ -122,6 +136,12 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
             providers=providers,
         )
         self.mask_token_id = self.special_token_to_id["[MASK]"]
+        self.pad_token_id = self.tokenizer.padding["pad_id"]
+
+        self.skip_list = {
+            self.tokenizer.encode(symbol, add_special_tokens=False).ids[0]
+            for symbol in string.punctuation
+        }
 
     def embed(
         self,
@@ -158,7 +178,9 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
             query = [query]
 
         for text in query:
-            yield from self._post_process_onnx_output(self.onnx_embed([text], is_doc=False))
+            yield from self._post_process_onnx_output(
+                self.onnx_embed([text], is_doc=False), is_doc=False
+            )
 
     @classmethod
     def _get_worker_class(cls) -> Type[TextEmbeddingWorker]:

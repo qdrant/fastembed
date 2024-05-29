@@ -75,8 +75,8 @@ class OnnxTextModel(OnnxModel[T]):
         model_output = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)
         return OnnxOutputContext(
             model_output=model_output[0],
-            attention_mask=attention_mask,
-            input_ids=input_ids,
+            attention_mask=onnx_input.get("attention_mask", attention_mask),
+            input_ids=onnx_input.get("input_ids", input_ids),
         )
 
     def _embed_documents(
