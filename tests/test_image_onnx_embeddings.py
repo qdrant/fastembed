@@ -8,7 +8,7 @@ from tests.config import TEST_MISC_DIR
 
 CANONICAL_VECTOR_VALUES = {
     "Qdrant/clip-ViT-B-32-vision": np.array([-0.0098, 0.0128, -0.0274, 0.002, -0.0059]),
-    "AndrewOgn/resnet_onnx": np.array([0., 0., 0., 0., 0., 0., 0.07285223, 0.08156682, 0.0491582, 0.])
+    "AndrewOgn/resnet_onnx": np.array([0., 0., 0., 0., 0., 0., 0.01046245, 0.01171397, 0.00705971,0.])
 }
 
 

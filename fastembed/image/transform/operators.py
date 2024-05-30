@@ -59,7 +59,7 @@ class Rescale(Transform):
     def __call__(self, images: List[np.ndarray]) -> List[np.ndarray]:
         return [rescale(image, scale=self.scale) for image in images]
 
-class PILtoNDarray:
+class PILtoNDarray(Transform):
     def __call__(self, images: List[Union[Image.Image, np.ndarray]]) -> List[np.ndarray]:
         return [pil2ndarray(image) for image in images]
 
@@ -124,7 +124,7 @@ class Compose:
                 transforms.append(ClipResize(size=size, resample=config.get("resample", Image.Resampling.BICUBIC)))
         elif mode == 'ConvNextFeatureExtractor':
             if 'size' in config and "shortest_edge" not in config['size']:
-                raise ValueError(f"Size dictionary must contain 'shortest_edge' key. Got {size.keys()}")
+                raise ValueError(f"Size dictionary must contain 'shortest_edge' key. Got {config['size'].keys()}")
             shortest_edge = config['size']["shortest_edge"]
             crop_pct = config.get("crop_pct", 0.875)
             if shortest_edge < 384:
@@ -133,20 +133,25 @@ class Compose:
                 transforms.append(ClipResize(size=resize_shortest_edge, resample=config.get("resample", Image.Resampling.BICUBIC)))
                 transforms.append(CenterCrop(size=(shortest_edge, shortest_edge)))
             else:
-                # warping (no cropping) when evaluated at 384 or larger
                 transforms.append(ClipResize(size=(shortest_edge, shortest_edge), resample=config.get("resample", Image.Resampling.BICUBIC)))
 
     @staticmethod
     def _get_center_crop(transforms: List['Transform'], config: Dict[str, Any]):
-        if config.get("do_center_crop", False):
-            crop_size = config["crop_size"]
-            if isinstance(crop_size, int):
-                crop_size = (crop_size, crop_size)
-            elif isinstance(crop_size, dict):
-                crop_size = (crop_size["height"], crop_size["width"])
-            else:
-                raise ValueError(f"Invalid crop size: {crop_size}")
-            transforms.append(CenterCrop(size=crop_size))
+        mode = config.get('image_processor_type', 'CLIPImageProcessor')
+        if mode == 'CLIPImageProcessor':
+            if config.get("do_center_crop", False):
+                crop_size = config["crop_size"]
+                if isinstance(crop_size, int):
+                    crop_size = (crop_size, crop_size)
+                elif isinstance(crop_size, dict):
+                    crop_size = (crop_size["height"], crop_size["width"])
+                else:
+                    raise ValueError(f"Invalid crop size: {crop_size}")
+                transforms.append(CenterCrop(size=crop_size))
+        elif mode == 'ConvNextFeatureExtractor':
+            pass
+        else:
+            raise ValueError(f"Preprocessor {mode} is not supported")
 
     @staticmethod
     def _get_pil2ndarray(transforms: List['Transform'], config: Dict[str, Any]):

@@ -56,7 +56,9 @@ class OnnxImageModel(OnnxModel[T]):
         onnx_input = self._build_onnx_input(encoded)
         onnx_input = self._preprocess_onnx_input(onnx_input)
         model_output = self.model.run(None, onnx_input)
+
         embeddings = model_output[0].reshape(len(images), -1)
+
         return OnnxOutputContext(
             model_output=embeddings
         )
