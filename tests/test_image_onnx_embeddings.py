@@ -8,6 +8,9 @@ from tests.config import TEST_MISC_DIR
 
 CANONICAL_VECTOR_VALUES = {
     "Qdrant/clip-ViT-B-32-vision": np.array([-0.0098, 0.0128, -0.0274, 0.002, -0.0059]),
+    "Qdrant/resnet50-onnx": np.array(
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.01046245, 0.01171397, 0.00705971, 0.0]
+    ),
 }
 
 
@@ -28,6 +31,7 @@ def test_embedding():
         assert embeddings.shape == (2, dim)
 
         canonical_vector = CANONICAL_VECTOR_VALUES[model_desc["model"]]
+
         assert np.allclose(
             embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3
         ), model_desc["model"]

@@ -14,14 +14,17 @@ def convert_to_rgb(image: Image.Image) -> Image.Image:
 
 
 def center_crop(
-    image: Image.Image,
+    image: Union[Image.Image, np.ndarray],
     size: Tuple[int, int],
 ) -> np.ndarray:
-    orig_height, orig_width = image.height, image.width
-    crop_height, crop_width = size
+    if isinstance(image, np.ndarray):
+        _, orig_height, orig_width = image.shape
+    else:
+        orig_height, orig_width = image.height, image.width
+        # (H, W, C) -> (C, H, W)
+        image = np.array(image).transpose((2, 0, 1))
 
-    # (H, W, C) -> (C, H, W)
-    image = np.array(image).transpose((2, 0, 1))
+    crop_height, crop_width = size
 
     # left upper corner (0, 0)
     top = (orig_height - crop_height) // 2
@@ -96,7 +99,7 @@ def normalize(
 def resize(
     image: Image,
     size: Union[int, Tuple[int, int]],
-    resample: Image.Resampling = Image.Resampling.BICUBIC,
+    resample: Image.Resampling = Image.Resampling.BILINEAR,
 ) -> Image:
     if isinstance(size, tuple):
         return image.resize(size, resample)
@@ -109,9 +112,14 @@ def resize(
         new_size = (new_short, new_long)
     else:
         new_size = (new_long, new_short)
-
-    return image.resize(new_size, Image.Resampling.BICUBIC)
+    return image.resize(new_size, resample)
 
 
 def rescale(image: np.ndarray, scale: float, dtype=np.float32) -> np.ndarray:
     return (image * scale).astype(dtype)
+
+
+def pil2ndarray(image: Union[Image.Image, np.ndarray]):
+    if isinstance(image, Image.Image):
+        return np.asarray(image).transpose((2, 0, 1))
+    return image

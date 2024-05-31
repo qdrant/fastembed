@@ -18,7 +18,17 @@ supported_onnx_models = [
             "hf": "Qdrant/clip-ViT-B-32-vision",
         },
         "model_file": "model.onnx",
-    }
+    },
+    {
+        "model": "Qdrant/resnet50-onnx",
+        "dim": 2048,
+        "description": "ResNet-50 from `Deep Residual Learning for Image Recognition <https://arxiv.org/abs/1512.03385>`__.",
+        "size_in_GB": 0.1,
+        "sources": {
+            "hf": "Qdrant/resnet50-onnx",
+        },
+        "model_file": "model.onnx",
+    },
 ]
 
 
