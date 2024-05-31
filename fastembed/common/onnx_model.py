@@ -33,7 +33,9 @@ class OnnxModel(Generic[T]):
         self.model = None
         self.tokenizer = None
 
-    def _preprocess_onnx_input(self, onnx_input: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+    def _preprocess_onnx_input(
+        self, onnx_input: Dict[str, np.ndarray], **kwargs
+    ) -> Dict[str, np.ndarray]:
         """
         Preprocess the onnx input.
         """

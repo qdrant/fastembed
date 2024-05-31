@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Tuple, Union, Iterable, Type, List, Any, Sequence
+from typing import Dict, Optional, Union, Iterable, Type, List, Any, Sequence
 
 import numpy as np
 
@@ -277,15 +277,15 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
     def _get_worker_class(cls) -> Type["TextEmbeddingWorker"]:
         return OnnxTextEmbeddingWorker
 
-    def _preprocess_onnx_input(self, onnx_input: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+    def _preprocess_onnx_input(
+        self, onnx_input: Dict[str, np.ndarray], **kwargs
+    ) -> Dict[str, np.ndarray]:
         """
         Preprocess the onnx input.
         """
         return onnx_input
 
-    def _post_process_onnx_output(
-        self, output: OnnxOutputContext
-    ) -> Iterable[np.ndarray]:
+    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
         embeddings = output.model_output
         return normalize(embeddings[:, 0]).astype(np.float32)
 
