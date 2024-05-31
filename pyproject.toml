@@ -17,7 +17,7 @@ onnxruntime = "^1.17.0"
 tqdm = "^4.66"
 requests = "^2.31"
 tokenizers = ">=0.15,<1.0"
-huggingface-hub = "^0.20"
+huggingface-hub = ">=0.20,<1.0"
 loguru = "^0.7.2"
 numpy = [
     { version = ">=1.21", python = "<3.12" },
@@ -30,7 +30,7 @@ mmh3 = "^4.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.2"
-ruff = "^0.3.1"
+ruff = ">=0.3.1,<1.0"
 notebook = ">=7.0.2"
 pre-commit = {version = "^3.6.2", python = ">=3.9,<3.12" }
 
