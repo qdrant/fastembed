@@ -39,7 +39,7 @@ class Normalize(Transform):
         return [normalize(image, mean=self.mean, std=self.std) for image in images]
 
 
-class ClipResize(Transform):
+class Resize(Transform):
     def __init__(
         self,
         size: Union[int, Tuple[int, int]],
@@ -64,7 +64,7 @@ class PILtoNDarray(Transform):
         return [pil2ndarray(image) for image in images]
 
 class Compose:
-    def __init__(self, transforms: List['Transform']):
+    def __init__(self, transforms: List[Transform]):
         self.transforms = transforms
 
     def __call__(self, images: Union[List[Image.Image], List[np.ndarray]]) -> Union[List[np.ndarray], List[Image.Image]]:
@@ -75,27 +75,26 @@ class Compose:
     @classmethod
     def from_config(cls, config: Dict[str, Any]) -> "Compose":
         """Creates processor from a config dict.
+            Args:
+                config (Dict[str, Any]): Configuration dictionary.
 
-                Args:
-                    config (Dict[str, Any]): Configuration dictionary.
+                    Valid keys:
+                        - do_resize
+                        - size
+                        - do_center_crop
+                        - crop_size
+                        - do_rescale
+                        - rescale_factor
+                        - do_normalize
+                        - image_mean
+                        - image_std
+                    Valid size keys (nested):
+                        - {"height", "width"}
+                        - {"shortest_edge"}
 
-                        Valid keys:
-                            - do_resize
-                            - size
-                            - do_center_crop
-                            - crop_size
-                            - do_rescale
-                            - rescale_factor
-                            - do_normalize
-                            - image_mean
-                            - image_std
-                        Valid size keys (nested):
-                            - {"height", "width"}
-                            - {"shortest_edge"}
-
-                Returns:
-                    Compose: Image processor.
-                """
+            Returns:
+                Compose: Image processor.
+        """
         transforms = []
         cls._get_convert_to_rgb(transforms, config)
         cls._get_resize(transforms, config)
@@ -106,11 +105,11 @@ class Compose:
         return cls(transforms=transforms)
 
     @staticmethod
-    def _get_convert_to_rgb(transforms: List['Transform'], config: Dict[str, Any]):
+    def _get_convert_to_rgb(transforms: List[Transform], config: Dict[str, Any]):
         transforms.append(ConvertToRGB())
 
     @staticmethod
-    def _get_resize(transforms: List['Transform'], config: Dict[str, Any]):
+    def _get_resize(transforms: List[Transform], config: Dict[str, Any]):
         mode = config.get('image_processor_type', 'CLIPImageProcessor')
         if mode == 'CLIPImageProcessor':
             if config.get("do_resize", False):
@@ -121,7 +120,7 @@ class Compose:
                     size = (size["height"], size["width"])
                 else:
                     raise ValueError("Size must contain either 'shortest_edge' or 'height' and 'width'.")
-                transforms.append(ClipResize(size=size, resample=config.get("resample", Image.Resampling.BICUBIC)))
+                transforms.append(Resize(size=size, resample=config.get("resample", Image.Resampling.BICUBIC)))
         elif mode == 'ConvNextFeatureExtractor':
             if 'size' in config and "shortest_edge" not in config['size']:
                 raise ValueError(f"Size dictionary must contain 'shortest_edge' key. Got {config['size'].keys()}")
@@ -130,13 +129,13 @@ class Compose:
             if shortest_edge < 384:
                 # maintain same ratio, resizing shortest edge to shortest_edge/crop_pct
                 resize_shortest_edge = int(shortest_edge / crop_pct)
-                transforms.append(ClipResize(size=resize_shortest_edge, resample=config.get("resample", Image.Resampling.BICUBIC)))
+                transforms.append(Resize(size=resize_shortest_edge, resample=config.get("resample", Image.Resampling.BICUBIC)))
                 transforms.append(CenterCrop(size=(shortest_edge, shortest_edge)))
             else:
-                transforms.append(ClipResize(size=(shortest_edge, shortest_edge), resample=config.get("resample", Image.Resampling.BICUBIC)))
+                transforms.append(Resize(size=(shortest_edge, shortest_edge), resample=config.get("resample", Image.Resampling.BICUBIC)))
 
     @staticmethod
-    def _get_center_crop(transforms: List['Transform'], config: Dict[str, Any]):
+    def _get_center_crop(transforms: List[Transform], config: Dict[str, Any]):
         mode = config.get('image_processor_type', 'CLIPImageProcessor')
         if mode == 'CLIPImageProcessor':
             if config.get("do_center_crop", False):
@@ -154,16 +153,16 @@ class Compose:
             raise ValueError(f"Preprocessor {mode} is not supported")
 
     @staticmethod
-    def _get_pil2ndarray(transforms: List['Transform'], config: Dict[str, Any]):
+    def _get_pil2ndarray(transforms: List[Transform], config: Dict[str, Any]):
         transforms.append(PILtoNDarray())
 
     @staticmethod
-    def _get_rescale(transforms: List['Transform'], config: Dict[str, Any]):
+    def _get_rescale(transforms: List[Transform], config: Dict[str, Any]):
         if config.get("do_rescale", True):
             rescale_factor = config.get("rescale_factor", 1 / 255)
             transforms.append(Rescale(scale=rescale_factor))
 
     @staticmethod
-    def _get_normalize(transforms: List['Transform'], config: Dict[str, Any]):
+    def _get_normalize(transforms: List[Transform], config: Dict[str, Any]):
         if config.get("do_normalize", False):
             transforms.append(Normalize(mean=config["image_mean"], std=config["image_std"]))
