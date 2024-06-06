@@ -1,16 +1,14 @@
-from typing import List, Type, Dict, Any, Union, Iterable, Optional, Sequence
+from typing import Any, Dict, Iterable, List, Optional, Type, Sequence
 
-from fastembed.common import OnnxProvider
-from fastembed.sparse.bm42 import Bm42
-from fastembed.sparse.sparse_embedding_base import SparseTextEmbeddingBase, SparseEmbedding
-from fastembed.sparse.splade_pp import SpladePP
+import numpy as np
+
+from fastembed.common import ImageInput, OnnxProvider
+from fastembed.image.image_embedding_base import ImageEmbeddingBase
+from fastembed.image.onnx_embedding import OnnxImageEmbedding
 
 
-class SparseTextEmbedding(SparseTextEmbeddingBase):
-    EMBEDDINGS_REGISTRY: List[Type[SparseTextEmbeddingBase]] = [
-        SpladePP,
-        Bm42,
-    ]
+class ImageEmbedding(ImageEmbeddingBase):
+    EMBEDDINGS_REGISTRY: List[Type[ImageEmbeddingBase]] = [OnnxImageEmbedding]
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Any]]:
@@ -24,13 +22,14 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
                 ```
                 [
                     {
-                        "model": "prithvida/SPLADE_PP_en_v1",
-                        "vocab_size": 30522,
-                        "description": "Independent Implementation of SPLADE++ Model for English",
-                        "size_in_GB": 0.532,
+                        "model": "Qdrant/clip-ViT-B-32-vision",
+                        "dim": 512,
+                        "description": "CLIP vision encoder based on ViT-B/32",
+                        "size_in_GB": 0.33,
                         "sources": {
-                            "hf": "qdrant/SPLADE_PP_en_v1",
+                            "hf": "Qdrant/clip-ViT-B-32-vision",
                         },
+                        "model_file": "model.onnx",
                     }
                 ]
                 ```
@@ -59,23 +58,23 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
                 return
 
         raise ValueError(
-            f"Model {model_name} is not supported in SparseTextEmbedding."
-            "Please check the supported models using `SparseTextEmbedding.list_supported_models()`"
+            f"Model {model_name} is not supported in TextEmbedding."
+            "Please check the supported models using `TextEmbedding.list_supported_models()`"
         )
 
     def embed(
         self,
-        documents: Union[str, Iterable[str]],
-        batch_size: int = 256,
+        images: ImageInput,
+        batch_size: int = 16,
         parallel: Optional[int] = None,
         **kwargs,
-    ) -> Iterable[SparseEmbedding]:
+    ) -> Iterable[np.ndarray]:
         """
         Encode a list of documents into list of embeddings.
         We use mean pooling with attention so that the model can handle variable-length inputs.
 
         Args:
-            documents: Iterator of documents or single document to embed
+            images: Iterator of image paths or single image path to embed
             batch_size: Batch size for encoding -- higher values will use more memory, but be faster
             parallel:
                 If > 1, data-parallel encoding will be used, recommended for offline encoding of large datasets.
@@ -85,16 +84,4 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
         Returns:
             List of embeddings, one per document
         """
-        yield from self.model.embed(documents, batch_size, parallel, **kwargs)
-
-    def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> Iterable[SparseEmbedding]:
-        """
-        Embeds queries
-
-        Args:
-            query (Union[str, Iterable[str]]): The query to embed, or an iterable e.g. list of queries.
-
-        Returns:
-            Iterable[SparseEmbedding]: The sparse embeddings.
-        """
-        yield from self.model.query_embed(query, **kwargs)
+        yield from self.model.embed(images, batch_size, parallel, **kwargs)

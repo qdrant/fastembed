@@ -15,7 +15,6 @@ on:
     tags:
       - 'v*'           # Push events to every version tag
 
-
 jobs:
   deploy:
 

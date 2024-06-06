@@ -5,7 +5,7 @@ import numpy as np
 from fastembed.common.model_management import ModelManagement
 
 
-class TextEmbeddingBase(ModelManagement):
+class LateInteractionTextEmbeddingBase(ModelManagement):
     def __init__(
         self,
         model_name: str,

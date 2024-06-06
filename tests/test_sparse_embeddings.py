@@ -1,4 +1,5 @@
 import pytest
+
 from fastembed.sparse.sparse_text_embedding import SparseTextEmbedding
 
 CANONICAL_COLUMN_VALUES = {
@@ -47,11 +48,8 @@ def test_batch_embedding():
     docs_to_embed = docs * 10
 
     for model_name, expected_result in CANONICAL_COLUMN_VALUES.items():
-        print("evaluating", model_name)
         model = SparseTextEmbedding(model_name=model_name)
         result = next(iter(model.embed(docs_to_embed, batch_size=6)))
-        print(result.indices)
-
         assert result.indices.tolist() == expected_result["indices"]
 
         for i, value in enumerate(result.values):
@@ -59,32 +57,33 @@ def test_batch_embedding():
 
 
 def test_single_embedding():
-    docs_to_embed = docs
-
     for model_name, expected_result in CANONICAL_COLUMN_VALUES.items():
-        print("evaluating", model_name)
         model = SparseTextEmbedding(model_name=model_name)
-        result = next(iter(model.embed(docs_to_embed, batch_size=6)))
-        print(result.indices)
 
-        assert result.indices.tolist() == expected_result["indices"]
+        passage_result = next(iter(model.embed(docs, batch_size=6)))
+        query_result = next(iter(model.query_embed(docs)))
+        for result in [passage_result, query_result]:
+            assert result.indices.tolist() == expected_result["indices"]
 
-        for i, value in enumerate(result.values):
-            assert pytest.approx(value, abs=0.001) == expected_result["values"][i]
+            for i, value in enumerate(result.values):
+                assert pytest.approx(value, abs=0.001) == expected_result["values"][i]
 
 
 def test_parallel_processing():
     import numpy as np
 
-    model = SparseTextEmbedding(
-        model_name="prithivida/Splade_PP_en_v1",
-    )
+    model = SparseTextEmbedding(model_name="prithivida/Splade_PP_en_v1")
     docs = ["hello world", "flag embedding"] * 30
     sparse_embeddings_duo = list(model.embed(docs, batch_size=10, parallel=2))
     sparse_embeddings_all = list(model.embed(docs, batch_size=10, parallel=0))
     sparse_embeddings = list(model.embed(docs, batch_size=10, parallel=None))
 
-    assert len(sparse_embeddings) == len(sparse_embeddings_duo) == len(sparse_embeddings_all) == len(docs)
+    assert (
+        len(sparse_embeddings)
+        == len(sparse_embeddings_duo)
+        == len(sparse_embeddings_all)
+        == len(docs)
+    )
 
     for sparse_embedding, sparse_embedding_duo, sparse_embedding_all in zip(
         sparse_embeddings, sparse_embeddings_duo, sparse_embeddings_all

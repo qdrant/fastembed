@@ -1,15 +1,17 @@
 from typing import List, Type, Dict, Any, Union, Iterable, Optional, Sequence
 
+import numpy as np
+
 from fastembed.common import OnnxProvider
-from fastembed.sparse.bm42 import Bm42
-from fastembed.sparse.sparse_embedding_base import SparseTextEmbeddingBase, SparseEmbedding
-from fastembed.sparse.splade_pp import SpladePP
+from fastembed.late_interaction.late_interaction_embedding_base import (
+    LateInteractionTextEmbeddingBase,
+)
+from fastembed.late_interaction.colbert import Colbert
 
 
-class SparseTextEmbedding(SparseTextEmbeddingBase):
-    EMBEDDINGS_REGISTRY: List[Type[SparseTextEmbeddingBase]] = [
-        SpladePP,
-        Bm42,
+class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
+    EMBEDDINGS_REGISTRY: List[Type[LateInteractionTextEmbeddingBase]] = [
+        Colbert,
     ]
 
     @classmethod
@@ -69,7 +71,7 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
         batch_size: int = 256,
         parallel: Optional[int] = None,
         **kwargs,
-    ) -> Iterable[SparseEmbedding]:
+    ) -> Iterable[np.ndarray]:
         """
         Encode a list of documents into list of embeddings.
         We use mean pooling with attention so that the model can handle variable-length inputs.
@@ -87,7 +89,7 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
         """
         yield from self.model.embed(documents, batch_size, parallel, **kwargs)
 
-    def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> Iterable[SparseEmbedding]:
+    def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> Iterable[np.ndarray]:
         """
         Embeds queries
 
@@ -95,6 +97,8 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
             query (Union[str, Iterable[str]]): The query to embed, or an iterable e.g. list of queries.
 
         Returns:
-            Iterable[SparseEmbedding]: The sparse embeddings.
+            Iterable[np.ndarray]: The embeddings.
         """
+
+        # This is model-specific, so that different models can have specialized implementations
         yield from self.model.query_embed(query, **kwargs)

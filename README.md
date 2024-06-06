@@ -14,10 +14,16 @@ The default text embedding (`TextEmbedding`) model is Flag Embedding, presented 
 
 ## 🚀 Installation
 
-To install the FastEmbed library, pip works:
+To install the FastEmbed library, pip works best. You can install it with or without GPU support:
 
 ```bash
 pip install fastembed
+```
+
+### ⚡️ With GPU
+
+```bash
+pip install fastembed-gpu
 ```
 
 ## 📖 Quickstart
@@ -42,6 +48,28 @@ embeddings_list = list(embedding_model.embed(documents))
 len(embeddings_list[0]) # Vector of 384 dimensions
 ```
 
+### ⚡️ FastEmbed on a GPU
+
+FastEmbed supports running on GPU devices.
+It requires installation of the `fastembed-gpu` package.
+
+```bash
+pip install fastembed-gpu
+```
+
+Check our [example](https://qdrant.github.io/fastembed/examples/FastEmbed_GPU/) for the detailed instructions and CUDA 12.x support.
+
+```python
+from fastembed import TextEmbedding
+
+embedding_model = TextEmbedding(
+    model_name="BAAI/bge-small-en-v1.5", 
+    providers=["CUDAExecutionProvider"]
+)
+print("The model BAAI/bge-small-en-v1.5 is ready to use on a GPU.")
+
+```
+
 ## Usage with Qdrant
 
 Installation with Qdrant Client in Python:
@@ -50,7 +78,13 @@ Installation with Qdrant Client in Python:
 pip install qdrant-client[fastembed]
 ```
 
-You might have to use ```pip install 'qdrant-client[fastembed]'``` on zsh.
+or 
+
+```bash
+pip install qdrant-client[fastembed-gpu]
+```
+
+You might have to use quotes ```pip install 'qdrant-client[fastembed]'``` on zsh.
 
 ```python
 from qdrant_client import QdrantClient
@@ -86,7 +120,3 @@ search_result = client.query(
 )
 print(search_result)
 ```
-
-#### Similar Work
-
-Ilyas M. wrote about using [FlagEmbeddings with Optimum](https://twitter.com/IlysMoutawwakil/status/1705215192425288017) over CUDA.

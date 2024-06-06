@@ -1,11 +1,13 @@
-from typing import Dict, Optional, Tuple, Union, Iterable, Type, List, Any
+from typing import Dict, Optional, Union, Iterable, Type, List, Any, Sequence
 
 import numpy as np
 
-from fastembed.common.onnx_model import OnnxModel, EmbeddingWorker
-from fastembed.common.models import normalize
-from fastembed.common.utils import define_cache_dir
+from fastembed.common import OnnxProvider
+from fastembed.common.onnx_model import OnnxOutputContext
+from fastembed.common.utils import normalize, define_cache_dir
+from fastembed.text.onnx_text_model import TextEmbeddingWorker, OnnxTextModel
 from fastembed.text.text_embedding_base import TextEmbeddingBase
+
 
 supported_onnx_models = [
     {
@@ -193,7 +195,7 @@ supported_onnx_models = [
 ]
 
 
-class OnnxTextEmbedding(TextEmbeddingBase, OnnxModel[np.ndarray]):
+class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
     """Implementation of the Flag Embedding model."""
 
     @classmethod
@@ -211,6 +213,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxModel[np.ndarray]):
         model_name: str = "BAAI/bge-small-en-v1.5",
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
+        providers: Optional[Sequence[OnnxProvider]] = None,
         **kwargs,
     ):
         """
@@ -229,12 +232,15 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxModel[np.ndarray]):
 
         model_description = self._get_model_description(model_name)
         cache_dir = define_cache_dir(cache_dir)
-        model_dir = self.download_model(model_description, cache_dir)
+        model_dir = self.download_model(
+            model_description, cache_dir, local_files_only=self._local_files_only
+        )
 
         self.load_onnx_model(
             model_dir=model_dir,
             model_file=model_description["model_file"],
             threads=threads,
+            providers=providers,
         )
 
     def embed(
@@ -268,24 +274,23 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxModel[np.ndarray]):
         )
 
     @classmethod
-    def _get_worker_class(cls) -> Type["EmbeddingWorker"]:
+    def _get_worker_class(cls) -> Type["TextEmbeddingWorker"]:
         return OnnxTextEmbeddingWorker
 
-    def _preprocess_onnx_input(self, onnx_input: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+    def _preprocess_onnx_input(
+        self, onnx_input: Dict[str, np.ndarray], **kwargs
+    ) -> Dict[str, np.ndarray]:
         """
         Preprocess the onnx input.
         """
         return onnx_input
 
-    @classmethod
-    def _post_process_onnx_output(
-        cls, output: Tuple[np.ndarray, np.ndarray]
-    ) -> Iterable[np.ndarray]:
-        embeddings, _ = output
+    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
+        embeddings = output.model_output
         return normalize(embeddings[:, 0]).astype(np.float32)
 
 
-class OnnxTextEmbeddingWorker(EmbeddingWorker):
+class OnnxTextEmbeddingWorker(TextEmbeddingWorker):
     def init_embedding(
         self,
         model_name: str,

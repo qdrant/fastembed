@@ -16,7 +16,7 @@ body:
     validations:
       required: true
   - type: textarea
-    id: Python version
+    id: python-version
     attributes:
       label: What Python version are you on? e.g. python --version
       description: Also tell us, what package manager are you using e.g. conda, pip, poetry?
@@ -29,7 +29,8 @@ body:
       label: Version
       description: What version of FastEmbed are you running? python -c "import fastembed; print(fastembed.__version__)". If you're not on the latest, please upgrade and see if the problem persists.
       options:
-        - 0.2.6 (Latest)
+        - 0.2.7 (Latest)
+        - 0.2.6
         - 0.2.5
         - 0.2.4 
         - 0.2.3 

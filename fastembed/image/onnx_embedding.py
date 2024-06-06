@@ -1,64 +1,38 @@
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, Type, Sequence
+from typing import Dict, Optional, Iterable, Type, List, Any, Sequence
 
 import numpy as np
 
-from fastembed.common import OnnxProvider
 from fastembed.common.onnx_model import OnnxOutputContext
-from fastembed.common.utils import define_cache_dir
-from fastembed.sparse.sparse_embedding_base import SparseEmbedding, SparseTextEmbeddingBase
-from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
+from fastembed.common.utils import normalize, define_cache_dir
+from fastembed.common import ImageInput, OnnxProvider
+from fastembed.image.image_embedding_base import ImageEmbeddingBase
+from fastembed.image.onnx_image_model import OnnxImageModel, ImageEmbeddingWorker
 
-
-supported_splade_models = [
+supported_onnx_models = [
     {
-        "model": "prithvida/Splade_PP_en_v1",
-        "vocab_size": 30522,
-        "description": "Misspelled version of the model. Retained for backward compatibility. Independent Implementation of SPLADE++ Model for English",
-        "size_in_GB": 0.532,
+        "model": "Qdrant/clip-ViT-B-32-vision",
+        "dim": 512,
+        "description": "CLIP vision encoder based on ViT-B/32",
+        "size_in_GB": 0.34,
         "sources": {
-            "hf": "Qdrant/SPLADE_PP_en_v1",
+            "hf": "Qdrant/clip-ViT-B-32-vision",
         },
         "model_file": "model.onnx",
     },
     {
-        "model": "prithivida/Splade_PP_en_v1",
-        "vocab_size": 30522,
-        "description": "Independent Implementation of SPLADE++ Model for English",
-        "size_in_GB": 0.532,
+        "model": "Qdrant/resnet50-onnx",
+        "dim": 2048,
+        "description": "ResNet-50 from `Deep Residual Learning for Image Recognition <https://arxiv.org/abs/1512.03385>`__.",
+        "size_in_GB": 0.1,
         "sources": {
-            "hf": "Qdrant/SPLADE_PP_en_v1",
+            "hf": "Qdrant/resnet50-onnx",
         },
         "model_file": "model.onnx",
     },
 ]
 
 
-class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
-    def _post_process_onnx_output(
-        self, output: OnnxOutputContext
-    ) -> Iterable[SparseEmbedding]:
-        relu_log = np.log(1 + np.maximum(output.model_output, 0))
-
-        weighted_log = relu_log * np.expand_dims(output.attention_mask, axis=-1)
-
-        scores = np.max(weighted_log, axis=1)
-
-        # Score matrix of shape (batch_size, vocab_size)
-        # Most of the values are 0, only a few are non-zero
-        for row_scores in scores:
-            indices = row_scores.nonzero()[0]
-            scores = row_scores[indices]
-            yield SparseEmbedding(values=scores, indices=indices)
-
-    @classmethod
-    def list_supported_models(cls) -> List[Dict[str, Any]]:
-        """Lists the supported models.
-
-        Returns:
-            List[Dict[str, Any]]: A list of dictionaries containing the model information.
-        """
-        return supported_splade_models
-
+class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
     def __init__(
         self,
         model_name: str,
@@ -83,7 +57,6 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
         model_description = self._get_model_description(model_name)
         cache_dir = define_cache_dir(cache_dir)
-
         model_dir = self.download_model(
             model_description, cache_dir, local_files_only=self._local_files_only
         )
@@ -95,19 +68,29 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             providers=providers,
         )
 
+    @classmethod
+    def list_supported_models(cls) -> List[Dict[str, Any]]:
+        """
+        Lists the supported models.
+
+        Returns:
+            List[Dict[str, Any]]: A list of dictionaries containing the model information.
+        """
+        return supported_onnx_models
+
     def embed(
         self,
-        documents: Union[str, Iterable[str]],
-        batch_size: int = 256,
+        images: ImageInput,
+        batch_size: int = 16,
         parallel: Optional[int] = None,
         **kwargs,
-    ) -> Iterable[SparseEmbedding]:
+    ) -> Iterable[np.ndarray]:
         """
-        Encode a list of documents into list of embeddings.
+        Encode a list of images into list of embeddings.
         We use mean pooling with attention so that the model can handle variable-length inputs.
 
         Args:
-            documents: Iterator of documents or single document to embed
+            images: Iterator of image paths or single image path to embed
             batch_size: Batch size for encoding -- higher values will use more memory, but be faster
             parallel:
                 If > 1, data-parallel encoding will be used, recommended for offline encoding of large datasets.
@@ -117,23 +100,35 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         Returns:
             List of embeddings, one per document
         """
-        yield from self._embed_documents(
+        yield from self._embed_images(
             model_name=self.model_name,
             cache_dir=str(self.cache_dir),
-            documents=documents,
+            images=images,
             batch_size=batch_size,
             parallel=parallel,
         )
 
     @classmethod
-    def _get_worker_class(cls) -> Type[TextEmbeddingWorker]:
-        return SpladePPEmbeddingWorker
+    def _get_worker_class(cls) -> Type["ImageEmbeddingWorker"]:
+        return OnnxImageEmbeddingWorker
+
+    def _preprocess_onnx_input(
+        self, onnx_input: Dict[str, np.ndarray], **kwargs
+    ) -> Dict[str, np.ndarray]:
+        """
+        Preprocess the onnx input.
+        """
+
+        return onnx_input
+
+    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
+        return normalize(output.model_output).astype(np.float32)
 
 
-class SpladePPEmbeddingWorker(TextEmbeddingWorker):
+class OnnxImageEmbeddingWorker(ImageEmbeddingWorker):
     def init_embedding(
         self,
         model_name: str,
         cache_dir: str,
-    ) -> SpladePP:
-        return SpladePP(model_name=model_name, cache_dir=cache_dir, threads=1)
+    ) -> OnnxImageEmbedding:
+        return OnnxImageEmbedding(model_name=model_name, cache_dir=cache_dir, threads=1)
