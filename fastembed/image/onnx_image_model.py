@@ -1,15 +1,15 @@
-import os
 import contextlib
+import os
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Sequence
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Type, Union
 
-from PIL import Image
 import numpy as np
+from PIL import Image
 
+from fastembed.common import DataInput, ImageInput, OnnxProvider, PathInput
+from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
 from fastembed.common.preprocessor_utils import load_preprocessor
-from fastembed.common.onnx_model import OnnxModel, EmbeddingWorker, T, OnnxOutputContext
-from fastembed.common import PathInput, ImageInput, OnnxProvider
 from fastembed.common.utils import iter_batch
 from fastembed.parallel_processor import ParallelWorkerPool
 
@@ -51,7 +51,7 @@ class OnnxImageModel(OnnxModel[T]):
     def _build_onnx_input(self, encoded: np.ndarray) -> Dict[str, np.ndarray]:
         return {node.name: encoded for node in self.model.get_inputs()}
 
-    def onnx_embed(self, images: List[PathInput], **kwargs) -> OnnxOutputContext:
+    def onnx_embed(self, images: List[Union[PathInput, DataInput]], **kwargs) -> OnnxOutputContext:
         with contextlib.ExitStack():
             image_files = [Image.open(image) for image in images]
             encoded = self.processor(image_files)
@@ -59,9 +59,7 @@ class OnnxImageModel(OnnxModel[T]):
         onnx_input = self._preprocess_onnx_input(onnx_input)
         model_output = self.model.run(None, onnx_input)
         embeddings = model_output[0].reshape(len(images), -1)
-        return OnnxOutputContext(
-            model_output=embeddings
-        )
+        return OnnxOutputContext(model_output=embeddings)
 
     def _embed_images(
         self,
