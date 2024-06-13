@@ -132,7 +132,7 @@ class Bm25(SparseTextEmbeddingBase):
             for batch in iter_batch(documents, batch_size):
                 yield from self.raw_embed(batch)
         else:
-            start_method = "fork" if "fork" in get_all_start_methods() else "spawn"
+            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
             params = {
                 "model_name": model_name,
                 "cache_dir": cache_dir,
