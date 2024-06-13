@@ -72,17 +72,6 @@ supported_onnx_models = [
         "model_file": "model_optimized.onnx",
     },
     {
-        "model": "sentence-transformers/all-MiniLM-L6-v2",
-        "dim": 384,
-        "description": "Sentence Transformer model, MiniLM-L6-v2",
-        "size_in_GB": 0.09,
-        "sources": {
-            "url": "https://storage.googleapis.com/qdrant-fastembed/sentence-transformers-all-MiniLM-L6-v2.tar.gz",
-            "hf": "qdrant/all-MiniLM-L6-v2-onnx",
-        },
-        "model_file": "model.onnx",
-    },
-    {
         "model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
         "dim": 384,
         "description": "Sentence Transformer model, paraphrase-multilingual-MiniLM-L12-v2",
