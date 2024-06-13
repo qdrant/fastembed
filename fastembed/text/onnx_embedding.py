@@ -271,6 +271,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
             documents=documents,
             batch_size=batch_size,
             parallel=parallel,
+            **kwargs,
         )
 
     @classmethod
@@ -295,5 +296,6 @@ class OnnxTextEmbeddingWorker(TextEmbeddingWorker):
         self,
         model_name: str,
         cache_dir: str,
+        **kwargs,
     ) -> OnnxTextEmbedding:
-        return OnnxTextEmbedding(model_name=model_name, cache_dir=cache_dir, threads=1)
+        return OnnxTextEmbedding(model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs)

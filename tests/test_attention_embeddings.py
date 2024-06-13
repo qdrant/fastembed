@@ -1,10 +1,13 @@
+import pytest
+
 import numpy as np
 
 from fastembed import SparseTextEmbedding
 
 
-def test_attention_embeddings():
-    model = SparseTextEmbedding(model_name="Qdrant/bm42-all-minilm-l6-v2-attentions")
+@pytest.mark.parametrize("model_name", ["Qdrant/bm42-all-minilm-l6-v2-attentions", "Qdrant/bm25"])
+def test_attention_embeddings(model_name):
+    model = SparseTextEmbedding(model_name=model_name)
 
     output = list(
         model.query_embed(
@@ -56,3 +59,23 @@ def test_attention_embeddings():
     for result in output:
         assert len(result.indices) == len(result.values)
         assert len(result.indices) == 2
+
+
+@pytest.mark.parametrize("model_name", ["Qdrant/bm42-all-minilm-l6-v2-attentions", "Qdrant/bm25"])
+def test_parallel_processing(model_name):
+    model = SparseTextEmbedding(model_name=model_name)
+
+    docs = ["hello world", "attention embedding"] * 100
+    embeddings = list(model.embed(docs, batch_size=10, parallel=2))
+
+    embeddings_2 = list(model.embed(docs, batch_size=10, parallel=None))
+
+    embeddings_3 = list(model.embed(docs, batch_size=10, parallel=0))
+
+    assert len(embeddings) == len(docs)
+
+    for emb_1, emb_2, emb_3 in zip(embeddings, embeddings_2, embeddings_3):
+        assert np.allclose(emb_1.indices, emb_2.indices)
+        assert np.allclose(emb_1.indices, emb_3.indices)
+        assert np.allclose(emb_1.values, emb_2.values)
+        assert np.allclose(emb_1.values, emb_3.values)

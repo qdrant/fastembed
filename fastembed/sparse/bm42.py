@@ -47,17 +47,17 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
     WARNING: This model is expected to be used with `modifier="idf"` in the sparse vector index of Qdrant.
     """
-    
+
     ONNX_OUTPUT_NAMES = ["attention_6"]
 
     def __init__(
-            self,
-            model_name: str,
-            cache_dir: Optional[str] = None,
-            threads: Optional[int] = None,
-            providers: Optional[Sequence[OnnxProvider]] = None,
-            alpha: float = 0.5,
-            **kwargs,
+        self,
+        model_name: str,
+        cache_dir: Optional[str] = None,
+        threads: Optional[int] = None,
+        providers: Optional[Sequence[OnnxProvider]] = None,
+        alpha: float = 0.5,
+        **kwargs,
     ):
         """
         Args:
@@ -119,7 +119,9 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         return result
 
     @classmethod
-    def _aggregate_weights(cls, tokens: List[Tuple[str, List[int]]], weights: List[float]) -> List[Tuple[str, float]]:
+    def _aggregate_weights(
+        cls, tokens: List[Tuple[str, List[int]]], weights: List[float]
+    ) -> List[Tuple[str, float]]:
         result = []
         for token, idxs in tokens:
             sum_weight = sum(weights[idx] for idx in idxs)
@@ -127,7 +129,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         return result
 
     def _reconstruct_bpe(
-            self, bpe_tokens: Iterable[Tuple[int, str]]
+        self, bpe_tokens: Iterable[Tuple[int, str]]
     ) -> List[Tuple[str, List[int]]]:
         result = []
         acc = ""
@@ -169,7 +171,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             # Num 0: Log(1/1 + 1) = 0.6931471805599453
             # Num 1: Log(1/2 + 1) = 0.4054651081081644
             # Num 2: Log(1/3 + 1) = 0.28768207245178085
-            new_vector[token_id] = math.log(1. + value) ** self.alpha  # value
+            new_vector[token_id] = math.log(1.0 + value) ** self.alpha  # value
 
         return new_vector
 
@@ -221,11 +223,11 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             return f.read().splitlines()
 
     def embed(
-            self,
-            documents: Union[str, Iterable[str]],
-            batch_size: int = 256,
-            parallel: Optional[int] = None,
-            **kwargs,
+        self,
+        documents: Union[str, Iterable[str]],
+        batch_size: int = 256,
+        parallel: Optional[int] = None,
+        **kwargs,
     ) -> Iterable[SparseEmbedding]:
         """
         Encode a list of documents into list of embeddings.
@@ -248,6 +250,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             documents=documents,
             batch_size=batch_size,
             parallel=parallel,
+            alpha=self.alpha,
         )
 
     @classmethod
@@ -278,4 +281,9 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
     @classmethod
     def _get_worker_class(cls) -> Type[TextEmbeddingWorker]:
-        return TextEmbeddingWorker
+        return Bm42TextEmbeddingWorker
+
+
+class Bm42TextEmbeddingWorker(TextEmbeddingWorker):
+    def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> Bm42:
+        return Bm42(model_name=model_name, cache_dir=cache_dir, **kwargs)

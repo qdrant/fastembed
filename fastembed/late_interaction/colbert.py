@@ -171,6 +171,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
             documents=documents,
             batch_size=batch_size,
             parallel=parallel,
+            **kwargs,
         )
 
     def query_embed(self, query: Union[str, List[str]], **kwargs) -> np.ndarray:
@@ -188,9 +189,5 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
 
 
 class ColbertEmbeddingWorker(TextEmbeddingWorker):
-    def init_embedding(
-        self,
-        model_name: str,
-        cache_dir: str,
-    ) -> Colbert:
-        return Colbert(model_name=model_name, cache_dir=cache_dir, threads=1)
+    def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> Colbert:
+        return Colbert(model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs)

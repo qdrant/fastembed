@@ -61,7 +61,7 @@ class TextEmbedding(TextEmbeddingBase):
             supported_models = EMBEDDING_MODEL_TYPE.list_supported_models()
             if any(model_name.lower() == model["model"].lower() for model in supported_models):
                 self.model = EMBEDDING_MODEL_TYPE(
-                    model_name, cache_dir, threads, providers=providers, **kwargs
+                    model_name, cache_dir, threads=threads, providers=providers, **kwargs
                 )
                 return
 
