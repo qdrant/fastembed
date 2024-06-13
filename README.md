@@ -63,7 +63,6 @@ embeddings = list(embedding_model.embed(documents))
 
 ```
 
-Full list of supported models can be found [here](https://qdrant.github.io/fastembed/examples/Supported_Models/).
 
 
 ### 🔱 Sparse text embeddings
