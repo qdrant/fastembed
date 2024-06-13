@@ -226,7 +226,7 @@ class Bm25(SparseTextEmbeddingBase):
 
         doc_len = len(tokens)
         for stemmed_token in counter:
-            token_id = abs(mmh3.hash(stemmed_token))
+            token_id = self.compute_token_id(stemmed_token)
             num_occurrences = counter[stemmed_token]
             tf_map[token_id] = num_occurrences * (self.k + 1)
             tf_map[token_id] /= num_occurrences + self.k * (
@@ -234,9 +234,9 @@ class Bm25(SparseTextEmbeddingBase):
             )
         return tf_map
 
-    @staticmethod
-    def _rehash(tokens: List[str]) -> np.ndarray:
-        return np.array([abs(mmh3.hash(token)) for token in tokens], dtype=np.float32)
+    @classmethod
+    def compute_token_id(cls, token: str) -> int:
+        return abs(mmh3.hash(token))
 
     def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> Iterable[SparseEmbedding]:
         """To emulate BM25 behaviour, we don't need to use weights in the query, and
@@ -247,8 +247,10 @@ class Bm25(SparseTextEmbeddingBase):
 
         for text in query:
             tokens = self.tokenizer.tokenize(text)
-            stemmed_input = self._stem(tokens)
-            token_ids = self._rehash(stemmed_input)
+            stemmed_tokens = self._stem(tokens)
+            token_ids = np.array(
+                [self.compute_token_id(token) for token in stemmed_tokens], dtype=np.float32
+            )
             values = np.ones_like(token_ids)
             yield SparseEmbedding(indices=token_ids, values=values)
 
