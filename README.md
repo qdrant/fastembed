@@ -47,7 +47,7 @@ len(embeddings_list[0]) # Vector of 384 dimensions
 ```
 
 Fastembed supports a variety of models for different tasks and modalities.
-
+The list of all the available models can be found [here](https://qdrant.github.io/fastembed/examples/Supported_Models/)
 ### 🎒 Dense text embeddings
 
 ```python
