@@ -110,9 +110,3 @@ class WordTokenizer:
         for regexp in cls.CONTRACTIONS3:
             text = regexp.sub(r" \1 \2 ", text)
         return text.split()
-
-
-if __name__ == "__main__":
-    tokenizer = WordTokenizer()
-    s = """Good muffins cost $3.88 (roughly 3,36 euros)\nin New York.  Please buy me\ntwo of them.\nThanks."""
-    print(tokenizer.tokenize(s))
