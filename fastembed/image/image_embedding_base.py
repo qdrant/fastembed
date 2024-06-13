@@ -31,6 +31,11 @@ class ImageEmbeddingBase(ModelManagement):
 
         Args:
             images - The list of image paths to preprocess and embed.
+            batch_size: Batch size for encoding
+            parallel:
+                If > 1, data-parallel encoding will be used, recommended for offline encoding of large datasets.
+                If 0, use all available cores.
+                If None, don't use data-parallel processing, use default onnxruntime threading instead.
             **kwargs: Additional keyword argument to pass to the embed method.
 
         Yields:

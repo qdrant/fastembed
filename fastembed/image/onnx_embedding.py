@@ -106,6 +106,7 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
             images=images,
             batch_size=batch_size,
             parallel=parallel,
+            **kwargs,
         )
 
     @classmethod
@@ -126,9 +127,5 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
 
 
 class OnnxImageEmbeddingWorker(ImageEmbeddingWorker):
-    def init_embedding(
-        self,
-        model_name: str,
-        cache_dir: str,
-    ) -> OnnxImageEmbedding:
-        return OnnxImageEmbedding(model_name=model_name, cache_dir=cache_dir, threads=1)
+    def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> OnnxImageEmbedding:
+        return OnnxImageEmbedding(model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs)

@@ -92,6 +92,7 @@ class EmbeddingWorker(Worker):
         self,
         model_name: str,
         cache_dir: str,
+        **kwargs,
     ) -> OnnxModel:
         raise NotImplementedError()
 
@@ -99,15 +100,13 @@ class EmbeddingWorker(Worker):
         self,
         model_name: str,
         cache_dir: str,
+        **kwargs,
     ):
-        self.model = self.init_embedding(model_name, cache_dir)
+        self.model = self.init_embedding(model_name, cache_dir, **kwargs)
 
     @classmethod
     def start(cls, model_name: str, cache_dir: str, **kwargs: Any) -> "EmbeddingWorker":
-        return cls(
-            model_name=model_name,
-            cache_dir=cache_dir,
-        )
+        return cls(model_name=model_name, cache_dir=cache_dir, **kwargs)
 
     def process(self, items: Iterable[Tuple[int, Any]]) -> Iterable[Tuple[int, Any]]:
         raise NotImplementedError("Subclasses must implement this method")
