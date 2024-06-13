@@ -18,11 +18,9 @@ To install the FastEmbed library, pip works best. You can install it with or wit
 
 ```bash
 pip install fastembed
-```
 
-### ⚡️ With GPU
+# or with GPU support
 
-```bash
 pip install fastembed-gpu
 ```
 
@@ -48,7 +46,99 @@ embeddings_list = list(embedding_model.embed(documents))
 len(embeddings_list[0]) # Vector of 384 dimensions
 ```
 
-### ⚡️ FastEmbed on a GPU
+Fastembed supports a variety of models for different tasks and modalities.
+The list of all the available models can be found [here](https://qdrant.github.io/fastembed/examples/Supported_Models/)
+### 🎒 Dense text embeddings
+
+```python
+from fastembed import TextEmbedding
+
+model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5")
+embeddings = list(embedding_model.embed(documents))
+
+# [
+#   array([-0.1115,  0.0097,  0.0052,  0.0195, ...], dtype=float32),
+#   array([-0.1019,  0.0635, -0.0332,  0.0522, ...], dtype=float32)
+# ]
+
+```
+
+
+
+### 🔱 Sparse text embeddings
+
+* SPLADE++
+
+```python
+from fastembed import SparseTextEmbedding
+
+model = SparseTextEmbedding(model_name="prithivida/Splade_PP_en_v1")
+embeddings = list(embedding_model.embed(documents))
+
+# [
+#   SparseEmbedding(indices=[ 17, 123, 919, ... ], values=[0.71, 0.22, 0.39, ...]),
+#   SparseEmbedding(indices=[ 38,  12,  91, ... ], values=[0.11, 0.22, 0.39, ...])
+# ]
+```
+
+<!--
+* BM42 - ([link](ToDo))
+
+```
+from fastembed import SparseTextEmbedding
+
+model = SparseTextEmbedding(model_name="Qdrant/bm42-all-minilm-l6-v2-attentions")
+embeddings = list(embedding_model.embed(documents))
+
+# [
+#   SparseEmbedding(indices=[ 17, 123, 919, ... ], values=[0.71, 0.22, 0.39, ...]),
+#   SparseEmbedding(indices=[ 38,  12,  91, ... ], values=[0.11, 0.22, 0.39, ...])
+# ]
+```
+-->
+
+### 🦥 Late interaction models (aka ColBERT)
+
+
+```python
+from fastembed import LateInteractionTextEmbedding
+
+model = LateInteractionTextEmbedding(model_name="colbert-ir/colbertv2.0")
+embeddings = list(embedding_model.embed(documents))
+
+# [
+#   array([
+#       [-0.1115,  0.0097,  0.0052,  0.0195, ...],
+#       [-0.1019,  0.0635, -0.0332,  0.0522, ...],
+#   ]),
+#   array([
+#       [-0.9019,  0.0335, -0.0032,  0.0991, ...],
+#       [-0.2115,  0.8097,  0.1052,  0.0195, ...],
+#   ]),  
+# ]
+```
+
+### 🖼️ Image embeddings
+
+```python
+from fastembed import ImageEmbedding
+
+images = [
+    "./path/to/image1.jpg",
+    "./path/to/image2.jpg",
+]
+
+model = ImageEmbedding(model_name="Qdrant/clip-ViT-B-32-vision")
+embeddings = list(embedding_model.embed(images))
+
+# [
+#   array([-0.1115,  0.0097,  0.0052,  0.0195, ...], dtype=float32),
+#   array([-0.1019,  0.0635, -0.0332,  0.0522, ...], dtype=float32)
+# ]
+```
+
+
+## ⚡️ FastEmbed on a GPU
 
 FastEmbed supports running on GPU devices.
 It requires installation of the `fastembed-gpu` package.
