@@ -138,7 +138,6 @@ embeddings = list(embedding_model.embed(images))
 # ]
 ```
 
-Full list of supported models can be found [here](https://qdrant.github.io/fastembed/examples/Supported_Models/#supported-image-embedding-models).
 
 ## ⚡️ FastEmbed on a GPU
 
