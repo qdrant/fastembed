@@ -21,11 +21,10 @@ supported_bm25_models = [
         "description": "BM25 as sparse embeddings meant to be used with Qdrant",
         "size_in_GB": 0.01,
         "sources": {
-            # "hf": "Qdrant/bm25",
-            "hf": "jmzzomg/stopwords",
+            "hf": "Qdrant/bm25",
         },
-        "model_file": "stopwords.txt",
-        # "additional_files": ["stopwords.txt"],
+        "model_file": "mock.file",  # bm25 does not require a model, so we just use a mock
+        "additional_files": ["stopwords.txt"],
     },
 ]
 
