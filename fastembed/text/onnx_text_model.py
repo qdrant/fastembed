@@ -86,6 +86,7 @@ class OnnxTextModel(OnnxModel[T]):
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
         parallel: Optional[int] = None,
+        **kwargs,
     ) -> Iterable[T]:
         is_small = False
 
@@ -105,10 +106,7 @@ class OnnxTextModel(OnnxModel[T]):
                 yield from self._post_process_onnx_output(self.onnx_embed(batch))
         else:
             start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
-            params = {
-                "model_name": model_name,
-                "cache_dir": cache_dir,
-            }
+            params = {"model_name": model_name, "cache_dir": cache_dir, **kwargs}
             pool = ParallelWorkerPool(
                 parallel, self._get_worker_class(), start_method=start_method
             )

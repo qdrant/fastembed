@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, Type, Sequence
+from typing import Any, Dict, Iterable, List, Optional, Union, Type, Sequence
 
 import numpy as np
 
@@ -34,9 +34,7 @@ supported_splade_models = [
 
 
 class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
-    def _post_process_onnx_output(
-        self, output: OnnxOutputContext
-    ) -> Iterable[SparseEmbedding]:
+    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[SparseEmbedding]:
         relu_log = np.log(1 + np.maximum(output.model_output, 0))
 
         weighted_log = relu_log * np.expand_dims(output.attention_mask, axis=-1)
@@ -131,9 +129,5 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
 
 class SpladePPEmbeddingWorker(TextEmbeddingWorker):
-    def init_embedding(
-        self,
-        model_name: str,
-        cache_dir: str,
-    ) -> SpladePP:
-        return SpladePP(model_name=model_name, cache_dir=cache_dir, threads=1)
+    def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> SpladePP:
+        return SpladePP(model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs)

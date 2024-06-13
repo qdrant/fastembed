@@ -59,9 +59,7 @@ class OnnxImageModel(OnnxModel[T]):
         onnx_input = self._preprocess_onnx_input(onnx_input)
         model_output = self.model.run(None, onnx_input)
         embeddings = model_output[0].reshape(len(images), -1)
-        return OnnxOutputContext(
-            model_output=embeddings
-        )
+        return OnnxOutputContext(model_output=embeddings)
 
     def _embed_images(
         self,
@@ -70,6 +68,7 @@ class OnnxImageModel(OnnxModel[T]):
         images: ImageInput,
         batch_size: int = 256,
         parallel: Optional[int] = None,
+        **kwargs,
     ) -> Iterable[T]:
         is_small = False
 
@@ -89,10 +88,7 @@ class OnnxImageModel(OnnxModel[T]):
                 yield from self._post_process_onnx_output(self.onnx_embed(batch))
         else:
             start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
-            params = {
-                "model_name": model_name,
-                "cache_dir": cache_dir,
-            }
+            params = {"model_name": model_name, "cache_dir": cache_dir, **kwargs}
             pool = ParallelWorkerPool(
                 parallel, self._get_worker_class(), start_method=start_method
             )

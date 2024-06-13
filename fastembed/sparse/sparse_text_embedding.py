@@ -1,16 +1,14 @@
 from typing import List, Type, Dict, Any, Union, Iterable, Optional, Sequence
 
 from fastembed.common import OnnxProvider
+from fastembed.sparse.bm25 import Bm25
 from fastembed.sparse.bm42 import Bm42
 from fastembed.sparse.sparse_embedding_base import SparseTextEmbeddingBase, SparseEmbedding
 from fastembed.sparse.splade_pp import SpladePP
 
 
 class SparseTextEmbedding(SparseTextEmbeddingBase):
-    EMBEDDINGS_REGISTRY: List[Type[SparseTextEmbeddingBase]] = [
-        SpladePP,
-        Bm42,
-    ]
+    EMBEDDINGS_REGISTRY: List[Type[SparseTextEmbeddingBase]] = [SpladePP, Bm42, Bm25]
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Any]]:
@@ -54,7 +52,7 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
             supported_models = EMBEDDING_MODEL_TYPE.list_supported_models()
             if any(model_name.lower() == model["model"].lower() for model in supported_models):
                 self.model = EMBEDDING_MODEL_TYPE(
-                    model_name, cache_dir, threads, providers=providers, **kwargs
+                    model_name, cache_dir, threads=threads, providers=providers, **kwargs
                 )
                 return
 
