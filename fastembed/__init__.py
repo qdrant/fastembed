@@ -1,9 +1,9 @@
 import importlib.metadata
 
 from fastembed.image import ImageEmbedding
-from fastembed.text import TextEmbedding
-from fastembed.sparse import SparseTextEmbedding, SparseEmbedding
 from fastembed.late_interaction import LateInteractionTextEmbedding
+from fastembed.sparse import SparseEmbedding, SparseTextEmbedding
+from fastembed.text import TextEmbedding
 
 try:
     version = importlib.metadata.version("fastembed")

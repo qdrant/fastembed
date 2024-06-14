@@ -68,7 +68,8 @@ class WordTokenizer:
         )
     ]
     CONTRACTIONS3 = [
-        re.compile(pattern) for pattern in (r"(?i) ('t)(?#X)(is)\b", r"(?i) ('t)(?#X)(was)\b")
+        re.compile(pattern)
+        for pattern in (r"(?i) ('t)(?#X)(is)\b", r"(?i) ('t)(?#X)(was)\b")
     ]
 
     @classmethod

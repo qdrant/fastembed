@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import Tuple
 
-from tokenizers import Tokenizer, AddedToken
+from tokenizers import AddedToken, Tokenizer
 
 from fastembed.image.transform.operators import Compose
 
@@ -40,7 +40,9 @@ def load_tokenizer(model_dir: Path, max_length: int = 512) -> Tuple[Tokenizer, d
     tokens_map = load_special_tokens(model_dir)
 
     tokenizer = Tokenizer.from_file(str(tokenizer_path))
-    tokenizer.enable_truncation(max_length=min(tokenizer_config["model_max_length"], max_length))
+    tokenizer.enable_truncation(
+        max_length=min(tokenizer_config["model_max_length"], max_length)
+    )
     tokenizer.enable_padding(
         pad_id=config.get("pad_token_id", 0), pad_token=tokenizer_config["pad_token"]
     )

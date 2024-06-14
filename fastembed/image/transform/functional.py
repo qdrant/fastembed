@@ -1,8 +1,7 @@
-from typing import Union, Tuple, Sized
-
-from PIL import Image
+from typing import Sized, Tuple, Union
 
 import numpy as np
+from PIL import Image
 
 
 def convert_to_rgb(image: Image.Image) -> Image.Image:

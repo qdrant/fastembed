@@ -12,4 +12,6 @@ tokenizer = AutoTokenizer.from_pretrained(model_id)
 #     print("Model already exported")
 # except FileNotFoundError:
 print(f"Exporting model to {output_dir}")
-main_export(model_id, output=output_dir, no_post_process=True, model_kwargs=model_kwargs)
+main_export(
+    model_id, output=output_dir, no_post_process=True, model_kwargs=model_kwargs
+)

@@ -1,6 +1,6 @@
 import os
 import sys
-from typing import Union, Iterable, Tuple, Dict, Any
+from typing import Any, Dict, Iterable, Tuple, Union
 
 if sys.version_info >= (3, 10):
     from typing import TypeAlias

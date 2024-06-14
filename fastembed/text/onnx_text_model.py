@@ -1,14 +1,14 @@
 import os
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union, Sequence
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Type, Union
 
 import numpy as np
 from tokenizers import Encoding
 
 from fastembed.common import OnnxProvider
+from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
 from fastembed.common.preprocessor_utils import load_tokenizer
-from fastembed.common.onnx_model import OnnxModel, EmbeddingWorker, T, OnnxOutputContext
 from fastembed.common.utils import iter_batch
 from fastembed.parallel_processor import ParallelWorkerPool
 
@@ -44,7 +44,10 @@ class OnnxTextModel(OnnxModel[T]):
         providers: Optional[Sequence[OnnxProvider]] = None,
     ) -> None:
         super().load_onnx_model(
-            model_dir=model_dir, model_file=model_file, threads=threads, providers=providers
+            model_dir=model_dir,
+            model_file=model_file,
+            threads=threads,
+            providers=providers,
         )
         self.tokenizer, self.special_token_to_id = load_tokenizer(model_dir=model_dir)
 
@@ -105,7 +108,9 @@ class OnnxTextModel(OnnxModel[T]):
             for batch in iter_batch(documents, batch_size):
                 yield from self._post_process_onnx_output(self.onnx_embed(batch))
         else:
-            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
+            start_method = (
+                "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
+            )
             params = {"model_name": model_name, "cache_dir": cache_dir, **kwargs}
             pool = ParallelWorkerPool(
                 parallel, self._get_worker_class(), start_method=start_method

@@ -57,7 +57,9 @@ class HF:
         self.tokenizer = AutoTokenizer.from_pretrained(model_id)
 
     def embed(self, texts: List[str]):
-        encoded_input = self.tokenizer(texts, max_length=512, padding=True, truncation=True, return_tensors="pt")
+        encoded_input = self.tokenizer(
+            texts, max_length=512, padding=True, truncation=True, return_tensors="pt"
+        )
         model_output = self.model(**encoded_input)
         sentence_embeddings = model_output[0][:, 0]
         sentence_embeddings = F.normalize(sentence_embeddings)
@@ -84,7 +86,9 @@ embedding_model = DefaultEmbedding()
 
 
 # %%
-def calculate_time_stats(embed_func: Callable, documents: list, k: int) -> Tuple[float, float, float]:
+def calculate_time_stats(
+    embed_func: Callable, documents: list, k: int
+) -> Tuple[float, float, float]:
     times = []
     for _ in range(k):
         # Timing the embed_func call
@@ -101,13 +105,17 @@ def calculate_time_stats(embed_func: Callable, documents: list, k: int) -> Tuple
 # %%
 hf_stats = calculate_time_stats(hf.embed, documents, k=2)
 print(f"Huggingface Transformers (Average, Max, Min): {hf_stats}")
-fst_stats = calculate_time_stats(lambda x: list(embedding_model.embed(x)), documents, k=2)
+fst_stats = calculate_time_stats(
+    lambda x: list(embedding_model.embed(x)), documents, k=2
+)
 print(f"FastEmbed (Average, Max, Min): {fst_stats}")
 
 
 # %%
 def plot_character_per_second_comparison(
-    hf_stats: Tuple[float, float, float], fst_stats: Tuple[float, float, float], documents: list
+    hf_stats: Tuple[float, float, float],
+    fst_stats: Tuple[float, float, float],
+    documents: list,
 ):
     # Calculating total characters in documents
     total_characters = sum(len(doc) for doc in documents)
