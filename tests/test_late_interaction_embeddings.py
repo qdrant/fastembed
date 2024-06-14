@@ -77,9 +77,7 @@ def test_single_embedding():
 
     for model_name, expected_result in CANONICAL_COLUMN_VALUES.items():
         print("evaluating", model_name)
-        model = LateInteractionTextEmbedding(
-            model_name=model_name, cache_dir="colbert-cache"
-        )
+        model = LateInteractionTextEmbedding(model_name=model_name)
         result = next(iter(model.embed(docs_to_embed, batch_size=6)))
         token_num, abridged_dim = expected_result.shape
         assert np.allclose(result[:, :abridged_dim], expected_result, atol=10e-4)
@@ -90,18 +88,14 @@ def test_single_embedding_query():
 
     for model_name, expected_result in CANONICAL_QUERY_VALUES.items():
         print("evaluating", model_name)
-        model = LateInteractionTextEmbedding(
-            model_name=model_name, cache_dir="colbert-cache"
-        )
+        model = LateInteractionTextEmbedding(model_name=model_name)
         result = next(iter(model.query_embed(queries_to_embed)))
         token_num, abridged_dim = expected_result.shape
         assert np.allclose(result[:, :abridged_dim], expected_result, atol=10e-4)
 
 
 def test_parallel_processing():
-    model = LateInteractionTextEmbedding(
-        model_name="colbert-ir/colbertv2.0", cache_dir="colbert-cache"
-    )
+    model = LateInteractionTextEmbedding(model_name="colbert-ir/colbertv2.0")
     token_dim = 128
     docs = ["hello world", "flag embedding"] * 100
     embeddings = list(model.embed(docs, batch_size=10, parallel=2))

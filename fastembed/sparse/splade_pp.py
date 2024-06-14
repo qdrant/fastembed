@@ -36,9 +36,7 @@ supported_splade_models = [
 
 
 class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
-    def _post_process_onnx_output(
-        self, output: OnnxOutputContext
-    ) -> Iterable[SparseEmbedding]:
+    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[SparseEmbedding]:
         relu_log = np.log(1 + np.maximum(output.model_output, 0))
 
         weighted_log = relu_log * np.expand_dims(output.attention_mask, axis=-1)
@@ -84,10 +82,10 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         super().__init__(model_name, cache_dir, threads, **kwargs)
 
         model_description = self._get_model_description(model_name)
-        cache_dir = define_cache_dir(cache_dir)
+        self.cache_dir = define_cache_dir(cache_dir)
 
         model_dir = self.download_model(
-            model_description, cache_dir, local_files_only=self._local_files_only
+            model_description, self.cache_dir, local_files_only=self._local_files_only
         )
 
         self.load_onnx_model(
