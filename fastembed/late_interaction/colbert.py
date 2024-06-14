@@ -43,9 +43,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
                 if token_id in self.skip_list or token_id == self.pad_token_id:
                     output.attention_mask[i, j] = 0
 
-        output.model_output *= np.expand_dims(output.attention_mask, 2).astype(
-            np.float32
-        )
+        output.model_output *= np.expand_dims(output.attention_mask, 2).astype(np.float32)
         norm = np.linalg.norm(output.model_output, ord=2, axis=2, keepdims=True)
         norm_clamped = np.maximum(norm, 1e-12)
         output.model_output /= norm_clamped
@@ -126,10 +124,10 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         super().__init__(model_name, cache_dir, threads, **kwargs)
 
         model_description = self._get_model_description(model_name)
-        cache_dir = define_cache_dir(cache_dir)
+        self.cache_dir = define_cache_dir(cache_dir)
 
         model_dir = self.download_model(
-            model_description, cache_dir, local_files_only=self._local_files_only
+            model_description, self.cache_dir, local_files_only=self._local_files_only
         )
 
         self.load_onnx_model(

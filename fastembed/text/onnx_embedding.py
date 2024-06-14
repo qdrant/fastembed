@@ -219,9 +219,9 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
         super().__init__(model_name, cache_dir, threads, **kwargs)
 
         model_description = self._get_model_description(model_name)
-        cache_dir = define_cache_dir(cache_dir)
+        self.cache_dir = define_cache_dir(cache_dir)
         model_dir = self.download_model(
-            model_description, cache_dir, local_files_only=self._local_files_only
+            model_description, self.cache_dir, local_files_only=self._local_files_only
         )
 
         self.load_onnx_model(
@@ -274,9 +274,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
         """
         return onnx_input
 
-    def _post_process_onnx_output(
-        self, output: OnnxOutputContext
-    ) -> Iterable[np.ndarray]:
+    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
         embeddings = output.model_output
         return normalize(embeddings[:, 0]).astype(np.float32)
 
@@ -288,6 +286,4 @@ class OnnxTextEmbeddingWorker(TextEmbeddingWorker):
         cache_dir: str,
         **kwargs,
     ) -> OnnxTextEmbedding:
-        return OnnxTextEmbedding(
-            model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs
-        )
+        return OnnxTextEmbedding(model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs)
