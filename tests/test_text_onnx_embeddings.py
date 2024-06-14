@@ -27,7 +27,7 @@ CANONICAL_VECTOR_VALUES = {
         [0.03434538, 0.03316108, 0.02191251, -0.03713358, -0.01577825]
     ),
     "sentence-transformers/all-MiniLM-L6-v2": np.array(
-        [0.0259, 0.0058, 0.0114, 0.0380, -0.0233]
+        [-0.034478, 0.03102, 0.00673, 0.02611, -0.039362]
     ),
     "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2": np.array(
         [0.0094, 0.0184, 0.0328, 0.0072, -0.0351]

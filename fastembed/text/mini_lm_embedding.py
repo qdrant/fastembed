@@ -10,7 +10,7 @@ from fastembed.text.onnx_text_model import TextEmbeddingWorker
 supported_mini_lm_models = [
     {
         "model": "sentence-transformers/all-MiniLM-L6-v2",
-        "dim": 768,
+        "dim": 384,
         "description": "Sentence Transformer model, MiniLM-L6-v2",
         "size_in_GB": 0.09,
         "sources": {
@@ -28,8 +28,8 @@ class MiniLMOnnxEmbedding(OnnxTextEmbedding):
         return MiniLMEmbeddingWorker
 
     @classmethod
-    def mean_pooling(self, model_output, attention_mask):
-        token_embeddings = model_output  # [0]
+    def mean_pooling(self, model_output: np.ndarray, attention_mask: np.ndarray) -> np.ndarray:
+        token_embeddings = model_output
         input_mask_expanded = np.expand_dims(attention_mask, axis=-1)
         input_mask_expanded = np.tile(
             input_mask_expanded, (1, 1, token_embeddings.shape[-1])
@@ -62,7 +62,8 @@ class MiniLMEmbeddingWorker(OnnxTextEmbeddingWorker):
         self,
         model_name: str,
         cache_dir: str,
+        **kwargs
     ) -> OnnxTextEmbedding:
         return MiniLMOnnxEmbedding(
-            model_name=model_name, cache_dir=cache_dir, threads=1
+            model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs
         )
