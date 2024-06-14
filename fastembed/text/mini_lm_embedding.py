@@ -28,12 +28,10 @@ class MiniLMOnnxEmbedding(OnnxTextEmbedding):
         return MiniLMEmbeddingWorker
 
     @classmethod
-    def mean_pooling(self, model_output: np.ndarray, attention_mask: np.ndarray) -> np.ndarray:
+    def mean_pooling(cls, model_output: np.ndarray, attention_mask: np.ndarray) -> np.ndarray:
         token_embeddings = model_output
         input_mask_expanded = np.expand_dims(attention_mask, axis=-1)
-        input_mask_expanded = np.tile(
-            input_mask_expanded, (1, 1, token_embeddings.shape[-1])
-        )
+        input_mask_expanded = np.tile(input_mask_expanded, (1, 1, token_embeddings.shape[-1]))
         input_mask_expanded = input_mask_expanded.astype(float)
         sum_embeddings = np.sum(token_embeddings * input_mask_expanded, axis=1)
         sum_mask = np.sum(input_mask_expanded, axis=1)
@@ -49,21 +47,12 @@ class MiniLMOnnxEmbedding(OnnxTextEmbedding):
         """
         return supported_mini_lm_models
 
-    def _post_process_onnx_output(
-        self, output: OnnxOutputContext
-    ) -> Iterable[np.ndarray]:
+    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
         embeddings = output.model_output
         attn_mask = output.attention_mask
         return normalize(self.mean_pooling(embeddings, attn_mask)).astype(np.float32)
 
 
 class MiniLMEmbeddingWorker(OnnxTextEmbeddingWorker):
-    def init_embedding(
-        self,
-        model_name: str,
-        cache_dir: str,
-        **kwargs
-    ) -> OnnxTextEmbedding:
-        return MiniLMOnnxEmbedding(
-            model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs
-        )
+    def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> OnnxTextEmbedding:
+        return MiniLMOnnxEmbedding(model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs)

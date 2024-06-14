@@ -79,10 +79,10 @@ class Bm25(SparseTextEmbeddingBase):
         self.avg_len = avg_len
 
         model_description = self._get_model_description(model_name)
-        cache_dir = define_cache_dir(cache_dir)
+        self.cache_dir = define_cache_dir(cache_dir)
 
         model_dir = self.download_model(
-            model_description, cache_dir, local_files_only=self._local_files_only
+            model_description, self.cache_dir, local_files_only=self._local_files_only
         )
 
         self.punctuation = set(string.punctuation)
@@ -133,9 +133,7 @@ class Bm25(SparseTextEmbeddingBase):
             for batch in iter_batch(documents, batch_size):
                 yield from self.raw_embed(batch)
         else:
-            start_method = (
-                "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
-            )
+            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
             params = {
                 "model_name": model_name,
                 "cache_dir": cache_dir,
@@ -241,9 +239,7 @@ class Bm25(SparseTextEmbeddingBase):
     def compute_token_id(cls, token: str) -> int:
         return abs(mmh3.hash(token))
 
-    def query_embed(
-        self, query: Union[str, Iterable[str]], **kwargs
-    ) -> Iterable[SparseEmbedding]:
+    def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> Iterable[SparseEmbedding]:
         """To emulate BM25 behaviour, we don't need to use weights in the query, and
         it's enough to just hash the tokens and assign a weight of 1.0 to them.
         """

@@ -56,9 +56,9 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
         super().__init__(model_name, cache_dir, threads, **kwargs)
 
         model_description = self._get_model_description(model_name)
-        cache_dir = define_cache_dir(cache_dir)
+        self.cache_dir = define_cache_dir(cache_dir)
         model_dir = self.download_model(
-            model_description, cache_dir, local_files_only=self._local_files_only
+            model_description, self.cache_dir, local_files_only=self._local_files_only
         )
 
         self.load_onnx_model(
@@ -122,16 +122,10 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
 
         return onnx_input
 
-    def _post_process_onnx_output(
-        self, output: OnnxOutputContext
-    ) -> Iterable[np.ndarray]:
+    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
         return normalize(output.model_output).astype(np.float32)
 
 
 class OnnxImageEmbeddingWorker(ImageEmbeddingWorker):
-    def init_embedding(
-        self, model_name: str, cache_dir: str, **kwargs
-    ) -> OnnxImageEmbedding:
-        return OnnxImageEmbedding(
-            model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs
-        )
+    def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> OnnxImageEmbedding:
+        return OnnxImageEmbedding(model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs)
