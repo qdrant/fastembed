@@ -3,7 +3,7 @@ import string
 from collections import defaultdict
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Union, Type, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 
 import mmh3
 import numpy as np
@@ -11,9 +11,11 @@ from snowballstemmer import stemmer as get_stemmer
 
 from fastembed.common.utils import define_cache_dir, iter_batch
 from fastembed.parallel_processor import ParallelWorkerPool, Worker
-from fastembed.sparse.sparse_embedding_base import SparseEmbedding, SparseTextEmbeddingBase
+from fastembed.sparse.sparse_embedding_base import (
+    SparseEmbedding,
+    SparseTextEmbeddingBase,
+)
 from fastembed.sparse.utils.tokenizer import WordTokenizer
-
 
 supported_bm25_models = [
     {
@@ -131,7 +133,9 @@ class Bm25(SparseTextEmbeddingBase):
             for batch in iter_batch(documents, batch_size):
                 yield from self.raw_embed(batch)
         else:
-            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
+            start_method = (
+                "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
+            )
             params = {
                 "model_name": model_name,
                 "cache_dir": cache_dir,
@@ -237,7 +241,9 @@ class Bm25(SparseTextEmbeddingBase):
     def compute_token_id(cls, token: str) -> int:
         return abs(mmh3.hash(token))
 
-    def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> Iterable[SparseEmbedding]:
+    def query_embed(
+        self, query: Union[str, Iterable[str]], **kwargs
+    ) -> Iterable[SparseEmbedding]:
         """To emulate BM25 behaviour, we don't need to use weights in the query, and
         it's enough to just hash the tokens and assign a weight of 1.0 to them.
         """
@@ -248,7 +254,8 @@ class Bm25(SparseTextEmbeddingBase):
             tokens = self.tokenizer.tokenize(text)
             stemmed_tokens = self._stem(tokens)
             token_ids = np.array(
-                [self.compute_token_id(token) for token in stemmed_tokens], dtype=np.float32
+                [self.compute_token_id(token) for token in stemmed_tokens],
+                dtype=np.float32,
             )
             values = np.ones_like(token_ids)
             yield SparseEmbedding(indices=token_ids, values=values)

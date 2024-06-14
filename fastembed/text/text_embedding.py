@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional, Type, Union, Sequence
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Type, Union
 
 import numpy as np
 
@@ -6,6 +6,7 @@ from fastembed.common import OnnxProvider
 from fastembed.text.clip_embedding import CLIPOnnxEmbedding
 from fastembed.text.e5_onnx_embedding import E5OnnxEmbedding
 from fastembed.text.jina_onnx_embedding import JinaOnnxEmbedding
+from fastembed.text.mini_lm_embedding import MiniLMOnnxEmbedding
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
 from fastembed.text.text_embedding_base import TextEmbeddingBase
 
@@ -16,6 +17,7 @@ class TextEmbedding(TextEmbeddingBase):
         E5OnnxEmbedding,
         JinaOnnxEmbedding,
         CLIPOnnxEmbedding,
+        MiniLMOnnxEmbedding,
     ]
 
     @classmethod
@@ -59,9 +61,16 @@ class TextEmbedding(TextEmbeddingBase):
 
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
             supported_models = EMBEDDING_MODEL_TYPE.list_supported_models()
-            if any(model_name.lower() == model["model"].lower() for model in supported_models):
+            if any(
+                model_name.lower() == model["model"].lower()
+                for model in supported_models
+            ):
                 self.model = EMBEDDING_MODEL_TYPE(
-                    model_name, cache_dir, threads=threads, providers=providers, **kwargs
+                    model_name,
+                    cache_dir,
+                    threads=threads,
+                    providers=providers,
+                    **kwargs,
                 )
                 return
 

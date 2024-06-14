@@ -1,12 +1,12 @@
-from typing import List, Type, Dict, Any, Union, Iterable, Optional, Sequence
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Type, Union
 
 import numpy as np
 
 from fastembed.common import OnnxProvider
+from fastembed.late_interaction.colbert import Colbert
 from fastembed.late_interaction.late_interaction_embedding_base import (
     LateInteractionTextEmbeddingBase,
 )
-from fastembed.late_interaction.colbert import Colbert
 
 
 class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
@@ -54,7 +54,10 @@ class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
 
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
             supported_models = EMBEDDING_MODEL_TYPE.list_supported_models()
-            if any(model_name.lower() == model["model"].lower() for model in supported_models):
+            if any(
+                model_name.lower() == model["model"].lower()
+                for model in supported_models
+            ):
                 self.model = EMBEDDING_MODEL_TYPE(
                     model_name, cache_dir, threads, providers=providers, **kwargs
                 )
@@ -89,7 +92,9 @@ class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
         """
         yield from self.model.embed(documents, batch_size, parallel, **kwargs)
 
-    def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> Iterable[np.ndarray]:
+    def query_embed(
+        self, query: Union[str, Iterable[str]], **kwargs
+    ) -> Iterable[np.ndarray]:
         """
         Embeds queries
 

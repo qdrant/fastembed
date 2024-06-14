@@ -17,10 +17,14 @@ input_ids = tokenizer_output["input_ids"]
 attention_mask = tokenizer_output["attention_mask"]
 print(attention_mask)
 # Prepare the input
-input_ids = np.array(input_ids).astype(np.int64)  # Replace your_input_ids with actual input data
+input_ids = np.array(input_ids).astype(
+    np.int64
+)  # Replace your_input_ids with actual input data
 
 # Run the ONNX model
-outputs = ort_session.run(None, {"input_ids": input_ids, "attention_mask": attention_mask})
+outputs = ort_session.run(
+    None, {"input_ids": input_ids, "attention_mask": attention_mask}
+)
 
 # Get the attention weights
 attentions = outputs[-1]

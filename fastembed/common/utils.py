@@ -2,7 +2,7 @@ import os
 import tempfile
 from itertools import islice
 from pathlib import Path
-from typing import Union, Iterable, Generator, Optional
+from typing import Generator, Iterable, Optional, Union
 
 import numpy as np
 

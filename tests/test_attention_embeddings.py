@@ -1,11 +1,12 @@
-import pytest
-
 import numpy as np
+import pytest
 
 from fastembed import SparseTextEmbedding
 
 
-@pytest.mark.parametrize("model_name", ["Qdrant/bm42-all-minilm-l6-v2-attentions", "Qdrant/bm25"])
+@pytest.mark.parametrize(
+    "model_name", ["Qdrant/bm42-all-minilm-l6-v2-attentions", "Qdrant/bm25"]
+)
 def test_attention_embeddings(model_name):
     model = SparseTextEmbedding(model_name=model_name)
 
@@ -61,7 +62,9 @@ def test_attention_embeddings(model_name):
         assert len(result.indices) == 2
 
 
-@pytest.mark.parametrize("model_name", ["Qdrant/bm42-all-minilm-l6-v2-attentions", "Qdrant/bm25"])
+@pytest.mark.parametrize(
+    "model_name", ["Qdrant/bm42-all-minilm-l6-v2-attentions", "Qdrant/bm25"]
+)
 def test_parallel_processing(model_name):
     model = SparseTextEmbedding(model_name=model_name)
 

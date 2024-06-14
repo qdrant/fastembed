@@ -1,5 +1,5 @@
-from typing import Any, Dict, Iterable, List, Optional, Union, Type, Sequence
 import string
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Type, Union
 
 import numpy as np
 from tokenizers import Encoding
@@ -11,7 +11,6 @@ from fastembed.late_interaction.late_interaction_embedding_base import (
     LateInteractionTextEmbeddingBase,
 )
 from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
-
 
 supported_colbert_models = [
     {
@@ -44,7 +43,9 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
                 if token_id in self.skip_list or token_id == self.pad_token_id:
                     output.attention_mask[i, j] = 0
 
-        output.model_output *= np.expand_dims(output.attention_mask, 2).astype(np.float32)
+        output.model_output *= np.expand_dims(output.attention_mask, 2).astype(
+            np.float32
+        )
         norm = np.linalg.norm(output.model_output, ord=2, axis=2, keepdims=True)
         norm_clamped = np.maximum(norm, 1e-12)
         output.model_output /= norm_clamped
@@ -76,7 +77,9 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
             if self.tokenizer.padding:
                 prev_padding = self.tokenizer.padding
             self.tokenizer.enable_padding(
-                pad_token=self.MASK_TOKEN, pad_id=self.mask_token_id, length=self.MIN_QUERY_LENGTH
+                pad_token=self.MASK_TOKEN,
+                pad_id=self.mask_token_id,
+                length=self.MIN_QUERY_LENGTH,
             )
             encoded = self.tokenizer.encode_batch(query)
             if prev_padding is None:

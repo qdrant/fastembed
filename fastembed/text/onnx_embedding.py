@@ -1,13 +1,12 @@
-from typing import Dict, Optional, Union, Iterable, Type, List, Any, Sequence
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Type, Union
 
 import numpy as np
 
 from fastembed.common import OnnxProvider
 from fastembed.common.onnx_model import OnnxOutputContext
-from fastembed.common.utils import normalize, define_cache_dir
-from fastembed.text.onnx_text_model import TextEmbeddingWorker, OnnxTextModel
+from fastembed.common.utils import define_cache_dir, normalize
+from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
 from fastembed.text.text_embedding_base import TextEmbeddingBase
-
 
 supported_onnx_models = [
     {
@@ -275,7 +274,9 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
         """
         return onnx_input
 
-    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
+    def _post_process_onnx_output(
+        self, output: OnnxOutputContext
+    ) -> Iterable[np.ndarray]:
         embeddings = output.model_output
         return normalize(embeddings[:, 0]).astype(np.float32)
 
@@ -287,4 +288,6 @@ class OnnxTextEmbeddingWorker(TextEmbeddingWorker):
         cache_dir: str,
         **kwargs,
     ) -> OnnxTextEmbedding:
-        return OnnxTextEmbedding(model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs)
+        return OnnxTextEmbedding(
+            model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs
+        )

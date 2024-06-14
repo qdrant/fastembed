@@ -83,7 +83,9 @@ def _worker(
 
 
 class ParallelWorkerPool:
-    def __init__(self, num_workers: int, worker: Type[Worker], start_method: Optional[str] = None):
+    def __init__(
+        self, num_workers: int, worker: Type[Worker], start_method: Optional[str] = None
+    ):
         self.worker_class = worker
         self.num_workers = num_workers
         self.input_queue: Optional[Queue] = None
@@ -118,7 +120,9 @@ class ParallelWorkerPool:
             process.start()
             self.processes.append(process)
 
-    def ordered_map(self, stream: Iterable[Any], *args: Any, **kwargs: Any) -> Iterable[Any]:
+    def ordered_map(
+        self, stream: Iterable[Any], *args: Any, **kwargs: Any
+    ) -> Iterable[Any]:
         buffer = defaultdict(Any)
         next_expected = 0
 
