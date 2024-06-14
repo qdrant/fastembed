@@ -93,5 +93,9 @@ def test_parallel_processing():
             == sparse_embedding_duo.indices.tolist()
             == sparse_embedding_all.indices.tolist()
         )
-        assert np.allclose(sparse_embedding.values, sparse_embedding_duo.values, atol=1e-3)
-        assert np.allclose(sparse_embedding.values, sparse_embedding_all.values, atol=1e-3)
+        assert np.allclose(
+            sparse_embedding.values, sparse_embedding_duo.values, atol=1e-3
+        )
+        assert np.allclose(
+            sparse_embedding.values, sparse_embedding_all.values, atol=1e-3
+        )

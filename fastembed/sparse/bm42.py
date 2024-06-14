@@ -1,16 +1,19 @@
 import math
 import string
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, Type, Sequence
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Type, Union
 
-import numpy as np
 import mmh3
+import numpy as np
 from snowballstemmer import stemmer as get_stemmer
 
 from fastembed.common import OnnxProvider
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.utils import define_cache_dir
-from fastembed.sparse.sparse_embedding_base import SparseEmbedding, SparseTextEmbeddingBase
+from fastembed.sparse.sparse_embedding_base import (
+    SparseEmbedding,
+    SparseTextEmbeddingBase,
+)
 from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
 
 supported_bm42_models = [
@@ -103,7 +106,9 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         self.stemmer = get_stemmer(MODEL_TO_LANGUAGE[model_name])
         self.alpha = alpha
 
-    def _filter_pair_tokens(self, tokens: List[Tuple[str, Any]]) -> List[Tuple[str, Any]]:
+    def _filter_pair_tokens(
+        self, tokens: List[Tuple[str, Any]]
+    ) -> List[Tuple[str, Any]]:
         result = []
         for token, value in tokens:
             if token in self.stopwords or token in self.punctuation:
@@ -175,13 +180,19 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
         return new_vector
 
-    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[SparseEmbedding]:
+    def _post_process_onnx_output(
+        self, output: OnnxOutputContext
+    ) -> Iterable[SparseEmbedding]:
         token_ids_batch = output.input_ids
 
         # attention_value shape: (batch_size, num_heads, num_tokens, num_tokens)
-        pooled_attention = np.mean(output.model_output[:, :, 0], axis=1) * output.attention_mask
+        pooled_attention = (
+            np.mean(output.model_output[:, :, 0], axis=1) * output.attention_mask
+        )
 
-        for document_token_ids, attention_value in zip(token_ids_batch, pooled_attention):
+        for document_token_ids, attention_value in zip(
+            token_ids_batch, pooled_attention
+        ):
             document_tokens_with_ids = (
                 (idx, self.invert_vocab[token_id])
                 for idx, token_id in enumerate(document_token_ids)
@@ -261,7 +272,9 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             result[token_id] = 1.0
         return result
 
-    def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> Iterable[SparseEmbedding]:
+    def query_embed(
+        self, query: Union[str, Iterable[str]], **kwargs
+    ) -> Iterable[SparseEmbedding]:
         """
         To emulate BM25 behaviour, we don't need to use smart weights in the query, and
         it's enough to just hash the tokens and assign a weight of 1.0 to them.
@@ -277,7 +290,9 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             filtered = self._filter_pair_tokens(reconstructed)
             stemmed = self._stem_pair_tokens(filtered)
 
-            yield SparseEmbedding.from_dict(self._query_rehash(token for token, _ in stemmed))
+            yield SparseEmbedding.from_dict(
+                self._query_rehash(token for token, _ in stemmed)
+            )
 
     @classmethod
     def _get_worker_class(cls) -> Type[TextEmbeddingWorker]:

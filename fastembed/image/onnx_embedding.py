@@ -1,12 +1,12 @@
-from typing import Dict, Optional, Iterable, Type, List, Any, Sequence
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Type
 
 import numpy as np
 
-from fastembed.common.onnx_model import OnnxOutputContext
-from fastembed.common.utils import normalize, define_cache_dir
 from fastembed.common import ImageInput, OnnxProvider
+from fastembed.common.onnx_model import OnnxOutputContext
+from fastembed.common.utils import define_cache_dir, normalize
 from fastembed.image.image_embedding_base import ImageEmbeddingBase
-from fastembed.image.onnx_image_model import OnnxImageModel, ImageEmbeddingWorker
+from fastembed.image.onnx_image_model import ImageEmbeddingWorker, OnnxImageModel
 
 supported_onnx_models = [
     {
@@ -122,10 +122,16 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
 
         return onnx_input
 
-    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
+    def _post_process_onnx_output(
+        self, output: OnnxOutputContext
+    ) -> Iterable[np.ndarray]:
         return normalize(output.model_output).astype(np.float32)
 
 
 class OnnxImageEmbeddingWorker(ImageEmbeddingWorker):
-    def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> OnnxImageEmbedding:
-        return OnnxImageEmbedding(model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs)
+    def init_embedding(
+        self, model_name: str, cache_dir: str, **kwargs
+    ) -> OnnxImageEmbedding:
+        return OnnxImageEmbedding(
+            model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs
+        )

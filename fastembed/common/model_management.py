@@ -2,13 +2,13 @@ import os
 import shutil
 import tarfile
 from pathlib import Path
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 
 import requests
 from huggingface_hub import snapshot_download
 from huggingface_hub.utils import RepositoryNotFoundError
-from tqdm import tqdm
 from loguru import logger
+from tqdm import tqdm
 
 
 class ModelManagement:
@@ -42,7 +42,9 @@ class ModelManagement:
         raise ValueError(f"Model {model_name} is not supported in {cls.__name__}.")
 
     @classmethod
-    def download_file_from_gcs(cls, url: str, output_path: str, show_progress: bool = True) -> str:
+    def download_file_from_gcs(
+        cls, url: str, output_path: str, show_progress: bool = True
+    ) -> str:
         """
         Downloads a file from Google Cloud Storage.
 
@@ -71,12 +73,17 @@ class ModelManagement:
 
         # Warn if the total size is zero
         if total_size_in_bytes == 0:
-            print(f"Warning: Content-length header is missing or zero in the response from {url}.")
+            print(
+                f"Warning: Content-length header is missing or zero in the response from {url}."
+            )
 
         show_progress = total_size_in_bytes and show_progress
 
         with tqdm(
-            total=total_size_in_bytes, unit="iB", unit_scale=True, disable=not show_progress
+            total=total_size_in_bytes,
+            unit="iB",
+            unit_scale=True,
+            disable=not show_progress,
         ) as progress_bar:
             with open(output_path, "wb") as file:
                 for chunk in response.iter_content(chunk_size=1024):
@@ -156,7 +163,9 @@ class ModelManagement:
         return cache_dir
 
     @classmethod
-    def retrieve_model_gcs(cls, model_name: str, source_url: str, cache_dir: str) -> Path:
+    def retrieve_model_gcs(
+        cls, model_name: str, source_url: str, cache_dir: str
+    ) -> Path:
         fast_model_name = f"fast-{model_name.split('/')[-1]}"
 
         cache_tmp_dir = Path(cache_dir) / "tmp"
@@ -182,8 +191,12 @@ class ModelManagement:
             output_path=str(model_tar_gz),
         )
 
-        cls.decompress_to_cache(targz_path=str(model_tar_gz), cache_dir=str(cache_tmp_dir))
-        assert model_tmp_dir.exists(), f"Could not find {model_tmp_dir} in {cache_tmp_dir}"
+        cls.decompress_to_cache(
+            targz_path=str(model_tar_gz), cache_dir=str(cache_tmp_dir)
+        )
+        assert (
+            model_tmp_dir.exists()
+        ), f"Could not find {model_tmp_dir} in {cache_tmp_dir}"
 
         model_tar_gz.unlink()
         # Rename from tmp to final name is atomic

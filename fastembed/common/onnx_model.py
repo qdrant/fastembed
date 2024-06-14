@@ -1,14 +1,23 @@
+import warnings
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Generic, Iterable, Optional, Tuple, Type, TypeVar, Sequence
-import warnings
+from typing import (
+    Any,
+    Dict,
+    Generic,
+    Iterable,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    TypeVar,
+)
 
 import numpy as np
 import onnxruntime as ort
 
 from fastembed.common.types import OnnxProvider
 from fastembed.parallel_processor import Worker
-
 
 # Holds type of the embedding result
 T = TypeVar("T")
@@ -51,7 +60,9 @@ class OnnxModel(Generic[T]):
         model_path = model_dir / model_file
         # List of Execution Providers: https://onnxruntime.ai/docs/execution-providers
 
-        onnx_providers = ["CPUExecutionProvider"] if providers is None else list(providers)
+        onnx_providers = (
+            ["CPUExecutionProvider"] if providers is None else list(providers)
+        )
         available_providers = ort.get_available_providers()
         requested_provider_names = []
         for provider in onnx_providers:

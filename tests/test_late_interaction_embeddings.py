@@ -1,7 +1,8 @@
 import numpy as np
 
-from fastembed.late_interaction.late_interaction_text_embedding import LateInteractionTextEmbedding
-
+from fastembed.late_interaction.late_interaction_text_embedding import (
+    LateInteractionTextEmbedding,
+)
 
 # vectors are abridged and rounded for brevity
 CANONICAL_COLUMN_VALUES = {
@@ -76,7 +77,9 @@ def test_single_embedding():
 
     for model_name, expected_result in CANONICAL_COLUMN_VALUES.items():
         print("evaluating", model_name)
-        model = LateInteractionTextEmbedding(model_name=model_name, cache_dir="colbert-cache")
+        model = LateInteractionTextEmbedding(
+            model_name=model_name, cache_dir="colbert-cache"
+        )
         result = next(iter(model.embed(docs_to_embed, batch_size=6)))
         token_num, abridged_dim = expected_result.shape
         assert np.allclose(result[:, :abridged_dim], expected_result, atol=10e-4)
@@ -87,7 +90,9 @@ def test_single_embedding_query():
 
     for model_name, expected_result in CANONICAL_QUERY_VALUES.items():
         print("evaluating", model_name)
-        model = LateInteractionTextEmbedding(model_name=model_name, cache_dir="colbert-cache")
+        model = LateInteractionTextEmbedding(
+            model_name=model_name, cache_dir="colbert-cache"
+        )
         result = next(iter(model.query_embed(queries_to_embed)))
         token_num, abridged_dim = expected_result.shape
         assert np.allclose(result[:, :abridged_dim], expected_result, atol=10e-4)
