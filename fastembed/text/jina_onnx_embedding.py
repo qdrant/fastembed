@@ -24,6 +24,14 @@ supported_jina_models = [
         "sources": {"hf": "xenova/jina-embeddings-v2-small-en"},
         "model_file": "onnx/model.onnx",
     },
+    {
+        "model": "jinaai/jina-embeddings-v2-base-de",
+        "dim": 768,
+        "description": "German embedding model supporting 8192 sequence length",
+        "size_in_GB": 0.32,
+        "sources": {"hf": "jinaai/jina-embeddings-v2-base-de"},
+        "model_file": "onnx/model_fp16.onnx",
+    },
 ]
 
 
