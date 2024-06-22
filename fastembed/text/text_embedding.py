@@ -5,7 +5,6 @@ import numpy as np
 from fastembed.common import OnnxProvider
 from fastembed.text.clip_embedding import CLIPOnnxEmbedding
 from fastembed.text.e5_onnx_embedding import E5OnnxEmbedding
-from fastembed.text.jina_onnx_embedding import JinaOnnxEmbedding
 from fastembed.text.pooled_normalized_embedding import PooledNormalizedEmbedding
 from fastembed.text.pooled_embedding import PooledEmbedding
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
@@ -16,7 +15,6 @@ class TextEmbedding(TextEmbeddingBase):
     EMBEDDINGS_REGISTRY: List[Type[TextEmbeddingBase]] = [
         OnnxTextEmbedding,
         E5OnnxEmbedding,
-        JinaOnnxEmbedding,
         CLIPOnnxEmbedding,
         PooledNormalizedEmbedding,
         PooledEmbedding,
