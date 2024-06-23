@@ -81,36 +81,6 @@ supported_onnx_models = [
         "model_file": "model_optimized.onnx",
     },
     {
-        "model": "nomic-ai/nomic-embed-text-v1",
-        "dim": 768,
-        "description": "8192 context length english model",
-        "size_in_GB": 0.52,
-        "sources": {
-            "hf": "nomic-ai/nomic-embed-text-v1",
-        },
-        "model_file": "onnx/model.onnx",
-    },
-    {
-        "model": "nomic-ai/nomic-embed-text-v1.5",
-        "dim": 768,
-        "description": "8192 context length english model",
-        "size_in_GB": 0.52,
-        "sources": {
-            "hf": "nomic-ai/nomic-embed-text-v1.5",
-        },
-        "model_file": "onnx/model.onnx",
-    },
-    {
-        "model": "nomic-ai/nomic-embed-text-v1.5-Q",
-        "dim": 768,
-        "description": "Quantized 8192 context length english model",
-        "size_in_GB": 0.13,
-        "sources": {
-            "hf": "nomic-ai/nomic-embed-text-v1.5",
-        },
-        "model_file": "onnx/model_quantized.onnx",
-    },
-    {
         "model": "thenlper/gte-large",
         "dim": 1024,
         "description": "Large general text embeddings model",
@@ -274,7 +244,9 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
         """
         return onnx_input
 
-    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
+    def _post_process_onnx_output(
+        self, output: OnnxOutputContext
+    ) -> Iterable[np.ndarray]:
         embeddings = output.model_output
         return normalize(embeddings[:, 0]).astype(np.float32)
 
@@ -286,4 +258,6 @@ class OnnxTextEmbeddingWorker(TextEmbeddingWorker):
         cache_dir: str,
         **kwargs,
     ) -> OnnxTextEmbedding:
-        return OnnxTextEmbedding(model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs)
+        return OnnxTextEmbedding(
+            model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs
+        )
