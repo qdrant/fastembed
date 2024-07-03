@@ -28,6 +28,16 @@ supported_pooled_models = [
         },
         "model_file": "onnx/model_quantized.onnx",
     },
+    {
+        "model": "nomic-ai/nomic-embed-text-v1",
+        "dim": 768,
+        "description": "8192 context length english model",
+        "size_in_GB": 0.52,
+        "sources": {
+            "hf": "nomic-ai/nomic-embed-text-v1",
+        },
+        "model_file": "onnx/model.onnx",
+    },
 ]
 
 
