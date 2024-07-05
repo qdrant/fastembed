@@ -29,8 +29,27 @@ supported_onnx_models = [
         },
         "model_file": "model.onnx",
     },
+    {
+        "model": "AndrewOgn/vitb16_unicom",
+        "dim": 768,
+        "description": "Unicom vitb16_unicom from open-metric-learning",
+        "size_in_GB": 0.82,
+        "sources": {
+            "hf": "AndrewOgn/vitb16_unicom",
+        },
+        "model_file": "vitb16_unicom.onnx",
+    },
+    {
+        "model": "AndrewOgn/vitb32_unicom",
+        "dim": 512,
+        "description": "Unicom vitb32_unicom from open-metric-learning",
+        "size_in_GB": 0.48,
+        "sources": {
+            "hf": "AndrewOgn/vitb32_unicom",
+        },
+        "model_file": "vitb32_unicom.onnx",
+    },
 ]
-
 
 class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
     def __init__(
@@ -122,10 +141,16 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
 
         return onnx_input
 
-    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
+    def _post_process_onnx_output(
+        self, output: OnnxOutputContext
+    ) -> Iterable[np.ndarray]:
         return normalize(output.model_output).astype(np.float32)
 
 
 class OnnxImageEmbeddingWorker(ImageEmbeddingWorker):
-    def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> OnnxImageEmbedding:
-        return OnnxImageEmbedding(model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs)
+    def init_embedding(
+        self, model_name: str, cache_dir: str, **kwargs
+    ) -> OnnxImageEmbedding:
+        return OnnxImageEmbedding(
+            model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs
+        )
