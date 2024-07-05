@@ -36,15 +36,18 @@ def test_attention_embeddings(model_name):
         "We're not in Infinity; we're in the suburbs.",
         "I was a thousand times more evil than thou!",
         "History is merely a list of surprises... It can only prepare us to be surprised yet again.",
+        ".",  # Empty string
     ]
 
     output = list(model.embed(quotes))
 
     assert len(output) == len(quotes)
 
-    for result in output:
+    for result in output[:-1]:
         assert len(result.indices) == len(result.values)
         assert len(result.indices) > 0
+
+    assert len(output[-1].indices) == 0
 
     # Test support for unknown languages
     output = list(
