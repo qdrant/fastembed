@@ -250,8 +250,8 @@ class Bm25(SparseTextEmbeddingBase):
             tokens = self.tokenizer.tokenize(text)
             stemmed_tokens = self._stem(tokens)
             token_ids = np.array(
-                [self.compute_token_id(token) for token in stemmed_tokens],
-                dtype=np.float32,
+                list(set(self.compute_token_id(token) for token in stemmed_tokens)),
+                dtype=np.int32,
             )
             values = np.ones_like(token_ids)
             yield SparseEmbedding(indices=token_ids, values=values)
