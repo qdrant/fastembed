@@ -169,7 +169,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         new_vector = {}
 
         for token, value in vector.items():
-            token_id = abs(mmh3.hash(token))
+            token_id = mmh3.hash(token, signed=False)
             # Examples:
             # Num 0: Log(1/1 + 1) = 0.6931471805599453
             # Num 1: Log(1/2 + 1) = 0.4054651081081644
@@ -260,7 +260,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
     def _query_rehash(cls, tokens: Iterable[str]) -> Dict[int, float]:
         result = {}
         for token in tokens:
-            token_id = abs(mmh3.hash(token))
+            token_id = mmh3.hash(token, signed=False)
             result[token_id] = 1.0
         return result
 
