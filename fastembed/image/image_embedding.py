@@ -65,8 +65,8 @@ class ImageEmbedding(ImageEmbeddingBase):
                 return
 
         raise ValueError(
-            f"Model {model_name} is not supported in TextEmbedding."
-            "Please check the supported models using `TextEmbedding.list_supported_models()`"
+            f"Model {model_name} is not supported in ImageEmbedding."
+            "Please check the supported models using `ImageEmbedding.list_supported_models()`"
         )
 
     def embed(

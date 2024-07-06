@@ -30,7 +30,7 @@ supported_onnx_models = [
         "model_file": "model.onnx",
     },
     {
-        "model": "AndrewOgn/vitb16_unicom",
+        "model": "AndrewOgn/vitb16-unicom",
         "dim": 768,
         "description": "Unicom vitb16_unicom from open-metric-learning",
         "size_in_GB": 0.82,
@@ -40,7 +40,7 @@ supported_onnx_models = [
         "model_file": "vitb16_unicom.onnx",
     },
     {
-        "model": "AndrewOgn/vitb32_unicom",
+        "model": "AndrewOgn/vitb32-unicom",
         "dim": 512,
         "description": "Unicom vitb32_unicom from open-metric-learning",
         "size_in_GB": 0.48,
