@@ -237,7 +237,7 @@ class Bm25(SparseTextEmbeddingBase):
 
     @classmethod
     def compute_token_id(cls, token: str) -> int:
-        return abs(mmh3.hash(token))
+        return mmh3.hash(token, signed=False)
 
     def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> Iterable[SparseEmbedding]:
         """To emulate BM25 behaviour, we don't need to use weights in the query, and
