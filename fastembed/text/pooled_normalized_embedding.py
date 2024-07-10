@@ -6,8 +6,20 @@ from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.utils import normalize
 from fastembed.text.onnx_embedding import OnnxTextEmbedding, OnnxTextEmbeddingWorker
 from fastembed.text.onnx_text_model import TextEmbeddingWorker
+from fastembed.text.pooled_embedding import PooledEmbedding
 
-supported_jina_models = [
+supported_pooled_normalized_models = [
+    {
+        "model": "sentence-transformers/all-MiniLM-L6-v2",
+        "dim": 384,
+        "description": "Sentence Transformer model, MiniLM-L6-v2",
+        "size_in_GB": 0.09,
+        "sources": {
+            "url": "https://storage.googleapis.com/qdrant-fastembed/sentence-transformers-all-MiniLM-L6-v2.tar.gz",
+            "hf": "qdrant/all-MiniLM-L6-v2-onnx",
+        },
+        "model_file": "model.onnx",
+    },
     {
         "model": "jinaai/jina-embeddings-v2-base-en",
         "dim": 768,
@@ -35,20 +47,10 @@ supported_jina_models = [
 ]
 
 
-class JinaOnnxEmbedding(OnnxTextEmbedding):
+class PooledNormalizedEmbedding(PooledEmbedding):
     @classmethod
     def _get_worker_class(cls) -> Type[TextEmbeddingWorker]:
-        return JinaEmbeddingWorker
-
-    @classmethod
-    def mean_pooling(cls, model_output, attention_mask) -> np.ndarray:
-        token_embeddings = model_output
-        input_mask_expanded = (np.expand_dims(attention_mask, axis=-1)).astype(float)
-
-        sum_embeddings = np.sum(token_embeddings * input_mask_expanded, axis=1)
-        mask_sum = np.clip(np.sum(input_mask_expanded, axis=1), a_min=1e-9, a_max=None)
-
-        return sum_embeddings / mask_sum
+        return PooledNormalizedEmbeddingWorker
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Any]]:
@@ -57,7 +59,7 @@ class JinaOnnxEmbedding(OnnxTextEmbedding):
         Returns:
             List[Dict[str, Any]]: A list of dictionaries containing the model information.
         """
-        return supported_jina_models
+        return supported_pooled_normalized_models
 
     def _post_process_onnx_output(
         self, output: OnnxOutputContext
@@ -67,10 +69,10 @@ class JinaOnnxEmbedding(OnnxTextEmbedding):
         return normalize(self.mean_pooling(embeddings, attn_mask)).astype(np.float32)
 
 
-class JinaEmbeddingWorker(OnnxTextEmbeddingWorker):
+class PooledNormalizedEmbeddingWorker(OnnxTextEmbeddingWorker):
     def init_embedding(
         self, model_name: str, cache_dir: str, **kwargs
     ) -> OnnxTextEmbedding:
-        return JinaOnnxEmbedding(
+        return PooledNormalizedEmbedding(
             model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs
         )
