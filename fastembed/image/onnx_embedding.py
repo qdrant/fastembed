@@ -30,24 +30,24 @@ supported_onnx_models = [
         "model_file": "model.onnx",
     },
     {
-        "model": "AndrewOgn/vitb16-unicom",
+        "model": "Qdrant/Unicom-VIT-B-16",
         "dim": 768,
         "description": "Unicom vitb16_unicom from open-metric-learning",
         "size_in_GB": 0.82,
         "sources": {
-            "hf": "AndrewOgn/vitb16_unicom",
+            "hf": "Qdrant/Unicom-VIT-B-16",
         },
-        "model_file": "vitb16_unicom.onnx",
+        "model_file": "model.onnx",
     },
     {
-        "model": "AndrewOgn/vitb32-unicom",
+        "model": "Qdrant/Unicom-VIT-B-32",
         "dim": 512,
         "description": "Unicom vitb32_unicom from open-metric-learning",
         "size_in_GB": 0.48,
         "sources": {
-            "hf": "AndrewOgn/vitb32_unicom",
+            "hf": "Qdrant/Unicom-VIT-B-32",
         },
-        "model_file": "vitb32_unicom.onnx",
+        "model_file": "model.onnx",
     },
 ]
 

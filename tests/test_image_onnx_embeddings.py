@@ -11,11 +11,11 @@ CANONICAL_VECTOR_VALUES = {
     "Qdrant/resnet50-onnx": np.array(
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.01046245, 0.01171397, 0.00705971, 0.0]
     ),
-    "AndrewOgn/vitb16-unicom": np.array(
+    "Qdrant/Unicom-VIT-B-16": np.array(
         [ 0.0170, -0.0361,  0.0125, -0.0428, -0.0232,  0.0232, -0.0602, -0.0333,
          0.0155,  0.0497]
     ),
-    "AndrewOgn/vitb32-unicom": np.array(
+    "Qdrant/Unicom-VIT-B-32": np.array(
         [0.0418,  0.0550,  0.0003,  0.0253, -0.0185,  0.0016, -0.0368, -0.0402,
         -0.0891, -0.0186]
     ),
