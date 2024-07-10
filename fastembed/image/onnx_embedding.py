@@ -29,8 +29,27 @@ supported_onnx_models = [
         },
         "model_file": "model.onnx",
     },
+    {
+        "model": "Qdrant/Unicom-ViT-B-16",
+        "dim": 768,
+        "description": "Unicom Unicom-ViT-B-16 from open-metric-learning",
+        "size_in_GB": 0.82,
+        "sources": {
+            "hf": "Qdrant/Unicom-ViT-B-16",
+        },
+        "model_file": "model.onnx",
+    },
+    {
+        "model": "Qdrant/Unicom-ViT-B-32",
+        "dim": 512,
+        "description": "Unicom Unicom-ViT-B-32 from open-metric-learning",
+        "size_in_GB": 0.48,
+        "sources": {
+            "hf": "Qdrant/Unicom-ViT-B-32",
+        },
+        "model_file": "model.onnx",
+    },
 ]
-
 
 class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
     def __init__(
@@ -122,10 +141,16 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
 
         return onnx_input
 
-    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
+    def _post_process_onnx_output(
+        self, output: OnnxOutputContext
+    ) -> Iterable[np.ndarray]:
         return normalize(output.model_output).astype(np.float32)
 
 
 class OnnxImageEmbeddingWorker(ImageEmbeddingWorker):
-    def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> OnnxImageEmbedding:
-        return OnnxImageEmbedding(model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs)
+    def init_embedding(
+        self, model_name: str, cache_dir: str, **kwargs
+    ) -> OnnxImageEmbedding:
+        return OnnxImageEmbedding(
+            model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs
+        )
