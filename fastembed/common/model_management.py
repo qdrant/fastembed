@@ -1,4 +1,5 @@
 import os
+import time
 import shutil
 import tarfile
 from pathlib import Path
@@ -255,6 +256,7 @@ class ModelManagement:
             logger.error(
                 f"Could not download model from either source, sleeping for {sleep} seconds, {retries} retries left."
             )
+            time.sleep(sleep)
             sleep *= 3
 
         raise ValueError(f"Could not download model {model['model']} from any source.")
