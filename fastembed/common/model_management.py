@@ -1,4 +1,5 @@
 import os
+import time
 import shutil
 import tarfile
 from pathlib import Path
@@ -42,9 +43,7 @@ class ModelManagement:
         raise ValueError(f"Model {model_name} is not supported in {cls.__name__}.")
 
     @classmethod
-    def download_file_from_gcs(
-        cls, url: str, output_path: str, show_progress: bool = True
-    ) -> str:
+    def download_file_from_gcs(cls, url: str, output_path: str, show_progress: bool = True) -> str:
         """
         Downloads a file from Google Cloud Storage.
 
@@ -73,9 +72,7 @@ class ModelManagement:
 
         # Warn if the total size is zero
         if total_size_in_bytes == 0:
-            print(
-                f"Warning: Content-length header is missing or zero in the response from {url}."
-            )
+            print(f"Warning: Content-length header is missing or zero in the response from {url}.")
 
         show_progress = total_size_in_bytes and show_progress
 
@@ -163,9 +160,7 @@ class ModelManagement:
         return cache_dir
 
     @classmethod
-    def retrieve_model_gcs(
-        cls, model_name: str, source_url: str, cache_dir: str
-    ) -> Path:
+    def retrieve_model_gcs(cls, model_name: str, source_url: str, cache_dir: str) -> Path:
         fast_model_name = f"fast-{model_name.split('/')[-1]}"
 
         cache_tmp_dir = Path(cache_dir) / "tmp"
@@ -191,12 +186,8 @@ class ModelManagement:
             output_path=str(model_tar_gz),
         )
 
-        cls.decompress_to_cache(
-            targz_path=str(model_tar_gz), cache_dir=str(cache_tmp_dir)
-        )
-        assert (
-            model_tmp_dir.exists()
-        ), f"Could not find {model_tmp_dir} in {cache_tmp_dir}"
+        cls.decompress_to_cache(targz_path=str(model_tar_gz), cache_dir=str(cache_tmp_dir))
+        assert model_tmp_dir.exists(), f"Could not find {model_tmp_dir} in {cache_tmp_dir}"
 
         model_tar_gz.unlink()
         # Rename from tmp to final name is atomic
@@ -205,7 +196,7 @@ class ModelManagement:
         return model_dir
 
     @classmethod
-    def download_model(cls, model: Dict[str, Any], cache_dir: Path, **kwargs) -> Path:
+    def download_model(cls, model: Dict[str, Any], cache_dir: Path, retries=3, **kwargs) -> Path:
         """
         Downloads a model from HuggingFace Hub or Google Cloud Storage.
 
@@ -225,6 +216,7 @@ class ModelManagement:
                 }
                 ```
             cache_dir (str): The path to the cache directory.
+            retries: (int): The number of times to retry (including the first attempt)
 
         Returns:
             Path: The path to the downloaded model directory.
@@ -233,26 +225,38 @@ class ModelManagement:
         hf_source = model.get("sources", {}).get("hf")
         url_source = model.get("sources", {}).get("url")
 
-        if hf_source:
-            extra_patterns = [model["model_file"]]
-            extra_patterns.extend(model.get("additional_files", []))
+        sleep = 3.0
+        while retries > 0:
+            retries -= 1
 
-            try:
-                return Path(
-                    cls.download_files_from_huggingface(
-                        hf_source,
-                        cache_dir=str(cache_dir),
-                        extra_patterns=extra_patterns,
-                        local_files_only=kwargs.get("local_files_only", False),
+            if hf_source:
+                extra_patterns = [model["model_file"]]
+                extra_patterns.extend(model.get("additional_files", []))
+
+                try:
+                    return Path(
+                        cls.download_files_from_huggingface(
+                            hf_source,
+                            cache_dir=str(cache_dir),
+                            extra_patterns=extra_patterns,
+                            local_files_only=kwargs.get("local_files_only", False),
+                        )
                     )
-                )
-            except (EnvironmentError, RepositoryNotFoundError, ValueError) as e:
-                logger.error(
-                    f"Could not download model from HuggingFace: {e}"
-                    "Falling back to other sources."
-                )
+                except (EnvironmentError, RepositoryNotFoundError, ValueError) as e:
+                    logger.error(
+                        f"Could not download model from HuggingFace: {e} "
+                        "Falling back to other sources."
+                    )
+            if url_source:
+                try:
+                    return cls.retrieve_model_gcs(model["model"], url_source, str(cache_dir))
+                except Exception:
+                    logger.error(f"Could not download model from url: {url_source}")
 
-        if url_source:
-            return cls.retrieve_model_gcs(model["model"], url_source, str(cache_dir))
+            logger.error(
+                f"Could not download model from either source, sleeping for {sleep} seconds, {retries} retries left."
+            )
+            time.sleep(sleep)
+            sleep *= 3
 
         raise ValueError(f"Could not download model {model['model']} from any source.")
