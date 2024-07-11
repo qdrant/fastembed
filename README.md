@@ -10,7 +10,7 @@ The default text embedding (`TextEmbedding`) model is Flag Embedding, presented 
 
 2. Fast: FastEmbed is designed for speed. We use the ONNX Runtime, which is faster than PyTorch. We also use data-parallelism for encoding large datasets.
 
-3. Accurate: FastEmbed is better than OpenAI Ada-002. We also [supported](https://qdrant.github.io/fastembed/examples/Supported_Models/) an ever expanding set of models, including a few multilingual models.
+3. Accurate: FastEmbed is better than OpenAI Ada-002. We also [support](https://qdrant.github.io/fastembed/examples/Supported_Models/) an ever expanding set of models, including a few multilingual models.
 
 ## 🚀 Installation
 
