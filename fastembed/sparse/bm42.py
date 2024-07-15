@@ -27,6 +27,7 @@ supported_bm42_models = [
         },
         "model_file": "model.onnx",
         "additional_files": ["stopwords.txt"],
+        "modifier": True,
     },
 ]
 
