@@ -27,7 +27,7 @@ supported_bm25_models = [
         },
         "model_file": "mock.file",  # bm25 does not require a model, so we just use a mock
         "additional_files": ["stopwords.txt"],
-        "modifier": True,
+        "requires_idf": True,
     },
 ]
 
