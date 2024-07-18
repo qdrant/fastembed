@@ -12,7 +12,7 @@ This is a guide how to release `fastembed` and `fastembed-gpu` packages.
 ```bash
 git checkout gpu
 git rebase main
-git push origin gpu
+git push -f origin gpu
 ```
 
 4. Draft release notes

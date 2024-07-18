@@ -8,9 +8,9 @@ The default text embedding (`TextEmbedding`) model is Flag Embedding, presented 
 
 1. Light: FastEmbed is a lightweight library with few external dependencies. We don't require a GPU and don't download GBs of PyTorch dependencies, and instead use the ONNX Runtime. This makes it a great candidate for serverless runtimes like AWS Lambda. 
 
-2. Fast: FastEmbed is designed for speed. We use the ONNX Runtime, which is faster than PyTorch. We also use data-parallelism for encoding large datasets.
+2. Fast: FastEmbed is designed for speed. We use the ONNX Runtime, which is faster than PyTorch. We also use data parallelism for encoding large datasets.
 
-3. Accurate: FastEmbed is better than OpenAI Ada-002. We also [support](https://qdrant.github.io/fastembed/examples/Supported_Models/) an ever expanding set of models, including a few multilingual models.
+3. Accurate: FastEmbed is better than OpenAI Ada-002. We also [support](https://qdrant.github.io/fastembed/examples/Supported_Models/) an ever-expanding set of models, including a few multilingual models.
 
 ## 🚀 Installation
 
@@ -54,7 +54,7 @@ The list of all the available models can be found [here](https://qdrant.github.i
 from fastembed import TextEmbedding
 
 model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5")
-embeddings = list(embedding_model.embed(documents))
+embeddings = list(model.embed(documents))
 
 # [
 #   array([-0.1115,  0.0097,  0.0052,  0.0195, ...], dtype=float32),
@@ -73,7 +73,7 @@ embeddings = list(embedding_model.embed(documents))
 from fastembed import SparseTextEmbedding
 
 model = SparseTextEmbedding(model_name="prithivida/Splade_PP_en_v1")
-embeddings = list(embedding_model.embed(documents))
+embeddings = list(model.embed(documents))
 
 # [
 #   SparseEmbedding(indices=[ 17, 123, 919, ... ], values=[0.71, 0.22, 0.39, ...]),
@@ -88,7 +88,7 @@ embeddings = list(embedding_model.embed(documents))
 from fastembed import SparseTextEmbedding
 
 model = SparseTextEmbedding(model_name="Qdrant/bm42-all-minilm-l6-v2-attentions")
-embeddings = list(embedding_model.embed(documents))
+embeddings = list(model.embed(documents))
 
 # [
 #   SparseEmbedding(indices=[ 17, 123, 919, ... ], values=[0.71, 0.22, 0.39, ...]),
@@ -104,7 +104,7 @@ embeddings = list(embedding_model.embed(documents))
 from fastembed import LateInteractionTextEmbedding
 
 model = LateInteractionTextEmbedding(model_name="colbert-ir/colbertv2.0")
-embeddings = list(embedding_model.embed(documents))
+embeddings = list(model.embed(documents))
 
 # [
 #   array([
@@ -129,7 +129,7 @@ images = [
 ]
 
 model = ImageEmbedding(model_name="Qdrant/clip-ViT-B-32-vision")
-embeddings = list(embedding_model.embed(images))
+embeddings = list(model.embed(images))
 
 # [
 #   array([-0.1115,  0.0097,  0.0052,  0.0195, ...], dtype=float32),
@@ -147,7 +147,7 @@ It requires installation of the `fastembed-gpu` package.
 pip install fastembed-gpu
 ```
 
-Check our [example](https://qdrant.github.io/fastembed/examples/FastEmbed_GPU/) for the detailed instructions and CUDA 12.x support.
+Check our [example](https://qdrant.github.io/fastembed/examples/FastEmbed_GPU/) for detailed instructions and CUDA 12.x support.
 
 ```python
 from fastembed import TextEmbedding
