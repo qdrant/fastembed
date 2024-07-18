@@ -44,6 +44,14 @@ supported_pooled_normalized_models = [
         "sources": {"hf": "jinaai/jina-embeddings-v2-base-de"},
         "model_file": "onnx/model_fp16.onnx",
     },
+    {
+        "model": "jinaai/jina-embeddings-v2-base-code",
+        "dim": 768,
+        "description": "Source code embedding model supporting 8192 sequence length",
+        "size_in_GB": 0.64,
+        "sources": {"hf": "jinaai/jina-embeddings-v2-base-code"},
+        "model_file": "onnx/model.onnx",
+    },
 ]
 
 
