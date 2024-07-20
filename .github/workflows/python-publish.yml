@@ -19,6 +19,15 @@ jobs:
   deploy:
 
     runs-on: ubuntu-latest
+    environment:
+      name: publish
+    permissions:
+      # This permission is used for trusted publishing:
+      # https://blog.pypi.org/posts/2023-04-20-introducing-trusted-publishers/
+      #
+      # Trusted publishing has to also be configured on PyPI for each package:
+      # https://docs.pypi.org/trusted-publishers/adding-a-publisher/
+      id-token: write
 
     steps:
     - uses: actions/checkout@v2
@@ -32,8 +41,8 @@ jobs:
         poetry install
     - name: Build package
       run: poetry build
-    - name: Publish package
-      uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
+    - name: Publish package distributions to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
       with:
-        user: __token__
-        password: ${{ secrets.PYPI_API_TOKEN }}
+        verbose: true
+        print-hash: true
