@@ -36,7 +36,7 @@ supported_bm25_models = [
         "sources": {
             "hf": "nickprock/bm25",
         },
-        "model_file": "mock.file",  # bm25 does not require a model, so we just use a mock
+        "model_file": "mock.file",
         "additional_files": ["stopwords-it.txt"],
         "requires_idf": True,
     },
