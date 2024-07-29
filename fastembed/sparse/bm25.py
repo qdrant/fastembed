@@ -29,10 +29,22 @@ supported_bm25_models = [
         "additional_files": ["stopwords.txt"],
         "requires_idf": True,
     },
+    {
+        "model": "nickprock/bm25",
+        "description": "BM25 as sparse embeddings for italian meant to be used with Qdrant",
+        "size_in_GB": 0.01,
+        "sources": {
+            "hf": "nickprock/bm25",
+        },
+        "model_file": "mock.file",  # bm25 does not require a model, so we just use a mock
+        "additional_files": ["stopwords-it.txt"],
+        "requires_idf": True,
+    },
 ]
 
 MODEL_TO_LANGUAGE = {
     "Qdrant/bm25": "english",
+    "nickprock/bm25": "italian",
 }
 
 
