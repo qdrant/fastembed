@@ -30,7 +30,7 @@ supported_bm25_models = [
         "requires_idf": True,
     },
     {
-        "model": "nickprock/bm25",
+        "model": "nickprock/bm25",  # bm25 does not require a model, so we just use a mock
         "description": "BM25 as sparse embeddings for italian meant to be used with Qdrant",
         "size_in_GB": 0.01,
         "sources": {
