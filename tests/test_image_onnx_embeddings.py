@@ -5,7 +5,7 @@ import pytest
 
 from fastembed import ImageEmbedding
 from tests.config import TEST_MISC_DIR
-
+from PIL import Image
 CANONICAL_VECTOR_VALUES = {
     "Qdrant/clip-ViT-B-32-vision": np.array([-0.0098, 0.0128, -0.0274, 0.002, -0.0059]),
     "Qdrant/resnet50-onnx": np.array(
@@ -33,10 +33,12 @@ def test_embedding():
 
         model = ImageEmbedding(model_name=model_desc["model"])
 
-        images = [TEST_MISC_DIR / "image.jpeg", str(TEST_MISC_DIR / "small_image.jpeg")]
+        images = [TEST_MISC_DIR / "image.jpeg",
+                  str(TEST_MISC_DIR / "small_image.jpeg"),
+                  Image.open(TEST_MISC_DIR / "small_image.jpeg")]
         embeddings = list(model.embed(images))
         embeddings = np.stack(embeddings, axis=0)
-        assert embeddings.shape == (2, dim)
+        assert embeddings.shape == (len(images), dim)
 
         canonical_vector = CANONICAL_VECTOR_VALUES[model_desc["model"]]
 
@@ -49,14 +51,16 @@ def test_embedding():
 def test_batch_embedding(n_dims, model_name):
     model = ImageEmbedding(model_name=model_name)
     n_images = 32
-    images = [TEST_MISC_DIR / "image.jpeg", str(TEST_MISC_DIR / "small_image.jpeg")] * (
-        n_images // 2
-    )
+    test_images = [TEST_MISC_DIR / "image.jpeg",
+              str(TEST_MISC_DIR / "small_image.jpeg"),
+              Image.open(TEST_MISC_DIR / "small_image.jpeg")
+              ]
+    images = test_images * n_images
 
     embeddings = list(model.embed(images, batch_size=10))
     embeddings = np.stack(embeddings, axis=0)
 
-    assert embeddings.shape == (n_images, n_dims)
+    assert embeddings.shape == (len(test_images) * n_images, n_dims)
 
 
 @pytest.mark.parametrize("n_dims,model_name", [(512, "Qdrant/clip-ViT-B-32-vision")])
@@ -64,9 +68,11 @@ def test_parallel_processing(n_dims, model_name):
     model = ImageEmbedding(model_name=model_name)
 
     n_images = 32
-    images = [TEST_MISC_DIR / "image.jpeg", str(TEST_MISC_DIR / "small_image.jpeg")] * (
-        n_images // 2
-    )
+    test_images = [TEST_MISC_DIR / "image.jpeg",
+                   str(TEST_MISC_DIR / "small_image.jpeg"),
+                   Image.open(TEST_MISC_DIR / "small_image.jpeg")
+                   ]
+    images = test_images * n_images
     embeddings = list(model.embed(images, batch_size=10, parallel=2))
     embeddings = np.stack(embeddings, axis=0)
 
@@ -76,6 +82,6 @@ def test_parallel_processing(n_dims, model_name):
     embeddings_3 = list(model.embed(images, batch_size=10, parallel=0))
     embeddings_3 = np.stack(embeddings_3, axis=0)
 
-    assert embeddings.shape == (n_images, n_dims)
+    assert embeddings.shape == (n_images * len(test_images), n_dims)
     assert np.allclose(embeddings, embeddings_2, atol=1e-3)
     assert np.allclose(embeddings, embeddings_3, atol=1e-3)
