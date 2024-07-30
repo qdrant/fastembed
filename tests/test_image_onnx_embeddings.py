@@ -1,13 +1,13 @@
 import os
+from io import BytesIO
 
 import numpy as np
 import pytest
+import requests
+from PIL import Image
 
 from fastembed import ImageEmbedding
 from tests.config import TEST_MISC_DIR
-from PIL import Image
-from io import BytesIO
-import requests
 
 CANONICAL_VECTOR_VALUES = {
     "Qdrant/clip-ViT-B-32-vision": np.array([-0.0098, 0.0128, -0.0274, 0.002, -0.0059]),
@@ -38,6 +38,7 @@ def test_embedding():
             TEST_MISC_DIR / "image.jpeg",
             str(TEST_MISC_DIR / "small_image.jpeg"),
             Image.open(BytesIO(requests.get("https://qdrant.tech/img/logo.png").content)),
+            TEST_MISC_DIR / "logo.png",
         ]
         embeddings = list(model.embed(images))
         embeddings = np.stack(embeddings, axis=0)
@@ -48,6 +49,8 @@ def test_embedding():
         assert np.allclose(
             embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3
         ), model_desc["model"]
+
+        assert np.allclose(embeddings[3, :10], embeddings[2:10], atol=1e-3), model_desc["model"]
 
 
 @pytest.mark.parametrize("n_dims,model_name", [(512, "Qdrant/clip-ViT-B-32-vision")])
