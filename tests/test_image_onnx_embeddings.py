@@ -6,18 +6,19 @@ import pytest
 from fastembed import ImageEmbedding
 from tests.config import TEST_MISC_DIR
 from PIL import Image
+from io import BytesIO
+import requests
+
 CANONICAL_VECTOR_VALUES = {
     "Qdrant/clip-ViT-B-32-vision": np.array([-0.0098, 0.0128, -0.0274, 0.002, -0.0059]),
     "Qdrant/resnet50-onnx": np.array(
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.01046245, 0.01171397, 0.00705971, 0.0]
     ),
     "Qdrant/Unicom-ViT-B-16": np.array(
-        [ 0.0170, -0.0361,  0.0125, -0.0428, -0.0232,  0.0232, -0.0602, -0.0333,
-         0.0155,  0.0497]
+        [0.0170, -0.0361, 0.0125, -0.0428, -0.0232, 0.0232, -0.0602, -0.0333, 0.0155, 0.0497]
     ),
     "Qdrant/Unicom-ViT-B-32": np.array(
-        [0.0418,  0.0550,  0.0003,  0.0253, -0.0185,  0.0016, -0.0368, -0.0402,
-        -0.0891, -0.0186]
+        [0.0418, 0.0550, 0.0003, 0.0253, -0.0185, 0.0016, -0.0368, -0.0402, -0.0891, -0.0186]
     ),
 }
 
@@ -33,9 +34,11 @@ def test_embedding():
 
         model = ImageEmbedding(model_name=model_desc["model"])
 
-        images = [TEST_MISC_DIR / "image.jpeg",
-                  str(TEST_MISC_DIR / "small_image.jpeg"),
-                  Image.open(TEST_MISC_DIR / "small_image.jpeg")]
+        images = [
+            TEST_MISC_DIR / "image.jpeg",
+            str(TEST_MISC_DIR / "small_image.jpeg"),
+            Image.open(BytesIO(requests.get("https://qdrant.tech/img/logo.png").content)),
+        ]
         embeddings = list(model.embed(images))
         embeddings = np.stack(embeddings, axis=0)
         assert embeddings.shape == (len(images), dim)
@@ -51,10 +54,11 @@ def test_embedding():
 def test_batch_embedding(n_dims, model_name):
     model = ImageEmbedding(model_name=model_name)
     n_images = 32
-    test_images = [TEST_MISC_DIR / "image.jpeg",
-              str(TEST_MISC_DIR / "small_image.jpeg"),
-              Image.open(TEST_MISC_DIR / "small_image.jpeg")
-              ]
+    test_images = [
+        TEST_MISC_DIR / "image.jpeg",
+        str(TEST_MISC_DIR / "small_image.jpeg"),
+        Image.open(TEST_MISC_DIR / "small_image.jpeg"),
+    ]
     images = test_images * n_images
 
     embeddings = list(model.embed(images, batch_size=10))
@@ -68,10 +72,11 @@ def test_parallel_processing(n_dims, model_name):
     model = ImageEmbedding(model_name=model_name)
 
     n_images = 32
-    test_images = [TEST_MISC_DIR / "image.jpeg",
-                   str(TEST_MISC_DIR / "small_image.jpeg"),
-                   Image.open(TEST_MISC_DIR / "small_image.jpeg")
-                   ]
+    test_images = [
+        TEST_MISC_DIR / "image.jpeg",
+        str(TEST_MISC_DIR / "small_image.jpeg"),
+        Image.open(TEST_MISC_DIR / "small_image.jpeg"),
+    ]
     images = test_images * n_images
     embeddings = list(model.embed(images, batch_size=10, parallel=2))
     embeddings = np.stack(embeddings, axis=0)
