@@ -7,7 +7,7 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Type
 import numpy as np
 from PIL import Image
 
-from fastembed.common import ImageInput, OnnxProvider, PathInput
+from fastembed.common import ImageInput, OnnxProvider, PathInput, PilInput
 from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
 from fastembed.common.preprocessor_utils import load_preprocessor
 from fastembed.common.utils import iter_batch
@@ -56,7 +56,7 @@ class OnnxImageModel(OnnxModel[T]):
 
     def onnx_embed(self, images: List[PathInput], **kwargs) -> OnnxOutputContext:
         with contextlib.ExitStack():
-            image_files = [Image.open(image) for image in images]
+            image_files = [Image.open(image) if not isinstance(image, Image.Image) else image for image in images]
             encoded = self.processor(image_files)
         onnx_input = self._build_onnx_input(encoded)
         onnx_input = self._preprocess_onnx_input(onnx_input)
@@ -75,7 +75,7 @@ class OnnxImageModel(OnnxModel[T]):
     ) -> Iterable[T]:
         is_small = False
 
-        if isinstance(images, str) or isinstance(images, Path):
+        if isinstance(images, str) or isinstance(images, Path) or (isinstance(images, Image.Image)):
             images = [images]
             is_small = True
 
