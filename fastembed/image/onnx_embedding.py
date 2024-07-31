@@ -51,6 +51,7 @@ supported_onnx_models = [
     },
 ]
 
+
 class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
     def __init__(
         self,
@@ -141,16 +142,10 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
 
         return onnx_input
 
-    def _post_process_onnx_output(
-        self, output: OnnxOutputContext
-    ) -> Iterable[np.ndarray]:
+    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
         return normalize(output.model_output).astype(np.float32)
 
 
 class OnnxImageEmbeddingWorker(ImageEmbeddingWorker):
-    def init_embedding(
-        self, model_name: str, cache_dir: str, **kwargs
-    ) -> OnnxImageEmbedding:
-        return OnnxImageEmbedding(
-            model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs
-        )
+    def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> OnnxImageEmbedding:
+        return OnnxImageEmbedding(model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs)
