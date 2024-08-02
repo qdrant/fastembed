@@ -9,7 +9,7 @@ supported_multilingual_e5_models = [
     {
         "model": "intfloat/multilingual-e5-large",
         "dim": 1024,
-        "description": "Multilingual model, e5-large. Recommend using this model for non-English languages",
+        "description": "Text embeddings, Unimodal (text), Multilingual (~100 languages), 512 input tokens truncation, Prefixes for queries/documents: necessary, 2024 year",
         "size_in_GB": 2.24,
         "sources": {
             "url": "https://storage.googleapis.com/qdrant-fastembed/fast-multilingual-e5-large.tar.gz",
@@ -19,7 +19,7 @@ supported_multilingual_e5_models = [
         "additional_files": ["model.onnx_data"],
     },
     {
-        "model": "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
+        "model": "Text embeddings, Unimodal (text), Multilingual (~50 languages), 384 input tokens truncation, Prefixes for queries/documents: not necessary, 2021 year",
         "dim": 768,
         "description": "Sentence-transformers model for tasks like clustering or semantic search",
         "size_in_GB": 1.00,
