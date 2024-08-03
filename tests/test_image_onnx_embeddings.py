@@ -37,8 +37,8 @@ def test_embedding():
         images = [
             TEST_MISC_DIR / "image.jpeg",
             str(TEST_MISC_DIR / "small_image.jpeg"),
+            Image.open((TEST_MISC_DIR / "small_image.jpeg")),
             Image.open(BytesIO(requests.get("https://qdrant.tech/img/logo.png").content)),
-            TEST_MISC_DIR / "logo.png",
         ]
         embeddings = list(model.embed(images))
         embeddings = np.stack(embeddings, axis=0)
@@ -50,7 +50,7 @@ def test_embedding():
             embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3
         ), model_desc["model"]
 
-        assert np.allclose(embeddings[3, :10], embeddings[2:10], atol=1e-3), model_desc["model"]
+        assert np.allclose(embeddings[1], embeddings[2]), model_desc["model"]
 
 
 @pytest.mark.parametrize("n_dims,model_name", [(512, "Qdrant/clip-ViT-B-32-vision")])

@@ -7,7 +7,7 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Type
 import numpy as np
 from PIL import Image
 
-from fastembed.common import ImageInput, OnnxProvider, PathInput, PilInput
+from fastembed.common import ImageInput, OnnxProvider
 from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
 from fastembed.common.preprocessor_utils import load_preprocessor
 from fastembed.common.utils import iter_batch
@@ -54,9 +54,12 @@ class OnnxImageModel(OnnxModel[T]):
     def _build_onnx_input(self, encoded: np.ndarray) -> Dict[str, np.ndarray]:
         return {node.name: encoded for node in self.model.get_inputs()}
 
-    def onnx_embed(self, images: List[PathInput], **kwargs) -> OnnxOutputContext:
+    def onnx_embed(self, images: List[ImageInput], **kwargs) -> OnnxOutputContext:
         with contextlib.ExitStack():
-            image_files = [Image.open(image) if not isinstance(image, Image.Image) else image for image in images]
+            image_files = [
+                Image.open(image) if not isinstance(image, Image.Image) else image
+                for image in images
+            ]
             encoded = self.processor(image_files)
         onnx_input = self._build_onnx_input(encoded)
         onnx_input = self._preprocess_onnx_input(onnx_input)
@@ -75,7 +78,11 @@ class OnnxImageModel(OnnxModel[T]):
     ) -> Iterable[T]:
         is_small = False
 
-        if isinstance(images, str) or isinstance(images, Path) or (isinstance(images, Image.Image)):
+        if (
+            isinstance(images, str)
+            or isinstance(images, Path)
+            or (isinstance(images, Image.Image))
+        ):
             images = [images]
             is_small = True
 
@@ -90,9 +97,7 @@ class OnnxImageModel(OnnxModel[T]):
             for batch in iter_batch(images, batch_size):
                 yield from self._post_process_onnx_output(self.onnx_embed(batch))
         else:
-            start_method = (
-                "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
-            )
+            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
             params = {"model_name": model_name, "cache_dir": cache_dir, **kwargs}
             pool = ParallelWorkerPool(
                 parallel, self._get_worker_class(), start_method=start_method
