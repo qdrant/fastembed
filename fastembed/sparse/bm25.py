@@ -17,6 +17,38 @@ from fastembed.sparse.sparse_embedding_base import (
 )
 from fastembed.sparse.utils.tokenizer import WordTokenizer
 
+supported_languages = [
+    "arabic",
+    "azerbaijani",
+    "basque",
+    "bengali",
+    "catalan",
+    "chinese",
+    "danish",
+    "dutch",
+    "english",
+    "finnish",
+    "french",
+    "german",
+    "greek",
+    "hebrew",
+    "hinglish",
+    "hungarian",
+    "indonesian",
+    "italian",
+    "kazakh",
+    "nepali",
+    "norwegian",
+    "portuguese",
+    "romanian",
+    "russian",
+    "slovene",
+    "spanish",
+    "swedish",
+    "tajik",
+    "turkish",
+]
+
 supported_bm25_models = [
     {
         "model": "Qdrant/bm25",
@@ -26,14 +58,14 @@ supported_bm25_models = [
             "hf": "Qdrant/bm25",
         },
         "model_file": "mock.file",  # bm25 does not require a model, so we just use a mock
-        "additional_files": ["stopwords.txt"],
+        "additional_files": supported_languages,
         "requires_idf": True,
     },
 ]
 
-MODEL_TO_LANGUAGE = {
-    "Qdrant/bm25": "english",
-}
+# MODEL_TO_LANGUAGE = {
+#     "Qdrant/bm25": "english",
+# }
 
 
 class Bm25(SparseTextEmbeddingBase):
@@ -71,9 +103,15 @@ class Bm25(SparseTextEmbeddingBase):
         k: float = 1.2,
         b: float = 0.75,
         avg_len: float = 256.0,
+        language: str = "english",
         **kwargs,
     ):
         super().__init__(model_name, cache_dir, **kwargs)
+
+        if language not in supported_languages:
+            raise ValueError(f"{language} language is not supported")
+        else:
+            self.language = language
 
         self.k = k
         self.b = b
@@ -88,7 +126,7 @@ class Bm25(SparseTextEmbeddingBase):
 
         self.punctuation = set(string.punctuation)
         self.stopwords = set(self._load_stopwords(model_dir))
-        self.stemmer = get_stemmer(MODEL_TO_LANGUAGE[model_name])
+        self.stemmer = get_stemmer(language)
         self.tokenizer = WordTokenizer
 
     @classmethod
@@ -100,9 +138,8 @@ class Bm25(SparseTextEmbeddingBase):
         """
         return supported_bm25_models
 
-    @classmethod
-    def _load_stopwords(cls, model_dir: Path) -> List[str]:
-        stopwords_path = model_dir / "stopwords.txt"
+    def _load_stopwords(self, model_dir: Path) -> List[str]:
+        stopwords_path = model_dir / self.language
         if not stopwords_path.exists():
             return []
 
