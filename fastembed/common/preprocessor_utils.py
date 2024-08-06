@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 from typing import Tuple
-
+from sys import maxsize
 from tokenizers import AddedToken, Tokenizer
 
 from fastembed.image.transform.operators import Compose
@@ -18,7 +18,7 @@ def load_special_tokens(model_dir: Path) -> dict:
     return tokens_map
 
 
-def load_tokenizer(model_dir: Path, max_length: int = 512) -> Tuple[Tokenizer, dict]:
+def load_tokenizer(model_dir: Path) -> Tuple[Tokenizer, dict]:
     config_path = model_dir / "config.json"
     if not config_path.exists():
         raise ValueError(f"Could not find config.json in {model_dir}")
@@ -41,7 +41,7 @@ def load_tokenizer(model_dir: Path, max_length: int = 512) -> Tuple[Tokenizer, d
 
     tokenizer = Tokenizer.from_file(str(tokenizer_path))
     tokenizer.enable_truncation(
-        max_length=min(tokenizer_config["model_max_length"], max_length)
+        max_length=min(tokenizer_config["model_max_length"], maxsize)
     )
     tokenizer.enable_padding(
         pad_id=config.get("pad_token_id", 0), pad_token=tokenizer_config["pad_token"]
