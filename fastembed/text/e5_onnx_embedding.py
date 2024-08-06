@@ -19,9 +19,9 @@ supported_multilingual_e5_models = [
         "additional_files": ["model.onnx_data"],
     },
     {
-        "model": "Text embeddings, Unimodal (text), Multilingual (~50 languages), 384 input tokens truncation, Prefixes for queries/documents: not necessary, 2021 year",
+        "model": "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
         "dim": 768,
-        "description": "Sentence-transformers model for tasks like clustering or semantic search",
+        "description": "Text embeddings, Unimodal (text), Multilingual (~50 languages), 384 input tokens truncation, Prefixes for queries/documents: not necessary, 2021 year",
         "size_in_GB": 1.00,
         "sources": {
             "hf": "xenova/paraphrase-multilingual-mpnet-base-v2",
