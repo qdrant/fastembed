@@ -80,6 +80,20 @@ embeddings = list(model.embed(documents))
 # ]
 ```
 
+* BM25
+
+```python
+from fastembed import SparseTextEmbedding
+
+model = SparseTextEmbedding(model_name="Qdrant/bm25")
+embeddings = list(model.embed(documents))
+
+# [
+#   SparseEmbedding(indices=[ 129793020, 1999429279,  819028769, ... ], values=[1.6477, 1.6327, 1.2377, ...]),
+#   SparseEmbedding(indices=[ 682147660, 1100855371,  339478471, ... ], values=[1.6741, 1.5432, 1.6741, ...])
+# ]
+```
+
 * [BM42](https://qdrant.tech/articles/bm42/)
 
 ```python
@@ -94,7 +108,7 @@ embeddings = list(model.embed(documents))
 # ]
 ```
 
-You can improve stemming performance for BM42 by installing FastEmbed with [PyStemmer](https://pypi.org/project/PyStemmer/).
+You can install [PyStemmer](https://pypi.org/project/PyStemmer/) to improve the stemming performance when using BM25, BM42.
 
 ```shell
 pip install fastembed[pystemmer]
