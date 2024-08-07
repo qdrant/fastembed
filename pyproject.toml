@@ -26,6 +26,10 @@ numpy = [
 pillow = "^10.3.0"
 snowballstemmer = "^2.2.0"
 mmh3 = "^4.0"
+PyStemmer = { version = "^2.2.0", optional = true }
+
+[tool.poetry.extras]
+pystemmer = ["PyStemmer"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.2"

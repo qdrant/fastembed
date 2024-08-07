@@ -6,7 +6,7 @@ The default text embedding (`TextEmbedding`) model is Flag Embedding, presented 
 
 ## 📈 Why FastEmbed?
 
-1. Light: FastEmbed is a lightweight library with few external dependencies. We don't require a GPU and don't download GBs of PyTorch dependencies, and instead use the ONNX Runtime. This makes it a great candidate for serverless runtimes like AWS Lambda. 
+1. Light: FastEmbed is a lightweight library with few external dependencies. We don't require a GPU and don't download GBs of PyTorch dependencies, and instead use the ONNX Runtime. This makes it a great candidate for serverless runtimes like AWS Lambda.
 
 2. Fast: FastEmbed is designed for speed. We use the ONNX Runtime, which is faster than PyTorch. We also use data parallelism for encoding large datasets.
 
@@ -48,6 +48,7 @@ len(embeddings_list[0]) # Vector of 384 dimensions
 
 Fastembed supports a variety of models for different tasks and modalities.
 The list of all the available models can be found [here](https://qdrant.github.io/fastembed/examples/Supported_Models/)
+
 ### 🎒 Dense text embeddings
 
 ```python
@@ -62,8 +63,6 @@ embeddings = list(model.embed(documents))
 # ]
 
 ```
-
-
 
 ### 🔱 Sparse text embeddings
 
@@ -81,10 +80,9 @@ embeddings = list(model.embed(documents))
 # ]
 ```
 
-<!--
-* BM42 - ([link](ToDo))
+* [BM42](https://qdrant.tech/articles/bm42/)
 
-```
+```python
 from fastembed import SparseTextEmbedding
 
 model = SparseTextEmbedding(model_name="Qdrant/bm42-all-minilm-l6-v2-attentions")
@@ -95,10 +93,14 @@ embeddings = list(model.embed(documents))
 #   SparseEmbedding(indices=[ 38,  12,  91, ... ], values=[0.11, 0.22, 0.39, ...])
 # ]
 ```
--->
+
+You can improve stemming performance for BM42 by installing FastEmbed with [PyStemmer](https://pypi.org/project/PyStemmer/).
+
+```shell
+pip install fastembed[pystemmer]
+```
 
 ### 🦥 Late interaction models (aka ColBERT)
-
 
 ```python
 from fastembed import LateInteractionTextEmbedding
@@ -137,7 +139,6 @@ embeddings = list(model.embed(images))
 # ]
 ```
 
-
 ## ⚡️ FastEmbed on a GPU
 
 FastEmbed supports running on GPU devices.
@@ -168,7 +169,7 @@ Installation with Qdrant Client in Python:
 pip install qdrant-client[fastembed]
 ```
 
-or 
+or
 
 ```bash
 pip install qdrant-client[fastembed-gpu]
