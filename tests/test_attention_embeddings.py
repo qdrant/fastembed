@@ -67,7 +67,7 @@ def test_attention_embeddings(model_name):
 def test_parallel_processing(model_name):
     model = SparseTextEmbedding(model_name=model_name)
 
-    docs = ["hello world", "attention embedding", "Mort aux vaches"] * 100
+    docs = ["hello world", "attention embedding", "Mangez-vous vraiment des grenouilles?"] * 100
     embeddings = list(model.embed(docs, batch_size=10, parallel=2))
 
     embeddings_2 = list(model.embed(docs, batch_size=10, parallel=None))
@@ -82,22 +82,23 @@ def test_parallel_processing(model_name):
         assert np.allclose(emb_1.values, emb_2.values)
         assert np.allclose(emb_1.values, emb_3.values)
 
-    print("Passed")
-    if model_name == "Qdrant/bm25":
-        docs = ["Mort aux vaches", "Je suis au lit"]
 
-        model = SparseTextEmbedding(model_name=model_name, language="french")
-        embeddings = list(model.embed(docs, parallel=2))[:2]
-        assert embeddings[0].values.shape == (2,)
-        assert embeddings[0].indices.shape == (2,)
+@pytest.mark.parametrize("model_name", ["Qdrant/bm25"])
+def test_multilanguage(model_name):
+    docs = ["Mangez-vous vraiment des grenouilles?", "Je suis au lit"]
 
-        assert embeddings[1].values.shape == (2,)
-        assert embeddings[1].indices.shape == (2,)
+    model = SparseTextEmbedding(model_name=model_name, language="french")
+    embeddings = list(model.embed(docs, parallel=2))[:2]
+    assert embeddings[0].values.shape == (3,)
+    assert embeddings[0].indices.shape == (3,)
 
-        model = SparseTextEmbedding(model_name=model_name, language="english")
-        embeddings = list(model.embed(docs, parallel=2))[:2]
-        assert embeddings[0].values.shape == (3,)
-        assert embeddings[0].indices.shape == (3,)
+    assert embeddings[1].values.shape == (2,)
+    assert embeddings[1].indices.shape == (2,)
 
-        assert embeddings[1].values.shape == (4,)
-        assert embeddings[1].indices.shape == (4,)
+    model = SparseTextEmbedding(model_name=model_name, language="english")
+    embeddings = list(model.embed(docs, parallel=2))[:2]
+    assert embeddings[0].values.shape == (4,)
+    assert embeddings[0].indices.shape == (4,)
+
+    assert embeddings[1].values.shape == (4,)
+    assert embeddings[1].indices.shape == (4,)

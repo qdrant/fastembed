@@ -58,14 +58,10 @@ supported_bm25_models = [
             "hf": "Qdrant/bm25",
         },
         "model_file": "mock.file",  # bm25 does not require a model, so we just use a mock
-        "additional_files": supported_languages,
+        "additional_files": [f"{lang}.txt" for lang in supported_languages],
         "requires_idf": True,
     },
 ]
-
-# MODEL_TO_LANGUAGE = {
-#     "Qdrant/bm25": "english",
-# }
 
 
 class Bm25(SparseTextEmbeddingBase):
@@ -139,7 +135,7 @@ class Bm25(SparseTextEmbeddingBase):
         return supported_bm25_models
 
     def _load_stopwords(self, model_dir: Path) -> List[str]:
-        stopwords_path = model_dir / self.language
+        stopwords_path = model_dir / f"{self.language}.txt"
         if not stopwords_path.exists():
             return []
 
