@@ -121,7 +121,7 @@ class Bm25(SparseTextEmbeddingBase):
         )
 
         self.punctuation = set(string.punctuation)
-        self.stopwords = set(self._load_stopwords(model_dir))
+        self.stopwords = set(self._load_stopwords(model_dir, self.language))
         self.stemmer = get_stemmer(language)
         self.tokenizer = WordTokenizer
 
@@ -134,8 +134,9 @@ class Bm25(SparseTextEmbeddingBase):
         """
         return supported_bm25_models
 
-    def _load_stopwords(self, model_dir: Path) -> List[str]:
-        stopwords_path = model_dir / f"{self.language}.txt"
+    @classmethod
+    def _load_stopwords(cls, model_dir: Path, language: str) -> List[str]:
+        stopwords_path = model_dir / f"{language}.txt"
         if not stopwords_path.exists():
             return []
 

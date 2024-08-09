@@ -88,7 +88,7 @@ def test_multilanguage(model_name):
     docs = ["Mangez-vous vraiment des grenouilles?", "Je suis au lit"]
 
     model = SparseTextEmbedding(model_name=model_name, language="french")
-    embeddings = list(model.embed(docs, parallel=2))[:2]
+    embeddings = list(model.embed(docs))[:2]
     assert embeddings[0].values.shape == (3,)
     assert embeddings[0].indices.shape == (3,)
 
@@ -96,7 +96,7 @@ def test_multilanguage(model_name):
     assert embeddings[1].indices.shape == (2,)
 
     model = SparseTextEmbedding(model_name=model_name, language="english")
-    embeddings = list(model.embed(docs, parallel=2))[:2]
+    embeddings = list(model.embed(docs))[:2]
     assert embeddings[0].values.shape == (4,)
     assert embeddings[0].indices.shape == (4,)
 
