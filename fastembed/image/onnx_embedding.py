@@ -12,7 +12,7 @@ supported_onnx_models = [
     {
         "model": "Qdrant/clip-ViT-B-32-vision",
         "dim": 512,
-        "description": "CLIP vision encoder based on ViT-B/32",
+        "description": "Image embeddings, Multimodal (text&image), Preprocessing handled by config, Any PIL file format, 2021 year",
         "size_in_GB": 0.34,
         "sources": {
             "hf": "Qdrant/clip-ViT-B-32-vision",
@@ -22,7 +22,7 @@ supported_onnx_models = [
     {
         "model": "Qdrant/resnet50-onnx",
         "dim": 2048,
-        "description": "ResNet-50 from `Deep Residual Learning for Image Recognition <https://arxiv.org/abs/1512.03385>`__.",
+        "description": "Image embeddings, Unimodal (image), Preprocessing handled by config, Any PIL file format, 2016 year",
         "size_in_GB": 0.1,
         "sources": {
             "hf": "Qdrant/resnet50-onnx",
@@ -32,7 +32,7 @@ supported_onnx_models = [
     {
         "model": "Qdrant/Unicom-ViT-B-16",
         "dim": 768,
-        "description": "Unicom Unicom-ViT-B-16 from open-metric-learning",
+        "description": "Image embeddings (more detailed than Unicom-ViT-B-32), Multimodal (text&image - better than clip-ViT-B-32-vision for Image-to-Image search), Preprocessing handled by config, Any PIL file format, 2023 year",
         "size_in_GB": 0.82,
         "sources": {
             "hf": "Qdrant/Unicom-ViT-B-16",
@@ -42,7 +42,7 @@ supported_onnx_models = [
     {
         "model": "Qdrant/Unicom-ViT-B-32",
         "dim": 512,
-        "description": "Unicom Unicom-ViT-B-32 from open-metric-learning",
+        "description": "Image embeddings, Multimodal (text&image - better than clip-ViT-B-32-vision for Image-to-Image search), Preprocessing handled by config, Any PIL file format, 2023 year",
         "size_in_GB": 0.48,
         "sources": {
             "hf": "Qdrant/Unicom-ViT-B-32",
