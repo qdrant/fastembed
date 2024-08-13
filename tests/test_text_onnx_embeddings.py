@@ -67,7 +67,7 @@ CANONICAL_VECTOR_VALUES = {
 def test_embedding():
     is_ci = os.getenv("CI")
 
-    for model_desc in TextEmbedding.list_supported_models()[5:]:
+    for model_desc in TextEmbedding.list_supported_models():
         if not is_ci and model_desc["size_in_GB"] > 1:
             continue
 
