@@ -1,7 +1,6 @@
 import json
 from pathlib import Path
 from typing import Tuple
-from sys import maxsize
 from tokenizers import AddedToken, Tokenizer
 
 from fastembed.image.transform.operators import Compose
@@ -36,13 +35,20 @@ def load_tokenizer(model_dir: Path) -> Tuple[Tokenizer, dict]:
 
     with open(str(tokenizer_config_path)) as tokenizer_config_file:
         tokenizer_config = json.load(tokenizer_config_file)
+        assert (
+            "model_max_length" in tokenizer_config or "max_length" in tokenizer_config
+        ), "Models without max_length or max_length are not supported."
+        if "model_max_length" not in tokenizer_config:
+            max_context = tokenizer_config["max_length"]
+        elif "max_length" not in tokenizer_config:
+            max_context = tokenizer_config["model_max_length"]
+        else:
+            max_context = min(tokenizer_config["model_max_length"], tokenizer_config["max_length"])
 
     tokens_map = load_special_tokens(model_dir)
 
     tokenizer = Tokenizer.from_file(str(tokenizer_path))
-    tokenizer.enable_truncation(
-        max_length=min(tokenizer_config["model_max_length"], maxsize)
-    )
+    tokenizer.enable_truncation(max_length=max_context)
     tokenizer.enable_padding(
         pad_id=config.get("pad_token_id", 0), pad_token=tokenizer_config["pad_token"]
     )
