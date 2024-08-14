@@ -14,10 +14,8 @@ supported_onnx_models = [
         "dim": 768,
         "description": "Base English model",
         "size_in_GB": 0.42,
-        "sources": {
-            "url": "https://storage.googleapis.com/qdrant-fastembed/fast-bge-base-en.tar.gz",
-        },
-        "model_file": "model_optimized.onnx",
+        "sources": {"hf": "BAAI/bge-base-en"},
+        "model_file": "onnx/model.onnx",
     },
     {
         "model": "BAAI/bge-base-en-v1.5",
@@ -244,9 +242,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
         """
         return onnx_input
 
-    def _post_process_onnx_output(
-        self, output: OnnxOutputContext
-    ) -> Iterable[np.ndarray]:
+    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
         embeddings = output.model_output
         return normalize(embeddings[:, 0]).astype(np.float32)
 
@@ -258,6 +254,4 @@ class OnnxTextEmbeddingWorker(TextEmbeddingWorker):
         cache_dir: str,
         **kwargs,
     ) -> OnnxTextEmbedding:
-        return OnnxTextEmbedding(
-            model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs
-        )
+        return OnnxTextEmbedding(model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs)
