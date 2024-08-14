@@ -14,8 +14,10 @@ supported_onnx_models = [
         "dim": 768,
         "description": "Base English model",
         "size_in_GB": 0.42,
-        "sources": {"hf": "BAAI/bge-base-en"},
-        "model_file": "onnx/model.onnx",
+        "sources": {
+            "url": "https://storage.googleapis.com/qdrant-fastembed/fast-bge-base-en.tar.gz",
+        },
+        "model_file": "model_optimized.onnx",
     },
     {
         "model": "BAAI/bge-base-en-v1.5",
