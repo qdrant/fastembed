@@ -1,57 +1,76 @@
-from typing import Sequence, Dict, List
+from typing import Sequence, Optional
+from pathlib import Path
 
-import numpy as np
+from onnxruntime import InferenceSession
+from tokenizers import Tokenizer
+from tokenizers.processors import TemplateProcessing
 
 from fastembed.common.onnx_model import OnnxModel, OnnxProvider
-from onnxruntime import InferenceSession
-from tokenizers import Tokenizer, Encoding
-from tokenizers.models import BPE
-from tokenizers.pre_tokenizers import Whitespace
-from tokenizers.processors import TemplateProcessing
+from fastembed.common.preprocessor_utils import load_tokenizer
+
 
 class OnnxCrossEncoderModel(OnnxModel):
     def __init__(
-            self, 
-            model_name: str, 
-            cache_dir: str = None, 
-            threads: int = None, 
-            providers: Sequence[OnnxProvider] = None, 
-            **kwargs):
-        super().__init__()
-        self.tokenizer = self._load_tokenizer(model_name, cache_dir)
-        self.model = self._load_model(model_name, cache_dir, providers)
+        self,
+        model_name: str,
+        cache_dir: str = None,
+        threads: int = None,
+        providers: Sequence[OnnxProvider] = None,
+        **kwargs,
+    ):
+        self.tokenizer: Tokenizer = None
+        self.model: InferenceSession = None
+        self.model_name: str = model_name
+        self.cache_dir: str = cache_dir
+        self.threads: int = threads
+        self.providers: Sequence[OnnxProvider] = providers
 
-    def _load_tokenizer(self, model_name: str, cache_dir: str = None) -> Tokenizer:
-        tokenizer = Tokenizer(BPE())
-        tokenizer.pre_tokenizer = Whitespace()
-        tokenizer.post_processor = TemplateProcessing(
-            single="[CLS] $A [SEP]",
-            pair="[CLS] $A [SEP] $B:1 [SEP]:1",
-            special_tokens=[
-                ("[CLS]", 1),
-                ("[SEP]", 2),
-            ],
+    def load_onnx_model(
+        self,
+        model_dir: Path,
+        model_file: str,
+        threads: Optional[int],
+        providers: Optional[Sequence[OnnxProvider]] = None,
+    ) -> None:
+        super().load_onnx_model(
+            model_dir=model_dir,
+            model_file=model_file,
+            threads=threads,
+            providers=providers,
         )
-        return tokenizer
-    
-    def _load_model(self, model_name: str, cache_dir: str = None, providers: Sequence[OnnxProvider] = None) -> InferenceSession:
-        model_path = f"{cache_dir}/{model_name}.onnx"
-        session_options = None
-        if threads:
-            session_options = InferenceSession.SessionOptions()
-            session_options.intra_op_num_threads = threads
-        return InferenceSession(model_path, providers=providers, sess_options=session_options)
+        self.tokenizer, _ = load_tokenizer(model_dir=model_dir)
+        self.configure_tokenizer()
+
+    def configure_tokenizer(self) -> None:
+        """Configures the tokenizer to properly handle query and document pairs."""
+        cls_token_id = self.tokenizer.token_to_id("[CLS]")
+        sep_token_id = self.tokenizer.token_to_id("[SEP]")
+
+        if cls_token_id is not None and sep_token_id is not None:
+            self.tokenizer.post_processor = TemplateProcessing(
+                single="[CLS] $A [SEP]",
+                pair="[CLS] $A [SEP] $B:1 [SEP]:1",
+                special_tokens=[
+                    ("[CLS]", cls_token_id),
+                    ("[SEP]", sep_token_id),
+                ],
+            )
+        else:
+            print("Tokenizer does not have [CLS] or [SEP] tokens. Skipping post-processing setup.")
 
     def onnx_embed(self, query: str, documents: Sequence[str]) -> Sequence[float]:
         tokenized_input = self.tokenizer.encode_batch([(query, doc) for doc in documents])
-        
+
         inputs = {
             "input_ids": [enc.ids for enc in tokenized_input],
-            "attention_mask": [enc.attention_mask for enc in tokenized_input]
+            "attention_mask": [enc.attention_mask for enc in tokenized_input],
         }
-        
+
+        if "token_type_ids" in [input.name for input in self.model.get_inputs()]:
+            inputs["token_type_ids"] = [enc.type_ids for enc in tokenized_input]
+
         outputs = self.model.run(None, inputs)
-        
+
         return outputs[0][:, 0].tolist()
 
     def get_tokenizer(self):
