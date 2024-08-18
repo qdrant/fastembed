@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Type
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Type, Union
 
 from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
 from fastembed.rerank.cross_encoder.onnx_text_cross_encoder import OnnxTextCrossEncoder
@@ -45,6 +45,6 @@ class TextCrossEncoder(TextCrossEncoderBase):
         )
 
     def rerank(
-        self, query: str, documents: Iterable[str], batch_size: int = 64, **kwargs
+        self, query: str, documents: Union[str, Iterable[str]], batch_size: int = 64, **kwargs
     ) -> Iterable[float]:
         return self.model.rerank(query, documents, batch_size=batch_size, **kwargs)

@@ -1,6 +1,5 @@
 from typing import List, Union, Iterable, Dict, Any, Sequence, Optional
 
-
 from fastembed.common import OnnxProvider
 from fastembed.rerank.cross_encoder.onnx_text_model import OnnxCrossEncoderModel
 from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
@@ -38,8 +37,6 @@ supported_onnx_models = [
 
 
 class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
-    ONNX_OUTPUT_NAMES = None
-
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Any]]:
         return supported_onnx_models
@@ -77,6 +74,7 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
         self,
         query: str,
         documents: Union[str, Iterable[str]],
+        batch_size: int = 64,
         **kwargs,
     ) -> Iterable[float]:
         """
@@ -85,10 +83,17 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
         Args:
             query (str): The query string.
             documents (Union[str, Iterable[str]]): A list of documents to be ranked.
+            batch_size (int): The number of documents to process at a time.
 
         Returns:
             Iterable[float]: A list of scores corresponding to the relevance of each document to the query.
         """
         if not documents:
             return []
-        return self.onnx_embed(query, documents)
+
+        scores = []
+        for i in range(0, len(documents), batch_size):
+            batch_documents = documents[i : i + batch_size]
+            scores.extend(self.onnx_embed(query, batch_documents))
+
+        return scores
