@@ -1,6 +1,7 @@
 from typing import Sequence, Optional
 from pathlib import Path
 
+from transformers import AutoTokenizer
 from tokenizers.processors import TemplateProcessing
 
 from fastembed.common.onnx_model import OnnxModel, OnnxProvider
@@ -46,16 +47,31 @@ class OnnxCrossEncoderModel(OnnxModel):
         )
 
     def onnx_embed(self, query: str, documents: Sequence[str]) -> Sequence[float]:
-        tokenized_input = self.tokenizer.encode_batch([(query, doc) for doc in documents])
+        if self.model_name == "BAAI/bge-reranker-base":
+            tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+            tokenized_input = tokenizer(
+                [(query, doc) for doc in documents],
+                padding=True,
+                truncation=True,
+                return_tensors="np",
+                max_length=512,
+            )
+            inputs = {
+                "input_ids": tokenized_input["input_ids"],
+                "attention_mask": tokenized_input["attention_mask"],
+            }
+            if "token_type_ids" in self.ONNX_INPUT_NAMES:
+                inputs["token_type_ids"] = tokenized_input["token_type_ids"]
+        else:
+            tokenized_input = self.tokenizer.encode_batch([(query, doc) for doc in documents])
 
-        inputs = {
-            "input_ids": [enc.ids for enc in tokenized_input],
-            "attention_mask": [enc.attention_mask for enc in tokenized_input],
-        }
+            inputs = {
+                "input_ids": [enc.ids for enc in tokenized_input],
+                "attention_mask": [enc.attention_mask for enc in tokenized_input],
+            }
+            if "token_type_ids" in self.ONNX_INPUT_NAMES:
+                inputs["token_type_ids"] = [enc.type_ids for enc in tokenized_input]
 
-        if "token_type_ids" in self.ONNX_INPUT_NAMES:
-            inputs["token_type_ids"] = [enc.type_ids for enc in tokenized_input]
-
-        outputs = self.model.run(None, inputs)
+        outputs = self.model.run(self.ONNX_OUTPUT_NAMES, inputs)
 
         return outputs[0][:, 0].tolist()

@@ -8,7 +8,7 @@ from fastembed.rerank.cross_encoder import TextCrossEncoder
 CANONICAL_SCORE_VALUES = {
     "Xenova/ms-marco-MiniLM-L-6-v2": np.array([8.500708, -2.541011]),
     "Xenova/ms-marco-MiniLM-L-12-v2": np.array([9.330912, -2.0380247]),
-    "BAAI/bge-reranker-base": np.array([6.72338772, -2.28010106]),
+    "BAAI/bge-reranker-base": np.array([6.15733337, -3.65939403]),
 }
 
 
