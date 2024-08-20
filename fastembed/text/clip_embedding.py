@@ -10,7 +10,7 @@ supported_clip_models = [
     {
         "model": "Qdrant/clip-ViT-B-32-text",
         "dim": 512,
-        "description": "CLIP text encoder",
+        "description": "Text embeddings, Multimodal (text&image), English, 77 input tokens truncation, Prefixes for queries/documents: not necessary, 2021 year",
         "size_in_GB": 0.25,
         "sources": {
             "hf": "Qdrant/clip-ViT-B-32-text",
