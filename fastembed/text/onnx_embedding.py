@@ -153,7 +153,7 @@ supported_onnx_models = [
     {
         "model": "answerdotai/answerai-colbert-small-v1",
         "dim": 384,
-        "description": "answerai-colbert-small-v1 is a new, proof-of-concept model by Answer.AI, showing the strong performance multi-vector models with the new JaColBERTv2.5 training recipe and some extra tweaks can reach, even with just 33 million parameters.",
+        "description": "Small, fast and accurate JaColBERTv2.5-based model trained on question answering.",
         "size_in_GB": 0.13,
         "sources": {
             "hf": "answerdotai/answerai-colbert-small-v1",
