@@ -150,6 +150,16 @@ supported_onnx_models = [
         },
         "model_file": "onnx/model.onnx",
     },
+    {
+        "model": "answerdotai/answerai-colbert-small-v1",
+        "dim": 384,
+        "description": "answerai-colbert-small-v1 is a new, proof-of-concept model by Answer.AI, showing the strong performance multi-vector models with the new JaColBERTv2.5 training recipe and some extra tweaks can reach, even with just 33 million parameters.",
+        "size_in_GB": 0.13,
+        "sources": {
+            "hf": "answerdotai/answerai-colbert-small-v1",
+        },
+        "model_file": "onnx/model.onnx",
+    },
 ]
 
 
@@ -244,9 +254,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
         """
         return onnx_input
 
-    def _post_process_onnx_output(
-        self, output: OnnxOutputContext
-    ) -> Iterable[np.ndarray]:
+    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
         embeddings = output.model_output
         return normalize(embeddings[:, 0]).astype(np.float32)
 
@@ -258,6 +266,4 @@ class OnnxTextEmbeddingWorker(TextEmbeddingWorker):
         cache_dir: str,
         **kwargs,
     ) -> OnnxTextEmbedding:
-        return OnnxTextEmbedding(
-            model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs
-        )
+        return OnnxTextEmbedding(model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs)
