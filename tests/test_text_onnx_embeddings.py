@@ -83,7 +83,6 @@ def test_embedding():
         dim = model_desc["dim"]
 
         model = TextEmbedding(model_name=model_desc["model"])
-
         docs = ["hello world", "flag embedding"]
         embeddings = list(model.embed(docs))
         embeddings = np.stack(embeddings, axis=0)
