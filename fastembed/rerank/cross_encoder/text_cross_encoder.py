@@ -2,12 +2,14 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Type, Union
 
 from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
 from fastembed.rerank.cross_encoder.onnx_text_cross_encoder import OnnxTextCrossEncoder
+from fastembed.rerank.cross_encoder.baai_text_cross_encoder import BAAITextCrossEncoder
 from fastembed.common import OnnxProvider
 
 
 class TextCrossEncoder(TextCrossEncoderBase):
     CROSS_ENCODER_REGISTRY: List[Type[TextCrossEncoderBase]] = [
         OnnxTextCrossEncoder,
+        BAAITextCrossEncoder,
     ]
 
     @classmethod

@@ -5,32 +5,21 @@ from fastembed.rerank.cross_encoder.onnx_text_model import OnnxCrossEncoderModel
 from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
 from fastembed.common.utils import define_cache_dir
 
-supported_onnx_models = [
-    {
-        "model": "Xenova/ms-marco-MiniLM-L-6-v2",
-        "size_in_GB": 0.08,
-        "sources": {
-            "hf": "Xenova/ms-marco-MiniLM-L-6-v2",
-        },
-        "model_file": "onnx/model.onnx",
-        "description": "MiniLM-L-6-v2 model optimized for re-ranking tasks.",
-    },
-    {
-        "model": "Xenova/ms-marco-MiniLM-L-12-v2",
-        "size_in_GB": 0.12,
-        "sources": {
-            "hf": "Xenova/ms-marco-MiniLM-L-12-v2",
-        },
-        "model_file": "onnx/model.onnx",
-        "description": "MiniLM-L-12-v2 model optimized for re-ranking tasks.",
-    },
-]
 
-
-class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
+class BAAITextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Any]]:
-        return supported_onnx_models
+        return [
+            {
+                "model": "BAAI/bge-reranker-base",
+                "size_in_GB": 1.04,
+                "sources": {
+                    "hf": "BAAI/bge-reranker-base",
+                },
+                "model_file": "onnx/model.onnx",
+                "description": "BGE reranker base model for cross-encoder re-ranking.",
+            }
+        ]
 
     def __init__(
         self,
@@ -68,17 +57,6 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
         batch_size: int = 64,
         **kwargs,
     ) -> Iterable[float]:
-        """
-        Reranks the provided documents based on their relevance to the query using the cross-encoder model.
-
-        Args:
-            query (str): The query string.
-            documents (Union[str, Iterable[str]]): A list of documents to be ranked.
-            batch_size (int): The number of documents to process at a time.
-
-        Returns:
-            Iterable[float]: A list of scores corresponding to the relevance of each document to the query.
-        """
         if not documents:
             return []
 
