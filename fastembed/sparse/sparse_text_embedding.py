@@ -7,7 +7,8 @@ from fastembed.sparse.sparse_embedding_base import (
     SparseEmbedding,
     SparseTextEmbeddingBase,
 )
-from fastembed.sparse.splade_pp import SpladePP
+from fastembed.sparse.splade_pp import SpladePP, deprecated_models
+import warnings
 
 
 class SparseTextEmbedding(SparseTextEmbeddingBase):
@@ -50,13 +51,19 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
         **kwargs,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
+        if model_name in deprecated_models:
+            warnings.warn(
+                "We made a terrible mistake in naming of model. "
+                "The right spelling is prithivida/Splade_PP_en_v1. "
+                "Support of this type will be removed soon, please fix the model_name",
+                DeprecationWarning,
+            )
+
+            model_name = deprecated_models[model_name]
 
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
             supported_models = EMBEDDING_MODEL_TYPE.list_supported_models()
-            if any(
-                model_name.lower() == model["model"].lower()
-                for model in supported_models
-            ):
+            if any(model_name.lower() == model["model"].lower() for model in supported_models):
                 self.model = EMBEDDING_MODEL_TYPE(
                     model_name,
                     cache_dir,
@@ -95,9 +102,7 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
         """
         yield from self.model.embed(documents, batch_size, parallel, **kwargs)
 
-    def query_embed(
-        self, query: Union[str, Iterable[str]], **kwargs
-    ) -> Iterable[SparseEmbedding]:
+    def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> Iterable[SparseEmbedding]:
         """
         Embeds queries
 
