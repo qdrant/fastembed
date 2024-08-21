@@ -153,7 +153,7 @@ supported_onnx_models = [
     {
         "model": "answerdotai/answerai-colbert-small-v1",
         "dim": 384,
-        "description": "Small, fast and accurate JaColBERTv2.5-based model trained on question answering.",
+        "description": "Text embeddings, Unimodal (text), Multilingual (~100 languages), 512 input tokens truncation, 2024 year",
         "size_in_GB": 0.13,
         "sources": {
             "hf": "answerdotai/answerai-colbert-small-v1",
