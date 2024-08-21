@@ -10,7 +10,6 @@ from fastembed.sparse.sparse_embedding_base import (
 )
 from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
 
-deprecated_models = {"prithvida/Splade_PP_en_v1": "prithivida/Splade_PP_en_v1"}
 supported_splade_models = [
     {
         "model": "prithivida/Splade_PP_en_v1",

@@ -7,7 +7,7 @@ from fastembed.sparse.sparse_embedding_base import (
     SparseEmbedding,
     SparseTextEmbeddingBase,
 )
-from fastembed.sparse.splade_pp import SpladePP, deprecated_models
+from fastembed.sparse.splade_pp import SpladePP
 import warnings
 
 
@@ -51,15 +51,13 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
         **kwargs,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
-        if model_name in deprecated_models:
+        if model_name == "prithvida/Splade_PP_en_v1":
             warnings.warn(
-                "We made a terrible mistake in naming of model. "
                 "The right spelling is prithivida/Splade_PP_en_v1. "
-                "Support of this type will be removed soon, please fix the model_name",
+                "Support of this name will be removed soon, please fix the model_name",
                 DeprecationWarning,
             )
-
-            model_name = deprecated_models[model_name]
+            model_name = "prithivida/Splade_PP_en_v1"
 
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
             supported_models = EMBEDDING_MODEL_TYPE.list_supported_models()
