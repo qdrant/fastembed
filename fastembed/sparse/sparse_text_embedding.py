@@ -8,6 +8,7 @@ from fastembed.sparse.sparse_embedding_base import (
     SparseTextEmbeddingBase,
 )
 from fastembed.sparse.splade_pp import SpladePP
+import warnings
 
 
 class SparseTextEmbedding(SparseTextEmbeddingBase):
@@ -50,13 +51,17 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
         **kwargs,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
+        if model_name == "prithvida/Splade_PP_en_v1":
+            warnings.warn(
+                "The right spelling is prithivida/Splade_PP_en_v1. "
+                "Support of this name will be removed soon, please fix the model_name",
+                DeprecationWarning,
+            )
+            model_name = "prithivida/Splade_PP_en_v1"
 
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
             supported_models = EMBEDDING_MODEL_TYPE.list_supported_models()
-            if any(
-                model_name.lower() == model["model"].lower()
-                for model in supported_models
-            ):
+            if any(model_name.lower() == model["model"].lower() for model in supported_models):
                 self.model = EMBEDDING_MODEL_TYPE(
                     model_name,
                     cache_dir,
@@ -95,9 +100,7 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
         """
         yield from self.model.embed(documents, batch_size, parallel, **kwargs)
 
-    def query_embed(
-        self, query: Union[str, Iterable[str]], **kwargs
-    ) -> Iterable[SparseEmbedding]:
+    def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> Iterable[SparseEmbedding]:
         """
         Embeds queries
 
