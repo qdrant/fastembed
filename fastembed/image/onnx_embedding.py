@@ -32,7 +32,7 @@ supported_onnx_models = [
     {
         "model": "Qdrant/Unicom-ViT-B-16",
         "dim": 768,
-        "description": "Image embeddings (more detailed than Unicom-ViT-B-32), Multimodal (text&image - better than clip-ViT-B-32-vision for Image-to-Image search), Preprocessing handled by config, Any PIL file format, 2023 year",
+        "description": "Image embeddings (more detailed than Unicom-ViT-B-32), Multimodal (text&image), 2023 year",
         "size_in_GB": 0.82,
         "sources": {
             "hf": "Qdrant/Unicom-ViT-B-16",
