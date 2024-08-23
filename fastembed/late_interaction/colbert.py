@@ -25,7 +25,7 @@ supported_colbert_models = [
     },
     {
         "model": "answerdotai/answerai-colbert-small-v1",
-        "dim": 384,
+        "dim": 96,
         "description": "Text embeddings, Unimodal (text), Multilingual (~100 languages), 512 input tokens truncation, 2024 year",
         "size_in_GB": 0.13,
         "sources": {
