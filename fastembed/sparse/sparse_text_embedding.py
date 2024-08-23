@@ -56,6 +56,7 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
                 "The right spelling is prithivida/Splade_PP_en_v1. "
                 "Support of this name will be removed soon, please fix the model_name",
                 DeprecationWarning,
+                stacklevel=2,
             )
             model_name = "prithivida/Splade_PP_en_v1"
 
