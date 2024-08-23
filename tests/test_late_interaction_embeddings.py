@@ -336,7 +336,7 @@ def test_batch_embedding():
 
         for value in result:
             token_num, abridged_dim = expected_result.shape
-            assert np.allclose(value[:, :abridged_dim], expected_result, atol=10e-3), print(
+            assert np.allclose(value[:, :abridged_dim], expected_result, atol=10e-4), print(
                 np.abs(value[:, :abridged_dim] - expected_result)
             )
 
