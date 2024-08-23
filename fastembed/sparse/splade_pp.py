@@ -21,6 +21,16 @@ supported_splade_models = [
         },
         "model_file": "model.onnx",
     },
+    {
+        "model": "prithvida/Splade_PP_en_v1",
+        "vocab_size": 30522,
+        "description": "Independent Implementation of SPLADE++ Model for English",
+        "size_in_GB": 0.532,
+        "sources": {
+            "hf": "Qdrant/SPLADE_PP_en_v1",
+        },
+        "model_file": "model.onnx",
+    },
 ]
 
 
