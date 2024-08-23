@@ -22,7 +22,7 @@ supported_onnx_models = [
     {
         "model": "Qdrant/resnet50-onnx",
         "dim": 2048,
-        "description": "Image embeddings, Unimodal (image), Preprocessing handled by config, Any PIL file format, 2016 year",
+        "description": "Image embeddings, Unimodal (image), 2016 year",
         "size_in_GB": 0.1,
         "sources": {
             "hf": "Qdrant/resnet50-onnx",
