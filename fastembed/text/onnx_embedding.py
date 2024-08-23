@@ -150,16 +150,6 @@ supported_onnx_models = [
         },
         "model_file": "onnx/model.onnx",
     },
-    {
-        "model": "answerdotai/answerai-colbert-small-v1",
-        "dim": 384,
-        "description": "Text embeddings, Unimodal (text), Multilingual (~100 languages), 512 input tokens truncation, 2024 year",
-        "size_in_GB": 0.13,
-        "sources": {
-            "hf": "answerdotai/answerai-colbert-small-v1",
-        },
-        "model_file": "onnx/model.onnx",
-    },
 ]
 
 

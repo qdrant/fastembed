@@ -61,15 +61,6 @@ CANONICAL_VECTOR_VALUES = {
     ),
     "snowflake/snowflake-arctic-embed-l": np.array([0.0189, -0.0673, 0.0183, 0.0124, 0.0146]),
     "Qdrant/clip-ViT-B-32-text": np.array([0.0083, 0.0103, -0.0138, 0.0199, -0.0069]),
-    "answerdotai/answerai-colbert-small-v1": np.array(
-        [
-            -0.0173,
-            -0.0106,
-            0.01893,
-            -0.0306,
-            0.01176,
-        ]
-    ),
 }
 
 
