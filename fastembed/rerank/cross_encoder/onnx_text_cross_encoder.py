@@ -24,6 +24,15 @@ supported_onnx_models = [
         "model_file": "onnx/model.onnx",
         "description": "MiniLM-L-12-v2 model optimized for re-ranking tasks.",
     },
+    {
+        "model": "BAAI/bge-reranker-base",
+        "size_in_GB": 1.04,
+        "sources": {
+            "hf": "BAAI/bge-reranker-base",
+        },
+        "model_file": "onnx/model.onnx",
+        "description": "BGE reranker base model for cross-encoder re-ranking.",
+    },
 ]
 
 
@@ -68,17 +77,6 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
         batch_size: int = 64,
         **kwargs,
     ) -> Iterable[float]:
-        """
-        Reranks the provided documents based on their relevance to the query using the cross-encoder model.
-
-        Args:
-            query (str): The query string.
-            documents (Union[str, Iterable[str]]): A list of documents to be ranked.
-            batch_size (int): The number of documents to process at a time.
-
-        Returns:
-            Iterable[float]: A list of scores corresponding to the relevance of each document to the query.
-        """
         if not documents:
             return []
 

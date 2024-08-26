@@ -6,9 +6,6 @@ from fastembed.common.preprocessor_utils import load_tokenizer
 
 
 class OnnxCrossEncoderModel(OnnxModel):
-    ONNX_INPUT_NAMES = None
-    ONNX_OUTPUT_NAMES = None
-
     def load_onnx_model(
         self,
         model_dir: Path,
@@ -23,13 +20,6 @@ class OnnxCrossEncoderModel(OnnxModel):
             providers=providers,
         )
         self.tokenizer, _ = load_tokenizer(model_dir=model_dir)
-        self.ONNX_INPUT_NAMES = [input_meta.name for input_meta in self.model.get_inputs()]
-
-    def configure_tokenizer(self) -> None:
-        """This method should be implemented in child classes."""
-        raise NotImplementedError(
-            "The method `configure_tokenizer` must be implemented in the subclass."
-        )
 
     def onnx_embed(self, query: str, documents: Sequence[str]) -> Sequence[float]:
         tokenized_input = self.tokenizer.encode_batch([(query, doc) for doc in documents])
@@ -39,9 +29,10 @@ class OnnxCrossEncoderModel(OnnxModel):
             "attention_mask": [enc.attention_mask for enc in tokenized_input],
         }
 
-        if "token_type_ids" in self.ONNX_INPUT_NAMES:
-            inputs["token_type_ids"] = [enc.type_ids for enc in tokenized_input]
+        for input_name in self.model.get_inputs():
+            if input_name.name == "token_type_ids":
+                inputs["token_type_ids"] = [enc.type_ids for enc in tokenized_input]
 
-        outputs = self.model.run(self.ONNX_OUTPUT_NAMES, inputs)
+        outputs = self.model.run(None, inputs)
 
         return outputs[0][:, 0].tolist()
