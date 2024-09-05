@@ -219,7 +219,7 @@ class Bm25(SparseTextEmbeddingBase):
             if token in self.punctuation:
                 continue
 
-            if token in self.stopwords:
+            if token.lower() in self.stopwords:
                 continue
 
             stemmed_token = self.stemmer.stemWord(token)
