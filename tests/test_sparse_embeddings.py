@@ -79,19 +79,19 @@ def test_parallel_processing():
     sparse_embeddings = list(model.embed(docs, batch_size=10, parallel=None))
 
     assert (
-        len(sparse_embeddings)
-        == len(sparse_embeddings_duo)
-        == len(sparse_embeddings_all)
-        == len(docs)
+            len(sparse_embeddings)
+            == len(sparse_embeddings_duo)
+            == len(sparse_embeddings_all)
+            == len(docs)
     )
 
     for sparse_embedding, sparse_embedding_duo, sparse_embedding_all in zip(
-        sparse_embeddings, sparse_embeddings_duo, sparse_embeddings_all
+            sparse_embeddings, sparse_embeddings_duo, sparse_embeddings_all
     ):
         assert (
-            sparse_embedding.indices.tolist()
-            == sparse_embedding_duo.indices.tolist()
-            == sparse_embedding_all.indices.tolist()
+                sparse_embedding.indices.tolist()
+                == sparse_embedding_duo.indices.tolist()
+                == sparse_embedding_all.indices.tolist()
         )
         assert np.allclose(
             sparse_embedding.values, sparse_embedding_duo.values, atol=1e-3
@@ -99,3 +99,43 @@ def test_parallel_processing():
         assert np.allclose(
             sparse_embedding.values, sparse_embedding_all.values, atol=1e-3
         )
+
+
+from fastembed.sparse.bm25 import Bm25
+
+
+@pytest.fixture
+def bm25_instance():
+    return Bm25("Qdrant/bm25", language="english")
+
+
+def test_stem_with_stopwords_and_punctuation(bm25_instance):
+    # Setup
+    bm25_instance.stopwords = set(["the", "is", "a"])
+    bm25_instance.punctuation = set([".", ",", "!"])
+
+    # Test data
+    tokens = ["The", "quick", "brown", "fox", "is", "a", "test", "sentence", ".", "!"]
+
+    # Execute
+    result = bm25_instance._stem(tokens)
+
+    # Assert
+    expected = ["quick", "brown", "fox", "test", "sentenc"]
+    assert result == expected, f"Expected {expected}, but got {result}"
+
+
+def test_stem_case_insensitive_stopwords(bm25_instance):
+    # Setup
+    bm25_instance.stopwords = set(["the", "is", "a"])
+    bm25_instance.punctuation = set([".", ",", "!"])
+
+    # Test data
+    tokens = ["THE", "Quick", "Brown", "Fox", "IS", "A", "Test", "Sentence", ".", "!"]
+
+    # Execute
+    result = bm25_instance._stem(tokens)
+
+    # Assert
+    expected = ["Quick", "Brown", "Fox", "Test", "Sentenc"]
+    assert result == expected, f"Expected {expected}, but got {result}"
