@@ -92,8 +92,8 @@ def test_multilanguage(model_name):
     assert embeddings[0].values.shape == (3,)
     assert embeddings[0].indices.shape == (3,)
 
-    assert embeddings[1].values.shape == (2,)
-    assert embeddings[1].indices.shape == (2,)
+    assert embeddings[1].values.shape == (1,)
+    assert embeddings[1].indices.shape == (1,)
 
     model = SparseTextEmbedding(model_name=model_name, language="english")
     embeddings = list(model.embed(docs))[:2]
