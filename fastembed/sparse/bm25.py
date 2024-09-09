@@ -1,5 +1,4 @@
 import os
-import string
 from collections import defaultdict
 from multiprocessing import get_all_start_methods
 from pathlib import Path
@@ -9,7 +8,12 @@ import mmh3
 import numpy as np
 from snowballstemmer import stemmer as get_stemmer
 
-from fastembed.common.utils import define_cache_dir, iter_batch
+from fastembed.common.utils import (
+    define_cache_dir,
+    iter_batch,
+    get_all_punctuation,
+    replace_punctuation,
+)
 from fastembed.parallel_processor import ParallelWorkerPool, Worker
 from fastembed.sparse.sparse_embedding_base import (
     SparseEmbedding,
@@ -120,10 +124,14 @@ class Bm25(SparseTextEmbeddingBase):
             model_description, self.cache_dir, local_files_only=self._local_files_only
         )
 
-        self.punctuation = set(string.punctuation)
+        self.punctuation = set(get_all_punctuation())
         self.stopwords = set(self._load_stopwords(model_dir, self.language))
+
         self.stemmer = get_stemmer(language)
         self.tokenizer = WordTokenizer
+
+        self.num_terms: int = 0
+        self.token_accum: int = 0
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Any]]:
@@ -216,13 +224,10 @@ class Bm25(SparseTextEmbeddingBase):
     def _stem(self, tokens: List[str]) -> List[str]:
         stemmed_tokens = []
         for token in tokens:
-            if token in self.punctuation:
-                continue
-
             if token.lower() in self.stopwords:
                 continue
 
-            stemmed_token = self.stemmer.stemWord(token)
+            stemmed_token = self.stemmer.stemWord(token.lower())
 
             if stemmed_token:
                 stemmed_tokens.append(stemmed_token)
@@ -234,6 +239,7 @@ class Bm25(SparseTextEmbeddingBase):
     ) -> List[SparseEmbedding]:
         embeddings = []
         for document in documents:
+            document = replace_punctuation(document, self.punctuation)
             tokens = self.tokenizer.tokenize(document)
             stemmed_tokens = self._stem(tokens)
             token_id2value = self._term_frequency(stemmed_tokens)
@@ -282,6 +288,7 @@ class Bm25(SparseTextEmbeddingBase):
             query = [query]
 
         for text in query:
+            text = replace_punctuation(text, self.punctuation)
             tokens = self.tokenizer.tokenize(text)
             stemmed_tokens = self._stem(tokens)
             token_ids = np.array(

@@ -3,7 +3,8 @@ import tempfile
 from itertools import islice
 from pathlib import Path
 from typing import Generator, Iterable, Optional, Union
-
+import unicodedata
+import sys
 import numpy as np
 
 
@@ -41,3 +42,13 @@ def define_cache_dir(cache_dir: Optional[str] = None) -> Path:
     cache_path.mkdir(parents=True, exist_ok=True)
 
     return cache_path
+
+
+def get_all_punctuation():
+    return set(
+        chr(i) for i in range(sys.maxunicode) if unicodedata.category(chr(i)).startswith("P")
+    )
+
+
+def replace_punctuation(text, punctuation):
+    return "".join(" " if char in punctuation else char for char in text)
