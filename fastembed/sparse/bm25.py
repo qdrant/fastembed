@@ -241,6 +241,7 @@ class Bm25(SparseTextEmbeddingBase):
         documents: List[str],
     ) -> List[SparseEmbedding]:
         embeddings = []
+        print(self.punctuation)
         for document in documents:
             document = replace_punctuation(document, self.punctuation)
             tokens = self.tokenizer.tokenize(document)
