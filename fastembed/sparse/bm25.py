@@ -224,6 +224,9 @@ class Bm25(SparseTextEmbeddingBase):
     def _stem(self, tokens: List[str]) -> List[str]:
         stemmed_tokens = []
         for token in tokens:
+            if token in self.punctuation:
+                continue
+
             if token.lower() in self.stopwords:
                 continue
 
