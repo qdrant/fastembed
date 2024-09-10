@@ -130,9 +130,6 @@ class Bm25(SparseTextEmbeddingBase):
         self.stemmer = get_stemmer(language)
         self.tokenizer = WordTokenizer
 
-        self.num_terms: int = 0
-        self.token_accum: int = 0
-
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Any]]:
         """Lists the supported models.
@@ -230,6 +227,9 @@ class Bm25(SparseTextEmbeddingBase):
             if token.lower() in self.stopwords:
                 continue
 
+            if len(token) > 40:
+                continue
+
             stemmed_token = self.stemmer.stemWord(token.lower())
 
             if stemmed_token:
@@ -242,9 +242,10 @@ class Bm25(SparseTextEmbeddingBase):
     ) -> List[SparseEmbedding]:
         embeddings = []
         for document in documents:
-            document = replace_punctuation(document, self.punctuation)
+            # document = replace_punctuation(document, self.punctuation)
             tokens = self.tokenizer.tokenize(document)
             stemmed_tokens = self._stem(tokens)
+            # print(stemmed_tokens)
             token_id2value = self._term_frequency(stemmed_tokens)
             embeddings.append(SparseEmbedding.from_dict(token_id2value))
         return embeddings
