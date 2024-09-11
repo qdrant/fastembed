@@ -242,10 +242,9 @@ class Bm25(SparseTextEmbeddingBase):
     ) -> List[SparseEmbedding]:
         embeddings = []
         for document in documents:
-            # document = replace_punctuation(document, self.punctuation)
+            document = replace_punctuation(document, set([".", ",", "/", "''", "``"]))
             tokens = self.tokenizer.tokenize(document)
             stemmed_tokens = self._stem(tokens)
-            # print(stemmed_tokens)
             token_id2value = self._term_frequency(stemmed_tokens)
             embeddings.append(SparseEmbedding.from_dict(token_id2value))
         return embeddings
