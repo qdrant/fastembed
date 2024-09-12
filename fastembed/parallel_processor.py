@@ -73,7 +73,9 @@ def _worker(
         # See:
         # https://docs.python.org/3.6/library/multiprocessing.html?highlight=process#pipes-and-queues
         # https://docs.python.org/3.6/library/multiprocessing.html?highlight=process#programming-guidelines
+        input_queue.close()
         output_queue.close()
+        input_queue.join_thread()
         output_queue.join_thread()
 
         with num_active_workers.get_lock():
@@ -177,8 +179,11 @@ class ParallelWorkerPool:
         finally:
             assert self.input_queue is not None, "Input queue is None"
             assert self.output_queue is not None, "Output queue is None"
+            self.join()
             self.input_queue.close()
             self.output_queue.close()
+            self.input_queue.join_thread()
+            self.output_queue.join_thread()
 
     def check_worker_health(self) -> None:
         """
@@ -188,7 +193,7 @@ class ParallelWorkerPool:
             if not process.is_alive() and process.exitcode != 0:
                 self.join_or_terminate()
                 raise RuntimeError(
-                    f"Worker (PID: {process.pid} terminated unexpectedly with code {process.exitcode}"
+                    f"Worker PID: {process.pid} terminated unexpectedly with code {process.exitcode}"
                 )
 
     def join_or_terminate(self, timeout: Optional[int] = 1) -> None:
@@ -201,12 +206,10 @@ class ParallelWorkerPool:
             process.join(timeout=timeout)
             if process.is_alive():
                 process.terminate()
-        self.processes.clear()
 
     def join(self) -> None:
         for process in self.processes:
             process.join()
-        self.processes.clear()
 
     def __del__(self) -> None:
         """
