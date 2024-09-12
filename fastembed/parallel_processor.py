@@ -206,10 +206,12 @@ class ParallelWorkerPool:
             process.join(timeout=timeout)
             if process.is_alive():
                 process.terminate()
+        self.processes.clear()
 
     def join(self) -> None:
         for process in self.processes:
             process.join()
+        self.processes.clear()
 
     def __del__(self) -> None:
         """
@@ -224,4 +226,3 @@ class ParallelWorkerPool:
         for process in self.processes:
             if process.is_alive():
                 process.terminate()
-        self.processes.clear()
