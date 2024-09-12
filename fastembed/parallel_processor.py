@@ -93,7 +93,7 @@ class ParallelWorkerPool:
         self.ctx: BaseContext = get_context(start_method)
         self.processes: List[BaseProcess] = []
         self.queue_size = self.num_workers * max_internal_batch_size
-
+        self.emergency_shutdown = False
         self.num_active_workers: Optional[BaseValue] = None
 
     def start(self, **kwargs: Any) -> None:
@@ -182,8 +182,12 @@ class ParallelWorkerPool:
             self.join()
             self.input_queue.close()
             self.output_queue.close()
-            self.input_queue.join_thread()
-            self.output_queue.join_thread()
+            if self.emergency_shutdown:
+                self.input_queue.cancel_join_thread()
+                self.output_queue.cancel_join_thread()
+            else:
+                self.input_queue.join_thread()
+                self.output_queue.join_thread()
 
     def check_worker_health(self) -> None:
         """
@@ -191,6 +195,7 @@ class ParallelWorkerPool:
         """
         for process in self.processes:
             if not process.is_alive() and process.exitcode != 0:
+                self.emergency_shutdown = True
                 self.join_or_terminate()
                 raise RuntimeError(
                     f"Worker PID: {process.pid} terminated unexpectedly with code {process.exitcode}"
