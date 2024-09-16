@@ -1,3 +1,4 @@
+import os
 import shutil
 
 import pytest
@@ -46,6 +47,8 @@ CANONICAL_COLUMN_VALUES = {
 
 docs = ["Hello World"]
 
+CI = os.getenv("CI") == "true"
+
 
 def test_batch_embedding():
     docs_to_embed = docs * 10
@@ -57,6 +60,9 @@ def test_batch_embedding():
 
         for i, value in enumerate(result.values):
             assert pytest.approx(value, abs=0.001) == expected_result["values"][i]
+
+    if CI:
+        shutil.rmtree("models/")
 
 
 def test_single_embedding():
@@ -70,6 +76,9 @@ def test_single_embedding():
 
             for i, value in enumerate(result.values):
                 assert pytest.approx(value, abs=0.001) == expected_result["values"][i]
+
+    if CI:
+        shutil.rmtree("models/")
 
 
 def test_parallel_processing():
@@ -99,6 +108,9 @@ def test_parallel_processing():
         assert np.allclose(sparse_embedding.values, sparse_embedding_duo.values, atol=1e-3)
         assert np.allclose(sparse_embedding.values, sparse_embedding_all.values, atol=1e-3)
 
+    if CI:
+        shutil.rmtree("models/")
+
 
 @pytest.fixture
 def bm25_instance():
@@ -120,6 +132,9 @@ def test_stem_with_stopwords_and_punctuation(bm25_instance):
     expected = ["quick", "brown", "fox", "test", "sentenc"]
     assert result == expected, f"Expected {expected}, but got {result}"
 
+    if CI:
+        shutil.rmtree("models/")
+
 
 def test_stem_case_insensitive_stopwords(bm25_instance):
     # Setup
@@ -135,4 +150,6 @@ def test_stem_case_insensitive_stopwords(bm25_instance):
     # Assert
     expected = ["Quick", "Brown", "Fox", "Test", "Sentenc"]
     assert result == expected, f"Expected {expected}, but got {result}"
-    shutil.rmtree("models/")
+
+    if CI:
+        shutil.rmtree("models/")

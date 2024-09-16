@@ -64,12 +64,12 @@ CANONICAL_VECTOR_VALUES = {
     "Qdrant/clip-ViT-B-32-text": np.array([0.0083, 0.0103, -0.0138, 0.0199, -0.0069]),
 }
 
+CI = os.getenv("CI") == "true"
+
 
 def test_embedding():
-    is_ci = os.getenv("CI")
-
     for model_desc in TextEmbedding.list_supported_models():
-        if not is_ci and model_desc["size_in_GB"] > 1:
+        if not CI and model_desc["size_in_GB"] > 1:
             continue
 
         dim = model_desc["dim"]
@@ -85,6 +85,9 @@ def test_embedding():
             embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3
         ), model_desc["model"]
 
+        if CI:
+            shutil.rmtree("models/")
+
 
 @pytest.mark.parametrize(
     "n_dims,model_name",
@@ -98,6 +101,9 @@ def test_batch_embedding(n_dims, model_name):
     embeddings = np.stack(embeddings, axis=0)
 
     assert embeddings.shape == (200, n_dims)
+
+    if CI:
+        shutil.rmtree("models/")
 
 
 @pytest.mark.parametrize(
@@ -120,4 +126,6 @@ def test_parallel_processing(n_dims, model_name):
     assert embeddings.shape == (200, n_dims)
     assert np.allclose(embeddings, embeddings_2, atol=1e-3)
     assert np.allclose(embeddings, embeddings_3, atol=1e-3)
-    shutil.rmtree("models/")
+
+    if CI:
+        shutil.rmtree("models/")

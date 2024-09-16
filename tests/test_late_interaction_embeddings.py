@@ -1,3 +1,4 @@
+import os
 import shutil
 
 import numpy as np
@@ -103,6 +104,8 @@ CANONICAL_QUERY_VALUES = {
     ),
 }
 
+CI = os.getenv("CI") == "true"
+
 docs = ["Hello World"]
 
 
@@ -118,6 +121,9 @@ def test_batch_embedding():
             token_num, abridged_dim = expected_result.shape
             assert np.allclose(value[:, :abridged_dim], expected_result, atol=10e-4)
 
+    if CI:
+        shutil.rmtree("models/")
+
 
 def test_single_embedding():
     docs_to_embed = docs
@@ -129,6 +135,9 @@ def test_single_embedding():
         token_num, abridged_dim = expected_result.shape
         assert np.allclose(result[:, :abridged_dim], expected_result, atol=10e-4)
 
+    if CI:
+        shutil.rmtree("models/")
+
 
 def test_single_embedding_query():
     queries_to_embed = docs
@@ -139,6 +148,9 @@ def test_single_embedding_query():
         result = next(iter(model.query_embed(queries_to_embed)))
         token_num, abridged_dim = expected_result.shape
         assert np.allclose(result[:, :abridged_dim], expected_result, atol=10e-4)
+
+    if CI:
+        shutil.rmtree("models/")
 
 
 def test_parallel_processing():
@@ -157,4 +169,6 @@ def test_parallel_processing():
     assert embeddings.shape[0] == len(docs) and embeddings.shape[-1] == token_dim
     assert np.allclose(embeddings, embeddings_2, atol=1e-3)
     assert np.allclose(embeddings, embeddings_3, atol=1e-3)
-    shutil.rmtree("models/")
+
+    if CI:
+        shutil.rmtree("models/")

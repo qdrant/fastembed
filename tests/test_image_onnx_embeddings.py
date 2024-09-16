@@ -23,6 +23,8 @@ CANONICAL_VECTOR_VALUES = {
     ),
 }
 
+CI = os.getenv("CI") == "true"
+
 
 def test_embedding():
     is_ci = os.getenv("CI")
@@ -53,6 +55,9 @@ def test_embedding():
 
         assert np.allclose(embeddings[1], embeddings[2]), model_desc["model"]
 
+        if CI:
+            shutil.rmtree("models/")
+
 
 @pytest.mark.parametrize("n_dims,model_name", [(512, "Qdrant/clip-ViT-B-32-vision")])
 def test_batch_embedding(n_dims, model_name):
@@ -69,6 +74,9 @@ def test_batch_embedding(n_dims, model_name):
     embeddings = np.stack(embeddings, axis=0)
 
     assert embeddings.shape == (len(test_images) * n_images, n_dims)
+
+    if CI:
+        shutil.rmtree("models/")
 
 
 @pytest.mark.parametrize("n_dims,model_name", [(512, "Qdrant/clip-ViT-B-32-vision")])
@@ -94,4 +102,6 @@ def test_parallel_processing(n_dims, model_name):
     assert embeddings.shape == (n_images * len(test_images), n_dims)
     assert np.allclose(embeddings, embeddings_2, atol=1e-3)
     assert np.allclose(embeddings, embeddings_3, atol=1e-3)
-    shutil.rmtree("models/")
+
+    if CI:
+        shutil.rmtree("models/")

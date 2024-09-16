@@ -1,9 +1,12 @@
 import shutil
+import os
 
 import numpy as np
 import pytest
 
 from fastembed import SparseTextEmbedding
+
+CI = os.getenv("CI") == "true"
 
 
 @pytest.mark.parametrize("model_name", ["Qdrant/bm42-all-minilm-l6-v2-attentions", "Qdrant/bm25"])
@@ -64,6 +67,9 @@ def test_attention_embeddings(model_name):
         assert len(result.indices) == len(result.values)
         assert len(result.indices) == 2
 
+    if CI:
+        shutil.rmtree("models/")
+
 
 @pytest.mark.parametrize("model_name", ["Qdrant/bm42-all-minilm-l6-v2-attentions", "Qdrant/bm25"])
 def test_parallel_processing(model_name):
@@ -83,6 +89,9 @@ def test_parallel_processing(model_name):
         assert np.allclose(emb_1.indices, emb_3.indices)
         assert np.allclose(emb_1.values, emb_2.values)
         assert np.allclose(emb_1.values, emb_3.values)
+
+    if CI:
+        shutil.rmtree("models/")
 
 
 @pytest.mark.parametrize("model_name", ["Qdrant/bm25"])
@@ -104,4 +113,6 @@ def test_multilanguage(model_name):
 
     assert embeddings[1].values.shape == (4,)
     assert embeddings[1].indices.shape == (4,)
-    shutil.rmtree("models/")
+
+    if CI:
+        shutil.rmtree("models/")
