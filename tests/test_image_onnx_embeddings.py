@@ -1,3 +1,4 @@
+import shutil
 import os
 from io import BytesIO
 
@@ -32,7 +33,7 @@ def test_embedding():
 
         dim = model_desc["dim"]
 
-        model = ImageEmbedding(model_name=model_desc["model"])
+        model = ImageEmbedding(model_name=model_desc["model"], cache_dir="models")
 
         images = [
             TEST_MISC_DIR / "image.jpeg",
@@ -55,7 +56,7 @@ def test_embedding():
 
 @pytest.mark.parametrize("n_dims,model_name", [(512, "Qdrant/clip-ViT-B-32-vision")])
 def test_batch_embedding(n_dims, model_name):
-    model = ImageEmbedding(model_name=model_name)
+    model = ImageEmbedding(model_name=model_name, cache_dir="models")
     n_images = 32
     test_images = [
         TEST_MISC_DIR / "image.jpeg",
@@ -72,7 +73,7 @@ def test_batch_embedding(n_dims, model_name):
 
 @pytest.mark.parametrize("n_dims,model_name", [(512, "Qdrant/clip-ViT-B-32-vision")])
 def test_parallel_processing(n_dims, model_name):
-    model = ImageEmbedding(model_name=model_name)
+    model = ImageEmbedding(model_name=model_name, cache_dir="models")
 
     n_images = 32
     test_images = [
@@ -93,3 +94,4 @@ def test_parallel_processing(n_dims, model_name):
     assert embeddings.shape == (n_images * len(test_images), n_dims)
     assert np.allclose(embeddings, embeddings_2, atol=1e-3)
     assert np.allclose(embeddings, embeddings_3, atol=1e-3)
+    shutil.rmtree("models/")

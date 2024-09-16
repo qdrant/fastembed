@@ -1,3 +1,4 @@
+import shutil
 import os
 
 import numpy as np
@@ -73,7 +74,7 @@ def test_embedding():
 
         dim = model_desc["dim"]
 
-        model = TextEmbedding(model_name=model_desc["model"])
+        model = TextEmbedding(model_name=model_desc["model"], cache_dir="models")
         docs = ["hello world", "flag embedding"]
         embeddings = list(model.embed(docs))
         embeddings = np.stack(embeddings, axis=0)
@@ -90,7 +91,7 @@ def test_embedding():
     [(384, "BAAI/bge-small-en-v1.5"), (768, "jinaai/jina-embeddings-v2-base-en")],
 )
 def test_batch_embedding(n_dims, model_name):
-    model = TextEmbedding(model_name=model_name)
+    model = TextEmbedding(model_name=model_name, cache_dir="models")
 
     docs = ["hello world", "flag embedding"] * 100
     embeddings = list(model.embed(docs, batch_size=10))
@@ -104,7 +105,7 @@ def test_batch_embedding(n_dims, model_name):
     [(384, "BAAI/bge-small-en-v1.5"), (768, "jinaai/jina-embeddings-v2-base-en")],
 )
 def test_parallel_processing(n_dims, model_name):
-    model = TextEmbedding(model_name=model_name)
+    model = TextEmbedding(model_name=model_name, cache_dir="models")
 
     docs = ["hello world", "flag embedding"] * 100
     embeddings = list(model.embed(docs, batch_size=10, parallel=2))
@@ -119,3 +120,4 @@ def test_parallel_processing(n_dims, model_name):
     assert embeddings.shape == (200, n_dims)
     assert np.allclose(embeddings, embeddings_2, atol=1e-3)
     assert np.allclose(embeddings, embeddings_3, atol=1e-3)
+    shutil.rmtree("models/")

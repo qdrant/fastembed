@@ -1,3 +1,5 @@
+import shutil
+
 import numpy as np
 import pytest
 
@@ -6,7 +8,7 @@ from fastembed import SparseTextEmbedding
 
 @pytest.mark.parametrize("model_name", ["Qdrant/bm42-all-minilm-l6-v2-attentions", "Qdrant/bm25"])
 def test_attention_embeddings(model_name):
-    model = SparseTextEmbedding(model_name=model_name)
+    model = SparseTextEmbedding(model_name=model_name, cache_dir="models")
 
     output = list(
         model.query_embed(
@@ -65,7 +67,7 @@ def test_attention_embeddings(model_name):
 
 @pytest.mark.parametrize("model_name", ["Qdrant/bm42-all-minilm-l6-v2-attentions", "Qdrant/bm25"])
 def test_parallel_processing(model_name):
-    model = SparseTextEmbedding(model_name=model_name)
+    model = SparseTextEmbedding(model_name=model_name, cache_dir="models")
 
     docs = ["hello world", "attention embedding", "Mangez-vous vraiment des grenouilles?"] * 100
     embeddings = list(model.embed(docs, batch_size=10, parallel=2))
@@ -87,7 +89,7 @@ def test_parallel_processing(model_name):
 def test_multilanguage(model_name):
     docs = ["Mangez-vous vraiment des grenouilles?", "Je suis au lit"]
 
-    model = SparseTextEmbedding(model_name=model_name, language="french")
+    model = SparseTextEmbedding(model_name=model_name, language="french", cache_dir="models")
     embeddings = list(model.embed(docs))[:2]
     assert embeddings[0].values.shape == (3,)
     assert embeddings[0].indices.shape == (3,)
@@ -95,10 +97,11 @@ def test_multilanguage(model_name):
     assert embeddings[1].values.shape == (1,)
     assert embeddings[1].indices.shape == (1,)
 
-    model = SparseTextEmbedding(model_name=model_name, language="english")
+    model = SparseTextEmbedding(model_name=model_name, language="english", cache_dir="models")
     embeddings = list(model.embed(docs))[:2]
     assert embeddings[0].values.shape == (4,)
     assert embeddings[0].indices.shape == (4,)
 
     assert embeddings[1].values.shape == (4,)
     assert embeddings[1].indices.shape == (4,)
+    shutil.rmtree("models/")

@@ -1,3 +1,5 @@
+import shutil
+
 import pytest
 
 from fastembed.sparse.bm25 import Bm25
@@ -49,7 +51,7 @@ def test_batch_embedding():
     docs_to_embed = docs * 10
 
     for model_name, expected_result in CANONICAL_COLUMN_VALUES.items():
-        model = SparseTextEmbedding(model_name=model_name)
+        model = SparseTextEmbedding(model_name=model_name, cache_dir="models")
         result = next(iter(model.embed(docs_to_embed, batch_size=6)))
         assert result.indices.tolist() == expected_result["indices"]
 
@@ -59,7 +61,7 @@ def test_batch_embedding():
 
 def test_single_embedding():
     for model_name, expected_result in CANONICAL_COLUMN_VALUES.items():
-        model = SparseTextEmbedding(model_name=model_name)
+        model = SparseTextEmbedding(model_name=model_name, cache_dir="models")
 
         passage_result = next(iter(model.embed(docs, batch_size=6)))
         query_result = next(iter(model.query_embed(docs)))
@@ -73,7 +75,7 @@ def test_single_embedding():
 def test_parallel_processing():
     import numpy as np
 
-    model = SparseTextEmbedding(model_name="prithivida/Splade_PP_en_v1")
+    model = SparseTextEmbedding(model_name="prithivida/Splade_PP_en_v1", cache_dir="models")
     docs = ["hello world", "flag embedding"] * 30
     sparse_embeddings_duo = list(model.embed(docs, batch_size=10, parallel=2))
     sparse_embeddings_all = list(model.embed(docs, batch_size=10, parallel=0))
@@ -100,7 +102,7 @@ def test_parallel_processing():
 
 @pytest.fixture
 def bm25_instance():
-    return Bm25("Qdrant/bm25", language="english")
+    return Bm25("Qdrant/bm25", language="english", cache_dir="models")
 
 
 def test_stem_with_stopwords_and_punctuation(bm25_instance):
@@ -133,3 +135,4 @@ def test_stem_case_insensitive_stopwords(bm25_instance):
     # Assert
     expected = ["Quick", "Brown", "Fox", "Test", "Sentenc"]
     assert result == expected, f"Expected {expected}, but got {result}"
+    shutil.rmtree("models/")

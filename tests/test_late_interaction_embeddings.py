@@ -1,3 +1,5 @@
+import shutil
+
 import numpy as np
 
 from fastembed.late_interaction.late_interaction_text_embedding import (
@@ -109,7 +111,7 @@ def test_batch_embedding():
 
     for model_name, expected_result in CANONICAL_COLUMN_VALUES.items():
         print("evaluating", model_name)
-        model = LateInteractionTextEmbedding(model_name=model_name)
+        model = LateInteractionTextEmbedding(model_name=model_name, cache_dir="models")
         result = list(model.embed(docs_to_embed, batch_size=6))
 
         for value in result:
@@ -122,7 +124,7 @@ def test_single_embedding():
 
     for model_name, expected_result in CANONICAL_COLUMN_VALUES.items():
         print("evaluating", model_name)
-        model = LateInteractionTextEmbedding(model_name=model_name)
+        model = LateInteractionTextEmbedding(model_name=model_name, cache_dir="models")
         result = next(iter(model.embed(docs_to_embed, batch_size=6)))
         token_num, abridged_dim = expected_result.shape
         assert np.allclose(result[:, :abridged_dim], expected_result, atol=10e-4)
@@ -133,14 +135,14 @@ def test_single_embedding_query():
 
     for model_name, expected_result in CANONICAL_QUERY_VALUES.items():
         print("evaluating", model_name)
-        model = LateInteractionTextEmbedding(model_name=model_name)
+        model = LateInteractionTextEmbedding(model_name=model_name, cache_dir="models")
         result = next(iter(model.query_embed(queries_to_embed)))
         token_num, abridged_dim = expected_result.shape
         assert np.allclose(result[:, :abridged_dim], expected_result, atol=10e-4)
 
 
 def test_parallel_processing():
-    model = LateInteractionTextEmbedding(model_name="colbert-ir/colbertv2.0")
+    model = LateInteractionTextEmbedding(model_name="colbert-ir/colbertv2.0", cache_dir="models")
     token_dim = 128
     docs = ["hello world", "flag embedding"] * 100
     embeddings = list(model.embed(docs, batch_size=10, parallel=2))
@@ -155,3 +157,4 @@ def test_parallel_processing():
     assert embeddings.shape[0] == len(docs) and embeddings.shape[-1] == token_dim
     assert np.allclose(embeddings, embeddings_2, atol=1e-3)
     assert np.allclose(embeddings, embeddings_3, atol=1e-3)
+    shutil.rmtree("models/")
