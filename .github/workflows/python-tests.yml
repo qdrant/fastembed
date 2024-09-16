@@ -32,12 +32,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-
-      - name: Free disk space (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          sudo rm -rf /Library/Developer/CoreSimulator
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
