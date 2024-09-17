@@ -48,13 +48,14 @@ CANONICAL_COLUMN_VALUES = {
 docs = ["Hello World"]
 
 CI = os.getenv("CI") == "true"
+MODELS_CACHE_DIR = "/tmp/models/"
 
 
 def test_batch_embedding():
     docs_to_embed = docs * 10
 
     for model_name, expected_result in CANONICAL_COLUMN_VALUES.items():
-        model = SparseTextEmbedding(model_name=model_name, cache_dir="models")
+        model = SparseTextEmbedding(model_name=model_name, cache_dir=MODELS_CACHE_DIR)
         result = next(iter(model.embed(docs_to_embed, batch_size=6)))
         assert result.indices.tolist() == expected_result["indices"]
 
@@ -62,12 +63,12 @@ def test_batch_embedding():
             assert pytest.approx(value, abs=0.001) == expected_result["values"][i]
 
     if CI:
-        shutil.rmtree("models/")
+        shutil.rmtree(MODELS_CACHE_DIR)
 
 
 def test_single_embedding():
     for model_name, expected_result in CANONICAL_COLUMN_VALUES.items():
-        model = SparseTextEmbedding(model_name=model_name, cache_dir="models")
+        model = SparseTextEmbedding(model_name=model_name, cache_dir=MODELS_CACHE_DIR)
 
         passage_result = next(iter(model.embed(docs, batch_size=6)))
         query_result = next(iter(model.query_embed(docs)))
@@ -78,13 +79,15 @@ def test_single_embedding():
                 assert pytest.approx(value, abs=0.001) == expected_result["values"][i]
 
     if CI:
-        shutil.rmtree("models/")
+        shutil.rmtree(MODELS_CACHE_DIR)
 
 
 def test_parallel_processing():
     import numpy as np
 
-    model = SparseTextEmbedding(model_name="prithivida/Splade_PP_en_v1", cache_dir="models")
+    model = SparseTextEmbedding(
+        model_name="prithivida/Splade_PP_en_v1", cache_dir=MODELS_CACHE_DIR
+    )
     docs = ["hello world", "flag embedding"] * 30
     sparse_embeddings_duo = list(model.embed(docs, batch_size=10, parallel=2))
     sparse_embeddings_all = list(model.embed(docs, batch_size=10, parallel=0))
@@ -109,12 +112,12 @@ def test_parallel_processing():
         assert np.allclose(sparse_embedding.values, sparse_embedding_all.values, atol=1e-3)
 
     if CI:
-        shutil.rmtree("models/")
+        shutil.rmtree(MODELS_CACHE_DIR)
 
 
 @pytest.fixture
 def bm25_instance():
-    return Bm25("Qdrant/bm25", language="english", cache_dir="models")
+    return Bm25("Qdrant/bm25", language="english", cache_dir=MODELS_CACHE_DIR)
 
 
 def test_stem_with_stopwords_and_punctuation(bm25_instance):
@@ -133,7 +136,7 @@ def test_stem_with_stopwords_and_punctuation(bm25_instance):
     assert result == expected, f"Expected {expected}, but got {result}"
 
     if CI:
-        shutil.rmtree("models/")
+        shutil.rmtree(MODELS_CACHE_DIR)
 
 
 def test_stem_case_insensitive_stopwords(bm25_instance):
@@ -152,4 +155,4 @@ def test_stem_case_insensitive_stopwords(bm25_instance):
     assert result == expected, f"Expected {expected}, but got {result}"
 
     if CI:
-        shutil.rmtree("models/")
+        shutil.rmtree(MODELS_CACHE_DIR)

@@ -24,18 +24,17 @@ CANONICAL_VECTOR_VALUES = {
 }
 
 CI = os.getenv("CI") == "true"
+MODELS_CACHE_DIR = "/tmp/models/"
 
 
 def test_embedding():
-    is_ci = os.getenv("CI")
-
     for model_desc in ImageEmbedding.list_supported_models():
-        if not is_ci and model_desc["size_in_GB"] > 1:
+        if CI and model_desc["size_in_GB"] > 1:
             continue
 
         dim = model_desc["dim"]
 
-        model = ImageEmbedding(model_name=model_desc["model"], cache_dir="models")
+        model = ImageEmbedding(model_name=model_desc["model"], cache_dir=MODELS_CACHE_DIR)
 
         images = [
             TEST_MISC_DIR / "image.jpeg",
@@ -56,12 +55,12 @@ def test_embedding():
         assert np.allclose(embeddings[1], embeddings[2]), model_desc["model"]
 
         if CI:
-            shutil.rmtree("models/")
+            shutil.rmtree(MODELS_CACHE_DIR)
 
 
 @pytest.mark.parametrize("n_dims,model_name", [(512, "Qdrant/clip-ViT-B-32-vision")])
 def test_batch_embedding(n_dims, model_name):
-    model = ImageEmbedding(model_name=model_name, cache_dir="models")
+    model = ImageEmbedding(model_name=model_name, cache_dir=MODELS_CACHE_DIR)
     n_images = 32
     test_images = [
         TEST_MISC_DIR / "image.jpeg",
@@ -76,12 +75,12 @@ def test_batch_embedding(n_dims, model_name):
     assert embeddings.shape == (len(test_images) * n_images, n_dims)
 
     if CI:
-        shutil.rmtree("models/")
+        shutil.rmtree(MODELS_CACHE_DIR)
 
 
 @pytest.mark.parametrize("n_dims,model_name", [(512, "Qdrant/clip-ViT-B-32-vision")])
 def test_parallel_processing(n_dims, model_name):
-    model = ImageEmbedding(model_name=model_name, cache_dir="models")
+    model = ImageEmbedding(model_name=model_name, cache_dir=MODELS_CACHE_DIR)
 
     n_images = 32
     test_images = [
@@ -104,4 +103,4 @@ def test_parallel_processing(n_dims, model_name):
     assert np.allclose(embeddings, embeddings_3, atol=1e-3)
 
     if CI:
-        shutil.rmtree("models/")
+        shutil.rmtree(MODELS_CACHE_DIR)
