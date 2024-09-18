@@ -45,6 +45,12 @@ jobs:
           poetry config virtualenvs.create false
           poetry install --no-interaction --no-ansi --without docs --with dev
 
-      - name: Run pytest
+      - name: Run pytest with admin (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          PowerShell -Command "Start-Process poetry -ArgumentList 'run pytest' -Verb RunAs"
+
+      - name: Run pytest (Non-Windows)
+        if: runner.os != 'Windows'
         run: |
           poetry run pytest

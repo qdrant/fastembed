@@ -87,10 +87,7 @@ def test_embedding():
         ), model_desc["model"]
 
         if CI:
-            if os.path.isfile(MODELS_CACHE_DIR):
-                os.remove(MODELS_CACHE_DIR)
-            else:
-                shutil.rmtree(MODELS_CACHE_DIR)
+            shutil.rmtree(MODELS_CACHE_DIR)
 
 
 @pytest.mark.parametrize(
