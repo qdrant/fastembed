@@ -70,7 +70,7 @@ MODELS_CACHE_DIR = "/tmp/models/"
 
 def test_embedding():
     for model_desc in TextEmbedding.list_supported_models():
-        if CI and model_desc["size_in_GB"] > 1:
+        if not CI and model_desc["size_in_GB"] > 1:
             continue
 
         dim = model_desc["dim"]
@@ -87,7 +87,10 @@ def test_embedding():
         ), model_desc["model"]
 
         if CI:
-            shutil.rmtree(MODELS_CACHE_DIR)
+            if os.path.isfile(MODELS_CACHE_DIR):
+                os.remove(MODELS_CACHE_DIR)
+            else:
+                shutil.rmtree(MODELS_CACHE_DIR)
 
 
 @pytest.mark.parametrize(
@@ -128,7 +131,5 @@ def test_parallel_processing(n_dims, model_name):
     assert np.allclose(embeddings, embeddings_2, atol=1e-3)
     assert np.allclose(embeddings, embeddings_3, atol=1e-3)
 
-    try:
+    if CI:
         shutil.rmtree(MODELS_CACHE_DIR)
-    except Exception as e:
-        print(f"Failed to remove directory {MODELS_CACHE_DIR}: {e}")
