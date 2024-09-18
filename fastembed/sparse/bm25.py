@@ -3,23 +3,20 @@ from collections import defaultdict
 from multiprocessing import get_all_start_methods
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
-
 import mmh3
 import numpy as np
 from snowballstemmer import stemmer as get_stemmer
-
+import re
 from fastembed.common.utils import (
     define_cache_dir,
     iter_batch,
     get_all_punctuation,
-    replace_punctuation,
 )
 from fastembed.parallel_processor import ParallelWorkerPool, Worker
 from fastembed.sparse.sparse_embedding_base import (
     SparseEmbedding,
     SparseTextEmbeddingBase,
 )
-from fastembed.sparse.utils.tokenizer import WordTokenizer
 
 supported_languages = [
     "arabic",
@@ -66,6 +63,28 @@ supported_bm25_models = [
         "requires_idf": True,
     },
 ]
+
+
+def append_to_file(file_path, token):
+    with open(file_path, "a") as file:
+        file.write(token + "\n")
+
+
+class SimpleTokenizer:
+    def __init__(self):
+        pass
+
+    def tokenize(text: str):
+        text = re.sub(r"[^a-zA-Z0-9]", " ", text.lower())
+        # text = re.sub(r'[^\w]', ' ', text.lower())
+        text = re.sub(r"\s+", " ", text)
+
+        # Optionally, strip leading/trailing spaces
+        return text.strip().split()
+
+
+def remove_non_alphanumeric(text):
+    return re.sub(r"[^\w\s]", " ", text, flags=re.UNICODE)
 
 
 class Bm25(SparseTextEmbeddingBase):
@@ -128,7 +147,7 @@ class Bm25(SparseTextEmbeddingBase):
         self.stopwords = set(self._load_stopwords(model_dir, self.language))
 
         self.stemmer = get_stemmer(language)
-        self.tokenizer = WordTokenizer
+        self.tokenizer = SimpleTokenizer  # WordTokenizer
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Any]]:
@@ -230,9 +249,11 @@ class Bm25(SparseTextEmbeddingBase):
             if len(token) > 40:
                 continue
 
+            append_to_file("tokens", token.lower())
             stemmed_token = self.stemmer.stemWord(token.lower())
 
             if stemmed_token:
+                append_to_file("stemmed_tokens", stemmed_token)
                 stemmed_tokens.append(stemmed_token)
         return stemmed_tokens
 
@@ -242,7 +263,7 @@ class Bm25(SparseTextEmbeddingBase):
     ) -> List[SparseEmbedding]:
         embeddings = []
         for document in documents:
-            document = replace_punctuation(document, set([".", ",", "/", "''", "``"]))
+            document = remove_non_alphanumeric(document)
             tokens = self.tokenizer.tokenize(document)
             stemmed_tokens = self._stem(tokens)
             token_id2value = self._term_frequency(stemmed_tokens)
@@ -291,7 +312,7 @@ class Bm25(SparseTextEmbeddingBase):
             query = [query]
 
         for text in query:
-            text = replace_punctuation(text, self.punctuation)
+            text = remove_non_alphanumeric(text)
             tokens = self.tokenizer.tokenize(text)
             stemmed_tokens = self._stem(tokens)
             token_ids = np.array(
