@@ -17,6 +17,7 @@ from fastembed.sparse.sparse_embedding_base import (
     SparseEmbedding,
     SparseTextEmbeddingBase,
 )
+from fastembed.sparse.utils.tokenizer import SimpleTokenizer
 
 supported_languages = [
     "arabic",
@@ -68,19 +69,6 @@ supported_bm25_models = [
 def append_to_file(file_path, token):
     with open(file_path, "a") as file:
         file.write(token + "\n")
-
-
-class SimpleTokenizer:
-    def __init__(self):
-        pass
-
-    def tokenize(text: str):
-        text = re.sub(r"[^a-zA-Z0-9]", " ", text.lower())
-        # text = re.sub(r'[^\w]', ' ', text.lower())
-        text = re.sub(r"\s+", " ", text)
-
-        # Optionally, strip leading/trailing spaces
-        return text.strip().split()
 
 
 def remove_non_alphanumeric(text):

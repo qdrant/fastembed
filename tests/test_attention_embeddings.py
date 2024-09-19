@@ -102,3 +102,21 @@ def test_multilanguage(model_name):
 
     assert embeddings[1].values.shape == (4,)
     assert embeddings[1].indices.shape == (4,)
+
+
+@pytest.mark.parametrize("model_name", ["Qdrant/bm25"])
+def test_special_characters(model_name):
+    docs = [
+        "Über den größten Flüssen Österreichs äußern sich Experten häufig: Öko-Systeme müssen geschützt werden!",
+        "L'élève français s'écrie : « Où est mon crayon ? J'ai besoin de finir cet exercice avant la récréation!",
+        "Într-o zi însorită, Ștefan și Ioana au mâncat mămăligă cu brânză și au băut țuică la cabană.",
+        "Üzgün öğretmen öğrencilere seslendi: Lütfen gürültü yapmayın, sınavınızı bitirmeye çalışıyorum!",
+        "Ο Ξενοφών είπε: «Ψάχνω για ένα ωραίο δώρο για τη γιαγιά μου. Ίσως ένα φυτό ή ένα βιβλίο;»",
+        "Hola! ¿Cómo estás? Estoy muy emocionado por el cumpleaños de mi hermano, ¡va a ser increíble! También quiero comprar un pastel de chocolate con fresas y un regalo especial: un libro titulado «Cien años de soledad",
+    ]
+
+    model = SparseTextEmbedding(model_name=model_name, language="english")
+    embeddings = list(model.embed(docs))
+    for idx, shape in enumerate([14, 18, 15, 10, 15]):
+        assert embeddings[idx].values.shape == (shape,)
+        assert embeddings[idx].indices.shape == (shape,)
