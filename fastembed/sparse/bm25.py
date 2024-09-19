@@ -66,11 +66,6 @@ supported_bm25_models = [
 ]
 
 
-def append_to_file(file_path, token):
-    with open(file_path, "a") as file:
-        file.write(token + "\n")
-
-
 def remove_non_alphanumeric(text):
     return re.sub(r"[^\w\s]", " ", text, flags=re.UNICODE)
 
@@ -237,11 +232,9 @@ class Bm25(SparseTextEmbeddingBase):
             if len(token) > 40:
                 continue
 
-            append_to_file("tokens", token.lower())
             stemmed_token = self.stemmer.stemWord(token.lower())
 
             if stemmed_token:
-                append_to_file("stemmed_tokens", stemmed_token)
                 stemmed_tokens.append(stemmed_token)
         return stemmed_tokens
 
