@@ -43,12 +43,8 @@ jobs:
           poetry install --no-interaction --no-ansi --without docs
 
       - name: Install Test Dependencies
-        run: pip install pytest pytest-md pytest-emoji
+        run: pip install pytest
 
       - name: Run pytest
-        uses: pavelzw/pytest-action@v2
-        with:
-            verbose: true
-            emoji: true
-            job-summary: true
-            report-title: 'FastEmbed Test Report'
+        run: |
+          poetry run pytest
