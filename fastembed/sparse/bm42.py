@@ -84,12 +84,12 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         model_description = self._get_model_description(model_name)
         self.cache_dir = define_cache_dir(cache_dir)
 
-        model_dir = self.download_model(
+        self._model_dir = self.download_model(
             model_description, self.cache_dir, local_files_only=self._local_files_only
         )
 
         self.load_onnx_model(
-            model_dir=model_dir,
+            model_dir=self._model_dir,
             model_file=model_description["model_file"],
             threads=threads,
             providers=providers,
@@ -103,7 +103,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         self.special_tokens = set(self.special_token_to_id.keys())
         self.special_tokens_ids = set(self.special_token_to_id.values())
         self.punctuation = set(string.punctuation)
-        self.stopwords = set(self._load_stopwords(model_dir))
+        self.stopwords = set(self._load_stopwords(self._model_dir))
         self.stemmer = get_stemmer(MODEL_TO_LANGUAGE[model_name])
         self.alpha = alpha
 

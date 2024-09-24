@@ -1,4 +1,5 @@
 import os
+import shutil
 
 import numpy as np
 import pytest
@@ -83,6 +84,8 @@ def test_embedding():
         assert np.allclose(
             embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3
         ), model_desc["model"]
+        if is_ci:
+            shutil.rmtree(model.model._model_dir)
 
 
 @pytest.mark.parametrize(
@@ -90,6 +93,7 @@ def test_embedding():
     [(384, "BAAI/bge-small-en-v1.5"), (768, "jinaai/jina-embeddings-v2-base-en")],
 )
 def test_batch_embedding(n_dims, model_name):
+    is_ci = os.getenv("CI")
     model = TextEmbedding(model_name=model_name)
 
     docs = ["hello world", "flag embedding"] * 100
@@ -97,6 +101,8 @@ def test_batch_embedding(n_dims, model_name):
     embeddings = np.stack(embeddings, axis=0)
 
     assert embeddings.shape == (200, n_dims)
+    if is_ci:
+        shutil.rmtree(model.model._model_dir)
 
 
 @pytest.mark.parametrize(
@@ -104,6 +110,7 @@ def test_batch_embedding(n_dims, model_name):
     [(384, "BAAI/bge-small-en-v1.5"), (768, "jinaai/jina-embeddings-v2-base-en")],
 )
 def test_parallel_processing(n_dims, model_name):
+    is_ci = os.getenv("CI")
     model = TextEmbedding(model_name=model_name)
 
     docs = ["hello world", "flag embedding"] * 100
@@ -119,3 +126,5 @@ def test_parallel_processing(n_dims, model_name):
     assert embeddings.shape == (200, n_dims)
     assert np.allclose(embeddings, embeddings_2, atol=1e-3)
     assert np.allclose(embeddings, embeddings_3, atol=1e-3)
+    if is_ci:
+        shutil.rmtree(model.model._model_dir)

@@ -116,12 +116,12 @@ class Bm25(SparseTextEmbeddingBase):
         model_description = self._get_model_description(model_name)
         self.cache_dir = define_cache_dir(cache_dir)
 
-        model_dir = self.download_model(
+        self._model_dir = self.download_model(
             model_description, self.cache_dir, local_files_only=self._local_files_only
         )
 
         self.punctuation = set(string.punctuation)
-        self.stopwords = set(self._load_stopwords(model_dir, self.language))
+        self.stopwords = set(self._load_stopwords(self._model_dir, self.language))
         self.stemmer = get_stemmer(language)
         self.tokenizer = WordTokenizer
 

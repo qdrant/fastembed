@@ -1,3 +1,6 @@
+import os
+import shutil
+
 import numpy as np
 
 from fastembed.late_interaction.late_interaction_text_embedding import (
@@ -105,6 +108,7 @@ docs = ["Hello World"]
 
 
 def test_batch_embedding():
+    is_ci = os.getenv("CI")
     docs_to_embed = docs * 10
 
     for model_name, expected_result in CANONICAL_COLUMN_VALUES.items():
@@ -116,8 +120,12 @@ def test_batch_embedding():
             token_num, abridged_dim = expected_result.shape
             assert np.allclose(value[:, :abridged_dim], expected_result, atol=10e-4)
 
+        if is_ci:
+            shutil.rmtree(model.model._model_dir)
+
 
 def test_single_embedding():
+    is_ci = os.getenv("CI")
     docs_to_embed = docs
 
     for model_name, expected_result in CANONICAL_COLUMN_VALUES.items():
@@ -127,8 +135,12 @@ def test_single_embedding():
         token_num, abridged_dim = expected_result.shape
         assert np.allclose(result[:, :abridged_dim], expected_result, atol=10e-4)
 
+        if is_ci:
+            shutil.rmtree(model.model._model_dir)
+
 
 def test_single_embedding_query():
+    is_ci = os.getenv("CI")
     queries_to_embed = docs
 
     for model_name, expected_result in CANONICAL_QUERY_VALUES.items():
@@ -138,8 +150,12 @@ def test_single_embedding_query():
         token_num, abridged_dim = expected_result.shape
         assert np.allclose(result[:, :abridged_dim], expected_result, atol=10e-4)
 
+        if is_ci:
+            shutil.rmtree(model.model._model_dir)
+
 
 def test_parallel_processing():
+    is_ci = os.getenv("CI")
     model = LateInteractionTextEmbedding(model_name="colbert-ir/colbertv2.0")
     token_dim = 128
     docs = ["hello world", "flag embedding"] * 100
@@ -155,3 +171,6 @@ def test_parallel_processing():
     assert embeddings.shape[0] == len(docs) and embeddings.shape[-1] == token_dim
     assert np.allclose(embeddings, embeddings_2, atol=1e-3)
     assert np.allclose(embeddings, embeddings_3, atol=1e-3)
+
+    if is_ci:
+        shutil.rmtree(model.model._model_dir)
