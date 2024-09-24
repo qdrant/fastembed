@@ -47,4 +47,4 @@ jobs:
 
       - name: Run pytest
         run: |
-          poetry run pytest -s -vv -l tests/test_text_onnx_embeddings.py
+          poetry run pytest
