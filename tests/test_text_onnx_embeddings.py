@@ -74,7 +74,7 @@ def test_embedding():
             continue
         # if not is_ci and model_desc["size_in_GB"] > 1:
         #     continue
-
+        print("testing model: ", model_desc["model"])
         dim = model_desc["dim"]
 
         model = TextEmbedding(model_name=model_desc["model"])
