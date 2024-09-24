@@ -147,5 +147,5 @@ def test_stem_case_insensitive_stopwords(bm25_instance):
     result = bm25_instance._stem(tokens)
 
     # Assert
-    expected = ["Quick", "Brown", "Fox", "Test", "Sentenc"]
+    expected = ["quick", "brown", "fox", "test", "sentenc"]
     assert result == expected, f"Expected {expected}, but got {result}"

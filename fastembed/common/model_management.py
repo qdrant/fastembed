@@ -198,7 +198,9 @@ class ModelManagement:
         return model_dir
 
     @classmethod
-    def download_model(cls, model: Dict[str, Any], cache_dir: Path, retries=3, **kwargs) -> Path:
+    def download_model(
+        cls, model: Dict[str, Any], cache_dir: Path, retries: object = 3, **kwargs: object
+    ) -> Path:
         """
         Downloads a model from HuggingFace Hub or Google Cloud Storage.
 
