@@ -102,6 +102,7 @@ class Bm25(SparseTextEmbeddingBase):
         b: float = 0.75,
         avg_len: float = 256.0,
         language: str = "english",
+        token_max_length: int = 40,
         **kwargs,
     ):
         super().__init__(model_name, cache_dir, **kwargs)
@@ -118,15 +119,16 @@ class Bm25(SparseTextEmbeddingBase):
         model_description = self._get_model_description(model_name)
         self.cache_dir = define_cache_dir(cache_dir)
 
-        model_dir = self.download_model(
+        self._model_dir = self.download_model(
             model_description, self.cache_dir, local_files_only=self._local_files_only
         )
 
+        self.token_max_length = token_max_length
         self.punctuation = set(get_all_punctuation())
-        self.stopwords = set(self._load_stopwords(model_dir, self.language))
+        self.stopwords = set(self._load_stopwords(self._model_dir, self.language))
 
         self.stemmer = get_stemmer(language)
-        self.tokenizer = SimpleTokenizer  # WordTokenizer
+        self.tokenizer = SimpleTokenizer
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Any]]:
@@ -225,7 +227,7 @@ class Bm25(SparseTextEmbeddingBase):
             if token.lower() in self.stopwords:
                 continue
 
-            if len(token) > 40:
+            if len(token) > self.token_max_length:
                 continue
 
             stemmed_token = self.stemmer.stemWord(token.lower())

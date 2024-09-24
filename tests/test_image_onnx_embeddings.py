@@ -1,4 +1,5 @@
 import os
+import shutil
 from io import BytesIO
 
 import numpy as np
@@ -52,9 +53,13 @@ def test_embedding():
 
         assert np.allclose(embeddings[1], embeddings[2]), model_desc["model"]
 
+        if is_ci:
+            shutil.rmtree(model.model._model_dir)
+
 
 @pytest.mark.parametrize("n_dims,model_name", [(512, "Qdrant/clip-ViT-B-32-vision")])
 def test_batch_embedding(n_dims, model_name):
+    is_ci = os.getenv("CI")
     model = ImageEmbedding(model_name=model_name)
     n_images = 32
     test_images = [
@@ -68,10 +73,13 @@ def test_batch_embedding(n_dims, model_name):
     embeddings = np.stack(embeddings, axis=0)
 
     assert embeddings.shape == (len(test_images) * n_images, n_dims)
+    if is_ci:
+        shutil.rmtree(model.model._model_dir)
 
 
 @pytest.mark.parametrize("n_dims,model_name", [(512, "Qdrant/clip-ViT-B-32-vision")])
 def test_parallel_processing(n_dims, model_name):
+    is_ci = os.getenv("CI")
     model = ImageEmbedding(model_name=model_name)
 
     n_images = 32
@@ -93,3 +101,5 @@ def test_parallel_processing(n_dims, model_name):
     assert embeddings.shape == (n_images * len(test_images), n_dims)
     assert np.allclose(embeddings, embeddings_2, atol=1e-3)
     assert np.allclose(embeddings, embeddings_3, atol=1e-3)
+    if is_ci:
+        shutil.rmtree(model.model._model_dir)

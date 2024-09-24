@@ -3,8 +3,6 @@ name: Tests
 on:
   push:
     branches: [ master, main, gpu ]
-  schedule:
-    - cron: 0 0 * * *
   pull_request:
 
 env:
@@ -42,13 +40,6 @@ jobs:
           poetry config virtualenvs.create false
           poetry install --no-interaction --no-ansi --without docs
 
-      - name: Install Test Dependencies
-        run: pip install pytest pytest-md pytest-emoji
-
       - name: Run pytest
-        uses: pavelzw/pytest-action@v2
-        with:
-            verbose: true
-            emoji: true
-            job-summary: true
-            report-title: 'FastEmbed Test Report'
+        run: |
+          poetry run pytest
