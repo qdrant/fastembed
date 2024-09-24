@@ -6,11 +6,11 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 import mmh3
 import numpy as np
 from snowballstemmer import stemmer as get_stemmer
-import re
 from fastembed.common.utils import (
     define_cache_dir,
     iter_batch,
     get_all_punctuation,
+    remove_non_alphanumeric,
 )
 from fastembed.parallel_processor import ParallelWorkerPool, Worker
 from fastembed.sparse.sparse_embedding_base import (
@@ -64,10 +64,6 @@ supported_bm25_models = [
         "requires_idf": True,
     },
 ]
-
-
-def remove_non_alphanumeric(text):
-    return re.sub(r"[^\w\s]", " ", text, flags=re.UNICODE)
 
 
 class Bm25(SparseTextEmbeddingBase):

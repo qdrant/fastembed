@@ -6,6 +6,7 @@ from typing import Generator, Iterable, Optional, Union
 import unicodedata
 import sys
 import numpy as np
+import re
 
 
 def normalize(input_array, p=2, dim=1, eps=1e-12) -> np.ndarray:
@@ -38,17 +39,16 @@ def define_cache_dir(cache_dir: Optional[str] = None) -> Path:
         cache_path = Path(os.getenv("FASTEMBED_CACHE_PATH", default_cache_dir))
     else:
         cache_path = Path(cache_dir)
-
     cache_path.mkdir(parents=True, exist_ok=True)
 
     return cache_path
 
 
-def get_all_punctuation():
+def get_all_punctuation() -> set[str]:
     return set(
         chr(i) for i in range(sys.maxunicode) if unicodedata.category(chr(i)).startswith("P")
     )
 
 
-def replace_punctuation(text, punctuation):
-    return "".join(" " if char in punctuation else char for char in text)
+def remove_non_alphanumeric(text: str) -> str:
+    return re.sub(r"[^\w\s]", " ", text, flags=re.UNICODE)
