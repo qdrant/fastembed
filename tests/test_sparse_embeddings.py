@@ -112,10 +112,11 @@ def test_parallel_processing():
 
 @pytest.fixture
 def bm25_instance():
-    ci = os.getenv("CI")
-    yield Bm25("Qdrant/bm25", language="english")
+    ci = os.getenv("CI", True)
+    model = Bm25("Qdrant/bm25", language="english")
+    yield model
     if ci:
-        shutil.rmtree("Qdrant/bm25")
+        shutil.rmtree(model._model_dir)
 
 
 def test_stem_with_stopwords_and_punctuation(bm25_instance):
