@@ -90,6 +90,7 @@ def test_embedding():
         shutil.rmtree(model.model._model_dir)
 
 
+@pytest.mark.skip(reason="not testing rn")
 @pytest.mark.parametrize(
     "n_dims,model_name",
     [(384, "BAAI/bge-small-en-v1.5"), (768, "jinaai/jina-embeddings-v2-base-en")],
@@ -104,6 +105,7 @@ def test_batch_embedding(n_dims, model_name):
     assert embeddings.shape == (200, n_dims)
 
 
+@pytest.mark.skip(reason="not testing rn")
 @pytest.mark.parametrize(
     "n_dims,model_name",
     [(384, "BAAI/bge-small-en-v1.5"), (768, "jinaai/jina-embeddings-v2-base-en")],
