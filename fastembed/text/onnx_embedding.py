@@ -25,7 +25,7 @@ supported_onnx_models = [
         "description": "Text embeddings, Unimodal (text), English, 512 input tokens truncation, Prefixes for queries/documents: not so necessary, 2023 year",
         "size_in_GB": 0.21,
         "sources": {
-            # "url": "https://storage.googleapis.com/qdrant-fastembed/fast-bge-base-en-v1.5.tar.gz",
+            "url": "https://storage.googleapis.com/qdrant-fastembed/fast-bge-base-en-v1.5.tar.gz",
             "hf": "qdrant/bge-base-en-v1.5-onnx-q",
         },
         "model_file": "model_optimized.onnx",
