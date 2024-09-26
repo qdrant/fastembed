@@ -164,7 +164,7 @@ class ModelManagement:
     @classmethod
     def retrieve_model_gcs(cls, model_name: str, source_url: str, cache_dir: str) -> Path:
         fast_model_name = f"fast-{model_name.split('/')[-1]}"
-
+        print("Model gcs lookup:", fast_model_name)
         cache_tmp_dir = Path(cache_dir) / "tmp"
         model_tmp_dir = cache_tmp_dir / fast_model_name
         model_dir = Path(cache_dir) / fast_model_name
@@ -251,7 +251,7 @@ class ModelManagement:
                         f"Could not download model from HuggingFace: {e} "
                         "Falling back to other sources."
                     )
-            if url_source:
+            if url_source or kwargs.get("local_files_only", False):
                 try:
                     return cls.retrieve_model_gcs(model["model"], url_source, str(cache_dir))
                 except Exception:
