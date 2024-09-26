@@ -162,7 +162,9 @@ class ModelManagement:
         return cache_dir
 
     @classmethod
-    def retrieve_model_gcs(cls, model_name: str, source_url: str, cache_dir: str) -> Path:
+    def retrieve_model_gcs(
+        cls, model_name: str, source_url: str, cache_dir: str, **kwargs
+    ) -> Path:
         fast_model_name = f"fast-{model_name.split('/')[-1]}"
         cache_tmp_dir = Path(cache_dir) / "tmp"
         model_tmp_dir = cache_tmp_dir / fast_model_name
@@ -182,17 +184,25 @@ class ModelManagement:
         if model_tar_gz.exists():
             model_tar_gz.unlink()
 
-        cls.download_file_from_gcs(
-            source_url,
-            output_path=str(model_tar_gz),
-        )
+        if not kwargs.get("local_files_only", False):
+            cls.download_file_from_gcs(
+                source_url,
+                output_path=str(model_tar_gz),
+            )
 
-        cls.decompress_to_cache(targz_path=str(model_tar_gz), cache_dir=str(cache_tmp_dir))
-        assert model_tmp_dir.exists(), f"Could not find {model_tmp_dir} in {cache_tmp_dir}"
+            cls.decompress_to_cache(targz_path=str(model_tar_gz), cache_dir=str(cache_tmp_dir))
+            assert model_tmp_dir.exists(), f"Could not find {model_tmp_dir} in {cache_tmp_dir}"
 
-        model_tar_gz.unlink()
-        # Rename from tmp to final name is atomic
-        model_tmp_dir.rename(model_dir)
+            model_tar_gz.unlink()
+            # Rename from tmp to final name is atomic
+            model_tmp_dir.rename(model_dir)
+        else:
+            logger.error(
+                f"Could not find the model tar.gz file at {model_dir} and local_files_only=True."
+            )
+            raise ValueError(
+                f"Could not find the model tar.gz file at {model_dir} and local_files_only=True."
+            )
 
         return model_dir
 
@@ -224,7 +234,8 @@ class ModelManagement:
         Returns:
             Path: The path to the downloaded model directory.
         """
-
+        if kwargs.get("local_files_only", False):
+            retries = 1
         hf_source = model.get("sources", {}).get("hf")
         url_source = model.get("sources", {}).get("url")
         sleep = 3.0
@@ -245,20 +256,27 @@ class ModelManagement:
                         )
                     )
                 except (EnvironmentError, RepositoryNotFoundError, ValueError) as e:
-                    logger.error(
-                        f"Could not download model from HuggingFace: {e} "
-                        "Falling back to other sources."
-                    )
+                    if not kwargs.get("local_files_only", False):
+                        logger.error(
+                            f"Could not download model from HuggingFace: {e} "
+                            "Falling back to other sources."
+                        )
             if url_source or kwargs.get("local_files_only", False):
                 try:
-                    return cls.retrieve_model_gcs(model["model"], url_source, str(cache_dir))
+                    return cls.retrieve_model_gcs(
+                        model["model"], url_source, str(cache_dir), **kwargs
+                    )
                 except Exception:
-                    logger.error(f"Could not download model from url: {url_source}")
+                    if not kwargs.get("local_files_only", False):
+                        logger.error(f"Could not download model from url: {url_source}")
 
-            logger.error(
-                f"Could not download model from either source, sleeping for {sleep} seconds, {retries} retries left."
-            )
+            if kwargs.get("local_files_only", False):
+                logger.error("Could not find model in cache_dir")
+            else:
+                logger.error(
+                    f"Could not download model from either source, sleeping for {sleep} seconds, {retries} retries left."
+                )
             time.sleep(sleep)
             sleep *= 3
 
-        raise ValueError(f"Could not download model {model['model']} from any source.")
+        raise ValueError(f"Could not load model {model['model']} from any source.")
