@@ -13,6 +13,8 @@ from tqdm import tqdm
 
 
 class ModelManagement:
+    local_files_only = False
+
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Any]]:
         """Lists the supported models.
@@ -95,7 +97,6 @@ class ModelManagement:
         hf_source_repo: str,
         cache_dir: Optional[str] = None,
         extra_patterns: Optional[List[str]] = None,
-        **kwargs,
     ) -> str:
         """
         Downloads a model from HuggingFace Hub.
@@ -121,7 +122,7 @@ class ModelManagement:
             repo_id=hf_source_repo,
             allow_patterns=allow_patterns,
             cache_dir=cache_dir,
-            local_files_only=kwargs.get("local_files_only", False),
+            local_files_only=cls.local_files_only,
         )
 
     @classmethod
@@ -162,9 +163,7 @@ class ModelManagement:
         return cache_dir
 
     @classmethod
-    def retrieve_model_gcs(
-        cls, model_name: str, source_url: str, cache_dir: str, **kwargs
-    ) -> Path:
+    def retrieve_model_gcs(cls, model_name: str, source_url: str, cache_dir: str) -> Path:
         fast_model_name = f"fast-{model_name.split('/')[-1]}"
         cache_tmp_dir = Path(cache_dir) / "tmp"
         model_tmp_dir = cache_tmp_dir / fast_model_name
@@ -184,7 +183,7 @@ class ModelManagement:
         if model_tar_gz.exists():
             model_tar_gz.unlink()
 
-        if not kwargs.get("local_files_only", False):
+        if not cls.local_files_only:
             cls.download_file_from_gcs(
                 source_url,
                 output_path=str(model_tar_gz),
@@ -208,7 +207,7 @@ class ModelManagement:
 
     @classmethod
     def download_model(
-        cls, model: Dict[str, Any], cache_dir: Path, retries: object = 3, **kwargs: object
+        cls, model: Dict[str, Any], cache_dir: Path, retries: object = 3, **kwargs
     ) -> Path:
         """
         Downloads a model from HuggingFace Hub or Google Cloud Storage.
@@ -234,7 +233,8 @@ class ModelManagement:
         Returns:
             Path: The path to the downloaded model directory.
         """
-        if kwargs.get("local_files_only", False):
+        cls.local_files_only = kwargs.get("local_files_only", False)
+        if cls.local_files_only:
             retries = 1
         hf_source = model.get("sources", {}).get("hf")
         url_source = model.get("sources", {}).get("url")
@@ -252,25 +252,22 @@ class ModelManagement:
                             hf_source,
                             cache_dir=str(cache_dir),
                             extra_patterns=extra_patterns,
-                            local_files_only=kwargs.get("local_files_only", False),
                         )
                     )
                 except (EnvironmentError, RepositoryNotFoundError, ValueError) as e:
-                    if not kwargs.get("local_files_only", False):
+                    if not cls.local_files_only:
                         logger.error(
                             f"Could not download model from HuggingFace: {e} "
                             "Falling back to other sources."
                         )
-            if url_source or kwargs.get("local_files_only", False):
+            if url_source or cls.local_files_only:
                 try:
-                    return cls.retrieve_model_gcs(
-                        model["model"], url_source, str(cache_dir), **kwargs
-                    )
+                    return cls.retrieve_model_gcs(model["model"], url_source, str(cache_dir))
                 except Exception:
-                    if not kwargs.get("local_files_only", False):
+                    if not cls.local_files_only:
                         logger.error(f"Could not download model from url: {url_source}")
 
-            if kwargs.get("local_files_only", False):
+            if cls.local_files_only:
                 logger.error("Could not find model in cache_dir")
             else:
                 logger.error(
