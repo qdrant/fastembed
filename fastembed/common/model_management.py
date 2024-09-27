@@ -207,7 +207,7 @@ class ModelManagement:
 
     @classmethod
     def download_model(
-        cls, model: Dict[str, Any], cache_dir: Path, retries: object = 3, **kwargs
+        cls, model: Dict[str, Any], cache_dir: Path, retries: int = 3, **kwargs
     ) -> Path:
         """
         Downloads a model from HuggingFace Hub or Google Cloud Storage.
@@ -234,8 +234,7 @@ class ModelManagement:
             Path: The path to the downloaded model directory.
         """
         cls.local_files_only = kwargs.get("local_files_only", False)
-        if cls.local_files_only:
-            retries = 1
+        retries = 1 if cls.local_files_only else retries
         hf_source = model.get("sources", {}).get("hf")
         url_source = model.get("sources", {}).get("url")
         sleep = 3.0
