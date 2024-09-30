@@ -105,6 +105,7 @@ class ModelManagement:
             cache_dir (Optional[str]): The path to the cache directory.
             extra_patterns (Optional[List[str]]): extra patterns to allow in the snapshot download, typically
                 includes the required model files.
+            local_files_only (bool, optional): Whether to only use local files. Defaults to False.
         Returns:
             Path: The path to the model directory.
         """
@@ -255,7 +256,6 @@ class ModelManagement:
                             hf_source,
                             cache_dir=str(cache_dir),
                             extra_patterns=extra_patterns,
-                            local_files_only=local_files_only,
                             **kwargs,
                         )
                     )
