@@ -96,6 +96,7 @@ class ModelManagement:
         cache_dir: Optional[str] = None,
         extra_patterns: Optional[List[str]] = None,
         local_files_only: bool = False,
+        **kwargs,
     ) -> str:
         """
         Downloads a model from HuggingFace Hub.
@@ -122,6 +123,7 @@ class ModelManagement:
             allow_patterns=allow_patterns,
             cache_dir=cache_dir,
             local_files_only=local_files_only,
+            **kwargs,
         )
 
     @classmethod
@@ -254,6 +256,7 @@ class ModelManagement:
                             cache_dir=str(cache_dir),
                             extra_patterns=extra_patterns,
                             local_files_only=local_files_only,
+                            **kwargs,
                         )
                     )
                 except (EnvironmentError, RepositoryNotFoundError, ValueError) as e:
