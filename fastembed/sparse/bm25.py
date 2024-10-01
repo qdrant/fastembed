@@ -1,21 +1,55 @@
 import os
-import string
 from collections import defaultdict
 from multiprocessing import get_all_start_methods
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
-
 import mmh3
 import numpy as np
 from snowballstemmer import stemmer as get_stemmer
-
-from fastembed.common.utils import define_cache_dir, iter_batch
+from fastembed.common.utils import (
+    define_cache_dir,
+    iter_batch,
+    get_all_punctuation,
+    remove_non_alphanumeric,
+)
 from fastembed.parallel_processor import ParallelWorkerPool, Worker
 from fastembed.sparse.sparse_embedding_base import (
     SparseEmbedding,
     SparseTextEmbeddingBase,
 )
-from fastembed.sparse.utils.tokenizer import WordTokenizer
+from fastembed.sparse.utils.tokenizer import SimpleTokenizer
+
+supported_languages = [
+    "arabic",
+    "azerbaijani",
+    "basque",
+    "bengali",
+    "catalan",
+    "chinese",
+    "danish",
+    "dutch",
+    "english",
+    "finnish",
+    "french",
+    "german",
+    "greek",
+    "hebrew",
+    "hinglish",
+    "hungarian",
+    "indonesian",
+    "italian",
+    "kazakh",
+    "nepali",
+    "norwegian",
+    "portuguese",
+    "romanian",
+    "russian",
+    "slovene",
+    "spanish",
+    "swedish",
+    "tajik",
+    "turkish",
+]
 
 supported_bm25_models = [
     {
@@ -26,14 +60,10 @@ supported_bm25_models = [
             "hf": "Qdrant/bm25",
         },
         "model_file": "mock.file",  # bm25 does not require a model, so we just use a mock
-        "additional_files": ["stopwords.txt"],
+        "additional_files": [f"{lang}.txt" for lang in supported_languages],
         "requires_idf": True,
     },
 ]
-
-MODEL_TO_LANGUAGE = {
-    "Qdrant/bm25": "english",
-}
 
 
 class Bm25(SparseTextEmbeddingBase):
@@ -71,9 +101,16 @@ class Bm25(SparseTextEmbeddingBase):
         k: float = 1.2,
         b: float = 0.75,
         avg_len: float = 256.0,
+        language: str = "english",
+        token_max_length: int = 40,
         **kwargs,
     ):
         super().__init__(model_name, cache_dir, **kwargs)
+
+        if language not in supported_languages:
+            raise ValueError(f"{language} language is not supported")
+        else:
+            self.language = language
 
         self.k = k
         self.b = b
@@ -82,14 +119,16 @@ class Bm25(SparseTextEmbeddingBase):
         model_description = self._get_model_description(model_name)
         self.cache_dir = define_cache_dir(cache_dir)
 
-        model_dir = self.download_model(
+        self._model_dir = self.download_model(
             model_description, self.cache_dir, local_files_only=self._local_files_only
         )
 
-        self.punctuation = set(string.punctuation)
-        self.stopwords = set(self._load_stopwords(model_dir))
-        self.stemmer = get_stemmer(MODEL_TO_LANGUAGE[model_name])
-        self.tokenizer = WordTokenizer
+        self.token_max_length = token_max_length
+        self.punctuation = set(get_all_punctuation())
+        self.stopwords = set(self._load_stopwords(self._model_dir, self.language))
+
+        self.stemmer = get_stemmer(language)
+        self.tokenizer = SimpleTokenizer
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Any]]:
@@ -101,8 +140,8 @@ class Bm25(SparseTextEmbeddingBase):
         return supported_bm25_models
 
     @classmethod
-    def _load_stopwords(cls, model_dir: Path) -> List[str]:
-        stopwords_path = model_dir / "stopwords.txt"
+    def _load_stopwords(cls, model_dir: Path, language: str) -> List[str]:
+        stopwords_path = model_dir / f"{language}.txt"
         if not stopwords_path.exists():
             return []
 
@@ -185,10 +224,13 @@ class Bm25(SparseTextEmbeddingBase):
             if token in self.punctuation:
                 continue
 
-            if token in self.stopwords:
+            if token.lower() in self.stopwords:
                 continue
 
-            stemmed_token = self.stemmer.stemWord(token)
+            if len(token) > self.token_max_length:
+                continue
+
+            stemmed_token = self.stemmer.stemWord(token.lower())
 
             if stemmed_token:
                 stemmed_tokens.append(stemmed_token)
@@ -200,6 +242,7 @@ class Bm25(SparseTextEmbeddingBase):
     ) -> List[SparseEmbedding]:
         embeddings = []
         for document in documents:
+            document = remove_non_alphanumeric(document)
             tokens = self.tokenizer.tokenize(document)
             stemmed_tokens = self._stem(tokens)
             token_id2value = self._term_frequency(stemmed_tokens)
@@ -248,6 +291,7 @@ class Bm25(SparseTextEmbeddingBase):
             query = [query]
 
         for text in query:
+            text = remove_non_alphanumeric(text)
             tokens = self.tokenizer.tokenize(text)
             stemmed_tokens = self._stem(tokens)
             token_ids = np.array(

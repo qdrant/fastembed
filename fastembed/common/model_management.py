@@ -148,7 +148,9 @@ class ModelManagement:
             # Open the tar.gz file
             with tarfile.open(targz_path, "r:gz") as tar:
                 # Extract all files into the cache directory
-                tar.extractall(path=cache_dir)
+                tar.extractall(
+                    path=cache_dir,
+                )
         except tarfile.TarError as e:
             # If any error occurs while opening or extracting the tar.gz file,
             # delete the cache directory (if it was created in this function)
@@ -196,7 +198,9 @@ class ModelManagement:
         return model_dir
 
     @classmethod
-    def download_model(cls, model: Dict[str, Any], cache_dir: Path, retries=3, **kwargs) -> Path:
+    def download_model(
+        cls, model: Dict[str, Any], cache_dir: Path, retries: object = 3, **kwargs: object
+    ) -> Path:
         """
         Downloads a model from HuggingFace Hub or Google Cloud Storage.
 

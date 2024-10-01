@@ -4,6 +4,14 @@ import re
 from typing import List
 
 
+class SimpleTokenizer:
+    def tokenize(text: str) -> List[str]:
+        text = re.sub(r"[^\w]", " ", text.lower())
+        text = re.sub(r"\s+", " ", text)
+
+        return text.strip().split()
+
+
 class WordTokenizer:
     """The tokenizer is "destructive" such that the regexes applied will munge the
     input string to a state beyond re-construction.
@@ -68,8 +76,7 @@ class WordTokenizer:
         )
     ]
     CONTRACTIONS3 = [
-        re.compile(pattern)
-        for pattern in (r"(?i) ('t)(?#X)(is)\b", r"(?i) ('t)(?#X)(was)\b")
+        re.compile(pattern) for pattern in (r"(?i) ('t)(?#X)(is)\b", r"(?i) ('t)(?#X)(was)\b")
     ]
 
     @classmethod

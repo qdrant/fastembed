@@ -1,5 +1,10 @@
-import pytest
+import os
+import shutil
 
+import pytest
+import numpy as np
+
+from fastembed.sparse.bm25 import Bm25
 from fastembed.sparse.sparse_text_embedding import SparseTextEmbedding
 
 CANONICAL_COLUMN_VALUES = {
@@ -45,6 +50,7 @@ docs = ["Hello World"]
 
 
 def test_batch_embedding():
+    is_ci = os.getenv("CI")
     docs_to_embed = docs * 10
 
     for model_name, expected_result in CANONICAL_COLUMN_VALUES.items():
@@ -54,9 +60,12 @@ def test_batch_embedding():
 
         for i, value in enumerate(result.values):
             assert pytest.approx(value, abs=0.001) == expected_result["values"][i]
+        if is_ci:
+            shutil.rmtree(model.model._model_dir)
 
 
 def test_single_embedding():
+    is_ci = os.getenv("CI")
     for model_name, expected_result in CANONICAL_COLUMN_VALUES.items():
         model = SparseTextEmbedding(model_name=model_name)
 
@@ -67,11 +76,12 @@ def test_single_embedding():
 
             for i, value in enumerate(result.values):
                 assert pytest.approx(value, abs=0.001) == expected_result["values"][i]
+        if is_ci:
+            shutil.rmtree(model.model._model_dir)
 
 
 def test_parallel_processing():
-    import numpy as np
-
+    is_ci = os.getenv("CI")
     model = SparseTextEmbedding(model_name="prithivida/Splade_PP_en_v1")
     docs = ["hello world", "flag embedding"] * 30
     sparse_embeddings_duo = list(model.embed(docs, batch_size=10, parallel=2))
@@ -95,3 +105,47 @@ def test_parallel_processing():
         )
         assert np.allclose(sparse_embedding.values, sparse_embedding_duo.values, atol=1e-3)
         assert np.allclose(sparse_embedding.values, sparse_embedding_all.values, atol=1e-3)
+
+    if is_ci:
+        shutil.rmtree(model.model._model_dir)
+
+
+@pytest.fixture
+def bm25_instance():
+    ci = os.getenv("CI", True)
+    model = Bm25("Qdrant/bm25", language="english")
+    yield model
+    if ci:
+        shutil.rmtree(model._model_dir)
+
+
+def test_stem_with_stopwords_and_punctuation(bm25_instance):
+    # Setup
+    bm25_instance.stopwords = {"the", "is", "a"}
+    bm25_instance.punctuation = {".", ",", "!"}
+
+    # Test data
+    tokens = ["The", "quick", "brown", "fox", "is", "a", "test", "sentence", ".", "!"]
+
+    # Execute
+    result = bm25_instance._stem(tokens)
+
+    # Assert
+    expected = ["quick", "brown", "fox", "test", "sentenc"]
+    assert result == expected, f"Expected {expected}, but got {result}"
+
+
+def test_stem_case_insensitive_stopwords(bm25_instance):
+    # Setup
+    bm25_instance.stopwords = {"the", "is", "a"}
+    bm25_instance.punctuation = {".", ",", "!"}
+
+    # Test data
+    tokens = ["THE", "Quick", "Brown", "Fox", "IS", "A", "Test", "Sentence", ".", "!"]
+
+    # Execute
+    result = bm25_instance._stem(tokens)
+
+    # Assert
+    expected = ["quick", "brown", "fox", "test", "sentenc"]
+    assert result == expected, f"Expected {expected}, but got {result}"

@@ -22,7 +22,17 @@ supported_colbert_models = [
             "hf": "colbert-ir/colbertv2.0",
         },
         "model_file": "model.onnx",
-    }
+    },
+    {
+        "model": "answerdotai/answerai-colbert-small-v1",
+        "dim": 96,
+        "description": "Text embeddings, Unimodal (text), Multilingual (~100 languages), 512 input tokens truncation, 2024 year",
+        "size_in_GB": 0.13,
+        "sources": {
+            "hf": "answerdotai/answerai-colbert-small-v1",
+        },
+        "model_file": "vespa_colbert.onnx",
+    },
 ]
 
 
@@ -126,12 +136,12 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         model_description = self._get_model_description(model_name)
         self.cache_dir = define_cache_dir(cache_dir)
 
-        model_dir = self.download_model(
+        self._model_dir = self.download_model(
             model_description, self.cache_dir, local_files_only=self._local_files_only
         )
 
         self.load_onnx_model(
-            model_dir=model_dir,
+            model_dir=self._model_dir,
             model_file=model_description["model_file"],
             threads=threads,
             providers=providers,

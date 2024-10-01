@@ -1,3 +1,3 @@
-from fastembed.common.types import ImageInput, OnnxProvider, PathInput
+from fastembed.common.types import ImageInput, OnnxProvider, PathInput, PilInput
 
-__all__ = ["OnnxProvider", "ImageInput", "PathInput"]
+__all__ = ["OnnxProvider", "ImageInput", "PathInput", "PilInput"]

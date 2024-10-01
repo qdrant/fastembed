@@ -12,7 +12,7 @@ supported_onnx_models = [
     {
         "model": "Qdrant/clip-ViT-B-32-vision",
         "dim": 512,
-        "description": "CLIP vision encoder based on ViT-B/32",
+        "description": "Image embeddings, Multimodal (text&image), 2021 year",
         "size_in_GB": 0.34,
         "sources": {
             "hf": "Qdrant/clip-ViT-B-32-vision",
@@ -22,7 +22,7 @@ supported_onnx_models = [
     {
         "model": "Qdrant/resnet50-onnx",
         "dim": 2048,
-        "description": "ResNet-50 from `Deep Residual Learning for Image Recognition <https://arxiv.org/abs/1512.03385>`__.",
+        "description": "Image embeddings, Unimodal (image), 2016 year",
         "size_in_GB": 0.1,
         "sources": {
             "hf": "Qdrant/resnet50-onnx",
@@ -32,7 +32,7 @@ supported_onnx_models = [
     {
         "model": "Qdrant/Unicom-ViT-B-16",
         "dim": 768,
-        "description": "Unicom Unicom-ViT-B-16 from open-metric-learning",
+        "description": "Image embeddings (more detailed than Unicom-ViT-B-32), Multimodal (text&image), 2023 year",
         "size_in_GB": 0.82,
         "sources": {
             "hf": "Qdrant/Unicom-ViT-B-16",
@@ -42,7 +42,7 @@ supported_onnx_models = [
     {
         "model": "Qdrant/Unicom-ViT-B-32",
         "dim": 512,
-        "description": "Unicom Unicom-ViT-B-32 from open-metric-learning",
+        "description": "Image embeddings, Multimodal (text&image), 2023 year",
         "size_in_GB": 0.48,
         "sources": {
             "hf": "Qdrant/Unicom-ViT-B-32",
@@ -50,6 +50,7 @@ supported_onnx_models = [
         "model_file": "model.onnx",
     },
 ]
+
 
 class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
     def __init__(
@@ -76,12 +77,12 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
 
         model_description = self._get_model_description(model_name)
         self.cache_dir = define_cache_dir(cache_dir)
-        model_dir = self.download_model(
+        self._model_dir = self.download_model(
             model_description, self.cache_dir, local_files_only=self._local_files_only
         )
 
         self.load_onnx_model(
-            model_dir=model_dir,
+            model_dir=self._model_dir,
             model_file=model_description["model_file"],
             threads=threads,
             providers=providers,
@@ -141,16 +142,10 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
 
         return onnx_input
 
-    def _post_process_onnx_output(
-        self, output: OnnxOutputContext
-    ) -> Iterable[np.ndarray]:
+    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
         return normalize(output.model_output).astype(np.float32)
 
 
 class OnnxImageEmbeddingWorker(ImageEmbeddingWorker):
-    def init_embedding(
-        self, model_name: str, cache_dir: str, **kwargs
-    ) -> OnnxImageEmbedding:
-        return OnnxImageEmbedding(
-            model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs
-        )
+    def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> OnnxImageEmbedding:
+        return OnnxImageEmbedding(model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs)

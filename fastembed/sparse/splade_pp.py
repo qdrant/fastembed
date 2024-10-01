@@ -1,7 +1,6 @@
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Type, Union
 
 import numpy as np
-
 from fastembed.common import OnnxProvider
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.utils import define_cache_dir
@@ -13,9 +12,9 @@ from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
 
 supported_splade_models = [
     {
-        "model": "prithvida/Splade_PP_en_v1",
+        "model": "prithivida/Splade_PP_en_v1",
         "vocab_size": 30522,
-        "description": "Misspelled version of the model. Retained for backward compatibility. Independent Implementation of SPLADE++ Model for English",
+        "description": "Independent Implementation of SPLADE++ Model for English",
         "size_in_GB": 0.532,
         "sources": {
             "hf": "Qdrant/SPLADE_PP_en_v1",
@@ -23,7 +22,7 @@ supported_splade_models = [
         "model_file": "model.onnx",
     },
     {
-        "model": "prithivida/Splade_PP_en_v1",
+        "model": "prithvida/Splade_PP_en_v1",
         "vocab_size": 30522,
         "description": "Independent Implementation of SPLADE++ Model for English",
         "size_in_GB": 0.532,
@@ -78,18 +77,17 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         Raises:
             ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
         """
-
         super().__init__(model_name, cache_dir, threads, **kwargs)
 
         model_description = self._get_model_description(model_name)
         self.cache_dir = define_cache_dir(cache_dir)
 
-        model_dir = self.download_model(
+        self._model_dir = self.download_model(
             model_description, self.cache_dir, local_files_only=self._local_files_only
         )
 
         self.load_onnx_model(
-            model_dir=model_dir,
+            model_dir=self._model_dir,
             model_file=model_description["model_file"],
             threads=threads,
             providers=providers,
