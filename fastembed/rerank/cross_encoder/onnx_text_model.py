@@ -33,6 +33,6 @@ class OnnxCrossEncoderModel(OnnxModel):
             if input_name.name == "token_type_ids":
                 inputs["token_type_ids"] = [enc.type_ids for enc in tokenized_input]
 
-        outputs = self.model.run(None, inputs)
+        outputs = self.model.run(self.ONNX_OUTPUT_NAMES, inputs)
 
         return outputs[0][:, 0].tolist()

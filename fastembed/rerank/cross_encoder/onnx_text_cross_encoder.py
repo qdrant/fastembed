@@ -77,6 +77,17 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
         batch_size: int = 64,
         **kwargs,
     ) -> Iterable[float]:
+        """
+        Reranks documents based on their relevance to a given query by generating embeddings for each document.
+
+        Args:
+            query (str): The query string to which document relevance is calculated.
+            documents (Union[str, Iterable[str]]): A single document or an iterable of documents to be embedded.
+            batch_size (int, optional): The number of documents processed in each batch. Higher batch sizes improve speed
+                                        but require more memory. Default is 64.
+        Returns:
+            Iterable[float]: A list of relevance scores for each document.
+        """
         if not documents:
             return []
 

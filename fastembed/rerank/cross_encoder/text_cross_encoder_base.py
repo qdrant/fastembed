@@ -4,6 +4,8 @@ from fastembed.common.model_management import ModelManagement
 
 
 class TextCrossEncoderBase(ModelManagement):
+    ONNX_OUTPUT_NAMES = None
+
     def __init__(
         self,
         model_name: str,
