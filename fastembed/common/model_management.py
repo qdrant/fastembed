@@ -95,6 +95,7 @@ class ModelManagement:
         hf_source_repo: str,
         cache_dir: Optional[str] = None,
         extra_patterns: Optional[List[str]] = None,
+        local_files_only: bool = False,
         **kwargs,
     ) -> str:
         """
@@ -104,6 +105,7 @@ class ModelManagement:
             cache_dir (Optional[str]): The path to the cache directory.
             extra_patterns (Optional[List[str]]): extra patterns to allow in the snapshot download, typically
                 includes the required model files.
+            local_files_only (bool, optional): Whether to only use local files. Defaults to False.
         Returns:
             Path: The path to the model directory.
         """
@@ -121,7 +123,8 @@ class ModelManagement:
             repo_id=hf_source_repo,
             allow_patterns=allow_patterns,
             cache_dir=cache_dir,
-            local_files_only=kwargs.get("local_files_only", False),
+            local_files_only=local_files_only,
+            **kwargs,
         )
 
     @classmethod
@@ -162,9 +165,10 @@ class ModelManagement:
         return cache_dir
 
     @classmethod
-    def retrieve_model_gcs(cls, model_name: str, source_url: str, cache_dir: str) -> Path:
+    def retrieve_model_gcs(
+        cls, model_name: str, source_url: str, cache_dir: str, local_files_only: bool = False
+    ) -> Path:
         fast_model_name = f"fast-{model_name.split('/')[-1]}"
-
         cache_tmp_dir = Path(cache_dir) / "tmp"
         model_tmp_dir = cache_tmp_dir / fast_model_name
         model_dir = Path(cache_dir) / fast_model_name
@@ -183,23 +187,31 @@ class ModelManagement:
         if model_tar_gz.exists():
             model_tar_gz.unlink()
 
-        cls.download_file_from_gcs(
-            source_url,
-            output_path=str(model_tar_gz),
-        )
+        if not local_files_only:
+            cls.download_file_from_gcs(
+                source_url,
+                output_path=str(model_tar_gz),
+            )
 
-        cls.decompress_to_cache(targz_path=str(model_tar_gz), cache_dir=str(cache_tmp_dir))
-        assert model_tmp_dir.exists(), f"Could not find {model_tmp_dir} in {cache_tmp_dir}"
+            cls.decompress_to_cache(targz_path=str(model_tar_gz), cache_dir=str(cache_tmp_dir))
+            assert model_tmp_dir.exists(), f"Could not find {model_tmp_dir} in {cache_tmp_dir}"
 
-        model_tar_gz.unlink()
-        # Rename from tmp to final name is atomic
-        model_tmp_dir.rename(model_dir)
+            model_tar_gz.unlink()
+            # Rename from tmp to final name is atomic
+            model_tmp_dir.rename(model_dir)
+        else:
+            logger.error(
+                f"Could not find the model tar.gz file at {model_dir} and local_files_only=True."
+            )
+            raise ValueError(
+                f"Could not find the model tar.gz file at {model_dir} and local_files_only=True."
+            )
 
         return model_dir
 
     @classmethod
     def download_model(
-        cls, model: Dict[str, Any], cache_dir: Path, retries: object = 3, **kwargs: object
+        cls, model: Dict[str, Any], cache_dir: Path, retries: int = 3, **kwargs
     ) -> Path:
         """
         Downloads a model from HuggingFace Hub or Google Cloud Storage.
@@ -225,7 +237,8 @@ class ModelManagement:
         Returns:
             Path: The path to the downloaded model directory.
         """
-
+        local_files_only = kwargs.get("local_files_only", False)
+        retries = 1 if local_files_only else retries
         hf_source = model.get("sources", {}).get("hf")
         url_source = model.get("sources", {}).get("url")
 
@@ -243,24 +256,34 @@ class ModelManagement:
                             hf_source,
                             cache_dir=str(cache_dir),
                             extra_patterns=extra_patterns,
-                            local_files_only=kwargs.get("local_files_only", False),
+                            **kwargs,
                         )
                     )
                 except (EnvironmentError, RepositoryNotFoundError, ValueError) as e:
-                    logger.error(
-                        f"Could not download model from HuggingFace: {e} "
-                        "Falling back to other sources."
-                    )
-            if url_source:
+                    if not local_files_only:
+                        logger.error(
+                            f"Could not download model from HuggingFace: {e} "
+                            "Falling back to other sources."
+                        )
+            if url_source or local_files_only:
                 try:
-                    return cls.retrieve_model_gcs(model["model"], url_source, str(cache_dir))
+                    return cls.retrieve_model_gcs(
+                        model["model"],
+                        url_source,
+                        str(cache_dir),
+                        local_files_only=local_files_only,
+                    )
                 except Exception:
-                    logger.error(f"Could not download model from url: {url_source}")
+                    if not local_files_only:
+                        logger.error(f"Could not download model from url: {url_source}")
 
-            logger.error(
-                f"Could not download model from either source, sleeping for {sleep} seconds, {retries} retries left."
-            )
+            if local_files_only:
+                logger.error("Could not find model in cache_dir")
+            else:
+                logger.error(
+                    f"Could not download model from either source, sleeping for {sleep} seconds, {retries} retries left."
+                )
             time.sleep(sleep)
             sleep *= 3
 
-        raise ValueError(f"Could not download model {model['model']} from any source.")
+        raise ValueError(f"Could not load model {model['model']} from any source.")
