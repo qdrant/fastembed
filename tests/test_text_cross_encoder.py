@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 import pytest
+import shutil
 
 from fastembed.rerank.cross_encoder import TextCrossEncoder
 
@@ -30,6 +31,8 @@ def test_rerank():
         assert np.allclose(
             scores, canonical_scores, atol=1e-3
         ), f"Model: {model_name}, Scores: {scores}, Expected: {canonical_scores}"
+        if is_ci:
+            shutil.rmtree(model.model._model_dir)
 
 
 @pytest.mark.parametrize(
@@ -37,6 +40,8 @@ def test_rerank():
     ["Xenova/ms-marco-MiniLM-L-6-v2", "Xenova/ms-marco-MiniLM-L-12-v2", "BAAI/bge-reranker-base"],
 )
 def test_batch_rerank(model_name):
+    is_ci = os.getenv("CI")
+
     model = TextCrossEncoder(model_name=model_name)
 
     query = "What is the capital of France?"
@@ -49,3 +54,5 @@ def test_batch_rerank(model_name):
     assert np.allclose(
         scores, canonical_scores, atol=1e-3
     ), f"Model: {model_name}, Scores: {scores}, Expected: {canonical_scores}"
+    if is_ci:
+        shutil.rmtree(model.model._model_dir)
