@@ -10,7 +10,7 @@ from fastembed.common import OnnxProvider
 from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
 from fastembed.common.preprocessor_utils import load_tokenizer
 from fastembed.common.utils import iter_batch
-from fastembed.parallel_processor import ParallelWorkerPool
+from fastembed.parallel_processor import ParallelWorkerPool, GPUParallelWorkerPool
 
 
 class OnnxTextModel(OnnxModel[T]):
@@ -42,12 +42,14 @@ class OnnxTextModel(OnnxModel[T]):
         model_file: str,
         threads: Optional[int],
         providers: Optional[Sequence[OnnxProvider]] = None,
+        device_ids: Optional[List[int]] = None,
     ) -> None:
         super().load_onnx_model(
             model_dir=model_dir,
             model_file=model_file,
             threads=threads,
             providers=providers,
+            device_ids=device_ids,
         )
         self.tokenizer, self.special_token_to_id = load_tokenizer(model_dir=model_dir)
 
@@ -89,6 +91,8 @@ class OnnxTextModel(OnnxModel[T]):
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
         parallel: Optional[int] = None,
+        providers: Optional[Sequence[OnnxProvider]] = None,
+        device_ids: Optional[List[int]] = None,
         **kwargs,
     ) -> Iterable[T]:
         is_small = False
@@ -104,19 +108,35 @@ class OnnxTextModel(OnnxModel[T]):
         if parallel == 0:
             parallel = os.cpu_count()
 
-        if parallel is None or is_small:
+        use_multi_gpu = (
+            parallel and providers and "CUDAExecutionProvider" in providers and device_ids
+        )
+
+        if is_small:
             for batch in iter_batch(documents, batch_size):
                 yield from self._post_process_onnx_output(self.onnx_embed(batch))
-        else:
-            start_method = (
-                "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
-            )
-            params = {"model_name": model_name, "cache_dir": cache_dir, **kwargs}
-            pool = ParallelWorkerPool(
-                parallel, self._get_worker_class(), start_method=start_method
-            )
+        elif parallel and (use_multi_gpu or "CPUExecutionProvider" in providers):
+            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
+            params = {
+                "model_name": model_name,
+                "cache_dir": cache_dir,
+                "providers": providers,
+                **kwargs,
+            }
+            if use_multi_gpu:
+                num_workers = min(parallel, len(device_ids))
+                pool = GPUParallelWorkerPool(
+                    num_workers, self._get_worker_class(), device_ids, start_method=start_method
+                )
+            else:
+                pool = ParallelWorkerPool(
+                    parallel, self._get_worker_class(), start_method=start_method
+                )
             for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
                 yield from self._post_process_onnx_output(batch)
+        else:
+            for batch in iter_batch(documents, batch_size):
+                yield from self._post_process_onnx_output(self.onnx_embed(batch))
 
 
 class TextEmbeddingWorker(EmbeddingWorker):

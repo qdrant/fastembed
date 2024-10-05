@@ -172,6 +172,8 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
+        lazy_load: bool = False,
+        device_ids: Optional[List[int]] = None,
         **kwargs,
     ):
         """
@@ -187,18 +189,26 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
         """
 
         super().__init__(model_name, cache_dir, threads, **kwargs)
+        self.providers = providers
+        self.lazy_load = lazy_load
+        self.device_ids = device_ids
 
         model_description = self._get_model_description(model_name)
         self.cache_dir = define_cache_dir(cache_dir)
         self._model_dir = self.download_model(
             model_description, self.cache_dir, local_files_only=self._local_files_only
-        )
 
+        if not self.lazy_load:
+            self._load_onnx_model()
+
+    def _load_onnx_model(self):
+        model_description = self._get_model_description(self.model_name)
         self.load_onnx_model(
             model_dir=self._model_dir,
             model_file=model_description["model_file"],
-            threads=threads,
-            providers=providers,
+            threads=self.threads,
+            providers=self.providers,
+            device_ids=self.device_ids,
         )
 
     def embed(
@@ -223,12 +233,17 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
         Returns:
             List of embeddings, one per document
         """
+        if self.lazy_load and self.model is None:
+            self._load_onnx_model()
+
         yield from self._embed_documents(
             model_name=self.model_name,
             cache_dir=str(self.cache_dir),
             documents=documents,
             batch_size=batch_size,
             parallel=parallel,
+            providers=self.providers,
+            device_ids=self.device_ids,
             **kwargs,
         )
 
@@ -254,6 +269,15 @@ class OnnxTextEmbeddingWorker(TextEmbeddingWorker):
         self,
         model_name: str,
         cache_dir: str,
+        device_id: Optional[int] = None,
         **kwargs,
     ) -> OnnxTextEmbedding:
+        providers = kwargs.get("providers", None)
+        if device_id is not None and providers and "CUDAExecutionProvider" in providers:
+            kwargs["providers"] = [("CUDAExecutionProvider", {"device_id": device_id})]
+
         return OnnxTextEmbedding(model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs)
+
+    # def __del__(self):
+    #     if hasattr(self, "model"):
+    #         del self.model

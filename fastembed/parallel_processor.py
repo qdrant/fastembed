@@ -47,7 +47,9 @@ def _worker(
     if kwargs is None:
         kwargs = {}
 
-    logging.info(f"Reader worker: {worker_id} PID: {os.getpid()}")
+    logging.info(
+        f"Reader worker: {worker_id} PID: {os.getpid()} Device: {kwargs.get('device_id', 'CPU')}"
+    )
     try:
         worker = worker_class.start(**kwargs)
 
