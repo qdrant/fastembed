@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Type
+from typing import Any, Dict, List, Type, Optional
 
 import numpy as np
 
@@ -57,8 +57,15 @@ class E5OnnxEmbedding(OnnxTextEmbedding):
 
 class E5OnnxEmbeddingWorker(OnnxTextEmbeddingWorker):
     def init_embedding(
-        self, model_name: str, cache_dir: str, **kwargs
+        self,
+        model_name: str,
+        cache_dir: str,
+        device_id: Optional[int] = None,
+        **kwargs,
     ) -> E5OnnxEmbedding:
+        providers = kwargs.get("providers", None)
+        if device_id is not None and providers and "CUDAExecutionProvider" in providers:
+            kwargs["providers"] = [("CUDAExecutionProvider", {"device_id": device_id})]
         return E5OnnxEmbedding(
             model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs
         )

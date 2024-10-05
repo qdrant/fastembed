@@ -278,7 +278,3 @@ class OnnxTextEmbeddingWorker(TextEmbeddingWorker):
             kwargs["providers"] = [("CUDAExecutionProvider", {"device_id": device_id})]
 
         return OnnxTextEmbedding(model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs)
-
-    # def __del__(self):
-    #     if hasattr(self, "model"):
-    #         del self.model

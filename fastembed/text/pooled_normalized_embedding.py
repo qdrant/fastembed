@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Type
+from typing import Any, Dict, Iterable, List, Type, Optional
 
 import numpy as np
 
@@ -79,8 +79,15 @@ class PooledNormalizedEmbedding(PooledEmbedding):
 
 class PooledNormalizedEmbeddingWorker(OnnxTextEmbeddingWorker):
     def init_embedding(
-        self, model_name: str, cache_dir: str, **kwargs
+        self,
+        model_name: str,
+        cache_dir: str,
+        device_id: Optional[int] = None,
+        **kwargs,
     ) -> OnnxTextEmbedding:
+        providers = kwargs.get("providers", None)
+        if device_id is not None and providers and "CUDAExecutionProvider" in providers:
+            kwargs["providers"] = [("CUDAExecutionProvider", {"device_id": device_id})]
         return PooledNormalizedEmbedding(
             model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs
         )
