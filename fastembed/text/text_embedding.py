@@ -55,28 +55,38 @@ class TextEmbedding(TextEmbeddingBase):
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
+        lazy_load: bool = False,
+        device_ids: Optional[List[int]] = None,
         **kwargs,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
+        self.lazy_load = lazy_load
+        self.providers = providers
+        self.device_ids = device_ids
+        self.kwargs = kwargs
 
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
             supported_models = EMBEDDING_MODEL_TYPE.list_supported_models()
-            if any(
-                model_name.lower() == model["model"].lower()
-                for model in supported_models
-            ):
-                self.model = EMBEDDING_MODEL_TYPE(
-                    model_name,
-                    cache_dir,
-                    threads=threads,
-                    providers=providers,
-                    **kwargs,
-                )
+            if any(model_name.lower() == model["model"].lower() for model in supported_models):
+                self.model_class = EMBEDDING_MODEL_TYPE
+                self.model = None
+                if not self.lazy_load:
+                    self._load_onnx_model()
                 return
 
         raise ValueError(
             f"Model {model_name} is not supported in TextEmbedding."
             "Please check the supported models using `TextEmbedding.list_supported_models()`"
+        )
+
+    def _load_onnx_model(self):
+        self.model = self.model_class(
+            self.model_name,
+            self.cache_dir,
+            threads=self.threads,
+            providers=self.providers,
+            device_ids=self.device_ids,
+            **self.kwargs,
         )
 
     def embed(
@@ -101,4 +111,7 @@ class TextEmbedding(TextEmbeddingBase):
         Returns:
             List of embeddings, one per document
         """
+        if self.lazy_load and self.model is None:
+            self._load_onnx_model()
+
         yield from self.model.embed(documents, batch_size, parallel, **kwargs)

@@ -11,6 +11,7 @@ from typing import (
     Tuple,
     Type,
     TypeVar,
+    List,
 )
 
 import numpy as np
@@ -56,13 +57,12 @@ class OnnxModel(Generic[T]):
         model_file: str,
         threads: Optional[int],
         providers: Optional[Sequence[OnnxProvider]] = None,
+        device_ids: Optional[List[int]] = None,
     ) -> None:
         model_path = model_dir / model_file
         # List of Execution Providers: https://onnxruntime.ai/docs/execution-providers
 
-        onnx_providers = (
-            ["CPUExecutionProvider"] if providers is None else list(providers)
-        )
+        onnx_providers = ["CPUExecutionProvider"] if providers is None else list(providers)
         available_providers = ort.get_available_providers()
         requested_provider_names = []
         for provider in onnx_providers:
@@ -80,6 +80,11 @@ class OnnxModel(Generic[T]):
         if threads is not None:
             so.intra_op_num_threads = threads
             so.inter_op_num_threads = threads
+
+        if "CUDAExecutionProvider" in requested_provider_names and device_ids:
+            # first device_id for the main process
+            device_id = device_ids[0]
+            onnx_providers = [("CUDAExecutionProvider", {"device_id": device_id})]
 
         self.model = ort.InferenceSession(
             str(model_path), providers=onnx_providers, sess_options=so
