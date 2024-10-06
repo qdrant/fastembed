@@ -234,7 +234,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
         Returns:
             List of embeddings, one per document
         """
-        if self.lazy_load and self.model is None:
+        if self.lazy_load and self.model is None and parallel is None:
             self._load_onnx_model()
 
         yield from self._embed_documents(

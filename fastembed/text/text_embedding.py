@@ -63,13 +63,14 @@ class TextEmbedding(TextEmbeddingBase):
         self.lazy_load = lazy_load
         self.providers = providers
         self.device_ids = device_ids
+        self.model = None
+        self.model_class = None
         self.kwargs = kwargs
 
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
             supported_models = EMBEDDING_MODEL_TYPE.list_supported_models()
             if any(model_name.lower() == model["model"].lower() for model in supported_models):
                 self.model_class = EMBEDDING_MODEL_TYPE
-                self.model = None
                 if not self.lazy_load:
                     self._load_onnx_model()
                 return
@@ -111,7 +112,19 @@ class TextEmbedding(TextEmbeddingBase):
         Returns:
             List of embeddings, one per document
         """
-        if self.lazy_load and self.model is None:
+        if self.lazy_load and self.model is None and parallel is None:
             self._load_onnx_model()
 
-        yield from self.model.embed(documents, batch_size, parallel, **kwargs)
+        if parallel:
+            return self.model_class._embed_documents_parallel(
+                model_name=self.model_name,
+                cache_dir=self.cache_dir,
+                documents=documents,
+                batch_size=batch_size,
+                parallel=parallel,
+                providers=self.providers,
+                device_ids=self.device_ids,
+                **{**self.kwargs, **kwargs},
+            )
+        else:
+            return self.model.embed(documents, batch_size, parallel, **kwargs)
