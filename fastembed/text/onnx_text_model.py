@@ -1,4 +1,3 @@
-import os
 from multiprocessing import get_all_start_methods
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Type, Union
@@ -84,13 +83,14 @@ class OnnxTextModel(OnnxModel[T]):
             input_ids=onnx_input.get("input_ids", input_ids),
         )
 
-    def _embed_documents(
-        self,
+    @classmethod
+    def _embed_documents_parallel(
+        cls,
         model_name: str,
         cache_dir: str,
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
-        parallel: Optional[int] = None,
+        parallel: int = 2,
         providers: Optional[Sequence[OnnxProvider]] = None,
         device_ids: Optional[List[int]] = None,
         **kwargs,
@@ -105,17 +105,12 @@ class OnnxTextModel(OnnxModel[T]):
             if len(documents) < batch_size:
                 is_small = True
 
-        if parallel == 0:
-            parallel = os.cpu_count()
-
-        use_multi_gpu = (
-            parallel and providers and "CUDAExecutionProvider" in providers and device_ids
-        )
-
         if is_small:
+            model = cls(model_name=model_name, cache_dir=cache_dir, providers=providers, **kwargs)
             for batch in iter_batch(documents, batch_size):
-                yield from self._post_process_onnx_output(self.onnx_embed(batch))
-        elif parallel and (use_multi_gpu or "CPUExecutionProvider" in providers):
+                yield from model._post_process_onnx_output(model.onnx_embed(batch))
+        else:
+            use_multi_gpu = providers and "CUDAExecutionProvider" in providers and device_ids
             start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
             params = {
                 "model_name": model_name,
@@ -126,14 +121,37 @@ class OnnxTextModel(OnnxModel[T]):
             if use_multi_gpu:
                 num_workers = min(parallel, len(device_ids))
                 pool = GPUParallelWorkerPool(
-                    num_workers, self._get_worker_class(), device_ids, start_method=start_method
+                    num_workers, cls._get_worker_class(), device_ids, start_method=start_method
                 )
             else:
                 pool = ParallelWorkerPool(
-                    parallel, self._get_worker_class(), start_method=start_method
+                    parallel, cls._get_worker_class(), start_method=start_method
                 )
             for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
-                yield from self._post_process_onnx_output(batch)
+                yield from batch
+
+    def _embed_documents(
+        self,
+        model_name: str,
+        cache_dir: str,
+        documents: Union[str, Iterable[str]],
+        batch_size: int = 256,
+        parallel: Optional[int] = None,
+        providers: Optional[Sequence[OnnxProvider]] = None,
+        device_ids: Optional[List[int]] = None,
+        **kwargs,
+    ) -> Iterable[T]:
+        if parallel:
+            yield from self._embed_documents_parallel(
+                model_name,
+                cache_dir,
+                documents,
+                batch_size,
+                parallel,
+                providers,
+                device_ids,
+                **kwargs,
+            )
         else:
             for batch in iter_batch(documents, batch_size):
                 yield from self._post_process_onnx_output(self.onnx_embed(batch))
@@ -143,4 +161,4 @@ class TextEmbeddingWorker(EmbeddingWorker):
     def process(self, items: Iterable[Tuple[int, Any]]) -> Iterable[Tuple[int, Any]]:
         for idx, batch in items:
             onnx_output = self.model.onnx_embed(batch)
-            yield idx, onnx_output
+            yield idx, self.model._post_process_onnx_output(onnx_output)
