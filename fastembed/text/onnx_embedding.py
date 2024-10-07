@@ -193,19 +193,18 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
         self.lazy_load = lazy_load
         self.device_ids = device_ids
 
-        model_description = self._get_model_description(model_name)
+        self.model_description = self._get_model_description(model_name)
         self.cache_dir = define_cache_dir(cache_dir)
         self._model_dir = self.download_model(
-            model_description, self.cache_dir, local_files_only=self._local_files_only
+            self.model_description, self.cache_dir, local_files_only=self._local_files_only
 
         if not self.lazy_load:
             self._load_onnx_model()
 
     def _load_onnx_model(self):
-        model_description = self._get_model_description(self.model_name)
         self.load_onnx_model(
             model_dir=self._model_dir,
-            model_file=model_description["model_file"],
+            model_file=self.model_description["model_file"],
             threads=self.threads,
             providers=self.providers,
             device_ids=self.device_ids,
