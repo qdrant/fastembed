@@ -195,6 +195,8 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
             documents=documents,
             batch_size=batch_size,
             parallel=parallel,
+            providers=self.providers,
+            device_ids=self.device_ids,
             **kwargs,
         )
 

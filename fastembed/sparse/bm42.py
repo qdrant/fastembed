@@ -61,6 +61,8 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         threads: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
         alpha: float = 0.5,
+        lazy_load: bool = False,
+        device_ids: Optional[List[int]] = None,
         **kwargs,
     ):
         """
@@ -80,20 +82,18 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         """
 
         super().__init__(model_name, cache_dir, threads, **kwargs)
+        self.lazy_load = lazy_load
+        self.providers = providers
+        self.device_ids = device_ids
 
-        model_description = self._get_model_description(model_name)
+        self.model_description = self._get_model_description(model_name)
         self.cache_dir = define_cache_dir(cache_dir)
 
-        model_dir = self.download_model(
-            model_description, self.cache_dir, local_files_only=self._local_files_only
+        self.model_dir = self.download_model(
+            self.model_description, self.cache_dir, local_files_only=self._local_files_only
         )
-
-        self.load_onnx_model(
-            model_dir=model_dir,
-            model_file=model_description["model_file"],
-            threads=threads,
-            providers=providers,
-        )
+        if not self.lazy_load:
+            self._load_onnx_model()
 
         self.invert_vocab = {}
 
@@ -103,9 +103,18 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         self.special_tokens = set(self.special_token_to_id.keys())
         self.special_tokens_ids = set(self.special_token_to_id.values())
         self.punctuation = set(string.punctuation)
-        self.stopwords = set(self._load_stopwords(model_dir))
+        self.stopwords = set(self._load_stopwords(self.model_dir))
         self.stemmer = get_stemmer(MODEL_TO_LANGUAGE[model_name])
         self.alpha = alpha
+
+    def _load_onnx_model(self):
+        self.load_onnx_model(
+            model_dir=self.model_dir,
+            model_file=self.model_description["model_file"],
+            threads=self.threads,
+            providers=self.providers,
+            device_ids=self.device_ids,
+        )
 
     def _filter_pair_tokens(self, tokens: List[Tuple[str, Any]]) -> List[Tuple[str, Any]]:
         result = []
@@ -185,6 +194,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         # attention_value shape: (batch_size, num_heads, num_tokens, num_tokens)
         pooled_attention = np.mean(output.model_output[:, :, 0], axis=1) * output.attention_mask
 
+        results = []
         for document_token_ids, attention_value in zip(token_ids_batch, pooled_attention):
             document_tokens_with_ids = (
                 (idx, self.invert_vocab[token_id])
@@ -206,7 +216,8 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
             rescored = self._rescore_vector(max_token_weight)
 
-            yield SparseEmbedding.from_dict(rescored)
+            results.append(SparseEmbedding.from_dict(rescored))
+        return results
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Any]]:
@@ -248,12 +259,17 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         Returns:
             List of embeddings, one per document
         """
+        if self.lazy_load and self.model is None and parallel is None:
+            self._load_onnx_model()
+
         yield from self._embed_documents(
             model_name=self.model_name,
             cache_dir=str(self.cache_dir),
             documents=documents,
             batch_size=batch_size,
             parallel=parallel,
+            providers=self.providers,
+            device_ids=self.device_ids,
             alpha=self.alpha,
         )
 
@@ -289,5 +305,11 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
 
 class Bm42TextEmbeddingWorker(TextEmbeddingWorker):
-    def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> Bm42:
+    def init_embedding(
+        self, model_name: str, cache_dir: str, device_id: Optional[int] = None, **kwargs
+    ) -> Bm42:
+        providers = kwargs.get("providers", None)
+        if device_id is not None and providers and "CUDAExecutionProvider" in providers:
+            kwargs["providers"] = [("CUDAExecutionProvider", {"device_id": device_id})]
+
         return Bm42(model_name=model_name, cache_dir=cache_dir, **kwargs)

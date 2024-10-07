@@ -48,6 +48,8 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
+        lazy_load: bool = False,
+        device_ids: Optional[List[int]] = None,
         **kwargs,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
@@ -60,21 +62,34 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
             )
             model_name = "prithivida/Splade_PP_en_v1"
 
+        self.lazy_load = lazy_load
+        self.providers = providers
+        self.device_ids = device_ids
+        self.model = None
+        self.model_class = None
+        self.kwargs = kwargs
+
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
             supported_models = EMBEDDING_MODEL_TYPE.list_supported_models()
             if any(model_name.lower() == model["model"].lower() for model in supported_models):
-                self.model = EMBEDDING_MODEL_TYPE(
-                    model_name,
-                    cache_dir,
-                    threads=threads,
-                    providers=providers,
-                    **kwargs,
-                )
+                self.model_class = EMBEDDING_MODEL_TYPE
+                if not self.lazy_load:
+                    self._load_onnx_model()
                 return
 
         raise ValueError(
             f"Model {model_name} is not supported in SparseTextEmbedding."
             "Please check the supported models using `SparseTextEmbedding.list_supported_models()`"
+        )
+
+    def _load_onnx_model(self):
+        self.model = self.model_class(
+            self.model_name,
+            self.cache_dir,
+            threads=self.threads,
+            providers=self.providers,
+            device_ids=self.device_ids,
+            **self.kwargs,
         )
 
     def embed(
@@ -99,7 +114,20 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
         Returns:
             List of embeddings, one per document
         """
-        yield from self.model.embed(documents, batch_size, parallel, **kwargs)
+        if self.lazy_load and self.model is None and parallel is None:
+            self._load_onnx_model()
+
+        if parallel:
+            yield from self.model_class._embed_documents_parallel(
+                model_name=self.model_name,
+                cache_dir=self.cache_dir,
+                documents=documents,
+                batch_size=batch_size,
+                parallel=parallel,
+                **{**self.kwargs, **kwargs},
+            )
+        else:
+            yield from self.model.embed(documents, batch_size, parallel, **kwargs)
 
     def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> Iterable[SparseEmbedding]:
         """
