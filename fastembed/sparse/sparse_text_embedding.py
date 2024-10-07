@@ -124,6 +124,8 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
                 documents=documents,
                 batch_size=batch_size,
                 parallel=parallel,
+                providers=self.providers,
+                device_ids=self.device_ids,
                 **{**self.kwargs, **kwargs},
             )
         else:
