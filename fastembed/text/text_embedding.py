@@ -116,7 +116,7 @@ class TextEmbedding(TextEmbeddingBase):
             self._load_onnx_model()
 
         if parallel:
-            return self.model_class._embed_documents_parallel(
+            yield from self.model_class._embed_documents_parallel(
                 model_name=self.model_name,
                 cache_dir=self.cache_dir,
                 documents=documents,
@@ -127,4 +127,4 @@ class TextEmbedding(TextEmbeddingBase):
                 **{**self.kwargs, **kwargs},
             )
         else:
-            return self.model.embed(documents, batch_size, parallel, **kwargs)
+            yield from self.model.embed(documents, batch_size, parallel, **kwargs)
