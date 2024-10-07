@@ -59,6 +59,8 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
+        lazy_load: bool = False,
+        device_ids: Optional[List[int]] = None,
         **kwargs,
     ):
         """
@@ -74,18 +76,26 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
         """
 
         super().__init__(model_name, cache_dir, threads, **kwargs)
+        self.providers = providers
+        self.lazy_load = lazy_load
+        self.device_ids = device_ids
 
-        model_description = self._get_model_description(model_name)
+        self.model_description = self._get_model_description(model_name)
         self.cache_dir = define_cache_dir(cache_dir)
-        model_dir = self.download_model(
-            model_description, self.cache_dir, local_files_only=self._local_files_only
+        self.model_dir = self.download_model(
+            self.model_description, self.cache_dir, local_files_only=self._local_files_only
         )
 
+        if not self.lazy_load:
+            self._load_onnx_model()
+
+    def _load_onnx_model(self):
         self.load_onnx_model(
-            model_dir=model_dir,
-            model_file=model_description["model_file"],
-            threads=threads,
-            providers=providers,
+            model_dir=self.model_dir,
+            model_file=self.model_description["model_file"],
+            threads=self.threads,
+            providers=self.providers,
+            device_ids=self.device_ids,
         )
 
     @classmethod
@@ -120,12 +130,17 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
         Returns:
             List of embeddings, one per document
         """
+        if self.lazy_load and self.model is None and parallel is None:
+            self._load_onnx_model()
+
         yield from self._embed_images(
             model_name=self.model_name,
             cache_dir=str(self.cache_dir),
             images=images,
             batch_size=batch_size,
             parallel=parallel,
+            providers=self.providers,
+            device_ids=self.device_ids,
             **kwargs,
         )
 
@@ -147,5 +162,11 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
 
 
 class OnnxImageEmbeddingWorker(ImageEmbeddingWorker):
-    def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> OnnxImageEmbedding:
+    def init_embedding(
+        self, model_name: str, cache_dir: str, device_id: Optional[int] = None, **kwargs
+    ) -> OnnxImageEmbedding:
+        providers = kwargs.get("providers", None)
+        if device_id is not None and providers and "CUDAExecutionProvider" in providers:
+            kwargs["providers"] = [("CUDAExecutionProvider", {"device_id": device_id})]
+
         return OnnxImageEmbedding(model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs)

@@ -11,7 +11,7 @@ from fastembed.common import ImageInput, OnnxProvider
 from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
 from fastembed.common.preprocessor_utils import load_preprocessor
 from fastembed.common.utils import iter_batch
-from fastembed.parallel_processor import ParallelWorkerPool
+from fastembed.parallel_processor import ParallelWorkerPool, GPUParallelWorkerPool
 
 # Holds type of the embedding result
 
@@ -42,12 +42,14 @@ class OnnxImageModel(OnnxModel[T]):
         model_file: str,
         threads: Optional[int],
         providers: Optional[Sequence[OnnxProvider]] = None,
+        device_ids: Optional[List[int]] = None,
     ) -> None:
         super().load_onnx_model(
             model_dir=model_dir,
             model_file=model_file,
             threads=threads,
             providers=providers,
+            device_ids=device_ids,
         )
         self.processor = load_preprocessor(model_dir=model_dir)
 
@@ -67,13 +69,16 @@ class OnnxImageModel(OnnxModel[T]):
         embeddings = model_output[0].reshape(len(images), -1)
         return OnnxOutputContext(model_output=embeddings)
 
-    def _embed_images(
-        self,
+    @classmethod
+    def _embed_images_parallel(
+        cls,
         model_name: str,
         cache_dir: str,
         images: ImageInput,
         batch_size: int = 256,
-        parallel: Optional[int] = None,
+        parallel: Optional[int] = 2,
+        providers: Optional[Sequence[OnnxProvider]] = None,
+        device_ids: Optional[List[int]] = None,
         **kwargs,
     ) -> Iterable[T]:
         is_small = False
@@ -93,21 +98,60 @@ class OnnxImageModel(OnnxModel[T]):
         if parallel == 0:
             parallel = os.cpu_count()
 
-        if parallel is None or is_small:
+        if is_small:
+            model = cls(model_name=model_name, cache_dir=cache_dir, providers=providers, **kwargs)
+            for batch in iter_batch(images, batch_size):
+                yield from model._post_process_onnx_output(model.onnx_embed(batch))
+        else:
+            use_multi_gpu = providers and "CUDAExecutionProvider" in providers and device_ids
+            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
+            params = {
+                "model_name": model_name,
+                "cache_dir": cache_dir,
+                "providers": providers,
+                **kwargs,
+            }
+            if use_multi_gpu:
+                num_workers = min(parallel, len(device_ids))
+                pool = GPUParallelWorkerPool(
+                    num_workers, cls._get_worker_class(), device_ids, start_method=start_method
+                )
+            else:
+                pool = ParallelWorkerPool(
+                    parallel, cls._get_worker_class(), start_method=start_method
+                )
+            for batch in pool.ordered_map(iter_batch(images, batch_size), **params):
+                yield from batch
+
+    def _embed_images(
+        self,
+        model_name: str,
+        cache_dir: str,
+        images: ImageInput,
+        batch_size: int = 256,
+        parallel: Optional[int] = None,
+        providers: Optional[Sequence[OnnxProvider]] = None,
+        device_ids: Optional[List[int]] = None,
+        **kwargs,
+    ) -> Iterable[T]:
+        if parallel:
+            yield from self._embed_images_parallel(
+                model_name,
+                cache_dir,
+                images,
+                batch_size,
+                parallel,
+                providers,
+                device_ids,
+                **kwargs,
+            )
+        else:
             for batch in iter_batch(images, batch_size):
                 yield from self._post_process_onnx_output(self.onnx_embed(batch))
-        else:
-            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
-            params = {"model_name": model_name, "cache_dir": cache_dir, **kwargs}
-            pool = ParallelWorkerPool(
-                parallel, self._get_worker_class(), start_method=start_method
-            )
-            for batch in pool.ordered_map(iter_batch(images, batch_size), **params):
-                yield from self._post_process_onnx_output(batch)
 
 
 class ImageEmbeddingWorker(EmbeddingWorker):
     def process(self, items: Iterable[Tuple[int, Any]]) -> Iterable[Tuple[int, Any]]:
         for idx, batch in items:
             embeddings = self.model.onnx_embed(batch)
-            yield idx, embeddings
+            yield idx, self.model._post_process_onnx_output(embeddings)
