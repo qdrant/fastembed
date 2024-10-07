@@ -197,6 +197,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
         self.cache_dir = define_cache_dir(cache_dir)
         self._model_dir = self.download_model(
             self.model_description, self.cache_dir, local_files_only=self._local_files_only
+        )
 
         if not self.lazy_load:
             self._load_onnx_model()
