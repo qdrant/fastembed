@@ -1,3 +1,4 @@
+import os
 from multiprocessing import get_all_start_methods
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Type, Union
@@ -104,6 +105,9 @@ class OnnxTextModel(OnnxModel[T]):
         if isinstance(documents, list):
             if len(documents) < batch_size:
                 is_small = True
+
+        if parallel == 0:
+            parallel = os.cpu_count()
 
         if is_small:
             model = cls(model_name=model_name, cache_dir=cache_dir, providers=providers, **kwargs)
