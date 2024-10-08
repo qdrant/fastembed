@@ -81,47 +81,26 @@ class OnnxImageModel(OnnxModel[T]):
         device_ids: Optional[List[int]] = None,
         **kwargs,
     ) -> Iterable[T]:
-        is_small = False
-
-        if (
-            isinstance(images, str)
-            or isinstance(images, Path)
-            or (isinstance(images, Image.Image))
-        ):
-            images = [images]
-            is_small = True
-
-        if isinstance(images, list):
-            if len(images) < batch_size:
-                is_small = True
-
         if parallel == 0:
             parallel = os.cpu_count()
 
-        if is_small:
-            model = cls(model_name=model_name, cache_dir=cache_dir, providers=providers, **kwargs)
-            for batch in iter_batch(images, batch_size):
-                yield from model._post_process_onnx_output(model.onnx_embed(batch))
+        use_multi_gpu = providers and "CUDAExecutionProvider" in providers and device_ids
+        start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
+        params = {
+            "model_name": model_name,
+            "cache_dir": cache_dir,
+            "providers": providers,
+            **kwargs,
+        }
+        if use_multi_gpu:
+            num_workers = min(parallel, len(device_ids))
+            pool = GPUParallelWorkerPool(
+                num_workers, cls._get_worker_class(), device_ids, start_method=start_method
+            )
         else:
-            use_multi_gpu = providers and "CUDAExecutionProvider" in providers and device_ids
-            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
-            params = {
-                "model_name": model_name,
-                "cache_dir": cache_dir,
-                "providers": providers,
-                **kwargs,
-            }
-            if use_multi_gpu:
-                num_workers = min(parallel, len(device_ids))
-                pool = GPUParallelWorkerPool(
-                    num_workers, cls._get_worker_class(), device_ids, start_method=start_method
-                )
-            else:
-                pool = ParallelWorkerPool(
-                    parallel, cls._get_worker_class(), start_method=start_method
-                )
-            for batch in pool.ordered_map(iter_batch(images, batch_size), **params):
-                yield from batch
+            pool = ParallelWorkerPool(parallel, cls._get_worker_class(), start_method=start_method)
+        for batch in pool.ordered_map(iter_batch(images, batch_size), **params):
+            yield from batch
 
     def _embed_images(
         self,
@@ -134,7 +113,19 @@ class OnnxImageModel(OnnxModel[T]):
         device_ids: Optional[List[int]] = None,
         **kwargs,
     ) -> Iterable[T]:
-        if parallel:
+        is_small = False
+
+        if isinstance(images, (str, Path, Image.Image)):
+            images = [images]
+            is_small = True
+
+        if isinstance(images, list) and len(images) < batch_size:
+            is_small = True
+
+        if is_small or parallel is None:
+            for batch in iter_batch(images, batch_size):
+                yield from self._post_process_onnx_output(self.onnx_embed(batch))
+        else:
             yield from self._embed_images_parallel(
                 model_name,
                 cache_dir,
@@ -145,9 +136,6 @@ class OnnxImageModel(OnnxModel[T]):
                 device_ids,
                 **kwargs,
             )
-        else:
-            for batch in iter_batch(images, batch_size):
-                yield from self._post_process_onnx_output(self.onnx_embed(batch))
 
 
 class ImageEmbeddingWorker(EmbeddingWorker):
