@@ -85,7 +85,13 @@ def _worker(
 
 
 class ParallelWorkerPool:
-    def __init__(self, num_workers: int, worker: Type[Worker], start_method: Optional[str] = None):
+    def __init__(
+        self,
+        num_workers: int,
+        worker: Type[Worker],
+        start_method: Optional[str] = None,
+        device_ids: Optional[List[int]] = None,
+    ):
         self.worker_class = worker
         self.num_workers = num_workers
         self.input_queue: Optional[Queue] = None
@@ -93,7 +99,7 @@ class ParallelWorkerPool:
         self.ctx: BaseContext = get_context(start_method)
         self.processes: List[BaseProcess] = []
         self.queue_size = self.num_workers * max_internal_batch_size
-
+        self.device_ids = device_ids
         self.num_active_workers: Optional[BaseValue] = None
 
     def start(self, **kwargs: Any) -> None:
@@ -105,6 +111,11 @@ class ParallelWorkerPool:
         self.num_active_workers = ctx_value
 
         for worker_id in range(0, self.num_workers):
+            worker_kwargs = kwargs.copy()
+            if self.device_ids:
+                device_id = self.device_ids[worker_id % len(self.device_ids)]
+                worker_kwargs["device_id"] = device_id
+
             assert hasattr(self.ctx, "Process")
             process = self.ctx.Process(
                 target=_worker,
@@ -114,7 +125,7 @@ class ParallelWorkerPool:
                     self.output_queue,
                     self.num_active_workers,
                     worker_id,
-                    kwargs.copy(),
+                    worker_kwargs,
                 ),
             )
             process.start()
@@ -209,39 +220,3 @@ class ParallelWorkerPool:
         """
         for process in self.processes:
             process.terminate()
-
-
-class GPUParallelWorkerPool(ParallelWorkerPool):
-    def __init__(
-        self,
-        num_workers: int,
-        worker: Type[Worker],
-        device_ids: List[int],
-        start_method: Optional[str] = None,
-    ):
-        super().__init__(num_workers, worker, start_method)
-        self.device_ids = device_ids
-
-    def start(self, **kwargs: Any) -> None:
-        self.input_queue = self.ctx.Queue(self.queue_size)
-        self.output_queue = self.ctx.Queue(self.queue_size)
-
-        ctx_value = self.ctx.Value("i", self.num_workers)
-        assert isinstance(ctx_value, BaseValue)
-        self.num_active_workers = ctx_value
-
-        for worker_id in range(0, self.num_workers):
-            device_id = self.device_ids[worker_id % len(self.device_ids)]
-            process = self.ctx.Process(
-                target=_worker,
-                args=(
-                    self.worker_class,
-                    self.input_queue,
-                    self.output_queue,
-                    self.num_active_workers,
-                    worker_id,
-                    {**kwargs.copy(), "device_id": device_id},
-                ),
-            )
-            process.start()
-            self.processes.append(process)
