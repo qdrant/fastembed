@@ -59,8 +59,9 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
-        lazy_load: bool = False,
+        cuda: bool = False,
         device_ids: Optional[List[int]] = None,
+        lazy_load: bool = False,
         **kwargs,
     ):
         """
@@ -79,6 +80,8 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
         self.providers = providers
         self.lazy_load = lazy_load
         self.device_ids = device_ids
+        self.cuda = cuda
+        self.device_id = kwargs.get("device_id", 0)
 
         self.model_description = self._get_model_description(model_name)
         self.cache_dir = define_cache_dir(cache_dir)
@@ -95,7 +98,8 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
             model_file=self.model_description["model_file"],
             threads=self.threads,
             providers=self.providers,
-            device_ids=self.device_ids,
+            cuda=self.cuda,
+            device_id=self.device_id,
         )
 
     @classmethod
@@ -140,6 +144,7 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
             batch_size=batch_size,
             parallel=parallel,
             providers=self.providers,
+            cuda=self.cuda,
             device_ids=self.device_ids,
             **kwargs,
         )
@@ -162,11 +167,11 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
 
 
 class OnnxImageEmbeddingWorker(ImageEmbeddingWorker):
-    def init_embedding(
-        self, model_name: str, cache_dir: str, device_id: Optional[int] = None, **kwargs
-    ) -> OnnxImageEmbedding:
-        providers = kwargs.get("providers", None)
-        if device_id is not None and providers and "CUDAExecutionProvider" in providers:
-            kwargs["providers"] = [("CUDAExecutionProvider", {"device_id": device_id})]
-
-        return OnnxImageEmbedding(model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs)
+    def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> OnnxImageEmbedding:
+        return OnnxImageEmbedding(
+            model_name=model_name,
+            cache_dir=cache_dir,
+            threads=1,
+            device_ids=kwargs.get("device_id", 0),
+            **kwargs,
+        )

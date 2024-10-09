@@ -45,8 +45,9 @@ class ImageEmbedding(ImageEmbeddingBase):
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
-        lazy_load: bool = False,
+        cuda: bool = False,
         device_ids: Optional[List[int]] = None,
+        lazy_load: bool = False,
         **kwargs,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
@@ -56,6 +57,15 @@ class ImageEmbedding(ImageEmbeddingBase):
         self.model = None
         self.model_class = None
         self.kwargs = kwargs
+
+        self.cuda = cuda or any(
+            (
+                p == "CUDAExecutionProvider"
+                if isinstance(p, str)
+                else p[0] == "CUDAExecutionProvider"
+            )
+            for p in providers
+        )
 
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
             supported_models = EMBEDDING_MODEL_TYPE.list_supported_models()
@@ -76,7 +86,7 @@ class ImageEmbedding(ImageEmbeddingBase):
             self.cache_dir,
             threads=self.threads,
             providers=self.providers,
-            device_ids=self.device_ids,
+            cuda=self.cuda,
             **self.kwargs,
         )
 
@@ -113,6 +123,7 @@ class ImageEmbedding(ImageEmbeddingBase):
                 batch_size=batch_size,
                 parallel=parallel,
                 providers=self.providers,
+                cuda=self.cuda,
                 device_ids=self.device_ids,
                 **{**self.kwargs, **kwargs},
             )
