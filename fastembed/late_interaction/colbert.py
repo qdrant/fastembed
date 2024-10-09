@@ -117,6 +117,9 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
+        cuda: bool = False,
+        device_ids: Optional[List[int]] = None,
+        lazy_load: bool = False,
         **kwargs,
     ):
         """
@@ -132,20 +135,21 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         """
 
         super().__init__(model_name, cache_dir, threads, **kwargs)
+        self.providers = providers
+        self.lazy_load = lazy_load
+        self.device_ids = device_ids
+        self.cuda = cuda
+        self.device_id = kwargs.get("device_id", 0)
 
-        model_description = self._get_model_description(model_name)
+        self.model_description = self._get_model_description(model_name)
         self.cache_dir = define_cache_dir(cache_dir)
-
-        model_dir = self.download_model(
-            model_description, self.cache_dir, local_files_only=self._local_files_only
+        self.model_dir = self.download_model(
+            self.model_description, self.cache_dir, local_files_only=self._local_files_only
         )
 
-        self.load_onnx_model(
-            model_dir=model_dir,
-            model_file=model_description["model_file"],
-            threads=threads,
-            providers=providers,
-        )
+        if not self.lazy_load:
+            self._load_onnx_model()
+
         self.mask_token_id = self.special_token_to_id["[MASK]"]
         self.pad_token_id = self.tokenizer.padding["pad_id"]
 
@@ -153,6 +157,16 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
             self.tokenizer.encode(symbol, add_special_tokens=False).ids[0]
             for symbol in string.punctuation
         }
+
+    def _load_onnx_model(self):
+        self.load_onnx_model(
+            model_dir=self.model_dir,
+            model_file=self.model_description["model_file"],
+            threads=self.threads,
+            providers=self.providers,
+            cuda=self.cuda,
+            device_id=self.device_id,
+        )
 
     def embed(
         self,
@@ -176,16 +190,22 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         Returns:
             List of embeddings, one per document
         """
+        if self.lazy_load and self.model is None and parallel is None:
+            self._load_onnx_model()
+
         yield from self._embed_documents(
             model_name=self.model_name,
             cache_dir=str(self.cache_dir),
             documents=documents,
             batch_size=batch_size,
             parallel=parallel,
+            providers=self.providers,
+            cuda=self.cuda,
+            device_ids=self.device_ids,
             **kwargs,
         )
 
-    def query_embed(self, query: Union[str, List[str]], **kwargs) -> np.ndarray:
+    def query_embed(self, query: Union[str, List[str]], **kwargs) -> Iterable[np.ndarray]:
         if isinstance(query, str):
             query = [query]
 
@@ -201,4 +221,10 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
 
 class ColbertEmbeddingWorker(TextEmbeddingWorker):
     def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> Colbert:
-        return Colbert(model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs)
+        return Colbert(
+            model_name=model_name,
+            cache_dir=cache_dir,
+            threads=1,
+            device_ids=kwargs.get("device_id", 0),
+            **kwargs,
+        )

@@ -47,7 +47,9 @@ def _worker(
     if kwargs is None:
         kwargs = {}
 
-    logging.info(f"Reader worker: {worker_id} PID: {os.getpid()}")
+    logging.info(
+        f"Reader worker: {worker_id} PID: {os.getpid()} Device: {kwargs.get('device_id', 'CPU')}"
+    )
     try:
         worker = worker_class.start(**kwargs)
 
@@ -84,7 +86,12 @@ def _worker(
 
 class ParallelWorkerPool:
     def __init__(
-        self, num_workers: int, worker: Type[Worker], start_method: Optional[str] = None
+        self,
+        num_workers: int,
+        worker: Type[Worker],
+        start_method: Optional[str] = None,
+        device_ids: Optional[List[int]] = None,
+        cuda: bool = False,
     ):
         self.worker_class = worker
         self.num_workers = num_workers
@@ -93,7 +100,8 @@ class ParallelWorkerPool:
         self.ctx: BaseContext = get_context(start_method)
         self.processes: List[BaseProcess] = []
         self.queue_size = self.num_workers * max_internal_batch_size
-
+        self.device_ids = device_ids
+        self.cuda = cuda
         self.num_active_workers: Optional[BaseValue] = None
 
     def start(self, **kwargs: Any) -> None:
@@ -105,6 +113,12 @@ class ParallelWorkerPool:
         self.num_active_workers = ctx_value
 
         for worker_id in range(0, self.num_workers):
+            worker_kwargs = kwargs.copy()
+            if self.device_ids:
+                device_id = self.device_ids[worker_id % len(self.device_ids)]
+                worker_kwargs["device_id"] = device_id
+                worker_kwargs["cuda"] = self.cuda
+
             assert hasattr(self.ctx, "Process")
             process = self.ctx.Process(
                 target=_worker,
@@ -114,15 +128,13 @@ class ParallelWorkerPool:
                     self.output_queue,
                     self.num_active_workers,
                     worker_id,
-                    kwargs.copy(),
+                    worker_kwargs,
                 ),
             )
             process.start()
             self.processes.append(process)
 
-    def ordered_map(
-        self, stream: Iterable[Any], *args: Any, **kwargs: Any
-    ) -> Iterable[Any]:
+    def ordered_map(self, stream: Iterable[Any], *args: Any, **kwargs: Any) -> Iterable[Any]:
         buffer = defaultdict(Any)
         next_expected = 0
 
