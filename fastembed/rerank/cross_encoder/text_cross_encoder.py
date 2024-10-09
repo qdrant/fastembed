@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Type, Union
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Type
 
 from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
 from fastembed.rerank.cross_encoder.onnx_text_cross_encoder import OnnxTextCrossEncoder
@@ -12,6 +12,26 @@ class TextCrossEncoder(TextCrossEncoderBase):
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Any]]:
+        """Lists the supported models.
+
+        Returns:
+            List[Dict[str, Any]]: A list of dictionaries containing the model information.
+
+            Example:
+                ```
+                [
+                    {
+                        "model": "Xenova/ms-marco-MiniLM-L-6-v2",
+                        "size_in_GB": 0.08,
+                        "sources": {
+                            "hf": "Xenova/ms-marco-MiniLM-L-6-v2",
+                        },
+                        "model_file": "onnx/model.onnx",
+                        "description": "MiniLM-L-6-v2 model optimized for re-ranking tasks.",
+                    }
+                ]
+                ```
+        """
         result = []
         for encoder in cls.CROSS_ENCODER_REGISTRY:
             result.extend(encoder.list_supported_models())
@@ -45,6 +65,16 @@ class TextCrossEncoder(TextCrossEncoderBase):
         )
 
     def rerank(
-        self, query: str, documents: Union[str, Iterable[str]], batch_size: int = 64, **kwargs
+        self, query: str, documents: Iterable[str], batch_size: int = 64, **kwargs
     ) -> Iterable[float]:
-        return self.model.rerank(query, documents, batch_size=batch_size, **kwargs)
+        """Rerank a list of documents based on a query.
+
+        Args:
+            query: Query to rerank the documents against
+            documents: Iterator of documents to rerank
+            batch_size: Batch size for reranking
+
+        Returns:
+            Iterable of scores for each document
+        """
+        yield from self.model.rerank(query, documents, batch_size=batch_size, **kwargs)

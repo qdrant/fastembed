@@ -25,7 +25,7 @@ def test_rerank():
 
         query = "What is the capital of France?"
         documents = ["Paris is the capital of France.", "Berlin is the capital of Germany."]
-        scores = np.array(model.rerank(query, documents))
+        scores = np.array(list(model.rerank(query, documents)))
 
         canonical_scores = CANONICAL_SCORE_VALUES[model_name]
         assert np.allclose(
@@ -46,7 +46,7 @@ def test_batch_rerank(model_name):
 
     query = "What is the capital of France?"
     documents = ["Paris is the capital of France.", "Berlin is the capital of Germany."] * 50
-    scores = np.array(model.rerank(query, documents, batch_size=10))
+    scores = np.array(list(model.rerank(query, documents, batch_size=10)))
 
     canonical_scores = np.tile(CANONICAL_SCORE_VALUES[model_name], 50)
 

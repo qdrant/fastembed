@@ -1,4 +1,4 @@
-from typing import List, Union, Iterable, Dict, Any, Sequence, Optional
+from typing import List, Iterable, Dict, Any, Sequence, Optional
 
 from fastembed.common import OnnxProvider
 from fastembed.rerank.cross_encoder.onnx_text_model import OnnxCrossEncoderModel
@@ -39,6 +39,11 @@ supported_onnx_models = [
 class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Any]]:
+        """Lists the supported models.
+
+        Returns:
+            List[Dict[str, Any]]: A list of dictionaries containing the model information.
+        """
         return supported_onnx_models
 
     def __init__(
@@ -49,6 +54,18 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
         providers: Optional[Sequence[OnnxProvider]] = None,
         **kwargs,
     ):
+        """
+        Args:
+            model_name (str): The name of the model to use.
+            cache_dir (str, optional): The path to the cache directory.
+                                       Can be set using the `FASTEMBED_CACHE_PATH` env variable.
+                                       Defaults to `fastembed_cache` in the system's temp directory.
+            threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
+            providers (Optional[Sequence[OnnxProvider]]): The list of providers to use for the onnxruntime session.
+
+        Raises:
+            ValueError: If the model_name is not in the format <org>/<model> e.g. Xenova/ms-marco-MiniLM-L-6-v2.
+        """
         super().__init__(
             model_name=model_name,
             cache_dir=cache_dir,
@@ -73,27 +90,21 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
     def rerank(
         self,
         query: str,
-        documents: Union[str, Iterable[str]],
+        documents: Iterable[str],
         batch_size: int = 64,
         **kwargs,
     ) -> Iterable[float]:
-        """
-        Reranks documents based on their relevance to a given query by generating embeddings for each document.
+        """Reranks documents based on their relevance to a given query.
 
         Args:
             query (str): The query string to which document relevance is calculated.
-            documents (Union[str, Iterable[str]]): A single document or an iterable of documents to be embedded.
+            documents (Iterable[str]): Iterable of documents to be reranked.
             batch_size (int, optional): The number of documents processed in each batch. Higher batch sizes improve speed
                                         but require more memory. Default is 64.
         Returns:
-            Iterable[float]: A list of relevance scores for each document.
+            Iterable[float]: An iterable of relevance scores for each document.
         """
-        if not documents:
-            return []
 
-        scores = []
-        for i in range(0, len(documents), batch_size):
-            batch_documents = documents[i : i + batch_size]
-            scores.extend(self.onnx_embed(query, batch_documents))
-
-        return scores
+        yield from self._rerank_documents(
+            query=query, documents=documents, batch_size=batch_size, **kwargs
+        )

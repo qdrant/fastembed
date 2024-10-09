@@ -1,11 +1,9 @@
-from typing import Iterable, Optional, Union
+from typing import Iterable, Optional
 
 from fastembed.common.model_management import ModelManagement
 
 
 class TextCrossEncoderBase(ModelManagement):
-    ONNX_OUTPUT_NAMES = None
-
     def __init__(
         self,
         model_name: str,
@@ -21,8 +19,19 @@ class TextCrossEncoderBase(ModelManagement):
     def rerank(
         self,
         query: str,
-        documents: Union[str, Iterable[str]],
+        documents: Iterable[str],
         batch_size: int = 64,
         **kwargs,
     ) -> Iterable[float]:
+        """Reranks a list of documents given a query.
+
+        Args:
+            query (str): The query to rerank the documents.
+            documents (Iterable[str]): The list of texts to rerank.
+            batch_size (int): The batch size to use for reranking.
+            **kwargs: Additional keyword argument to pass to the rerank method.
+
+        Yields:
+            Iterable[float]: The scores of reranked the documents.
+        """
         raise NotImplementedError("This method should be overridden by subclasses")
