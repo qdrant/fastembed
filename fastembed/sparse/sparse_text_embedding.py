@@ -77,6 +77,7 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
                 else p[0] == "CUDAExecutionProvider"
             )
             for p in providers
+            if providers is not None
         )
 
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
