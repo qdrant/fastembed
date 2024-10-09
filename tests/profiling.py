@@ -105,9 +105,7 @@ def calculate_time_stats(
 # %%
 hf_stats = calculate_time_stats(hf.embed, documents, k=2)
 print(f"Huggingface Transformers (Average, Max, Min): {hf_stats}")
-fst_stats = calculate_time_stats(
-    lambda x: list(embedding_model.embed(x)), documents, k=2
-)
+fst_stats = calculate_time_stats(lambda x: list(embedding_model.embed(x)), documents, k=2)
 print(f"FastEmbed (Average, Max, Min): {fst_stats}")
 
 
