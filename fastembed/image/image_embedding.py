@@ -64,8 +64,7 @@ class ImageEmbedding(ImageEmbeddingBase):
                 if isinstance(p, str)
                 else p[0] == "CUDAExecutionProvider"
             )
-            for p in providers
-            if providers is not None
+            for p in (providers or [])
         )
 
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
