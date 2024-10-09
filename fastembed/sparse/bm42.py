@@ -60,9 +60,10 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
+        cuda: bool = False,
+        device_ids: Optional[List[int]] = None,
         alpha: float = 0.5,
         lazy_load: bool = False,
-        device_ids: Optional[List[int]] = None,
         **kwargs,
     ):
         """
@@ -85,6 +86,8 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         self.lazy_load = lazy_load
         self.providers = providers
         self.device_ids = device_ids
+        self.cuda = cuda
+        self.device_id = kwargs.get("device_id", 0)
 
         self.model_description = self._get_model_description(model_name)
         self.cache_dir = define_cache_dir(cache_dir)
@@ -113,7 +116,8 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             model_file=self.model_description["model_file"],
             threads=self.threads,
             providers=self.providers,
-            device_ids=self.device_ids,
+            cuda=self.cuda,
+            device_id=self.device_id,
         )
 
     def _filter_pair_tokens(self, tokens: List[Tuple[str, Any]]) -> List[Tuple[str, Any]]:
@@ -269,6 +273,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             batch_size=batch_size,
             parallel=parallel,
             providers=self.providers,
+            cuda=self.cuda,
             device_ids=self.device_ids,
             alpha=self.alpha,
         )
@@ -305,11 +310,10 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
 
 class Bm42TextEmbeddingWorker(TextEmbeddingWorker):
-    def init_embedding(
-        self, model_name: str, cache_dir: str, device_id: Optional[int] = None, **kwargs
-    ) -> Bm42:
-        providers = kwargs.get("providers", None)
-        if device_id is not None and providers and "CUDAExecutionProvider" in providers:
-            kwargs["providers"] = [("CUDAExecutionProvider", {"device_id": device_id})]
-
-        return Bm42(model_name=model_name, cache_dir=cache_dir, **kwargs)
+    def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> Bm42:
+        return Bm42(
+            model_name=model_name,
+            cache_dir=cache_dir,
+            device_ids=kwargs.get("device_id", 0),
+            **kwargs,
+        )

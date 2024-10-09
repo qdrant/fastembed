@@ -1,9 +1,8 @@
-from typing import Any, Dict, Iterable, List, Type, Optional
+from typing import Any, Dict, Iterable, List, Type
 
 import numpy as np
 
 from fastembed.common.onnx_model import OnnxOutputContext
-from fastembed.common.utils import normalize
 from fastembed.text.onnx_embedding import OnnxTextEmbedding, OnnxTextEmbeddingWorker
 from fastembed.text.onnx_text_model import TextEmbeddingWorker
 
@@ -47,14 +46,10 @@ class PooledEmbedding(OnnxTextEmbedding):
         return PooledEmbeddingWorker
 
     @classmethod
-    def mean_pooling(
-        cls, model_output: np.ndarray, attention_mask: np.ndarray
-    ) -> np.ndarray:
+    def mean_pooling(cls, model_output: np.ndarray, attention_mask: np.ndarray) -> np.ndarray:
         token_embeddings = model_output
         input_mask_expanded = np.expand_dims(attention_mask, axis=-1)
-        input_mask_expanded = np.tile(
-            input_mask_expanded, (1, 1, token_embeddings.shape[-1])
-        )
+        input_mask_expanded = np.tile(input_mask_expanded, (1, 1, token_embeddings.shape[-1]))
         input_mask_expanded = input_mask_expanded.astype(float)
         sum_embeddings = np.sum(token_embeddings * input_mask_expanded, axis=1)
         sum_mask = np.sum(input_mask_expanded, axis=1)
@@ -70,9 +65,7 @@ class PooledEmbedding(OnnxTextEmbedding):
         """
         return supported_pooled_models
 
-    def _post_process_onnx_output(
-        self, output: OnnxOutputContext
-    ) -> Iterable[np.ndarray]:
+    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
         embeddings = output.model_output
         attn_mask = output.attention_mask
         return self.mean_pooling(embeddings, attn_mask).astype(np.float32)
@@ -83,12 +76,12 @@ class PooledEmbeddingWorker(OnnxTextEmbeddingWorker):
         self,
         model_name: str,
         cache_dir: str,
-        device_id: Optional[int] = None,
         **kwargs,
     ) -> OnnxTextEmbedding:
-        providers = kwargs.get("providers", None)
-        if device_id is not None and providers and "CUDAExecutionProvider" in providers:
-            kwargs["providers"] = [("CUDAExecutionProvider", {"device_id": device_id})]
         return PooledEmbedding(
-            model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs
+            model_name=model_name,
+            cache_dir=cache_dir,
+            threads=1,
+            device_ids=kwargs.get("device_id", 0),
+            **kwargs,
         )

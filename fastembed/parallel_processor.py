@@ -91,6 +91,7 @@ class ParallelWorkerPool:
         worker: Type[Worker],
         start_method: Optional[str] = None,
         device_ids: Optional[List[int]] = None,
+        cuda: bool = False,
     ):
         self.worker_class = worker
         self.num_workers = num_workers
@@ -100,6 +101,7 @@ class ParallelWorkerPool:
         self.processes: List[BaseProcess] = []
         self.queue_size = self.num_workers * max_internal_batch_size
         self.device_ids = device_ids
+        self.cuda = cuda
         self.num_active_workers: Optional[BaseValue] = None
 
     def start(self, **kwargs: Any) -> None:
@@ -115,6 +117,7 @@ class ParallelWorkerPool:
             if self.device_ids:
                 device_id = self.device_ids[worker_id % len(self.device_ids)]
                 worker_kwargs["device_id"] = device_id
+                worker_kwargs["cuda"] = self.cuda
 
             assert hasattr(self.ctx, "Process")
             process = self.ctx.Process(

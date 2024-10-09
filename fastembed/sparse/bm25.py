@@ -153,14 +153,38 @@ class Bm25(SparseTextEmbeddingBase):
         batch_size: int = 256,
         parallel: int = 2,
         providers: Optional[Sequence[OnnxProvider]] = None,
+        cuda: bool = False,
         device_ids: Optional[List[int]] = None,
         **kwargs,
-    ) -> Iterable[SparseEmbedding] :
-
+    ) -> Iterable[SparseEmbedding]:
         k = kwargs.get("k", 1.2)
         b = kwargs.get("b", 0.75)
         avg_len = kwargs.get("avg_len", 256.0)
 
+        if parallel == 0:
+            parallel = os.cpu_count()
+
+        start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
+        params = {
+            "model_name": model_name,
+            "cache_dir": cache_dir,
+            "k": k,
+            "b": b,
+            "avg_len": avg_len,
+        }
+        pool = ParallelWorkerPool(parallel, cls._get_worker_class(), start_method=start_method)
+        for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
+            for record in batch:
+                yield record
+
+    def _embed_documents(
+        self,
+        model_name: str,
+        cache_dir: str,
+        documents: Union[str, Iterable[str]],
+        batch_size: int = 256,
+        parallel: Optional[int] = None,
+    ) -> Iterable[SparseEmbedding]:
         is_small = False
 
         if isinstance(documents, str):
@@ -171,50 +195,18 @@ class Bm25(SparseTextEmbeddingBase):
             if len(documents) < batch_size:
                 is_small = True
 
-        if parallel == 0:
-            parallel = os.cpu_count()
-
-        if is_small:
-            model = cls(model_name=model_name, cache_dir=cache_dir, k=k, b=b, avg_len=avg_len, **kwargs)
+        if parallel is None or is_small:
             for batch in iter_batch(documents, batch_size):
-                yield from model.raw_embed(batch)
+                yield from self.raw_embed(batch)
         else:
-            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
-            params = {
-                "model_name": model_name,
-                "cache_dir": cache_dir,
-                "k": k,
-                "b": b,
-                "avg_len": avg_len,
-            }
-            pool = ParallelWorkerPool(
-                parallel, cls._get_worker_class(), start_method=start_method
-            )
-            for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
-                for record in batch:
-                    yield record
-
-    def _embed_documents(
-        self,
-        model_name: str,
-        cache_dir: str,
-        documents: Union[str, Iterable[str]],
-        batch_size: int = 256,
-        parallel: Optional[int] = None,
-        **kwargs
-    ) -> Iterable[SparseEmbedding]:
-        if parallel:
             yield from self._embed_documents_parallel(
                 model_name,
                 cache_dir,
                 documents,
                 batch_size,
                 parallel,
-                **kwargs,
+                **{"k": self.k, "b": self.b, "avg_len": self.avg_len},
             )
-        else:
-            for batch in iter_batch(documents, batch_size):
-                yield from self.raw_embed(batch)
 
     def embed(
         self,
