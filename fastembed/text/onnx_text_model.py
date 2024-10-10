@@ -43,7 +43,7 @@ class OnnxTextModel(OnnxModel[T]):
         threads: Optional[int],
         providers: Optional[Sequence[OnnxProvider]] = None,
         cuda: bool = False,
-        device_id: int = 0,
+        device_id: Optional[int] = None,
     ) -> None:
         super().load_onnx_model(
             model_dir=model_dir,

@@ -175,6 +175,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
         cuda: bool = False,
         device_ids: Optional[List[int]] = None,
         lazy_load: bool = False,
+        device_id: Optional[int] = None,
         **kwargs,
     ):
         """
@@ -192,9 +193,13 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
         super().__init__(model_name, cache_dir, threads, **kwargs)
         self.providers = providers
         self.lazy_load = lazy_load
+
+        # List of device ids, that can be used for data parallel processing in workers
         self.device_ids = device_ids
         self.cuda = cuda
-        self.device_id = kwargs.get("device_id", 0)
+
+        # This device_id will be used if we need to load model in current process
+        self.device_id = device_id
 
         self.model_description = self._get_model_description(model_name)
         self.cache_dir = define_cache_dir(cache_dir)
@@ -237,9 +242,6 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
         Returns:
             List of embeddings, one per document
         """
-        if self.lazy_load and self.model is None and parallel is None:
-            self._load_onnx_model()
-
         yield from self._embed_documents(
             model_name=self.model_name,
             cache_dir=str(self.cache_dir),
