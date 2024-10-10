@@ -60,10 +60,11 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
+        alpha: float = 0.5,
         cuda: bool = False,
         device_ids: Optional[List[int]] = None,
-        alpha: float = 0.5,
         lazy_load: bool = False,
+        device_id: Optional[int] = None,
         **kwargs,
     ):
         """
@@ -77,6 +78,13 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             alpha (float, optional): Parameter, that defines the importance of the token weight in the document
                 versus the importance of the token frequency in the corpus. Defaults to 0.5, based on empirical testing.
                 It is recommended to only change this parameter based on training data for a specific dataset.
+            cuda (bool, optional): Whether to use cuda for inference. Mutually exclusive with `providers`
+                Defaults to False.
+            device_ids (Optional[List[int]], optional): The list of device ids to use for data parallel processing in
+                workers. Should be used with `cuda=True`, mutually exclusive with `providers`. Defaults to None.
+            lazy_load (bool, optional): Whether to load the model during class initialization or on demand.
+                Should be set to True when using multiple-gpu and parallel encoding. Defaults to False.
+            device_id (Optional[int], optional): The device id to use for loading the model in the worker process.
 
         Raises:
             ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
@@ -87,7 +95,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         self.providers = providers
         self.device_ids = device_ids
         self.cuda = cuda
-        self.device_id = kwargs.get("device_id", 0)
+        self.device_id = device_id
 
         self.model_description = self._get_model_description(model_name)
         self.cache_dir = define_cache_dir(cache_dir)
@@ -96,7 +104,14 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             self.model_description, self.cache_dir, local_files_only=self._local_files_only
         )
         if not self.lazy_load:
-            self._load_onnx_model()
+            self.load_onnx_model(
+                model_dir=self.model_dir,
+                model_file=self.model_description["model_file"],
+                threads=self.threads,
+                providers=self.providers,
+                cuda=self.cuda,
+                device_id=self.device_id,
+            )
 
         self.invert_vocab = {}
 
@@ -109,16 +124,6 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         self.stopwords = set(self._load_stopwords(self.model_dir))
         self.stemmer = get_stemmer(MODEL_TO_LANGUAGE[model_name])
         self.alpha = alpha
-
-    def _load_onnx_model(self):
-        self.load_onnx_model(
-            model_dir=self.model_dir,
-            model_file=self.model_description["model_file"],
-            threads=self.threads,
-            providers=self.providers,
-            cuda=self.cuda,
-            device_id=self.device_id,
-        )
 
     def _filter_pair_tokens(self, tokens: List[Tuple[str, Any]]) -> List[Tuple[str, Any]]:
         result = []
@@ -263,9 +268,6 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         Returns:
             List of embeddings, one per document
         """
-        if self.lazy_load and self.model is None and parallel is None:
-            self._load_onnx_model()
-
         yield from self._embed_documents(
             model_name=self.model_name,
             cache_dir=str(self.cache_dir),
@@ -314,6 +316,5 @@ class Bm42TextEmbeddingWorker(TextEmbeddingWorker):
         return Bm42(
             model_name=model_name,
             cache_dir=cache_dir,
-            device_ids=kwargs.get("device_id", 0),
             **kwargs,
         )
