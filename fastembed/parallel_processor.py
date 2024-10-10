@@ -8,6 +8,7 @@ from multiprocessing.process import BaseProcess
 from multiprocessing.sharedctypes import Synchronized as BaseValue
 from queue import Empty
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Type
+from copy import deepcopy
 
 # Single item should be processed in less than:
 processing_timeout = 10 * 60  # seconds
@@ -113,7 +114,7 @@ class ParallelWorkerPool:
         self.num_active_workers = ctx_value
 
         for worker_id in range(0, self.num_workers):
-            worker_kwargs = kwargs.copy()
+            worker_kwargs = deepcopy(kwargs)
             if self.device_ids:
                 device_id = self.device_ids[worker_id % len(self.device_ids)]
                 worker_kwargs["device_id"] = device_id

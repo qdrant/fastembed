@@ -82,6 +82,5 @@ class PooledEmbeddingWorker(OnnxTextEmbeddingWorker):
             model_name=model_name,
             cache_dir=cache_dir,
             threads=1,
-            device_ids=kwargs.get("device_id", 0),
             **kwargs,
         )

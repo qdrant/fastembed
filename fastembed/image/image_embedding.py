@@ -58,14 +58,7 @@ class ImageEmbedding(ImageEmbeddingBase):
         self.model_class = None
         self.kwargs = kwargs
 
-        self.cuda = cuda or any(
-            (
-                p == "CUDAExecutionProvider"
-                if isinstance(p, str)
-                else p[0] == "CUDAExecutionProvider"
-            )
-            for p in (providers or [])
-        )
+        self.cuda = cuda
 
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
             supported_models = EMBEDDING_MODEL_TYPE.list_supported_models()

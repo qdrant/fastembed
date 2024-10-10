@@ -57,25 +57,20 @@ class OnnxModel(Generic[T]):
         threads: Optional[int],
         providers: Optional[Sequence[OnnxProvider]] = None,
         cuda: bool = False,
-        device_id: int = 0,
+        device_id: Optional[int] = None,
     ) -> None:
         model_path = model_dir / model_file
         # List of Execution Providers: https://onnxruntime.ai/docs/execution-providers
 
-        onnx_providers = (
-            list(
-                [
-                    ("CUDAExecutionProvider", {"device_id": device_id})
-                    if p == "CUDAExecutionProvider"
-                    else p
-                    for p in providers
-                ]
-            )
-            if providers is not None
-            else [("CUDAExecutionProvider", {"device_id": device_id})]
-            if cuda
-            else ["CPUExecutionProvider"]
-        )
+        if providers is not None:
+            onnx_providers = list(providers)
+        elif cuda:
+            if device_id is None:
+                onnx_providers = ["CUDAExecutionProvider"]
+            else:
+                onnx_providers = [("CUDAExecutionProvider", {"device_id": device_id})]
+        else:
+            onnx_providers = ["CPUExecutionProvider"]
 
         available_providers = ort.get_available_providers()
         requested_provider_names = []
