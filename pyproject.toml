@@ -20,8 +20,8 @@ tokenizers = ">=0.15,<1.0"
 huggingface-hub = ">=0.20,<1.0"
 loguru = "^0.7.2"
 numpy = [
-    { version = ">=1.21, <2", python = "<3.12" },
-    { version = ">=1.26, <2", python = ">=3.12" }
+    { version = ">=1.21", python = "<3.12" },
+    { version = ">=1.26", python = ">=3.12" }
 ]
 pillow = "^10.3.0"
 snowballstemmer = "^2.2.0"
