@@ -30,7 +30,7 @@ class ImageEmbeddingBase(ModelManagement):
         Embeds a list of images into a list of embeddings.
 
         Args:
-            images - The list of image paths to preprocess and embed.
+            images: The list of image paths to preprocess and embed.
             batch_size: Batch size for encoding
             parallel:
                 If > 1, data-parallel encoding will be used, recommended for offline encoding of large datasets.
