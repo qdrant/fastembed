@@ -185,6 +185,15 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
                                        Can be set using the `FASTEMBED_CACHE_PATH` env variable.
                                        Defaults to `fastembed_cache` in the system's temp directory.
             threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
+            providers (Optional[Sequence[OnnxProvider]], optional): The list of onnxruntime providers to use.
+                Mutually exclusive with the `cuda` and `device_ids` arguments. Defaults to None.
+            cuda (bool, optional): Whether to use cuda for inference. Mutually exclusive with `providers`
+                Defaults to False.
+            device_ids (Optional[List[int]], optional): The list of device ids to use for data parallel processing in
+                workers. Should be used with `cuda=True`, mutually exclusive with `providers`. Defaults to None.
+            lazy_load (bool, optional): Whether to load the model during class initialization or on demand.
+                Should be set to True when using multiple-gpu and parallel encoding. Defaults to False.
+            device_id (Optional[int], optional): The device id to use for loading the model in the worker process.
 
         Raises:
             ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
@@ -208,17 +217,14 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
         )
 
         if not self.lazy_load:
-            self._load_onnx_model()
-
-    def _load_onnx_model(self):
-        self.load_onnx_model(
-            model_dir=self.model_dir,
-            model_file=self.model_description["model_file"],
-            threads=self.threads,
-            providers=self.providers,
-            cuda=self.cuda,
-            device_id=self.device_id,
-        )
+            self.load_onnx_model(
+                model_dir=self.model_dir,
+                model_file=self.model_description["model_file"],
+                threads=self.threads,
+                providers=self.providers,
+                cuda=self.cuda,
+                device_id=self.device_id,
+            )
 
     def embed(
         self,
@@ -282,6 +288,5 @@ class OnnxTextEmbeddingWorker(TextEmbeddingWorker):
             model_name=model_name,
             cache_dir=cache_dir,
             threads=1,
-            device_ids=kwargs.get("device_id", 0),
             **kwargs,
         )

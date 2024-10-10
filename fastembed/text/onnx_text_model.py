@@ -86,45 +86,6 @@ class OnnxTextModel(OnnxModel[T]):
             input_ids=onnx_input.get("input_ids", input_ids),
         )
 
-    @classmethod
-    def _embed_documents_parallel(
-        cls,
-        model_name: str,
-        cache_dir: str,
-        documents: Union[str, Iterable[str]],
-        batch_size: int = 256,
-        parallel: int = 2,
-        providers: Optional[Sequence[OnnxProvider]] = None,
-        cuda: bool = False,
-        device_ids: Optional[List[int]] = None,
-        **kwargs,
-    ) -> Iterable[T]:
-        if parallel == 0:
-            parallel = os.cpu_count()
-
-        num_workers = parallel
-
-        if not providers and cuda and device_ids is not None:
-            num_workers = min(parallel, len(device_ids))
-
-        start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
-        params = {
-            "model_name": model_name,
-            "cache_dir": cache_dir,
-            "providers": providers,
-            **kwargs,
-        }
-
-        pool = ParallelWorkerPool(
-            num_workers,
-            cls._get_worker_class(),
-            cuda=cuda,
-            device_ids=device_ids,
-            start_method=start_method,
-        )
-        for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
-            yield from batch
-
     def _embed_documents(
         self,
         model_name: str,
@@ -151,21 +112,35 @@ class OnnxTextModel(OnnxModel[T]):
             for batch in iter_batch(documents, batch_size):
                 yield from self._post_process_onnx_output(self.onnx_embed(batch))
         else:
-            yield from self._embed_documents_parallel(
-                model_name,
-                cache_dir,
-                documents,
-                batch_size,
-                parallel,
-                providers,
-                cuda,
-                device_ids,
+            if parallel == 0:
+                parallel = os.cpu_count()
+
+            num_workers = parallel
+
+            if not providers and cuda and device_ids is not None:
+                num_workers = min(parallel, len(device_ids))
+
+            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
+            params = {
+                "model_name": model_name,
+                "cache_dir": cache_dir,
+                "providers": providers,
                 **kwargs,
+            }
+
+            pool = ParallelWorkerPool(
+                num_workers,
+                self._get_worker_class(),
+                cuda=cuda,
+                device_ids=device_ids,
+                start_method=start_method,
             )
+            for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
+                yield from self._post_process_onnx_output(batch)
 
 
 class TextEmbeddingWorker(EmbeddingWorker):
     def process(self, items: Iterable[Tuple[int, Any]]) -> Iterable[Tuple[int, Any]]:
         for idx, batch in items:
             onnx_output = self.model.onnx_embed(batch)
-            yield idx, self.model._post_process_onnx_output(onnx_output)
+            yield idx, onnx_output
