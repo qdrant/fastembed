@@ -103,3 +103,15 @@ def test_parallel_processing(n_dims, model_name):
     assert np.allclose(embeddings, embeddings_3, atol=1e-3)
     if is_ci:
         shutil.rmtree(model.model._model_dir)
+
+
+@pytest.mark.parametrize("model_name", ["Qdrant/clip-ViT-B-32-vision"])
+def test_lazy_load(model_name):
+    model = ImageEmbedding(model_name=model_name, lazy_load=True)
+    assert not hasattr(model.model, "model")
+    images = [
+        TEST_MISC_DIR / "image.jpeg",
+        str(TEST_MISC_DIR / "small_image.jpeg"),
+    ]
+    list(model.embed(images))
+    assert hasattr(model.model, "model")

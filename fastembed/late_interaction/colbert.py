@@ -120,6 +120,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         cuda: bool = False,
         device_ids: Optional[List[int]] = None,
         lazy_load: bool = False,
+        device_id: Optional[int] = None,
         **kwargs,
     ):
         """
@@ -129,6 +130,15 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
                                        Can be set using the `FASTEMBED_CACHE_PATH` env variable.
                                        Defaults to `fastembed_cache` in the system's temp directory.
             threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
+            providers (Optional[Sequence[OnnxProvider]], optional): The list of onnxruntime providers to use.
+                Mutually exclusive with the `cuda` and `device_ids` arguments. Defaults to None.
+            cuda (bool, optional): Whether to use cuda for inference. Mutually exclusive with `providers`
+                Defaults to False.
+            device_ids (Optional[List[int]], optional): The list of device ids to use for data parallel processing in
+                workers. Should be used with `cuda=True`, mutually exclusive with `providers`. Defaults to None.
+            lazy_load (bool, optional): Whether to load the model during class initialization or on demand.
+                Should be set to True when using multiple-gpu and parallel encoding. Defaults to False.
+            device_id (Optional[int], optional): The device id to use for loading the model in the worker process.
 
         Raises:
             ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
@@ -137,9 +147,18 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         super().__init__(model_name, cache_dir, threads, **kwargs)
         self.providers = providers
         self.lazy_load = lazy_load
+
+        # List of device ids, that can be used for data parallel processing in workers
         self.device_ids = device_ids
         self.cuda = cuda
-        self.device_id = kwargs.get("device_id", 0)
+
+        # This device_id will be used if we need to load model in current process
+        if device_id is not None:
+            self.device_id = device_id
+        elif self.device_ids is not None:
+            self.device_id = self.device_ids[0]
+        else:
+            self.device_id = None
 
         self.model_description = self._get_model_description(model_name)
         self.cache_dir = define_cache_dir(cache_dir)
@@ -147,20 +166,15 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         self._model_dir = self.download_model(
             self.model_description, self.cache_dir, local_files_only=self._local_files_only
         )
+        self.mask_token_id = None
+        self.pad_token_id = None
+        self.skip_list = set()
 
         if not self.lazy_load:
-            self._load_onnx_model()
+            self.load_onnx_model()
 
-        self.mask_token_id = self.special_token_to_id["[MASK]"]
-        self.pad_token_id = self.tokenizer.padding["pad_id"]
-
-        self.skip_list = {
-            self.tokenizer.encode(symbol, add_special_tokens=False).ids[0]
-            for symbol in string.punctuation
-        }
-
-    def _load_onnx_model(self):
-        self.load_onnx_model(
+    def load_onnx_model(self) -> None:
+        self._load_onnx_model(
             model_dir=self._model_dir,
             model_file=self.model_description["model_file"],
             threads=self.threads,
@@ -168,6 +182,12 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
             cuda=self.cuda,
             device_id=self.device_id,
         )
+        self.mask_token_id = self.special_token_to_id["[MASK]"]
+        self.pad_token_id = self.tokenizer.padding["pad_id"]
+        self.skip_list = {
+            self.tokenizer.encode(symbol, add_special_tokens=False).ids[0]
+            for symbol in string.punctuation
+        }
 
     def embed(
         self,
@@ -191,9 +211,6 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         Returns:
             List of embeddings, one per document
         """
-        if self.lazy_load and self.model is None and parallel is None:
-            self._load_onnx_model()
-
         yield from self._embed_documents(
             model_name=self.model_name,
             cache_dir=str(self.cache_dir),
@@ -209,6 +226,9 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
     def query_embed(self, query: Union[str, List[str]], **kwargs) -> Iterable[np.ndarray]:
         if isinstance(query, str):
             query = [query]
+
+        if not hasattr(self, "model") or self.model is None:
+            self.load_onnx_model()
 
         for text in query:
             yield from self._post_process_onnx_output(
@@ -226,6 +246,5 @@ class ColbertEmbeddingWorker(TextEmbeddingWorker):
             model_name=model_name,
             cache_dir=cache_dir,
             threads=1,
-            device_ids=kwargs.get("device_id", 0),
             **kwargs,
         )

@@ -1,6 +1,7 @@
 import os
 import shutil
 
+import pytest
 import numpy as np
 
 from fastembed.late_interaction.late_interaction_text_embedding import (
@@ -174,3 +175,22 @@ def test_parallel_processing():
 
     if is_ci:
         shutil.rmtree(model.model._model_dir)
+
+
+@pytest.mark.parametrize(
+    "model_name",
+    ["colbert-ir/colbertv2.0"],
+)
+def test_lazy_load(model_name):
+    model = LateInteractionTextEmbedding(model_name=model_name, lazy_load=True)
+    assert not hasattr(model.model, "model")
+
+    docs = ["hello world", "flag embedding"]
+    list(model.embed(docs))
+    assert hasattr(model.model, "model")
+
+    model = LateInteractionTextEmbedding(model_name=model_name, lazy_load=True)
+    list(model.query_embed(docs))
+
+    model = LateInteractionTextEmbedding(model_name=model_name, lazy_load=True)
+    list(model.passage_embed(docs))

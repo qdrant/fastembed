@@ -50,32 +50,27 @@ class OnnxModel(Generic[T]):
         """
         return onnx_input
 
-    def load_onnx_model(
+    def _load_onnx_model(
         self,
         model_dir: Path,
         model_file: str,
         threads: Optional[int],
         providers: Optional[Sequence[OnnxProvider]] = None,
         cuda: bool = False,
-        device_id: int = 0,
+        device_id: Optional[int] = None,
     ) -> None:
         model_path = model_dir / model_file
         # List of Execution Providers: https://onnxruntime.ai/docs/execution-providers
 
-        onnx_providers = (
-            list(
-                [
-                    ("CUDAExecutionProvider", {"device_id": device_id})
-                    if p == "CUDAExecutionProvider"
-                    else p
-                    for p in providers
-                ]
-            )
-            if providers is not None
-            else [("CUDAExecutionProvider", {"device_id": device_id})]
-            if cuda
-            else ["CPUExecutionProvider"]
-        )
+        if providers is not None:
+            onnx_providers = list(providers)
+        elif cuda:
+            if device_id is None:
+                onnx_providers = ["CUDAExecutionProvider"]
+            else:
+                onnx_providers = [("CUDAExecutionProvider", {"device_id": device_id})]
+        else:
+            onnx_providers = ["CPUExecutionProvider"]
 
         available_providers = ort.get_available_providers()
         requested_provider_names = []
@@ -107,6 +102,9 @@ class OnnxModel(Generic[T]):
                     "`pip install onnxruntime-gpu --extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/`",
                     RuntimeWarning,
                 )
+
+    def load_onnx_model(self) -> None:
+        raise NotImplementedError("Subclasses must implement this method")
 
     def onnx_embed(self, *args, **kwargs) -> OnnxOutputContext:
         raise NotImplementedError("Subclasses must implement this method")

@@ -36,7 +36,7 @@ class OnnxImageModel(OnnxModel[T]):
         """
         return onnx_input
 
-    def load_onnx_model(
+    def _load_onnx_model(
         self,
         model_dir: Path,
         model_file: str,
@@ -45,7 +45,7 @@ class OnnxImageModel(OnnxModel[T]):
         cuda: bool = False,
         device_id: int = 0,
     ) -> None:
-        super().load_onnx_model(
+        super()._load_onnx_model(
             model_dir=model_dir,
             model_file=model_file,
             threads=threads,
@@ -54,6 +54,9 @@ class OnnxImageModel(OnnxModel[T]):
             device_id=device_id,
         )
         self.processor = load_preprocessor(model_dir=model_dir)
+
+    def load_onnx_model(self) -> None:
+        raise NotImplementedError("Subclasses must implement this method")
 
     def _build_onnx_input(self, encoded: np.ndarray) -> Dict[str, np.ndarray]:
         return {node.name: encoded for node in self.model.get_inputs()}
@@ -70,45 +73,6 @@ class OnnxImageModel(OnnxModel[T]):
         model_output = self.model.run(None, onnx_input)
         embeddings = model_output[0].reshape(len(images), -1)
         return OnnxOutputContext(model_output=embeddings)
-
-    @classmethod
-    def _embed_images_parallel(
-        cls,
-        model_name: str,
-        cache_dir: str,
-        images: ImageInput,
-        batch_size: int = 256,
-        parallel: Optional[int] = 2,
-        providers: Optional[Sequence[OnnxProvider]] = None,
-        cuda: bool = False,
-        device_ids: Optional[List[int]] = None,
-        **kwargs,
-    ) -> Iterable[T]:
-        if parallel == 0:
-            parallel = os.cpu_count()
-
-        num_workers = parallel
-
-        if not providers and cuda and device_ids is not None:
-            num_workers = min(parallel, len(device_ids))
-
-        start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
-        params = {
-            "model_name": model_name,
-            "cache_dir": cache_dir,
-            "providers": providers,
-            **kwargs,
-        }
-
-        pool = ParallelWorkerPool(
-            num_workers,
-            cls._get_worker_class(),
-            cuda=cuda,
-            device_ids=device_ids,
-            start_method=start_method,
-        )
-        for batch in pool.ordered_map(iter_batch(images, batch_size), **params):
-            yield from batch
 
     def _embed_images(
         self,
@@ -132,24 +96,41 @@ class OnnxImageModel(OnnxModel[T]):
             is_small = True
 
         if parallel is None or is_small:
+            if not hasattr(self, "model") or self.model is None:
+                self.load_onnx_model()
+
             for batch in iter_batch(images, batch_size):
                 yield from self._post_process_onnx_output(self.onnx_embed(batch))
         else:
-            yield from self._embed_images_parallel(
-                model_name,
-                cache_dir,
-                images,
-                batch_size,
-                parallel,
-                providers,
-                cuda,
-                device_ids,
+            if parallel == 0:
+                parallel = os.cpu_count()
+
+            num_workers = parallel
+
+            if not providers and cuda and device_ids is not None:
+                num_workers = min(parallel, len(device_ids))
+
+            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
+            params = {
+                "model_name": model_name,
+                "cache_dir": cache_dir,
+                "providers": providers,
                 **kwargs,
+            }
+
+            pool = ParallelWorkerPool(
+                num_workers,
+                self._get_worker_class(),
+                cuda=cuda,
+                device_ids=device_ids,
+                start_method=start_method,
             )
+            for batch in pool.ordered_map(iter_batch(images, batch_size), **params):
+                yield from self._post_process_onnx_output(batch)
 
 
 class ImageEmbeddingWorker(EmbeddingWorker):
     def process(self, items: Iterable[Tuple[int, Any]]) -> Iterable[Tuple[int, Any]]:
         for idx, batch in items:
             embeddings = self.model.onnx_embed(batch)
-            yield idx, self.model._post_process_onnx_output(embeddings)
+            yield idx, embeddings

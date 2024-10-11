@@ -149,3 +149,21 @@ def test_stem_case_insensitive_stopwords(bm25_instance):
     # Assert
     expected = ["quick", "brown", "fox", "test", "sentenc"]
     assert result == expected, f"Expected {expected}, but got {result}"
+
+@pytest.mark.parametrize(
+    "model_name",
+    ["prithivida/Splade_PP_en_v1"],
+)
+def test_lazy_load(model_name):
+    model = SparseTextEmbedding(model_name=model_name, lazy_load=True)
+    assert not hasattr(model.model, "model")
+
+    docs = ["hello world", "flag embedding"]
+    list(model.embed(docs))
+    assert hasattr(model.model, "model")
+
+    model = SparseTextEmbedding(model_name=model_name, lazy_load=True)
+    list(model.query_embed(docs))
+
+    model = SparseTextEmbedding(model_name=model_name, lazy_load=True)
+    list(model.passage_embed(docs))
