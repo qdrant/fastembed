@@ -5,6 +5,7 @@ from fastembed import (
     LateInteractionTextEmbedding,
     ImageEmbedding,
 )
+from fastembed.rerank.cross_encoder import TextCrossEncoder
 from tests.config import TEST_MISC_DIR
 
 CACHE_DIR = "../model_cache"
@@ -67,6 +68,13 @@ def test_gpu_via_providers(device_id):
         str(TEST_MISC_DIR / "small_image.jpeg"),
     ]
     list(embedding_model.embed(images))
+    options = embedding_model.model.model.get_provider_options()
+    assert options["CUDAExecutionProvider"]["device_id"] == str(device_id)
+
+    model = TextCrossEncoder(model_name="Xenova/ms-marco-MiniLM-L-6-v2")
+    query = "What is the capital of France?"
+    documents = ["Paris is the capital of France.", "Berlin is the capital of Germany."]
+    list(model.rerank(query, documents))
     options = embedding_model.model.model.get_provider_options()
     assert options["CUDAExecutionProvider"]["device_id"] == str(device_id)
 
@@ -137,6 +145,21 @@ def test_gpu_cuda_device_ids(device_ids):
     assert options["CUDAExecutionProvider"]["device_id"] == str(
         device_id
     ), f"Image embedding: {options}"
+
+    if device_ids is None or len(device_ids) == 1:
+        model = TextCrossEncoder(
+            model_name="Xenova/ms-marco-MiniLM-L-6-v2",
+            cuda=True,
+            device_ids=device_ids,
+            cache_dir=CACHE_DIR,
+        )
+        query = "What is the capital of France?"
+        documents = ["Paris is the capital of France.", "Berlin is the capital of Germany."]
+        list(model.rerank(query, documents))
+        options = embedding_model.model.model.get_provider_options()
+        assert options["CUDAExecutionProvider"]["device_id"] == str(
+            device_id
+        ), f"Text cross encoder: {options}"
 
 
 @pytest.mark.skip(reason="Requires a multi-gpu server")
