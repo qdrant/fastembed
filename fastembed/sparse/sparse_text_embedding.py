@@ -63,8 +63,6 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
             )
             model_name = "prithivida/Splade_PP_en_v1"
 
-        self.model = None
-
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
             supported_models = EMBEDDING_MODEL_TYPE.list_supported_models()
             if any(model_name.lower() == model["model"].lower() for model in supported_models):
