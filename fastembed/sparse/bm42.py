@@ -113,9 +113,6 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             self.model_description, self.cache_dir, local_files_only=self._local_files_only
         )
 
-        if not self.lazy_load:
-            self.load_onnx_model()
-
         self.invert_vocab = {}
 
         self.special_tokens = set()
