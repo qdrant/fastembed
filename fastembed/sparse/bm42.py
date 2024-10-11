@@ -103,9 +103,6 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         self.model_dir = self.download_model(
             self.model_description, self.cache_dir, local_files_only=self._local_files_only
         )
-        if not self.lazy_load:
-            self.load_onnx_model()
-
         self.invert_vocab = {}
 
         self.special_tokens = set()
@@ -114,6 +111,9 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         self.stopwords = set()
         self.stemmer = get_stemmer(MODEL_TO_LANGUAGE[model_name])
         self.alpha = alpha
+
+        if not self.lazy_load:
+            self.load_onnx_model()
 
     def load_onnx_model(self) -> None:
         self._load_onnx_model(

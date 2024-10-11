@@ -156,14 +156,12 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         self.model_dir = self.download_model(
             self.model_description, self.cache_dir, local_files_only=self._local_files_only
         )
+        self.mask_token_id = None
+        self.pad_token_id = None
+        self.skip_list = set()
 
         if not self.lazy_load:
             self.load_onnx_model()
-
-        self.mask_token_id = None
-        self.pad_token_id = None
-
-        self.skip_list = set()
 
     def load_onnx_model(self) -> None:
         self._load_onnx_model(
