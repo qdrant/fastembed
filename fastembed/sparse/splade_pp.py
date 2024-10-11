@@ -111,14 +111,17 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         )
 
         if not self.lazy_load:
-            self.load_onnx_model(
-                model_dir=self.model_dir,
-                model_file=self.model_description["model_file"],
-                threads=self.threads,
-                providers=self.providers,
-                cuda=self.cuda,
-                device_id=self.device_id,
-            )
+            self.load_onnx_model()
+
+    def load_onnx_model(self) -> None:
+        self._load_onnx_model(
+            model_dir=self.model_dir,
+            model_file=self.model_description["model_file"],
+            threads=self.threads,
+            providers=self.providers,
+            cuda=self.cuda,
+            device_id=self.device_id,
+        )
 
     def embed(
         self,

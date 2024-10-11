@@ -50,7 +50,7 @@ class OnnxModel(Generic[T]):
         """
         return onnx_input
 
-    def load_onnx_model(
+    def _load_onnx_model(
         self,
         model_dir: Path,
         model_file: str,
@@ -102,6 +102,9 @@ class OnnxModel(Generic[T]):
                     "`pip install onnxruntime-gpu --extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/`",
                     RuntimeWarning,
                 )
+
+    def load_onnx_model(self) -> None:
+        raise NotImplementedError("Subclasses must implement this method")
 
     def onnx_embed(self, *args, **kwargs) -> OnnxOutputContext:
         raise NotImplementedError("Subclasses must implement this method")

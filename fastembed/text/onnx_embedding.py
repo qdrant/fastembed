@@ -198,7 +198,6 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
         Raises:
             ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
         """
-
         super().__init__(model_name, cache_dir, threads, **kwargs)
         self.providers = providers
         self.lazy_load = lazy_load
@@ -217,14 +216,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
         )
 
         if not self.lazy_load:
-            self.load_onnx_model(
-                model_dir=self.model_dir,
-                model_file=self.model_description["model_file"],
-                threads=self.threads,
-                providers=self.providers,
-                cuda=self.cuda,
-                device_id=self.device_id,
-            )
+            self.load_onnx_model()
 
     def embed(
         self,
@@ -275,6 +267,16 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
         embeddings = output.model_output
         return normalize(embeddings[:, 0]).astype(np.float32)
+
+    def load_onnx_model(self) -> None:
+        self._load_onnx_model(
+            model_dir=self.model_dir,
+            model_file=self.model_description["model_file"],
+            threads=self.threads,
+            providers=self.providers,
+            cuda=self.cuda,
+            device_id=self.device_id,
+        )
 
 
 class OnnxTextEmbeddingWorker(TextEmbeddingWorker):

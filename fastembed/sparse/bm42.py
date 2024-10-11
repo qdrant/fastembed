@@ -104,26 +104,31 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             self.model_description, self.cache_dir, local_files_only=self._local_files_only
         )
         if not self.lazy_load:
-            self.load_onnx_model(
-                model_dir=self.model_dir,
-                model_file=self.model_description["model_file"],
-                threads=self.threads,
-                providers=self.providers,
-                cuda=self.cuda,
-                device_id=self.device_id,
-            )
+            self.load_onnx_model()
 
         self.invert_vocab = {}
 
-        for token, idx in self.tokenizer.get_vocab().items():
-            self.invert_vocab[idx] = token
-
-        self.special_tokens = set(self.special_token_to_id.keys())
-        self.special_tokens_ids = set(self.special_token_to_id.values())
+        self.special_tokens = set()
+        self.special_tokens_ids = set()
         self.punctuation = set(string.punctuation)
-        self.stopwords = set(self._load_stopwords(self.model_dir))
+        self.stopwords = set()
         self.stemmer = get_stemmer(MODEL_TO_LANGUAGE[model_name])
         self.alpha = alpha
+
+    def load_onnx_model(self) -> None:
+        self._load_onnx_model(
+            model_dir=self.model_dir,
+            model_file=self.model_description["model_file"],
+            threads=self.threads,
+            providers=self.providers,
+            cuda=self.cuda,
+            device_id=self.device_id,
+        )
+        for token, idx in self.tokenizer.get_vocab().items():
+            self.invert_vocab[idx] = token
+        self.special_tokens = set(self.special_token_to_id.keys())
+        self.special_tokens_ids = set(self.special_token_to_id.values())
+        self.stopwords = set(self._load_stopwords(self.model_dir))
 
     def _filter_pair_tokens(self, tokens: List[Tuple[str, Any]]) -> List[Tuple[str, Any]]:
         result = []
@@ -296,6 +301,9 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         """
         if isinstance(query, str):
             query = [query]
+
+        if not hasattr(self, "model") or self.model is None:
+            self.load_onnx_model()
 
         for text in query:
             encoded = self.tokenizer.encode(text)

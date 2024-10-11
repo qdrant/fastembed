@@ -36,7 +36,7 @@ class OnnxImageModel(OnnxModel[T]):
         """
         return onnx_input
 
-    def load_onnx_model(
+    def _load_onnx_model(
         self,
         model_dir: Path,
         model_file: str,
@@ -45,7 +45,7 @@ class OnnxImageModel(OnnxModel[T]):
         cuda: bool = False,
         device_id: int = 0,
     ) -> None:
-        super().load_onnx_model(
+        super()._load_onnx_model(
             model_dir=model_dir,
             model_file=model_file,
             threads=threads,
@@ -54,6 +54,9 @@ class OnnxImageModel(OnnxModel[T]):
             device_id=device_id,
         )
         self.processor = load_preprocessor(model_dir=model_dir)
+
+    def load_onnx_model(self) -> None:
+        raise NotImplementedError("Subclasses must implement this method")
 
     def _build_onnx_input(self, encoded: np.ndarray) -> Dict[str, np.ndarray]:
         return {node.name: encoded for node in self.model.get_inputs()}
@@ -93,6 +96,9 @@ class OnnxImageModel(OnnxModel[T]):
             is_small = True
 
         if parallel is None or is_small:
+            if not hasattr(self, "model") or self.model is None:
+                self.load_onnx_model()
+
             for batch in iter_batch(images, batch_size):
                 yield from self._post_process_onnx_output(self.onnx_embed(batch))
         else:

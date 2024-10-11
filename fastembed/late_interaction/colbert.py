@@ -158,18 +158,24 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         )
 
         if not self.lazy_load:
-            self.load_onnx_model(
-                model_dir=self.model_dir,
-                model_file=self.model_description["model_file"],
-                threads=self.threads,
-                providers=self.providers,
-                cuda=self.cuda,
-                device_id=self.device_id,
-            )
+            self.load_onnx_model()
 
+        self.mask_token_id = None
+        self.pad_token_id = None
+
+        self.skip_list = set()
+
+    def load_onnx_model(self) -> None:
+        self._load_onnx_model(
+            model_dir=self.model_dir,
+            model_file=self.model_description["model_file"],
+            threads=self.threads,
+            providers=self.providers,
+            cuda=self.cuda,
+            device_id=self.device_id,
+        )
         self.mask_token_id = self.special_token_to_id["[MASK]"]
         self.pad_token_id = self.tokenizer.padding["pad_id"]
-
         self.skip_list = {
             self.tokenizer.encode(symbol, add_special_tokens=False).ids[0]
             for symbol in string.punctuation
@@ -212,6 +218,9 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
     def query_embed(self, query: Union[str, List[str]], **kwargs) -> Iterable[np.ndarray]:
         if isinstance(query, str):
             query = [query]
+
+        if not hasattr(self, "model") or self.model is None:
+            self.load_onnx_model()
 
         for text in query:
             yield from self._post_process_onnx_output(
