@@ -72,8 +72,6 @@ def test_embedding():
         if not is_ci and model_desc["size_in_GB"] > 1:
             continue
 
-        if model_desc["model"] not in CANONICAL_VECTOR_VALUES:
-            continue
         dim = model_desc["dim"]
 
         model = TextEmbedding(model_name=model_desc["model"])

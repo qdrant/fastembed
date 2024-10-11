@@ -58,9 +58,9 @@ class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
             supported_models = EMBEDDING_MODEL_TYPE.list_supported_models()
             if any(model_name.lower() == model["model"].lower() for model in supported_models):
                 self.model = EMBEDDING_MODEL_TYPE(
-                    self.model_name,
-                    self.cache_dir,
-                    threads=self.threads,
+                    model_name,
+                    cache_dir,
+                    threads=threads,
                     providers=providers,
                     cuda=cuda,
                     device_ids=device_ids,
