@@ -1,3 +1,4 @@
+import pytest
 import numpy as np
 
 from fastembed.late_interaction.late_interaction_text_embedding import (
@@ -155,3 +156,22 @@ def test_parallel_processing():
     assert embeddings.shape[0] == len(docs) and embeddings.shape[-1] == token_dim
     assert np.allclose(embeddings, embeddings_2, atol=1e-3)
     assert np.allclose(embeddings, embeddings_3, atol=1e-3)
+
+
+@pytest.mark.parametrize(
+    "model_name",
+    ["colbert-ir/colbertv2.0"],
+)
+def test_lazy_load(model_name):
+    model = LateInteractionTextEmbedding(model_name=model_name, lazy_load=True)
+    assert not hasattr(model.model, "model")
+
+    docs = ["hello world", "flag embedding"]
+    list(model.embed(docs))
+    assert hasattr(model.model, "model")
+
+    model = LateInteractionTextEmbedding(model_name=model_name, lazy_load=True)
+    list(model.query_embed(docs))
+
+    model = LateInteractionTextEmbedding(model_name=model_name, lazy_load=True)
+    list(model.passage_embed(docs))

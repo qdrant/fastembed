@@ -93,9 +93,24 @@ def test_parallel_processing():
             == sparse_embedding_duo.indices.tolist()
             == sparse_embedding_all.indices.tolist()
         )
-        assert np.allclose(
-            sparse_embedding.values, sparse_embedding_duo.values, atol=1e-3
-        )
-        assert np.allclose(
-            sparse_embedding.values, sparse_embedding_all.values, atol=1e-3
-        )
+        assert np.allclose(sparse_embedding.values, sparse_embedding_duo.values, atol=1e-3)
+        assert np.allclose(sparse_embedding.values, sparse_embedding_all.values, atol=1e-3)
+
+
+@pytest.mark.parametrize(
+    "model_name",
+    ["prithivida/Splade_PP_en_v1"],
+)
+def test_lazy_load(model_name):
+    model = SparseTextEmbedding(model_name=model_name, lazy_load=True)
+    assert not hasattr(model.model, "model")
+
+    docs = ["hello world", "flag embedding"]
+    list(model.embed(docs))
+    assert hasattr(model.model, "model")
+
+    model = SparseTextEmbedding(model_name=model_name, lazy_load=True)
+    list(model.query_embed(docs))
+
+    model = SparseTextEmbedding(model_name=model_name, lazy_load=True)
+    list(model.passage_embed(docs))
