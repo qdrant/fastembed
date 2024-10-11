@@ -71,7 +71,11 @@ def test_gpu_via_providers(device_id):
     options = embedding_model.model.model.get_provider_options()
     assert options["CUDAExecutionProvider"]["device_id"] == str(device_id)
 
-    model = TextCrossEncoder(model_name="Xenova/ms-marco-MiniLM-L-6-v2")
+    model = TextCrossEncoder(
+        model_name="Xenova/ms-marco-MiniLM-L-6-v2",
+        providers=providers,
+        cache_dir=CACHE_DIR,
+    )
     query = "What is the capital of France?"
     documents = ["Paris is the capital of France.", "Berlin is the capital of Germany."]
     list(model.rerank(query, documents))
