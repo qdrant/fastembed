@@ -56,3 +56,16 @@ def test_batch_rerank(model_name):
     ), f"Model: {model_name}, Scores: {scores}, Expected: {canonical_scores}"
     if is_ci:
         shutil.rmtree(model.model._model_dir)
+
+
+@pytest.mark.parametrize(
+    "model_name",
+    ["Xenova/ms-marco-MiniLM-L-6-v2"],
+)
+def test_lazy_load(model_name):
+    model = TextCrossEncoder(model_name=model_name, lazy_load=True)
+    assert not hasattr(model.model, "model")
+    query = "What is the capital of France?"
+    documents = ["Paris is the capital of France.", "Berlin is the capital of Germany."]
+    list(model.rerank(query, documents))
+    assert hasattr(model.model, "model")
