@@ -91,11 +91,20 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         """
 
         super().__init__(model_name, cache_dir, threads, **kwargs)
-        self.lazy_load = lazy_load
         self.providers = providers
+        self.lazy_load = lazy_load
+
+        # List of device ids, that can be used for data parallel processing in workers
         self.device_ids = device_ids
         self.cuda = cuda
-        self.device_id = device_id
+
+        # This device_id will be used if we need to load model in current process
+        if device_id is not None:
+            self.device_id = device_id
+        elif self.device_ids is not None:
+            self.device_id = self.device_ids[0]
+        else:
+            self.device_id = None
 
         self.model_description = self._get_model_description(model_name)
         self.cache_dir = define_cache_dir(cache_dir)
