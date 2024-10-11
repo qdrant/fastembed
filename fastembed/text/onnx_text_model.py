@@ -120,11 +120,6 @@ class OnnxTextModel(OnnxModel[T]):
             if parallel == 0:
                 parallel = os.cpu_count()
 
-            num_workers = parallel
-
-            if not providers and cuda and device_ids is not None:
-                num_workers = min(parallel, len(device_ids))
-
             start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
             params = {
                 "model_name": model_name,
@@ -134,7 +129,7 @@ class OnnxTextModel(OnnxModel[T]):
             }
 
             pool = ParallelWorkerPool(
-                num_workers,
+                parallel,
                 self._get_worker_class(),
                 cuda=cuda,
                 device_ids=device_ids,

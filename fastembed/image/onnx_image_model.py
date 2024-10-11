@@ -43,7 +43,7 @@ class OnnxImageModel(OnnxModel[T]):
         threads: Optional[int],
         providers: Optional[Sequence[OnnxProvider]] = None,
         cuda: bool = False,
-        device_id: int = 0,
+        device_id: Optional[int] = None,
     ) -> None:
         super()._load_onnx_model(
             model_dir=model_dir,
@@ -105,11 +105,6 @@ class OnnxImageModel(OnnxModel[T]):
             if parallel == 0:
                 parallel = os.cpu_count()
 
-            num_workers = parallel
-
-            if not providers and cuda and device_ids is not None:
-                num_workers = min(parallel, len(device_ids))
-
             start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
             params = {
                 "model_name": model_name,
@@ -119,7 +114,7 @@ class OnnxImageModel(OnnxModel[T]):
             }
 
             pool = ParallelWorkerPool(
-                num_workers,
+                parallel,
                 self._get_worker_class(),
                 cuda=cuda,
                 device_ids=device_ids,
