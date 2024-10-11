@@ -221,7 +221,6 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         # attention_value shape: (batch_size, num_heads, num_tokens, num_tokens)
         pooled_attention = np.mean(output.model_output[:, :, 0], axis=1) * output.attention_mask
 
-        results = []
         for document_token_ids, attention_value in zip(token_ids_batch, pooled_attention):
             document_tokens_with_ids = (
                 (idx, self.invert_vocab[token_id])
@@ -243,8 +242,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
             rescored = self._rescore_vector(max_token_weight)
 
-            results.append(SparseEmbedding.from_dict(rescored))
-        return results
+            yield SparseEmbedding.from_dict(rescored)
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Any]]:

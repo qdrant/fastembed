@@ -44,13 +44,10 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
         # Score matrix of shape (batch_size, vocab_size)
         # Most of the values are 0, only a few are non-zero
-        result = []
         for row_scores in scores:
             indices = row_scores.nonzero()[0]
             scores = row_scores[indices]
-            result.append(SparseEmbedding(values=scores, indices=indices))
-
-        return result
+            yield SparseEmbedding(values=scores, indices=indices)
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Any]]:
