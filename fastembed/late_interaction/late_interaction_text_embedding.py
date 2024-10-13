@@ -54,18 +54,15 @@ class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
 
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
             supported_models = EMBEDDING_MODEL_TYPE.list_supported_models()
-            if any(
-                model_name.lower() == model["model"].lower()
-                for model in supported_models
-            ):
+            if any(model_name.lower() == model["model"].lower() for model in supported_models):
                 self.model = EMBEDDING_MODEL_TYPE(
                     model_name, cache_dir, threads, providers=providers, **kwargs
                 )
                 return
 
         raise ValueError(
-            f"Model {model_name} is not supported in SparseTextEmbedding."
-            "Please check the supported models using `SparseTextEmbedding.list_supported_models()`"
+            f"Model {model_name} is not supported in LateInteractionTextEmbedding."
+            "Please check the supported models using `LateInteractionTextEmbedding.list_supported_models()`"
         )
 
     def embed(
@@ -92,9 +89,7 @@ class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
         """
         yield from self.model.embed(documents, batch_size, parallel, **kwargs)
 
-    def query_embed(
-        self, query: Union[str, Iterable[str]], **kwargs
-    ) -> Iterable[np.ndarray]:
+    def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> Iterable[np.ndarray]:
         """
         Embeds queries
 

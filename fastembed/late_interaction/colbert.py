@@ -33,6 +33,17 @@ supported_colbert_models = [
         },
         "model_file": "vespa_colbert.onnx",
     },
+    {
+        "model": "jinaai/jina-colbert-v2",
+        "dim": 1024,
+        "description": "Text embeddings, Unimodal (text), Multilingual (~100 languages), 512 input tokens truncation, 2024 year",
+        "size_in_GB": 2.24,
+        "sources": {
+            "hf": "jinaai/jina-colbert-v2",
+        },
+        "model_file": "onnx/model.onnx",
+        "additional_files": ["onnx/model.onnx_data"],
+    },
 ]
 
 
@@ -40,7 +51,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
     QUERY_MARKER_TOKEN_ID = 1
     DOCUMENT_MARKER_TOKEN_ID = 2
     MIN_QUERY_LENGTH = 32
-    MASK_TOKEN = "[MASK]"
+    MASK_TOKENS = ["[MASK]", "<mask>"]
 
     def _post_process_onnx_output(
         self, output: OnnxOutputContext, is_doc: bool = True
@@ -85,7 +96,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
             if self.tokenizer.padding:
                 prev_padding = self.tokenizer.padding
             self.tokenizer.enable_padding(
-                pad_token=self.MASK_TOKEN,
+                pad_token=self.MASK_TOKENS[0],
                 pad_id=self.mask_token_id,
                 length=self.MIN_QUERY_LENGTH,
             )
@@ -146,7 +157,14 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
             threads=threads,
             providers=providers,
         )
-        self.mask_token_id = self.special_token_to_id["[MASK]"]
+        self.mask_token_id = next(
+            (
+                self.special_token_to_id[token]
+                for token in self.MASK_TOKENS
+                if token in self.special_token_to_id
+            ),
+            None,
+        )
         self.pad_token_id = self.tokenizer.padding["pad_id"]
 
         self.skip_list = {
