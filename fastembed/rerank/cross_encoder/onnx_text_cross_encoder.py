@@ -33,7 +33,7 @@ supported_onnx_models = [
             "hf": "BAAI/bge-reranker-base",
         },
         "model_file": "onnx/model.onnx",
-        "description": "BGE reranker base model for cross-encoder re-ranking.",
+        "description": "BGE reranker base model for cross-encoder re-ranking. License: mit",
     },
 ]
 

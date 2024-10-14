@@ -14,7 +14,7 @@ supported_splade_models = [
     {
         "model": "prithivida/Splade_PP_en_v1",
         "vocab_size": 30522,
-        "description": "Independent Implementation of SPLADE++ Model for English",
+        "description": "Independent Implementation of SPLADE++ Model for English. License: apache-2.0",
         "size_in_GB": 0.532,
         "sources": {
             "hf": "Qdrant/SPLADE_PP_en_v1",
@@ -24,7 +24,7 @@ supported_splade_models = [
     {
         "model": "prithvida/Splade_PP_en_v1",
         "vocab_size": 30522,
-        "description": "Independent Implementation of SPLADE++ Model for English",
+        "description": "Independent Implementation of SPLADE++ Model for English. License: apache-2.0",
         "size_in_GB": 0.532,
         "sources": {
             "hf": "Qdrant/SPLADE_PP_en_v1",

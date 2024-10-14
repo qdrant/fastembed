@@ -16,7 +16,7 @@ supported_colbert_models = [
     {
         "model": "colbert-ir/colbertv2.0",
         "dim": 128,
-        "description": "Late interaction model",
+        "description": "Late interaction model, License: mit",
         "size_in_GB": 0.44,
         "sources": {
             "hf": "colbert-ir/colbertv2.0",
@@ -26,7 +26,7 @@ supported_colbert_models = [
     {
         "model": "answerdotai/answerai-colbert-small-v1",
         "dim": 96,
-        "description": "Text embeddings, Unimodal (text), Multilingual (~100 languages), 512 input tokens truncation, 2024 year",
+        "description": "Text embeddings, Unimodal (text), Multilingual (~100 languages), 512 input tokens truncation, 2024 year, License: apache-2.0",
         "size_in_GB": 0.13,
         "sources": {
             "hf": "answerdotai/answerai-colbert-small-v1",
