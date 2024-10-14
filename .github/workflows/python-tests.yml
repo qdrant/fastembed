@@ -2,8 +2,8 @@ name: Tests
 
 on:
   push:
-    branches: [ master, main, gpu, jina-colbert-v2 ]
-  workflow_dispatch:
+    branches: [ master, main, gpu ]
+  pull_request:
 
 env:
   CARGO_TERM_COLOR: always
