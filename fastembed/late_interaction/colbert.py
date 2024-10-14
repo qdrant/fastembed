@@ -185,7 +185,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
             **kwargs,
         )
 
-    def query_embed(self, query: Union[str, List[str]], **kwargs) -> np.ndarray:
+    def query_embed(self, query: Union[str, List[str]], **kwargs) -> Iterable[np.ndarray]:
         if isinstance(query, str):
             query = [query]
 

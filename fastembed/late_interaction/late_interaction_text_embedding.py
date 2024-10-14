@@ -64,8 +64,8 @@ class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
                 return
 
         raise ValueError(
-            f"Model {model_name} is not supported in SparseTextEmbedding."
-            "Please check the supported models using `SparseTextEmbedding.list_supported_models()`"
+            f"Model {model_name} is not supported in LateInteractionTextEmbedding."
+            "Please check the supported models using `LateInteractionTextEmbedding.list_supported_models()`"
         )
 
     def embed(
