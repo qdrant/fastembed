@@ -25,6 +25,7 @@ class ImageEmbedding(ImageEmbeddingBase):
                         "model": "Qdrant/clip-ViT-B-32-vision",
                         "dim": 512,
                         "description": "CLIP vision encoder based on ViT-B/32",
+                        "license": "apache-2.0",
                         "size_in_GB": 0.33,
                         "sources": {
                             "hf": "Qdrant/clip-ViT-B-32-vision",

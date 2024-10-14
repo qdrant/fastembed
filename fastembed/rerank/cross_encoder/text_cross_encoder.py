@@ -28,6 +28,7 @@ class TextCrossEncoder(TextCrossEncoderBase):
                         },
                         "model_file": "onnx/model.onnx",
                         "description": "MiniLM-L-6-v2 model optimized for re-ranking tasks.",
+                        "license": "apache-2.0",
                     }
                 ]
                 ```

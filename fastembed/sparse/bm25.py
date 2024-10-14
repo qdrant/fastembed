@@ -52,6 +52,7 @@ supported_bm25_models = [
     {
         "model": "Qdrant/bm25",
         "description": "BM25 as sparse embeddings meant to be used with Qdrant",
+        "license": "apache-2.0",
         "size_in_GB": 0.01,
         "sources": {
             "hf": "Qdrant/bm25",

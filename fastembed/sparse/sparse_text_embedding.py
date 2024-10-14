@@ -29,6 +29,7 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
                         "model": "prithvida/SPLADE_PP_en_v1",
                         "vocab_size": 30522,
                         "description": "Independent Implementation of SPLADE++ Model for English",
+                        "license": "apache-2.0",
                         "size_in_GB": 0.532,
                         "sources": {
                             "hf": "qdrant/SPLADE_PP_en_v1",

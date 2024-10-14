@@ -21,6 +21,7 @@ supported_bm42_models = [
         "model": "Qdrant/bm42-all-minilm-l6-v2-attentions",
         "vocab_size": 30522,
         "description": "Light sparse embedding model, which assigns an importance score to each token in the text",
+        "license": "apache-2.0",
         "size_in_GB": 0.09,
         "sources": {
             "hf": "Qdrant/all_miniLM_L6_v2_with_attentions",

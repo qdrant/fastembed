@@ -13,6 +13,7 @@ supported_onnx_models = [
         "model": "Qdrant/clip-ViT-B-32-vision",
         "dim": 512,
         "description": "Image embeddings, Multimodal (text&image), 2021 year",
+        "license": "apache-2.0",
         "size_in_GB": 0.34,
         "sources": {
             "hf": "Qdrant/clip-ViT-B-32-vision",
@@ -23,6 +24,7 @@ supported_onnx_models = [
         "model": "Qdrant/resnet50-onnx",
         "dim": 2048,
         "description": "Image embeddings, Unimodal (image), 2016 year",
+        "license": "apache-2.0",
         "size_in_GB": 0.1,
         "sources": {
             "hf": "Qdrant/resnet50-onnx",
@@ -33,6 +35,7 @@ supported_onnx_models = [
         "model": "Qdrant/Unicom-ViT-B-16",
         "dim": 768,
         "description": "Image embeddings (more detailed than Unicom-ViT-B-32), Multimodal (text&image), 2023 year",
+        "license": "apache-2.0",
         "size_in_GB": 0.82,
         "sources": {
             "hf": "Qdrant/Unicom-ViT-B-16",
@@ -43,6 +46,7 @@ supported_onnx_models = [
         "model": "Qdrant/Unicom-ViT-B-32",
         "dim": 512,
         "description": "Image embeddings, Multimodal (text&image), 2023 year",
+        "license": "apache-2.0",
         "size_in_GB": 0.48,
         "sources": {
             "hf": "Qdrant/Unicom-ViT-B-32",
