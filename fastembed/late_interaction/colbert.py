@@ -50,10 +50,10 @@ supported_colbert_models = [
 
 
 class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
-    QUERY_MARKER_TOKEN_ID = 1
-    DOCUMENT_MARKER_TOKEN_ID = 2
     MIN_QUERY_LENGTH = 32
     MASK_TOKENS = ["[MASK]", "<mask>"]
+    QUERY_MARKER_TOKENS = ["[Q]", "[QueryMarker]"]
+    DOCUMENT_MARKER_TOKENS = ["[D]", "[DocumentMarker]"]
 
     def _post_process_onnx_output(
         self, output: OnnxOutputContext, is_doc: bool = True
@@ -81,9 +81,9 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         self, onnx_input: Dict[str, np.ndarray], is_doc: bool = True
     ) -> Dict[str, np.ndarray]:
         if is_doc:
-            onnx_input["input_ids"][:, 1] = self.DOCUMENT_MARKER_TOKEN_ID
+            onnx_input["input_ids"][:, 1] = self.document_marker_token_id
         else:
-            onnx_input["input_ids"][:, 1] = self.QUERY_MARKER_TOKEN_ID
+            onnx_input["input_ids"][:, 1] = self.query_marker_token_id
         return onnx_input
 
     def tokenize(self, documents: List[str], is_doc: bool = True) -> List[Encoding]:
@@ -94,8 +94,9 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         )
 
     def _tokenize_query(self, query: str) -> List[Encoding]:
-        # ". " is added to a query to be replaced with a special query token
-        query = [f". {query}"]
+        # "@ " is added to a query to be replaced with a special query token
+        # please make sure that "@ " is considered as one token in all tokenizers we use in Late Interaction Models
+        query = [f"@ {query}"]
         encoded = self.tokenizer.encode_batch(query)
         # colbert authors recommend to pad queries with [MASK] tokens for query augmentation to improve performance
         if len(encoded[0].ids) < self.MIN_QUERY_LENGTH:
@@ -103,7 +104,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
             if self.tokenizer.padding:
                 prev_padding = self.tokenizer.padding
             self.tokenizer.enable_padding(
-                pad_token=self.MASK_TOKENS[0],
+                pad_token=self.mask_token,
                 pad_id=self.mask_token_id,
                 length=self.MIN_QUERY_LENGTH,
             )
@@ -115,8 +116,9 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         return encoded
 
     def _tokenize_documents(self, documents: List[str]) -> List[Encoding]:
-        # ". " is added to a document to be replaced with a special document token
-        documents = [". " + doc for doc in documents]
+        # "@ " is added to a document to be replaced with a special document token
+        # please make sure that "@ " is considered as one token in all tokenizers we use in Late Interaction Models
+        documents = ["@ " + doc for doc in documents]
         encoded = self.tokenizer.encode_batch(documents)
         return encoded
 
@@ -200,10 +202,26 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
             cuda=self.cuda,
             device_id=self.device_id,
         )
-        self.mask_token_id = next(
+        self.mask_token_id, self.mask_token = next(
+            (
+                (self.special_token_to_id[token], token)
+                for token in self.MASK_TOKENS
+                if token in self.special_token_to_id
+            ),
+            (None, None),
+        )
+        self.query_marker_token_id = next(
             (
                 self.special_token_to_id[token]
-                for token in self.MASK_TOKENS
+                for token in self.QUERY_MARKER_TOKENS
+                if token in self.special_token_to_id
+            ),
+            None,
+        )
+        self.document_marker_token_id = next(
+            (
+                self.special_token_to_id[token]
+                for token in self.DOCUMENT_MARKER_TOKENS
                 if token in self.special_token_to_id
             ),
             None,
