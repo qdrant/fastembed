@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 import mmh3
 import numpy as np
-from snowballstemmer import stemmer as get_stemmer
+from py_rust_stemmers import SnowballStemmer
 from fastembed.common.utils import (
     define_cache_dir,
     iter_batch,
@@ -127,7 +127,7 @@ class Bm25(SparseTextEmbeddingBase):
         self.punctuation = set(get_all_punctuation())
         self.stopwords = set(self._load_stopwords(self._model_dir, self.language))
 
-        self.stemmer = get_stemmer(language)
+        self.stemmer = SnowballStemmer(language)
         self.tokenizer = SimpleTokenizer
 
     @classmethod
@@ -230,7 +230,7 @@ class Bm25(SparseTextEmbeddingBase):
             if len(token) > self.token_max_length:
                 continue
 
-            stemmed_token = self.stemmer.stemWord(token.lower())
+            stemmed_token = self.stemmer.stem_word(token.lower())
 
             if stemmed_token:
                 stemmed_tokens.append(stemmed_token)
