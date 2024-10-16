@@ -61,6 +61,10 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         threads: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
         alpha: float = 0.5,
+        cuda: bool = False,
+        device_ids: Optional[List[int]] = None,
+        lazy_load: bool = False,
+        device_id: Optional[int] = None,
         **kwargs,
     ):
         """
@@ -74,38 +78,67 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             alpha (float, optional): Parameter, that defines the importance of the token weight in the document
                 versus the importance of the token frequency in the corpus. Defaults to 0.5, based on empirical testing.
                 It is recommended to only change this parameter based on training data for a specific dataset.
+            cuda (bool, optional): Whether to use cuda for inference. Mutually exclusive with `providers`
+                Defaults to False.
+            device_ids (Optional[List[int]], optional): The list of device ids to use for data parallel processing in
+                workers. Should be used with `cuda=True`, mutually exclusive with `providers`. Defaults to None.
+            lazy_load (bool, optional): Whether to load the model during class initialization or on demand.
+                Should be set to True when using multiple-gpu and parallel encoding. Defaults to False.
+            device_id (Optional[int], optional): The device id to use for loading the model in the worker process.
 
         Raises:
             ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
         """
 
         super().__init__(model_name, cache_dir, threads, **kwargs)
+        self.providers = providers
+        self.lazy_load = lazy_load
 
-        model_description = self._get_model_description(model_name)
+        # List of device ids, that can be used for data parallel processing in workers
+        self.device_ids = device_ids
+        self.cuda = cuda
+
+        # This device_id will be used if we need to load model in current process
+        if device_id is not None:
+            self.device_id = device_id
+        elif self.device_ids is not None:
+            self.device_id = self.device_ids[0]
+        else:
+            self.device_id = None
+
+        self.model_description = self._get_model_description(model_name)
         self.cache_dir = define_cache_dir(cache_dir)
 
         self._model_dir = self.download_model(
-            model_description, self.cache_dir, local_files_only=self._local_files_only
-        )
-
-        self.load_onnx_model(
-            model_dir=self._model_dir,
-            model_file=model_description["model_file"],
-            threads=threads,
-            providers=providers,
+            self.model_description, self.cache_dir, local_files_only=self._local_files_only
         )
 
         self.invert_vocab = {}
 
-        for token, idx in self.tokenizer.get_vocab().items():
-            self.invert_vocab[idx] = token
-
-        self.special_tokens = set(self.special_token_to_id.keys())
-        self.special_tokens_ids = set(self.special_token_to_id.values())
+        self.special_tokens = set()
+        self.special_tokens_ids = set()
         self.punctuation = set(string.punctuation)
-        self.stopwords = set(self._load_stopwords(self._model_dir))
+        self.stopwords = set()
         self.stemmer = get_stemmer(MODEL_TO_LANGUAGE[model_name])
         self.alpha = alpha
+
+        if not self.lazy_load:
+            self.load_onnx_model()
+
+    def load_onnx_model(self) -> None:
+        self._load_onnx_model(
+            model_dir=self._model_dir,
+            model_file=self.model_description["model_file"],
+            threads=self.threads,
+            providers=self.providers,
+            cuda=self.cuda,
+            device_id=self.device_id,
+        )
+        for token, idx in self.tokenizer.get_vocab().items():
+            self.invert_vocab[idx] = token
+        self.special_tokens = set(self.special_token_to_id.keys())
+        self.special_tokens_ids = set(self.special_token_to_id.values())
+        self.stopwords = set(self._load_stopwords(self._model_dir))
 
     def _filter_pair_tokens(self, tokens: List[Tuple[str, Any]]) -> List[Tuple[str, Any]]:
         result = []
@@ -254,6 +287,9 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             documents=documents,
             batch_size=batch_size,
             parallel=parallel,
+            providers=self.providers,
+            cuda=self.cuda,
+            device_ids=self.device_ids,
             alpha=self.alpha,
         )
 
@@ -274,6 +310,9 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         if isinstance(query, str):
             query = [query]
 
+        if not hasattr(self, "model") or self.model is None:
+            self.load_onnx_model()
+
         for text in query:
             encoded = self.tokenizer.encode(text)
             document_tokens_with_ids = enumerate(encoded.tokens)
@@ -290,4 +329,8 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
 class Bm42TextEmbeddingWorker(TextEmbeddingWorker):
     def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> Bm42:
-        return Bm42(model_name=model_name, cache_dir=cache_dir, **kwargs)
+        return Bm42(
+            model_name=model_name,
+            cache_dir=cache_dir,
+            **kwargs,
+        )

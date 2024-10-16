@@ -142,3 +142,18 @@ def test_special_characters(model_name):
 
     if is_ci:
         shutil.rmtree(model.model._model_dir)
+
+
+@pytest.mark.parametrize("model_name", ["Qdrant/bm42-all-minilm-l6-v2-attentions"])
+def test_lazy_load(model_name):
+    model = SparseTextEmbedding(model_name=model_name, lazy_load=True)
+    assert not hasattr(model.model, "model")
+    docs = ["hello world", "flag embedding"]
+    list(model.embed(docs))
+    assert hasattr(model.model, "model")
+
+    model = SparseTextEmbedding(model_name=model_name, lazy_load=True)
+    list(model.query_embed(docs))
+
+    model = SparseTextEmbedding(model_name=model_name, lazy_load=True)
+    list(model.passage_embed(docs))

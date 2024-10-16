@@ -43,6 +43,9 @@ class TextCrossEncoder(TextCrossEncoderBase):
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
+        cuda: bool = False,
+        device_ids: Optional[List[int]] = None,
+        lazy_load: bool = False,
         **kwargs,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
@@ -55,6 +58,9 @@ class TextCrossEncoder(TextCrossEncoderBase):
                     cache_dir=cache_dir,
                     threads=threads,
                     providers=providers,
+                    cuda=cuda,
+                    device_ids=device_ids,
+                    lazy_load=lazy_load,
                     **kwargs,
                 )
                 return

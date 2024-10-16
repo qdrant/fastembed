@@ -3,15 +3,12 @@ from collections import defaultdict
 from multiprocessing import get_all_start_methods
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
+
 import mmh3
 import numpy as np
 from snowballstemmer import stemmer as get_stemmer
-from fastembed.common.utils import (
-    define_cache_dir,
-    iter_batch,
-    get_all_punctuation,
-    remove_non_alphanumeric,
-)
+
+from fastembed.common.utils import define_cache_dir, iter_batch, get_all_punctuation, remove_non_alphanumeric
 from fastembed.parallel_processor import ParallelWorkerPool, Worker
 from fastembed.sparse.sparse_embedding_base import (
     SparseEmbedding,
@@ -166,13 +163,13 @@ class Bm25(SparseTextEmbeddingBase):
             if len(documents) < batch_size:
                 is_small = True
 
-        if parallel == 0:
-            parallel = os.cpu_count()
-
         if parallel is None or is_small:
             for batch in iter_batch(documents, batch_size):
                 yield from self.raw_embed(batch)
         else:
+            if parallel == 0:
+                parallel = os.cpu_count()
+
             start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
             params = {
                 "model_name": model_name,

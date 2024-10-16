@@ -1,5 +1,7 @@
 from typing import List, Iterable, Dict, Any, Sequence, Optional
 
+from loguru import logger
+
 from fastembed.common import OnnxProvider
 from fastembed.rerank.cross_encoder.onnx_text_model import OnnxCrossEncoderModel
 from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
@@ -52,6 +54,10 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
+        cuda: bool = False,
+        device_ids: Optional[List[int]] = None,
+        lazy_load: bool = False,
+        device_id: Optional[int] = None,
         **kwargs,
     ):
         """
@@ -61,30 +67,58 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
                                        Can be set using the `FASTEMBED_CACHE_PATH` env variable.
                                        Defaults to `fastembed_cache` in the system's temp directory.
             threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
-            providers (Optional[Sequence[OnnxProvider]]): The list of providers to use for the onnxruntime session.
+            providers (Optional[Sequence[OnnxProvider]], optional): The list of onnxruntime providers to use.
+                Mutually exclusive with the `cuda` and `device_ids` arguments. Defaults to None.
+            cuda (bool, optional): Whether to use cuda for inference. Mutually exclusive with `providers`
+                Defaults to False.
+            device_ids (Optional[List[int]], optional): The list of device ids to use for data parallel processing in
+                workers. Should be used with `cuda=True`, mutually exclusive with `providers`. Defaults to None.
+            lazy_load (bool, optional): Whether to load the model during class initialization or on demand.
+                Should be set to True when using multiple-gpu and parallel encoding. Defaults to False.
+            device_id (Optional[int], optional): The device id to use for loading the model in the worker process.
 
         Raises:
             ValueError: If the model_name is not in the format <org>/<model> e.g. Xenova/ms-marco-MiniLM-L-6-v2.
         """
-        super().__init__(
-            model_name=model_name,
-            cache_dir=cache_dir,
-            threads=threads,
-            providers=providers,
-            **kwargs,
-        )
+        super().__init__(model_name, cache_dir, threads, **kwargs)
+        self.providers = providers
+        self.lazy_load = lazy_load
 
-        model_description = self._get_model_description(model_name)
+        # List of device ids, that can be used for data parallel processing in workers
+        self.device_ids = device_ids
+        self.cuda = cuda
+
+        if self.device_ids is not None and len(self.device_ids) > 1:
+            logger.warning(
+                "Parallel execution is currently not supported for cross encoders, "
+                f"only the first device will be used for inference: {self.device_ids[0]}."
+            )
+
+        # This device_id will be used if we need to load model in current process
+        if device_id is not None:
+            self.device_id = device_id
+        elif self.device_ids is not None:
+            self.device_id = self.device_ids[0]
+        else:
+            self.device_id = None
+
+        self.model_description = self._get_model_description(model_name)
         self.cache_dir = define_cache_dir(cache_dir)
         self._model_dir = self.download_model(
-            model_description, self.cache_dir, local_files_only=self._local_files_only
+            self.model_description, self.cache_dir, local_files_only=self._local_files_only
         )
 
-        self.load_onnx_model(
+        if not self.lazy_load:
+            self.load_onnx_model()
+
+    def load_onnx_model(self) -> None:
+        self._load_onnx_model(
             model_dir=self._model_dir,
-            model_file=model_description["model_file"],
-            threads=threads,
-            providers=providers,
+            model_file=self.model_description["model_file"],
+            threads=self.threads,
+            providers=self.providers,
+            cuda=self.cuda,
+            device_id=self.device_id,
         )
 
     def rerank(

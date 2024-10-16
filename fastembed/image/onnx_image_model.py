@@ -36,20 +36,27 @@ class OnnxImageModel(OnnxModel[T]):
         """
         return onnx_input
 
-    def load_onnx_model(
+    def _load_onnx_model(
         self,
         model_dir: Path,
         model_file: str,
         threads: Optional[int],
         providers: Optional[Sequence[OnnxProvider]] = None,
+        cuda: bool = False,
+        device_id: Optional[int] = None,
     ) -> None:
-        super().load_onnx_model(
+        super()._load_onnx_model(
             model_dir=model_dir,
             model_file=model_file,
             threads=threads,
             providers=providers,
+            cuda=cuda,
+            device_id=device_id,
         )
         self.processor = load_preprocessor(model_dir=model_dir)
+
+    def load_onnx_model(self) -> None:
+        raise NotImplementedError("Subclasses must implement this method")
 
     def _build_onnx_input(self, encoded: np.ndarray) -> Dict[str, np.ndarray]:
         return {node.name: encoded for node in self.model.get_inputs()}
@@ -74,33 +81,44 @@ class OnnxImageModel(OnnxModel[T]):
         images: ImageInput,
         batch_size: int = 256,
         parallel: Optional[int] = None,
+        providers: Optional[Sequence[OnnxProvider]] = None,
+        cuda: bool = False,
+        device_ids: Optional[List[int]] = None,
         **kwargs,
     ) -> Iterable[T]:
         is_small = False
 
-        if (
-            isinstance(images, str)
-            or isinstance(images, Path)
-            or (isinstance(images, Image.Image))
-        ):
+        if isinstance(images, (str, Path, Image.Image)):
             images = [images]
             is_small = True
 
-        if isinstance(images, list):
-            if len(images) < batch_size:
-                is_small = True
-
-        if parallel == 0:
-            parallel = os.cpu_count()
+        if isinstance(images, list) and len(images) < batch_size:
+            is_small = True
 
         if parallel is None or is_small:
+            if not hasattr(self, "model") or self.model is None:
+                self.load_onnx_model()
+
             for batch in iter_batch(images, batch_size):
                 yield from self._post_process_onnx_output(self.onnx_embed(batch))
         else:
+            if parallel == 0:
+                parallel = os.cpu_count()
+
             start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
-            params = {"model_name": model_name, "cache_dir": cache_dir, **kwargs}
+            params = {
+                "model_name": model_name,
+                "cache_dir": cache_dir,
+                "providers": providers,
+                **kwargs,
+            }
+
             pool = ParallelWorkerPool(
-                parallel, self._get_worker_class(), start_method=start_method
+                parallel,
+                self._get_worker_class(),
+                cuda=cuda,
+                device_ids=device_ids,
+                start_method=start_method,
             )
             for batch in pool.ordered_map(iter_batch(images, batch_size), **params):
                 yield from self._post_process_onnx_output(batch)

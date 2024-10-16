@@ -36,20 +36,27 @@ class OnnxTextModel(OnnxModel[T]):
         """
         return onnx_input
 
-    def load_onnx_model(
+    def _load_onnx_model(
         self,
         model_dir: Path,
         model_file: str,
         threads: Optional[int],
         providers: Optional[Sequence[OnnxProvider]] = None,
+        cuda: bool = False,
+        device_id: Optional[int] = None,
     ) -> None:
-        super().load_onnx_model(
+        super()._load_onnx_model(
             model_dir=model_dir,
             model_file=model_file,
             threads=threads,
             providers=providers,
+            cuda=cuda,
+            device_id=device_id,
         )
         self.tokenizer, self.special_token_to_id = load_tokenizer(model_dir=model_dir)
+
+    def load_onnx_model(self) -> None:
+        raise NotImplementedError("Subclasses must implement this method")
 
     def tokenize(self, documents: List[str], **kwargs) -> List[Encoding]:
         return self.tokenizer.encode_batch(documents)
@@ -89,6 +96,9 @@ class OnnxTextModel(OnnxModel[T]):
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
         parallel: Optional[int] = None,
+        providers: Optional[Sequence[OnnxProvider]] = None,
+        cuda: bool = False,
+        device_ids: Optional[List[int]] = None,
         **kwargs,
     ) -> Iterable[T]:
         is_small = False
@@ -101,19 +111,29 @@ class OnnxTextModel(OnnxModel[T]):
             if len(documents) < batch_size:
                 is_small = True
 
-        if parallel == 0:
-            parallel = os.cpu_count()
-
         if parallel is None or is_small:
+            if not hasattr(self, "model") or self.model is None:
+                self.load_onnx_model()
             for batch in iter_batch(documents, batch_size):
                 yield from self._post_process_onnx_output(self.onnx_embed(batch))
         else:
-            start_method = (
-                "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
-            )
-            params = {"model_name": model_name, "cache_dir": cache_dir, **kwargs}
+            if parallel == 0:
+                parallel = os.cpu_count()
+
+            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
+            params = {
+                "model_name": model_name,
+                "cache_dir": cache_dir,
+                "providers": providers,
+                **kwargs,
+            }
+
             pool = ParallelWorkerPool(
-                parallel, self._get_worker_class(), start_method=start_method
+                parallel,
+                self._get_worker_class(),
+                cuda=cuda,
+                device_ids=device_ids,
+                start_method=start_method,
             )
             for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
                 yield from self._post_process_onnx_output(batch)

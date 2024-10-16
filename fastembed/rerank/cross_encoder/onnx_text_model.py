@@ -12,18 +12,22 @@ from fastembed.common.utils import iter_batch
 class OnnxCrossEncoderModel(OnnxModel):
     ONNX_OUTPUT_NAMES: Optional[List[str]] = None
 
-    def load_onnx_model(
+    def _load_onnx_model(
         self,
         model_dir: Path,
         model_file: str,
         threads: Optional[int],
         providers: Optional[Sequence[OnnxProvider]] = None,
+        cuda: bool = False,
+        device_id: Optional[int] = None,
     ) -> None:
-        super().load_onnx_model(
+        super()._load_onnx_model(
             model_dir=model_dir,
             model_file=model_file,
             threads=threads,
             providers=providers,
+            cuda=cuda,
+            device_id=device_id,
         )
         self.tokenizer, _ = load_tokenizer(model_dir=model_dir)
 
@@ -52,6 +56,8 @@ class OnnxCrossEncoderModel(OnnxModel):
     def _rerank_documents(
         self, query: str, documents: Iterable[str], batch_size: int, **kwargs
     ) -> Iterable[float]:
+        if not hasattr(self, "model") or self.model is None:
+            self.load_onnx_model()
         for batch in iter_batch(documents, batch_size):
             yield from self.onnx_embed(query, batch, **kwargs)
 

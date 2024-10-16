@@ -48,18 +48,24 @@ class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
+        cuda: bool = False,
+        device_ids: Optional[List[int]] = None,
+        lazy_load: bool = False,
         **kwargs,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
-
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
             supported_models = EMBEDDING_MODEL_TYPE.list_supported_models()
-            if any(
-                model_name.lower() == model["model"].lower()
-                for model in supported_models
-            ):
+            if any(model_name.lower() == model["model"].lower() for model in supported_models):
                 self.model = EMBEDDING_MODEL_TYPE(
-                    model_name, cache_dir, threads, providers=providers, **kwargs
+                    model_name,
+                    cache_dir,
+                    threads=threads,
+                    providers=providers,
+                    cuda=cuda,
+                    device_ids=device_ids,
+                    lazy_load=lazy_load,
+                    **kwargs,
                 )
                 return
 
@@ -92,9 +98,7 @@ class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
         """
         yield from self.model.embed(documents, batch_size, parallel, **kwargs)
 
-    def query_embed(
-        self, query: Union[str, Iterable[str]], **kwargs
-    ) -> Iterable[np.ndarray]:
+    def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> Iterable[np.ndarray]:
         """
         Embeds queries
 

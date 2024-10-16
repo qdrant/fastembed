@@ -34,16 +34,20 @@ class CLIPOnnxEmbedding(OnnxTextEmbedding):
         """
         return supported_clip_models
 
-    def _post_process_onnx_output(
-        self, output: OnnxOutputContext
-    ) -> Iterable[np.ndarray]:
+    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
         return output.model_output
 
 
 class CLIPEmbeddingWorker(OnnxTextEmbeddingWorker):
     def init_embedding(
-        self, model_name: str, cache_dir: str, **kwargs
+        self,
+        model_name: str,
+        cache_dir: str,
+        **kwargs,
     ) -> OnnxTextEmbedding:
         return CLIPOnnxEmbedding(
-            model_name=model_name, cache_dir=cache_dir, threads=1, **kwargs
+            model_name=model_name,
+            cache_dir=cache_dir,
+            threads=1,
+            **kwargs,
         )
