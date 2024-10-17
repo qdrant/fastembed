@@ -35,6 +35,7 @@ class TextEmbedding(TextEmbeddingBase):
                         "model": "intfloat/multilingual-e5-large",
                         "dim": 1024,
                         "description": "Multilingual model, e5-large. Recommend using this model for non-English languages",
+                        "license": "mit",
                         "size_in_GB": 2.24,
                         "sources": {
                             "gcp": "https://storage.googleapis.com/qdrant-fastembed/fast-multilingual-e5-large.tar.gz",

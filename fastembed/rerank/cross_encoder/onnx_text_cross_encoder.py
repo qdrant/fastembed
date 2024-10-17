@@ -16,6 +16,7 @@ supported_onnx_models = [
         },
         "model_file": "onnx/model.onnx",
         "description": "MiniLM-L-6-v2 model optimized for re-ranking tasks.",
+        "license": "apache-2.0",
     },
     {
         "model": "Xenova/ms-marco-MiniLM-L-12-v2",
@@ -25,6 +26,7 @@ supported_onnx_models = [
         },
         "model_file": "onnx/model.onnx",
         "description": "MiniLM-L-12-v2 model optimized for re-ranking tasks.",
+        "license": "apache-2.0",
     },
     {
         "model": "BAAI/bge-reranker-base",
@@ -34,6 +36,7 @@ supported_onnx_models = [
         },
         "model_file": "onnx/model.onnx",
         "description": "BGE reranker base model for cross-encoder re-ranking.",
+        "license": "mit",
     },
 ]
 

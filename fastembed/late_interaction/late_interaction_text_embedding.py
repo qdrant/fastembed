@@ -26,14 +26,16 @@ class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
                 ```
                 [
                     {
-                        "model": "prithvida/SPLADE_PP_en_v1",
-                        "vocab_size": 30522,
-                        "description": "Independent Implementation of SPLADE++ Model for English",
-                        "size_in_GB": 0.532,
+                        "model": "colbert-ir/colbertv2.0",
+                        "dim": 128,
+                        "description": "Late interaction model",
+                        "license": "mit",
+                        "size_in_GB": 0.44,
                         "sources": {
-                            "hf": "qdrant/SPLADE_PP_en_v1",
+                            "hf": "colbert-ir/colbertv2.0",
                         },
-                    }
+                        "model_file": "model.onnx",
+                    },
                 ]
                 ```
         """

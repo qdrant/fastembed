@@ -9,7 +9,8 @@ supported_multilingual_e5_models = [
     {
         "model": "intfloat/multilingual-e5-large",
         "dim": 1024,
-        "description": "Text embeddings, Unimodal (text), Multilingual (~100 languages), 512 input tokens truncation, Prefixes for queries/documents: necessary, 2024 year",
+        "description": "Text embeddings, Unimodal (text), Multilingual (~100 languages), 512 input tokens truncation, Prefixes for queries/documents: necessary, 2024 year.",
+        "license": "mit",
         "size_in_GB": 2.24,
         "sources": {
             "url": "https://storage.googleapis.com/qdrant-fastembed/fast-multilingual-e5-large.tar.gz",
@@ -21,7 +22,8 @@ supported_multilingual_e5_models = [
     {
         "model": "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
         "dim": 768,
-        "description": "Text embeddings, Unimodal (text), Multilingual (~50 languages), 384 input tokens truncation, Prefixes for queries/documents: not necessary, 2021 year",
+        "description": "Text embeddings, Unimodal (text), Multilingual (~50 languages), 384 input tokens truncation, Prefixes for queries/documents: not necessary, 2021 year.",
+        "license": "apache-2.0",
         "size_in_GB": 1.00,
         "sources": {
             "hf": "xenova/paraphrase-multilingual-mpnet-base-v2",
