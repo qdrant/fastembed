@@ -13,7 +13,7 @@ supported_onnx_models = [
         "model": "Qdrant/clip-ViT-B-32-vision",
         "dim": 512,
         "description": "Image embeddings, Multimodal (text&image), 2021 year",
-        "license": "apache-2.0",
+        "license": "mit",
         "size_in_GB": 0.34,
         "sources": {
             "hf": "Qdrant/clip-ViT-B-32-vision",
