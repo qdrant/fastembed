@@ -38,6 +38,36 @@ supported_onnx_models = [
         "description": "BGE reranker base model for cross-encoder re-ranking.",
         "license": "mit",
     },
+    {
+        "model": "jinaai/jina-reranker-v1-tiny-en",
+        "size_in_GB": 0.13,
+        "sources": {
+            "hf": "jinaai/jina-reranker-v1-tiny-en",
+        },
+        "model_file": "model.onnx",
+        "description": "Designed for blazing-fast re-ranking with 8K context length and fewer parameters than jina-reranker-v1-turbo-en.",
+        "license": "apache-2.0",
+    },
+    {
+        "model": "jinaai/jina-reranker-v1-turbo-en",
+        "size_in_GB": 0.15,
+        "sources": {
+            "hf": "jinaai/jina-reranker-v1-turbo-en",
+        },
+        "model_file": "onnx/model.onnx",
+        "description": "Designed for blazing-fast re-ranking with 8K context length.",
+        "license": "apache-2.0",
+    },
+    {
+        "model": "jinaai/jina-reranker-v2-base-multilingual",
+        "size_in_GB": 1.11,
+        "sources": {
+            "hf": "jinaai/jina-reranker-v2-base-multilingual",
+        },
+        "model_file": "onnx/model.onnx",
+        "description": "A multi-lingual reranker model for cross-encoder re-ranking with 1K context length and sliding window",
+        "license": "cc-by-nc-4.0",
+    },
 ]
 
 
