@@ -129,8 +129,8 @@ class OnnxTextModel(OnnxModel[T]):
             }
 
             pool = ParallelWorkerPool(
-                parallel,
-                self._get_worker_class(),
+                num_workers=parallel or 1,
+                worker=self._get_worker_class(),
                 cuda=cuda,
                 device_ids=device_ids,
                 start_method=start_method,
