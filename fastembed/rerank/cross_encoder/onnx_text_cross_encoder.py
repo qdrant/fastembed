@@ -44,7 +44,7 @@ supported_onnx_models = [
         "sources": {
             "hf": "jinaai/jina-reranker-v1-tiny-en",
         },
-        "model_file": "model.onnx",
+        "model_file": "onnx/model.onnx",
         "description": "Designed for blazing-fast re-ranking with 8K context length and fewer parameters than jina-reranker-v1-turbo-en.",
         "license": "apache-2.0",
     },
