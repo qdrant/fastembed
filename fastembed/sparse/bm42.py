@@ -5,7 +5,7 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Type, U
 
 import mmh3
 import numpy as np
-from snowballstemmer import stemmer as get_stemmer
+from py_rust_stemmers import SnowballStemmer
 
 from fastembed.common import OnnxProvider
 from fastembed.common.onnx_model import OnnxOutputContext
@@ -119,8 +119,8 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         self.special_tokens = set()
         self.special_tokens_ids = set()
         self.punctuation = set(string.punctuation)
-        self.stopwords = set()
-        self.stemmer = get_stemmer(MODEL_TO_LANGUAGE[model_name])
+        self.stopwords = set(self._load_stopwords(self._model_dir))
+        self.stemmer = SnowballStemmer(MODEL_TO_LANGUAGE[model_name])
         self.alpha = alpha
 
         if not self.lazy_load:
@@ -152,7 +152,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
     def _stem_pair_tokens(self, tokens: List[Tuple[str, Any]]) -> List[Tuple[str, Any]]:
         result = []
         for token, value in tokens:
-            processed_token = self.stemmer.stemWord(token)
+            processed_token = self.stemmer.stem_word(token)
             result.append((processed_token, value))
         return result
 

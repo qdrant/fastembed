@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fastembed"
-version = "0.3.6"
+version = "0.4.0"
 description = "Fast, light, accurate library built for retrieval embedding generation"
 authors = ["Qdrant Team <info@qdrant.tech>", "NirantK <nirant.bits@gmail.com>"]
 license = "Apache License"
@@ -24,9 +24,8 @@ numpy = [
     { version = ">=1.26, <2", python = ">=3.12" }
 ]
 pillow = "^10.3.0"
-snowballstemmer = "^2.2.0"
-PyStemmer = "^2.2.0"
 mmh3 = "^4.1.0"
+py-rust-stemmers = "^0.1.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.2"
