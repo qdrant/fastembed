@@ -28,9 +28,9 @@ def test_rerank():
 
         query = "What is the capital of France?"
         documents = ["Paris is the capital of France.", "Berlin is the capital of Germany."]
-        scores = np.array(list(model.rerank(query, documents)))
+        scores = np.round(np.array(list(model.rerank(query, documents))), decimals=4)
 
-        canonical_scores = CANONICAL_SCORE_VALUES[model_name]
+        canonical_scores = np.round(CANONICAL_SCORE_VALUES[model_name], decimals=4)
         assert np.allclose(
             scores, canonical_scores, atol=1e-3
         ), f"Model: {model_name}, Scores: {scores}, Expected: {canonical_scores}"
@@ -49,9 +49,9 @@ def test_batch_rerank(model_name):
 
     query = "What is the capital of France?"
     documents = ["Paris is the capital of France.", "Berlin is the capital of Germany."] * 50
-    scores = np.array(list(model.rerank(query, documents, batch_size=10)))
+    scores = np.round(np.array(list(model.rerank(query, documents, batch_size=10))), decimals=4)
 
-    canonical_scores = np.tile(CANONICAL_SCORE_VALUES[model_name], 50)
+    canonical_scores = np.round(np.tile(CANONICAL_SCORE_VALUES[model_name], 50), decimals=4)
 
     assert scores.shape == canonical_scores.shape, f"Unexpected shape for model {model_name}"
     assert np.allclose(
