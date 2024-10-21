@@ -40,7 +40,7 @@ def test_rerank():
 
 @pytest.mark.parametrize(
     "model_name",
-    ["Xenova/ms-marco-MiniLM-L-6-v2", "Xenova/ms-marco-MiniLM-L-12-v2", "BAAI/bge-reranker-base"],
+    [model_name for model_name in CANONICAL_SCORE_VALUES.keys()],
 )
 def test_batch_rerank(model_name):
     is_ci = os.getenv("CI")
