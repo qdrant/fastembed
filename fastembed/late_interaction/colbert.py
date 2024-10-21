@@ -50,6 +50,11 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         if not is_doc:
             return output.model_output.astype(np.float32)
 
+        if output.input_ids is None or output.attention_mask is None:
+            raise ValueError(
+                "input_ids and attention_mask must be provided for document post-processing"
+            )
+
         for i, token_sequence in enumerate(output.input_ids):
             for j, token_id in enumerate(token_sequence):
                 if token_id in self.skip_list or token_id == self.pad_token_id:

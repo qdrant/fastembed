@@ -214,6 +214,9 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         return new_vector
 
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[SparseEmbedding]:
+        if output.input_ids is None:
+            raise ValueError("input_ids must be provided for document post-processing")
+
         token_ids_batch = output.input_ids
 
         # attention_value shape: (batch_size, num_heads, num_tokens, num_tokens)

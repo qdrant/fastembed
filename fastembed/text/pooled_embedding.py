@@ -69,6 +69,9 @@ class PooledEmbedding(OnnxTextEmbedding):
         return supported_pooled_models
 
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
+        if output.attention_mask is None:
+            raise ValueError("attention_mask must be provided for document post-processing")
+
         embeddings = output.model_output
         attn_mask = output.attention_mask
         return self.mean_pooling(embeddings, attn_mask).astype(np.float32)
