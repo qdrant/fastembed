@@ -74,7 +74,7 @@ class ModelManagement:
         if total_size_in_bytes == 0:
             print(f"Warning: Content-length header is missing or zero in the response from {url}.")
 
-        show_progress = total_size_in_bytes and show_progress
+        show_progress = bool(total_size_in_bytes and show_progress)
 
         with tqdm(
             total=total_size_in_bytes,

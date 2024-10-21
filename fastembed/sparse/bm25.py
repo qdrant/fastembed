@@ -8,7 +8,12 @@ import mmh3
 import numpy as np
 from snowballstemmer import stemmer as get_stemmer
 
-from fastembed.common.utils import define_cache_dir, iter_batch, get_all_punctuation, remove_non_alphanumeric
+from fastembed.common.utils import (
+    define_cache_dir,
+    iter_batch,
+    get_all_punctuation,
+    remove_non_alphanumeric,
+)
 from fastembed.parallel_processor import ParallelWorkerPool, Worker
 from fastembed.sparse.sparse_embedding_base import (
     SparseEmbedding,
@@ -180,7 +185,9 @@ class Bm25(SparseTextEmbeddingBase):
                 "avg_len": self.avg_len,
             }
             pool = ParallelWorkerPool(
-                parallel, self._get_worker_class(), start_method=start_method
+                num_workers=parallel or 1,
+                worker=self._get_worker_class(),
+                start_method=start_method,
             )
             for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
                 for record in batch:

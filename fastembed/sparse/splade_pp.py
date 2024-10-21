@@ -38,6 +38,9 @@ supported_splade_models = [
 
 class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[SparseEmbedding]:
+        if output.attention_mask is None:
+            raise ValueError("attention_mask must be provided for document post-processing")
+
         relu_log = np.log(1 + np.maximum(output.model_output, 0))
 
         weighted_log = relu_log * np.expand_dims(output.attention_mask, axis=-1)
