@@ -40,7 +40,11 @@ def test_rerank():
 
 @pytest.mark.parametrize(
     "model_name",
-    [model_name for model_name in CANONICAL_SCORE_VALUES.keys()],
+    [
+        model_desc["model"]
+        for model_desc in TextCrossEncoder.list_supported_models()
+        if model_desc["size_in_GB"] < 1 and model_desc["model"] in CANONICAL_SCORE_VALUES.keys()
+    ],
 )
 def test_batch_rerank(model_name):
     is_ci = os.getenv("CI")
