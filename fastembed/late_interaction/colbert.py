@@ -38,7 +38,8 @@ supported_colbert_models = [
     {
         "model": "jinaai/jina-colbert-v2",
         "dim": 1024,
-        "description": "Text embeddings, Unimodal (text), Multilingual (~100 languages), 512 input tokens truncation, 2024 year",
+        "description": "New model that expands capabilities of colbert-v1 with multilingual and context length of 8192, 2024 year",
+        "license": "cc-by-nc-4.0",
         "size_in_GB": 2.24,
         "sources": {
             "hf": "jinaai/jina-colbert-v2",
