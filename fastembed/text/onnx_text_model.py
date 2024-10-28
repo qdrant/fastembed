@@ -53,7 +53,9 @@ class OnnxTextModel(OnnxModel[T]):
             cuda=cuda,
             device_id=device_id,
         )
-        self.tokenizer, self.special_token_to_id = load_tokenizer(model_dir=model_dir)
+        self.tokenizer, self.special_token_to_id, self.tokenizer_class = load_tokenizer(
+            model_dir=model_dir
+        )
 
     def load_onnx_model(self) -> None:
         raise NotImplementedError("Subclasses must implement this method")

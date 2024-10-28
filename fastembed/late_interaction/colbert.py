@@ -85,6 +85,9 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
             onnx_input["input_ids"][:, 1] = self.document_marker_token_id
         else:
             onnx_input["input_ids"][:, 1] = self.query_marker_token_id
+
+        if self.tokenizer_class == "XLMRobertaTokenizer":
+            onnx_input["attention_mask"][:] = 1
         return onnx_input
 
     def tokenize(self, documents: List[str], is_doc: bool = True) -> List[Encoding]:

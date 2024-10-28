@@ -29,7 +29,7 @@ class OnnxCrossEncoderModel(OnnxModel):
             cuda=cuda,
             device_id=device_id,
         )
-        self.tokenizer, _ = load_tokenizer(model_dir=model_dir)
+        self.tokenizer, _, _ = load_tokenizer(model_dir=model_dir)
 
     def tokenize(self, query: str, documents: List[str], **kwargs) -> List[Encoding]:
         return self.tokenizer.encode_batch([(query, doc) for doc in documents])

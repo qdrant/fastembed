@@ -17,7 +17,7 @@ def load_special_tokens(model_dir: Path) -> dict:
     return tokens_map
 
 
-def load_tokenizer(model_dir: Path) -> Tuple[Tokenizer, dict]:
+def load_tokenizer(model_dir: Path) -> Tuple[Tokenizer, dict, str]:
     config_path = model_dir / "config.json"
     if not config_path.exists():
         raise ValueError(f"Could not find config.json in {model_dir}")
@@ -80,7 +80,7 @@ def load_tokenizer(model_dir: Path) -> Tuple[Tokenizer, dict]:
 
     special_token_to_id.update(query_marker)
     special_token_to_id.update(document_marker)
-    return tokenizer, special_token_to_id
+    return tokenizer, special_token_to_id, tokenizer_config["tokenizer_class"]
 
 
 def load_preprocessor(model_dir: Path) -> Compose:
