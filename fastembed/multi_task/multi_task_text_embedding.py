@@ -13,10 +13,29 @@ class MultiTaskTextEmbedding(MultiTaskTextEmbeddingBase):
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Any]]:
-        """Lists the supported models.
+        """
+        Lists the supported models.
 
         Returns:
             List[Dict[str, Any]]: A list of dictionaries containing the model information.
+
+            Example:
+                ```
+                [
+                    {
+                        "model": "jinaai/jina-embeddings-v3",
+                        "dim": [32, 64, 128, 256, 512, 768, 1024],
+                        "description": "Multi-task, multi-lingual embedding model with Matryoshka architecture",
+                        "license": "cc-by-nc-4.0",
+                        "size_in_GB": 2.29,
+                        "sources": {
+                            "hf": "jinaai/jina-embeddings-v3",
+                        },
+                        "model_file": "onnx/model.onnx",
+                        "additional_files": ["onnx/model.onnx_data"],
+                    }
+                ]
+                ```
         """
         result = []
         for embedding in cls.EMBEDDINGS_REGISTRY:
