@@ -14,35 +14,25 @@ from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
 
 supported_colbert_models = [
     {
-        "model": "colbert-ir/colbertv2.0",
-        "dim": 128,
-        "description": "Late interaction model",
-        "license": "mit",
-        "size_in_GB": 0.44,
+        "model": "jinaai/jina-colbert-v2",
+        "dim": 1024,
+        "description": "New model that expands capabilities of colbert-v1 with multilingual and context length of 8192, 2024 year",
+        "license": "cc-by-nc-4.0",
+        "size_in_GB": 2.24,
         "sources": {
-            "hf": "colbert-ir/colbertv2.0",
+            "hf": "jinaai/jina-colbert-v2",
         },
-        "model_file": "model.onnx",
-    },
-    {
-        "model": "answerdotai/answerai-colbert-small-v1",
-        "dim": 96,
-        "description": "Text embeddings, Unimodal (text), Multilingual (~100 languages), 512 input tokens truncation, 2024 year",
-        "license": "apache-2.0",
-        "size_in_GB": 0.13,
-        "sources": {
-            "hf": "answerdotai/answerai-colbert-small-v1",
-        },
-        "model_file": "vespa_colbert.onnx",
+        "model_file": "onnx/model.onnx",
+        "additional_files": ["onnx/model.onnx_data"],
     },
 ]
 
 
-class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
-    QUERY_MARKER_TOKEN_ID = 1
-    DOCUMENT_MARKER_TOKEN_ID = 2
+class JinaColbertV2(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
+    QUERY_MARKER_TOKEN_ID = 250002
+    DOCUMENT_MARKER_TOKEN_ID = 250003
     MIN_QUERY_LENGTH = 32
-    MASK_TOKEN = "[MASK]"
+    MASK_TOKEN = "<mask>"
 
     def _post_process_onnx_output(
         self, output: OnnxOutputContext, is_doc: bool = True
@@ -73,6 +63,9 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
             onnx_input["input_ids"][:, 1] = self.DOCUMENT_MARKER_TOKEN_ID
         else:
             onnx_input["input_ids"][:, 1] = self.QUERY_MARKER_TOKEN_ID
+
+        # the attention mask for jina-colbert-v2 is always 1
+        onnx_input["attention_mask"][:] = 1
         return onnx_input
 
     def tokenize(self, documents: List[str], is_doc: bool = True) -> List[Encoding]:
@@ -83,8 +76,9 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         )
 
     def _tokenize_query(self, query: str) -> List[Encoding]:
-        # ". " is added to a query to be replaced with a special query token
-        query = f". {query}"
+        # "@ " is added to a query to be replaced with a special query token
+        # "@ " is considered as one token in jina-colbert-v2 tokenizer
+        query = f"@ {query}"
         encoded = self.tokenizer.encode_batch([query])
         # colbert authors recommend to pad queries with [MASK] tokens for query augmentation to improve performance
         if len(encoded[0].ids) < self.MIN_QUERY_LENGTH:
@@ -104,8 +98,9 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         return encoded
 
     def _tokenize_documents(self, documents: List[str]) -> List[Encoding]:
-        # ". " is added to a document to be replaced with a special document token
-        documents = [". " + doc for doc in documents]
+        # "@ " is added to a document to be replaced with a special document token
+        # "@ " is considered as one token in jina-colbert-v2 tokenizer
+        documents = ["@ " + doc for doc in documents]
         encoded = self.tokenizer.encode_batch(documents)
         return encoded
 
@@ -248,8 +243,8 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
 
 
 class ColbertEmbeddingWorker(TextEmbeddingWorker):
-    def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> Colbert:
-        return Colbert(
+    def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> JinaColbertV2:
+        return JinaColbertV2(
             model_name=model_name,
             cache_dir=cache_dir,
             threads=1,

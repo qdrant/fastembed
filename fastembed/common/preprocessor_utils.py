@@ -17,7 +17,7 @@ def load_special_tokens(model_dir: Path) -> dict:
     return tokens_map
 
 
-def load_tokenizer(model_dir: Path) -> Tuple[Tokenizer, dict, str]:
+def load_tokenizer(model_dir: Path) -> Tuple[Tokenizer, dict]:
     config_path = model_dir / "config.json"
     if not config_path.exists():
         raise ValueError(f"Could not find config.json in {model_dir}")
@@ -68,19 +68,7 @@ def load_tokenizer(model_dir: Path) -> Tuple[Tokenizer, dict, str]:
             token_str = token.get("content", "")
             special_token_to_id[token_str] = tokenizer.token_to_id(token_str)
 
-    if tokenizer_config["tokenizer_class"] == "BertTokenizer":
-        query_marker = {"[Q]": 1}
-        document_marker = {"[D]": 2}
-    elif tokenizer_config["tokenizer_class"] == "XLMRobertaTokenizer":
-        query_marker = {"[QueryMarker]": 250002}
-        document_marker = {"[DocumentMarker]": 250003}
-    else:
-        query_marker = {}
-        document_marker = {}
-
-    special_token_to_id.update(query_marker)
-    special_token_to_id.update(document_marker)
-    return tokenizer, special_token_to_id, tokenizer_config["tokenizer_class"]
+    return tokenizer, special_token_to_id
 
 
 def load_preprocessor(model_dir: Path) -> Compose:
