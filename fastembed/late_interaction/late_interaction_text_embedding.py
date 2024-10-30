@@ -4,15 +4,14 @@ import numpy as np
 
 from fastembed.common import OnnxProvider
 from fastembed.late_interaction.colbert import Colbert
+from fastembed.late_interaction.jina_colbert import JinaColbert
 from fastembed.late_interaction.late_interaction_embedding_base import (
     LateInteractionTextEmbeddingBase,
 )
 
 
 class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
-    EMBEDDINGS_REGISTRY: List[Type[LateInteractionTextEmbeddingBase]] = [
-        Colbert,
-    ]
+    EMBEDDINGS_REGISTRY: List[Type[LateInteractionTextEmbeddingBase]] = [Colbert, JinaColbert]
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Any]]:
