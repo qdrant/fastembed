@@ -5,11 +5,14 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Type, Union
 import numpy as np
 
 from fastembed.common import OnnxProvider
+from fastembed.multi_task.jina_embedding_v3 import JinaEmbeddingV3
 from fastembed.multi_task.multi_task_embedding_base import MultiTaskTextEmbeddingBase
 
 
 class MultiTaskTextEmbedding(MultiTaskTextEmbeddingBase):
-    EMBEDDINGS_REGISTRY: List[Type[MultiTaskTextEmbeddingBase]] = []
+    EMBEDDINGS_REGISTRY: List[Type[MultiTaskTextEmbeddingBase]] = [
+        JinaEmbeddingV3,
+    ]
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Any]]:
