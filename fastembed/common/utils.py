@@ -40,7 +40,9 @@ def define_cache_dir(cache_dir: Optional[str] = None) -> Path:
         cache_path = Path(os.getenv("FASTEMBED_CACHE_PATH", default_cache_dir))
     else:
         cache_path = Path(cache_dir)
-    cache_path.mkdir(parents=True, exist_ok=True)
+
+    if not cache_path.exists():
+        cache_path.mkdir(parents=True, exist_ok=True)
 
     return cache_path
 
