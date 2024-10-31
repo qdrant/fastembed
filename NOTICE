@@ -1,0 +1,26 @@
+Copyright 2024 Fastembed
+
+This product includes software developed by Fastembed
+
+This distribution includes the following Jina AI models, each with its respective license:
+- jinaai/jina-embeddings-v2-base-en
+    - License: apache-2.0
+- jinaai/jina-embeddings-v2-small-en
+    - License: apache-2.0
+- jinaai/jina-embeddings-v2-base-de
+    - License: apache-2.0
+- jinaai/jina-embeddings-v2-base-code
+    - License: apache-2.0
+- jinaai/jina-reranker-v1-tiny-en
+    - License: apache-2.0
+- jinaai/jina-reranker-v1-turbo-en
+    - License: apache-2.0
+- jinaai/jina-reranker-v2-base-multilingual
+    - License: cc-by-nc-4.0
+- jinaai/jina-colbert-v2
+    - License: cc-by-nc-4.0
+
+These models are developed by Jina  (https://jina.ai/) Limited and are subject to Jina AI's licensing terms.
+
+Additional Notes:
+This project also includes third-party libraries with their respective licenses. Please refer to the documentation of each library for details regarding its usage and licensing terms.
