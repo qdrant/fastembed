@@ -48,9 +48,6 @@ class JinaColbert(Colbert):
             onnx_input["input_ids"][:, 1] = self.DOCUMENT_MARKER_TOKEN_ID
         else:
             onnx_input["input_ids"][:, 1] = self.QUERY_MARKER_TOKEN_ID
-
-        # the attention mask for jina-colbert-v2 is always 1
-        onnx_input["attention_mask"][:] = 1
         return onnx_input
 
     def _tokenize_query(self, query: str) -> List[Encoding]:
@@ -73,6 +70,8 @@ class JinaColbert(Colbert):
                 self.tokenizer.no_padding()
             else:
                 self.tokenizer.enable_padding(**prev_padding)
+        # the attention mask for jina-colbert-v2 is always 1 in queries
+        encoded["attention_mask"][:] = 1
         return encoded
 
     def _tokenize_documents(self, documents: List[str]) -> List[Encoding]:
