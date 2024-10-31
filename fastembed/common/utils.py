@@ -53,3 +53,14 @@ def get_all_punctuation() -> Set[str]:
 
 def remove_non_alphanumeric(text: str) -> str:
     return re.sub(r"[^\w\s]", " ", text, flags=re.UNICODE)
+
+
+def adjust_matryoshka_embedding(
+    self, embeddings: np.ndarray, embedding_size: int = 64
+) -> np.ndarray:
+    if embedding_size < embeddings.shape[-1]:
+        return embeddings[:, :embedding_size]
+    elif embedding_size > embeddings.shape[-1]:
+        padding = embedding_size - embeddings.shape[-1]
+        return np.pad(embeddings, ((0, 0), (0, padding)), mode="constant")
+    return embeddings
