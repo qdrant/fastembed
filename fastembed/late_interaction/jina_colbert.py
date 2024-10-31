@@ -52,7 +52,7 @@ class JinaColbert(Colbert):
 
     def _tokenize_query(self, query: str) -> List[Encoding]:
         # "@ " is added to a query to be replaced with a special query token
-        # "@ " is considered as one token in jina-colbert-v2 tokenizer
+        # make sure that "@ " is considered as a single token
         query = f"@ {query}"
         encoded = self.tokenizer.encode_batch([query])
         # colbert authors recommend to pad queries with [MASK] tokens for query augmentation to improve performance
@@ -76,7 +76,7 @@ class JinaColbert(Colbert):
 
     def _tokenize_documents(self, documents: List[str]) -> List[Encoding]:
         # "@ " is added to a document to be replaced with a special document token
-        # "@ " is considered as one token in jina-colbert-v2 tokenizer
+        # make sure that "@ " is considered as a single token
         documents = ["@ " + doc for doc in documents]
         encoded = self.tokenizer.encode_batch(documents)
         return encoded
