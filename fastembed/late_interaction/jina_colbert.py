@@ -49,7 +49,6 @@ class JinaColbert(Colbert):
             onnx_input["input_ids"][:, 1] = self.QUERY_MARKER_TOKEN_ID
             # the attention mask for jina-colbert-v2 is always 1 in queries
             onnx_input["attention_mask"][:] = 1
-        print(onnx_input)
         return onnx_input
 
 
