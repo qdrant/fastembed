@@ -1,7 +1,6 @@
 from typing import Any, Dict, List, Type
 
 import numpy as np
-from tokenizers import Encoding
 
 from fastembed.late_interaction.colbert import Colbert
 from fastembed.text.onnx_text_model import TextEmbeddingWorker
@@ -48,38 +47,10 @@ class JinaColbert(Colbert):
             onnx_input["input_ids"][:, 1] = self.DOCUMENT_MARKER_TOKEN_ID
         else:
             onnx_input["input_ids"][:, 1] = self.QUERY_MARKER_TOKEN_ID
+            # the attention mask for jina-colbert-v2 is always 1 in queries
+            onnx_input["attention_mask"][:] = 1
+        print(onnx_input)
         return onnx_input
-
-    def _tokenize_query(self, query: str) -> List[Encoding]:
-        # "@ " is added to a query to be replaced with a special query token
-        # make sure that "@ " is considered as a single token
-        query = f"@ {query}"
-        encoded = self.tokenizer.encode_batch([query])
-        # colbert authors recommend to pad queries with [MASK] tokens for query augmentation to improve performance
-        if len(encoded[0].ids) < self.MIN_QUERY_LENGTH:
-            prev_padding = None
-            if self.tokenizer.padding:
-                prev_padding = self.tokenizer.padding
-            self.tokenizer.enable_padding(
-                pad_token=self.MASK_TOKEN,
-                pad_id=self.mask_token_id,
-                length=self.MIN_QUERY_LENGTH,
-            )
-            encoded = self.tokenizer.encode_batch([query])
-            if prev_padding is None:
-                self.tokenizer.no_padding()
-            else:
-                self.tokenizer.enable_padding(**prev_padding)
-        # the attention mask for jina-colbert-v2 is always 1 in queries
-        encoded["attention_mask"][:] = 1
-        return encoded
-
-    def _tokenize_documents(self, documents: List[str]) -> List[Encoding]:
-        # "@ " is added to a document to be replaced with a special document token
-        # make sure that "@ " is considered as a single token
-        documents = ["@ " + doc for doc in documents]
-        encoded = self.tokenizer.encode_batch(documents)
-        return encoded
 
 
 class JinaColbertEmbeddingWorker(TextEmbeddingWorker):
