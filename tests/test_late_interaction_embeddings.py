@@ -164,7 +164,7 @@ def test_batch_embedding():
 
         for value in result:
             token_num, abridged_dim = expected_result.shape
-            assert np.allclose(value[:, :abridged_dim], expected_result, atol=20e-4)
+            assert np.allclose(value[:, :abridged_dim], expected_result, atol=2e-3)
 
         if is_ci:
             shutil.rmtree(model.model._model_dir)
@@ -179,7 +179,7 @@ def test_single_embedding():
         model = LateInteractionTextEmbedding(model_name=model_name)
         result = next(iter(model.embed(docs_to_embed, batch_size=6)))
         token_num, abridged_dim = expected_result.shape
-        assert np.allclose(result[:, :abridged_dim], expected_result, atol=20e-4)
+        assert np.allclose(result[:, :abridged_dim], expected_result, atol=2e-3)
 
         if is_ci:
             shutil.rmtree(model.model._model_dir)
@@ -194,7 +194,7 @@ def test_single_embedding_query():
         model = LateInteractionTextEmbedding(model_name=model_name)
         result = next(iter(model.query_embed(queries_to_embed)))
         token_num, abridged_dim = expected_result.shape
-        assert np.allclose(result[:, :abridged_dim], expected_result, atol=20e-4)
+        assert np.allclose(result[:, :abridged_dim], expected_result, atol=2e-3)
 
         if is_ci:
             shutil.rmtree(model.model._model_dir)
