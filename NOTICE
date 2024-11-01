@@ -8,7 +8,7 @@ This distribution includes the following Jina AI models, each with its respectiv
 - jinaai/jina-colbert-v2
     - License: cc-by-nc-4.0
 
-These models are developed by Jina  (https://jina.ai/) Limited and are subject to Jina AI's licensing terms.
+These models are developed by Jina (https://jina.ai/) and are subject to Jina AI's licensing terms.
 
 Additional Notes:
 This project also includes third-party libraries with their respective licenses. Please refer to the documentation of each library for details regarding its usage and licensing terms.
