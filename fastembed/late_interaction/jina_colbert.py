@@ -8,7 +8,7 @@ from fastembed.text.onnx_text_model import TextEmbeddingWorker
 supported_jina_colbert_models = [
     {
         "model": "jinaai/jina-colbert-v2",
-        "dim": 1024,
+        "dim": 128,
         "description": "New model that expands capabilities of colbert-v1 with multilingual and context length of 8192, 2024 year",
         "license": "cc-by-nc-4.0",
         "size_in_GB": 2.24,
