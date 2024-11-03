@@ -28,6 +28,7 @@ class MultiTaskTextEmbedding(MultiTaskTextEmbeddingBase):
                     {
                         "model": "jinaai/jina-embeddings-v3",
                         "dim": [32, 64, 128, 256, 512, 768, 1024],
+                        "tasks": {"retrieval.query":0, "retrieval.passage":1, "separation":2, "classification":3, "text-matching":4},
                         "description": "Multi-task, multi-lingual embedding model with Matryoshka architecture",
                         "license": "cc-by-nc-4.0",
                         "size_in_GB": 2.29,
@@ -85,4 +86,25 @@ class MultiTaskTextEmbedding(MultiTaskTextEmbeddingBase):
         parallel: Optional[int] = None,
         **kwargs,
     ) -> Iterable[np.ndarray]:
-        yield from self.model.task_embed(documents, task_type, batch_size, parallel, **kwargs)
+        """Embed documents based on a specific task type.
+
+        Args:
+            documents: Single document string or iterator of documents to embed
+            task_type: Type of embedding task to perform
+            batch_size: Number of documents to process in each batch
+            parallel: Number of parallel workers to use for embedding
+            **kwargs: Additional arguments passed to the specific embedding method
+
+        Returns:
+            Iterable[np.ndarray]: Iterator of document embeddings as numpy arrays
+
+        Raises:
+            ValueError: If the task_type is not supported
+        """
+        yield from self.model.task_embed(
+            documents=documents,
+            task_type=task_type,
+            batch_size=batch_size,
+            parallel=parallel,
+            **kwargs,
+        )
