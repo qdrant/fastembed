@@ -2,11 +2,13 @@
 
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Type, Union
 
-import numpy as np
 
 from fastembed.common import OnnxProvider
 from fastembed.multi_task.jina_embedding_v3 import JinaEmbeddingV3
-from fastembed.multi_task.multi_task_embedding_base import MultiTaskTextEmbeddingBase
+from fastembed.multi_task.multi_task_embedding_base import (
+    MultiTaskTextEmbeddingBase,
+    MultiTaskEmbedding,
+)
 
 
 class MultiTaskTextEmbedding(MultiTaskTextEmbeddingBase):
@@ -85,7 +87,7 @@ class MultiTaskTextEmbedding(MultiTaskTextEmbeddingBase):
         batch_size: int = 256,
         parallel: Optional[int] = None,
         **kwargs,
-    ) -> Iterable[np.ndarray]:
+    ) -> Iterable[MultiTaskEmbedding]:
         """Embed documents based on a specific task type.
 
         Args:
@@ -96,7 +98,7 @@ class MultiTaskTextEmbedding(MultiTaskTextEmbeddingBase):
             **kwargs: Additional arguments passed to the specific embedding method
 
         Returns:
-            Iterable[np.ndarray]: Iterator of document embeddings as numpy arrays
+            Iterable[MultiTaskEmbedding]: Iterator of document embeddings as MultiTaskEmbedding object
 
         Raises:
             ValueError: If the task_type is not supported
