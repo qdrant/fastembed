@@ -5,7 +5,7 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Type, Union, T
 import numpy as np
 
 from fastembed.common import OnnxProvider
-from fastembed.common.utils import iter_batch
+from fastembed.common.utils import iter_batch, define_cache_dir
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
 from fastembed.multi_task.multi_task_embedding_base import (
@@ -72,18 +72,63 @@ class JinaEmbeddingV3(MultiTaskTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         cuda: bool = False,
         device_ids: Optional[List[int]] = None,
         lazy_load: bool = False,
+        device_id: Optional[int] = None,
         **kwargs,
     ):
+        """
+        Args:
+            model_name (str): The name of the model to use.
+            cache_dir (str, optional): The path to the cache directory.
+                                       Can be set using the `FASTEMBED_CACHE_PATH` env variable.
+                                       Defaults to `fastembed_cache` in the system's temp directory.
+            threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
+            providers (Optional[Sequence[OnnxProvider]], optional): The list of onnxruntime providers to use.
+                Mutually exclusive with the `cuda` and `device_ids` arguments. Defaults to None.
+            cuda (bool, optional): Whether to use cuda for inference. Mutually exclusive with `providers`
+                Defaults to False.
+            device_ids (Optional[List[int]], optional): The list of device ids to use for data parallel processing in
+                workers. Should be used with `cuda=True`, mutually exclusive with `providers`. Defaults to None.
+            lazy_load (bool, optional): Whether to load the model during class initialization or on demand.
+                Should be set to True when using multiple-gpu and parallel encoding. Defaults to False.
+            device_id (Optional[int], optional): The device id to use for loading the model in the worker process.
+
+        Raises:
+            ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
+        """
         super().__init__(model_name, cache_dir, threads, **kwargs)
         self.providers = providers
         self.lazy_load = lazy_load
+
+        # List of device ids, that can be used for data parallel processing in workers
         self.device_ids = device_ids
         self.cuda = cuda
-        self.device_id = device_ids[0] if device_ids else None
+
+        # This device_id will be used if we need to load model in current process
+        if device_id is not None:
+            self.device_id = device_id
+        elif self.device_ids is not None:
+            self.device_id = self.device_ids[0]
+        else:
+            self.device_id = None
 
         self.model_description = self._get_model_description(model_name)
+        self.cache_dir = define_cache_dir(cache_dir)
+        self._model_dir = self.download_model(
+            self.model_description, self.cache_dir, local_files_only=self._local_files_only
+        )
+
         if not self.lazy_load:
             self.load_onnx_model()
+
+    def load_onnx_model(self) -> None:
+        self._load_onnx_model(
+            model_dir=self._model_dir,
+            model_file=self.model_description["model_file"],
+            threads=self.threads,
+            providers=self.providers,
+            cuda=self.cuda,
+            device_id=self.device_id,
+        )
 
     def get_task_types_dict(self) -> Dict[str, int]:
         """Returns the available task types
@@ -93,7 +138,13 @@ class JinaEmbeddingV3(MultiTaskTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         return self.model_description["tasks"]
 
     def get_task_type_from_id(self, task_id: int) -> str:
-        """Helper method to get task type string from task ID"""
+        """Get task type string from task ID
+
+        Args:
+            task_id (int): The task ID
+        Returns:
+            str: The task type string.
+        """
         for task_type, tid in self.model_description["tasks"].items():
             if tid == task_id:
                 return task_type
@@ -213,8 +264,7 @@ class JinaEmbeddingV3(MultiTaskTextEmbeddingBase, OnnxTextModel[np.ndarray]):
     ) -> Iterable[MultiTaskEmbedding]:
         if task_type not in self.model_description["tasks"]:
             raise ValueError(
-                f"Unsupported task type: {task_type}. "
-                f"Supported types: {list(self.model_description['tasks'].keys())}"
+                f"Unsupported task type: {task_type}. Supported types: {list(self.model_description['tasks'].keys())}"
             )
 
         task_id = self.get_task_types_dict()[task_type]
