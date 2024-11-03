@@ -6,9 +6,12 @@ import numpy as np
 
 from fastembed.common import OnnxProvider
 from fastembed.common.utils import iter_batch
-from fastembed.common.onnx_model import OnnxOutputContext, T
+from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
-from fastembed.multi_task.multi_task_embedding_base import MultiTaskTextEmbeddingBase
+from fastembed.multi_task.multi_task_embedding_base import (
+    MultiTaskTextEmbeddingBase,
+    MultiTaskEmbedding,
+)
 
 from fastembed.parallel_processor import ParallelWorkerPool
 
@@ -82,12 +85,19 @@ class JinaEmbeddingV3(MultiTaskTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         if not self.lazy_load:
             self.load_onnx_model()
 
-    def get_task_type_dict(self) -> Dict[str, int]:
+    def get_task_types_dict(self) -> Dict[str, int]:
         """Returns the available task types
 
         Returns:
             Dict[str, int]: A dictionary containing the task types and their corresponding indices."""
         return self.model_description["tasks"]
+
+    def get_task_type_from_id(self, task_id: int) -> str:
+        """Helper method to get task type string from task ID"""
+        for task_type, tid in self.model_description["tasks"].items():
+            if tid == task_id:
+                return task_type
+        raise ValueError(f"Unknown task ID: {task_id}")
 
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
         if output.attention_mask is None:
@@ -142,7 +152,7 @@ class JinaEmbeddingV3(MultiTaskTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         cuda: bool = False,
         device_ids: Optional[List[int]] = None,
         **kwargs,
-    ) -> Iterable[T]:
+    ) -> Iterable[MultiTaskEmbedding]:
         is_small = False
 
         if isinstance(documents, str):
@@ -157,7 +167,13 @@ class JinaEmbeddingV3(MultiTaskTextEmbeddingBase, OnnxTextModel[np.ndarray]):
             if not hasattr(self, "model") or self.model is None:
                 self.load_onnx_model()
             for batch in iter_batch(documents, batch_size):
-                yield from self._post_process_onnx_output(self.onnx_embed(batch, task_id))
+                embeddings = self._post_process_onnx_output(self.onnx_embed(batch, task_id))
+                for embedding in embeddings:
+                    yield MultiTaskEmbedding(
+                        embedding=embedding,
+                        task_type=self.get_task_type_from_id(task_id),
+                        dimension=embedding.shape[-1],
+                    )
         else:
             if parallel == 0:
                 parallel = os.cpu_count()
@@ -179,7 +195,13 @@ class JinaEmbeddingV3(MultiTaskTextEmbeddingBase, OnnxTextModel[np.ndarray]):
             )
             batches_with_task = ((batch, task_id) for batch in iter_batch(documents, batch_size))
             for batch in pool.ordered_map(batches_with_task, **params):
-                yield from self._post_process_onnx_output(batch)
+                embeddings = self._post_process_onnx_output(batch)
+                for embedding in embeddings:
+                    yield MultiTaskEmbedding(
+                        embedding=embedding,
+                        task_type=self.get_task_type_from_id(task_id),
+                        dimension=embedding.shape[-1],
+                    )
 
     def task_embed(
         self,
@@ -188,14 +210,14 @@ class JinaEmbeddingV3(MultiTaskTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         batch_size: int = 256,
         parallel: Optional[int] = None,
         **kwargs,
-    ) -> Iterable[np.ndarray]:
+    ) -> Iterable[MultiTaskEmbedding]:
         if task_type not in self.model_description["tasks"]:
             raise ValueError(
                 f"Unsupported task type: {task_type}. "
                 f"Supported types: {list(self.model_description['tasks'].keys())}"
             )
 
-        task_id = self.get_task_type_dict()[task_type]
+        task_id = self.get_task_types_dict()[task_type]
 
         if isinstance(documents, str):
             documents = [documents]

@@ -1,5 +1,3 @@
-# fastembed/multi_task/multi_task_text_embedding.py
-
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Type, Union
 
 
