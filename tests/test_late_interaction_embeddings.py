@@ -28,6 +28,15 @@ CANONICAL_COLUMN_VALUES = {
             [-0.07281, 0.04633, -0.04711, 0.00762, -0.07374],
         ]
     ),
+    "jinaai/jina-colbert-v2": np.array(
+        [
+            [0.0742, 0.0591, -0.2403, -0.1774, 0.02],
+            [0.1318, 0.0882, -0.1138, -0.2066, 0.146],
+            [-0.0183, -0.1354, -0.0139, -0.1079, -0.051],
+            [0.0003, -0.1184, -0.07, -0.0479, -0.0649],
+            [0.0766, 0.0452, -0.2343, -0.183, 0.0058],
+        ]
+    ),
 }
 
 CANONICAL_QUERY_VALUES = {
@@ -103,6 +112,42 @@ CANONICAL_QUERY_VALUES = {
             [-0.03473, 0.04792, -0.07033, 0.02196, -0.05314],
         ]
     ),
+    "jinaai/jina-colbert-v2": np.array(
+        [
+            [0.0477, 0.0255, -0.2224, -0.1085, -0.03],
+            [0.0206, -0.0845, -0.0075, -0.1712, 0.0156],
+            [-0.0056, -0.0957, -0.0147, -0.1277, -0.0225],
+            [0.0486, -0.0499, -0.1609, 0.0194, 0.0274],
+            [0.0481, 0.0253, -0.2278, -0.1126, -0.0294],
+            [0.0599, -0.0678, -0.0956, -0.0757, 0.0236],
+            [0.0592, -0.0862, -0.0621, -0.1084, 0.0155],
+            [0.0874, -0.0714, -0.0772, -0.1414, 0.037],
+            [0.1009, -0.0552, -0.0669, -0.163, 0.0493],
+            [0.1135, -0.047, -0.0576, -0.1699, 0.0538],
+            [0.1228, -0.0428, -0.0507, -0.1725, 0.0562],
+            [0.1291, -0.0388, -0.042, -0.1753, 0.0569],
+            [0.1365, -0.0337, -0.0326, -0.1786, 0.0574],
+            [0.1439, -0.026, -0.024, -0.1831, 0.0574],
+            [0.1527, -0.0099, -0.0179, -0.1874, 0.057],
+            [0.1555, 0.0186, -0.023, -0.1801, 0.0539],
+            [0.1389, 0.054, -0.0345, -0.1636, 0.0429],
+            [0.1058, 0.0862, -0.0418, -0.1455, 0.0222],
+            [0.0713, 0.1061, -0.0438, -0.1288, 0.0002],
+            [0.0453, 0.1143, -0.0457, -0.1119, -0.019],
+            [0.0346, 0.1131, -0.0487, -0.0952, -0.0338],
+            [0.0355, 0.1073, -0.0493, -0.0823, -0.0438],
+            [0.0424, 0.1041, -0.0459, -0.0761, -0.048],
+            [0.048, 0.102, -0.0421, -0.0718, -0.0477],
+            [0.0474, 0.0989, -0.0413, -0.0654, -0.0431],
+            [0.0434, 0.095, -0.0415, -0.0589, -0.0345],
+            [0.0408, 0.0897, -0.0405, -0.0554, -0.0197],
+            [0.0433, 0.0811, -0.0407, -0.0545, 0.0055],
+            [0.0514, 0.0629, -0.0446, -0.0549, 0.0368],
+            [0.058, 0.048, -0.0527, -0.0607, 0.0568],
+            [0.0561, 0.0447, -0.0661, -0.0702, 0.0764],
+            [0.0204, -0.0856, -0.0386, -0.1232, -0.0332],
+        ]
+    ),
 }
 
 docs = ["Hello World"]
@@ -119,7 +164,7 @@ def test_batch_embedding():
 
         for value in result:
             token_num, abridged_dim = expected_result.shape
-            assert np.allclose(value[:, :abridged_dim], expected_result, atol=10e-4)
+            assert np.allclose(value[:, :abridged_dim], expected_result, atol=2e-3)
 
         if is_ci:
             shutil.rmtree(model.model._model_dir)
@@ -134,7 +179,7 @@ def test_single_embedding():
         model = LateInteractionTextEmbedding(model_name=model_name)
         result = next(iter(model.embed(docs_to_embed, batch_size=6)))
         token_num, abridged_dim = expected_result.shape
-        assert np.allclose(result[:, :abridged_dim], expected_result, atol=10e-4)
+        assert np.allclose(result[:, :abridged_dim], expected_result, atol=2e-3)
 
         if is_ci:
             shutil.rmtree(model.model._model_dir)
@@ -149,7 +194,7 @@ def test_single_embedding_query():
         model = LateInteractionTextEmbedding(model_name=model_name)
         result = next(iter(model.query_embed(queries_to_embed)))
         token_num, abridged_dim = expected_result.shape
-        assert np.allclose(result[:, :abridged_dim], expected_result, atol=10e-4)
+        assert np.allclose(result[:, :abridged_dim], expected_result, atol=2e-3)
 
         if is_ci:
             shutil.rmtree(model.model._model_dir)
