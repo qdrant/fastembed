@@ -4,6 +4,8 @@ from fastembed.image import ImageEmbedding
 from fastembed.late_interaction import LateInteractionTextEmbedding
 from fastembed.sparse import SparseEmbedding, SparseTextEmbedding
 from fastembed.text import TextEmbedding
+from fastembed.rerank.cross_encoder import TextCrossEncoder
+from fastembed.multi_task.multi_task_text_embedding import MultiTaskTextEmbedding
 
 try:
     version = importlib.metadata.version("fastembed")
@@ -17,4 +19,6 @@ __all__ = [
     "SparseEmbedding",
     "ImageEmbedding",
     "LateInteractionTextEmbedding",
+    "TextCrossEncoder",
+    "MultiTaskTextEmbedding",
 ]
