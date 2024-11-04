@@ -5,7 +5,12 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Type, Union, T
 import numpy as np
 
 from fastembed.common import OnnxProvider
-from fastembed.common.utils import iter_batch, define_cache_dir
+from fastembed.common.utils import (
+    iter_batch,
+    define_cache_dir,
+    normalize,
+    adjust_matryoshka_embedding,
+)
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
 from fastembed.multi_task.multi_task_embedding_base import (
@@ -156,7 +161,7 @@ class JinaEmbeddingV3(MultiTaskTextEmbeddingBase, OnnxTextModel[np.ndarray]):
 
         embeddings = output.model_output
         attn_mask = output.attention_mask
-        return self.mean_pooling(embeddings, attn_mask).astype(np.float32)
+        return normalize(self.mean_pooling(embeddings, attn_mask)).astype(np.float32)
 
     def onnx_embed(
         self,
@@ -204,6 +209,8 @@ class JinaEmbeddingV3(MultiTaskTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         device_ids: Optional[List[int]] = None,
         **kwargs,
     ) -> Iterable[MultiTaskEmbedding]:
+        embeddings_size = kwargs.get("embeddings_size", None)
+
         is_small = False
 
         if isinstance(documents, str):
@@ -219,6 +226,16 @@ class JinaEmbeddingV3(MultiTaskTextEmbeddingBase, OnnxTextModel[np.ndarray]):
                 self.load_onnx_model()
             for batch in iter_batch(documents, batch_size):
                 embeddings = self._post_process_onnx_output(self.onnx_embed(batch, task_id))
+                if embeddings_size is not None:
+                    if not isinstance(self.model_description["dim"], list):
+                        raise ValueError(
+                            f"Model does not support Matryoshka embeddings. The only size supported is: {self.model_description['dim']}."
+                        )
+                    if embeddings_size not in self.model_description["dim"]:
+                        raise ValueError(
+                            f"Requested embeddings size {embeddings_size} is not supported by the model. Supported sizes: {self.model_description['dim']}."
+                        )
+                    embeddings = adjust_matryoshka_embedding(np.array(embeddings), embeddings_size)
                 for embedding in embeddings:
                     yield MultiTaskEmbedding(
                         embedding=embedding,
@@ -268,9 +285,6 @@ class JinaEmbeddingV3(MultiTaskTextEmbeddingBase, OnnxTextModel[np.ndarray]):
             )
 
         task_id = self.get_task_types_dict()[task_type]
-
-        if isinstance(documents, str):
-            documents = [documents]
 
         yield from self._embed_documents(
             model_name=self.model_name,
