@@ -55,12 +55,20 @@ def remove_non_alphanumeric(text: str) -> str:
     return re.sub(r"[^\w\s]", " ", text, flags=re.UNICODE)
 
 
-def adjust_matryoshka_embedding(
-    self, embeddings: np.ndarray, embedding_size: int = 64
-) -> np.ndarray:
+def adjust_matryoshka_embedding(embeddings: np.ndarray, embedding_size: int) -> np.ndarray:
+    """Adjusts embedding size for Matryoshka embeddings
+
+    Args:
+        embeddings (np.ndarray): Input embeddings
+        embedding_size (int): Target embedding size
+
+    Returns:
+        np.ndarray: Resized embeddings
+    """
     if embedding_size < embeddings.shape[-1]:
-        return embeddings[:, :embedding_size]
+        return embeddings[..., :embedding_size]
     elif embedding_size > embeddings.shape[-1]:
         padding = embedding_size - embeddings.shape[-1]
-        return np.pad(embeddings, ((0, 0), (0, padding)), mode="constant")
+        pad_width = [(0, 0)] * (len(embeddings.shape) - 1) + [(0, padding)]
+        return np.pad(embeddings, pad_width, mode="constant")
     return embeddings
