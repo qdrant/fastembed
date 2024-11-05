@@ -67,7 +67,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         return output.model_output.astype(np.float32)
 
     def _preprocess_onnx_input(
-        self, onnx_input: Dict[str, np.ndarray], is_doc: bool = True
+        self, onnx_input: Dict[str, np.ndarray], is_doc: bool = True, **kwargs: Any
     ) -> Dict[str, np.ndarray]:
         if is_doc:
             onnx_input["input_ids"][:, 1] = self.DOCUMENT_MARKER_TOKEN_ID
@@ -75,7 +75,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
             onnx_input["input_ids"][:, 1] = self.QUERY_MARKER_TOKEN_ID
         return onnx_input
 
-    def tokenize(self, documents: List[str], is_doc: bool = True) -> List[Encoding]:
+    def tokenize(self, documents: List[str], is_doc: bool = True, **kwargs: Any) -> List[Encoding]:
         return (
             self._tokenize_documents(documents=documents)
             if is_doc
