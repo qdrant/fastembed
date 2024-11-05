@@ -11,6 +11,8 @@ from typing import (
     Tuple,
     Type,
     TypeVar,
+    Union,
+    List,
 )
 
 import numpy as np
@@ -106,7 +108,7 @@ class OnnxModel(Generic[T]):
     def load_onnx_model(self) -> None:
         raise NotImplementedError("Subclasses must implement this method")
 
-    def onnx_embed(self, *args, **kwargs) -> OnnxOutputContext:
+    def onnx_embed(self, *args, **kwargs) -> Union[OnnxOutputContext, List[float]]:
         raise NotImplementedError("Subclasses must implement this method")
 
 
