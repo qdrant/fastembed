@@ -41,7 +41,7 @@ class JinaColbert(Colbert):
         return supported_jina_colbert_models
 
     def _preprocess_onnx_input(
-        self, onnx_input: Dict[str, np.ndarray], is_doc: bool = True
+        self, onnx_input: Dict[str, np.ndarray], is_doc: bool = True, **kwargs: Any
     ) -> Dict[str, np.ndarray]:
         if is_doc:
             onnx_input["input_ids"][:, 1] = self.DOCUMENT_MARKER_TOKEN_ID
