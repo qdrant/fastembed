@@ -5,7 +5,8 @@ from typing import List
 
 
 class SimpleTokenizer:
-    def tokenize(text: str) -> List[str]:
+    @classmethod
+    def tokenize(cls, text: str) -> List[str]:
         text = re.sub(r"[^\w]", " ", text.lower())
         text = re.sub(r"\s+", " ", text)
 
