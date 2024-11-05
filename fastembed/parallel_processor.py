@@ -24,7 +24,7 @@ class QueueSignals(str, Enum):
 
 class Worker:
     @classmethod
-    def start(cls, **kwargs: Any) -> "Worker":
+    def start(cls, *args: Any, **kwargs: Any) -> "Worker":
         raise NotImplementedError()
 
     def process(self, items: Iterable[Tuple[int, Any]]) -> Iterable[Tuple[int, Any]]:
