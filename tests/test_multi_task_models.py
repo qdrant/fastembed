@@ -453,7 +453,7 @@ def test_batch_embedding():
             embedding_arrays = [e.embedding for e in embeddings]
             embeddings = np.stack(embedding_arrays)
 
-            assert np.allclose(embeddings, expected_vectors, atol=task_tolerance)
+            assert np.allclose(embeddings[:docs], expected_vectors, atol=task_tolerance)
 
         if is_ci:
             shutil.rmtree(model.model._model_dir)
