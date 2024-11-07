@@ -1,0 +1,22 @@
+name: Model
+description: Request a new model
+title: "[Model]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this report!
+  - type: textarea
+    id: model-name
+    attributes:
+      label: Which model would you like to support?
+      description: Please provide the name of the model you would like to see supported.
+      placeholder: Link to the model (e.g. on HuggingFace)
+    validations:
+      required: true
+  - type: textarea
+    id: motivation
+    attributes:
+      label: What are the main advantages of this model?
+      description: Please describe the main advantages of this model comparing to the existing ones and provide links to benchmarks if there are any.
+      placeholder: <Description>
