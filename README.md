@@ -148,7 +148,7 @@ documents: List[str] = [
     "fastembed is supported by and maintained by Qdrant.",
 ]
 encoder = TextCrossEncoder(model_name="Xenova/ms-marco-MiniLM-L-6-v2")
-scores = encoder.rerank(query, documents)
+scores = list(encoder.rerank(query, documents))
 
 # [-11.48061752319336, 5.472434997558594]
 ```
