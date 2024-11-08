@@ -53,6 +53,18 @@ supported_onnx_models = [
         },
         "model_file": "model.onnx",
     },
+    {
+        "model": "akshayballal/colpali-v1.2-merged",
+        "dim": 128,
+        "description": "",
+        "license": "mit",
+        "size_in_GB": 6.08,
+        "sources": {
+            "hf": "akshayballal/colpali-v1.2-merged-onnx",
+        },
+        "additional_files": ["model.onnx_data"],
+        "model_file": "model.onnx",
+    },
 ]
 
 
