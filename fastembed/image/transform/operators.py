@@ -50,9 +50,7 @@ class Resize(Transform):
         self.resample = resample
 
     def __call__(self, images: List[Image.Image]) -> List[Image.Image]:
-        return [
-            resize(image, size=self.size, resample=self.resample) for image in images
-        ]
+        return [resize(image, size=self.size, resample=self.resample) for image in images]
 
 
 class Rescale(Transform):
@@ -64,9 +62,7 @@ class Rescale(Transform):
 
 
 class PILtoNDarray(Transform):
-    def __call__(
-        self, images: List[Union[Image.Image, np.ndarray]]
-    ) -> List[np.ndarray]:
+    def __call__(self, images: List[Union[Image.Image, np.ndarray]]) -> List[np.ndarray]:
         return [pil2ndarray(image) for image in images]
 
 
@@ -120,7 +116,7 @@ class Compose:
     @staticmethod
     def _get_resize(transforms: List[Transform], config: Dict[str, Any]):
         mode = config.get("image_processor_type", "CLIPImageProcessor")
-        if mode == "CLIPImageProcessor":
+        if mode == "CLIPImageProcessor" or mode == "SiglipImageProcessor":
             if config.get("do_resize", False):
                 size = config["size"]
                 if "shortest_edge" in size:
@@ -165,7 +161,7 @@ class Compose:
     @staticmethod
     def _get_center_crop(transforms: List[Transform], config: Dict[str, Any]):
         mode = config.get("image_processor_type", "CLIPImageProcessor")
-        if mode == "CLIPImageProcessor":
+        if mode == "CLIPImageProcessor" or mode == "SiglipImageProcessor":
             if config.get("do_center_crop", False):
                 crop_size = config["crop_size"]
                 if isinstance(crop_size, int):
@@ -193,6 +189,4 @@ class Compose:
     @staticmethod
     def _get_normalize(transforms: List[Transform], config: Dict[str, Any]):
         if config.get("do_normalize", False):
-            transforms.append(
-                Normalize(mean=config["image_mean"], std=config["image_std"])
-            )
+            transforms.append(Normalize(mean=config["image_mean"], std=config["image_std"]))
