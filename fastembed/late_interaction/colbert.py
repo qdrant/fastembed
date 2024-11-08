@@ -70,9 +70,15 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         self, onnx_input: Dict[str, np.ndarray], is_doc: bool = True
     ) -> Dict[str, np.ndarray]:
         if is_doc:
-            onnx_input["input_ids"][:, 1] = self.DOCUMENT_MARKER_TOKEN_ID
+            onnx_input["input_ids"] = np.insert(
+                onnx_input["input_ids"], 1, self.DOCUMENT_MARKER_TOKEN_ID, axis=1
+            )
         else:
-            onnx_input["input_ids"][:, 1] = self.QUERY_MARKER_TOKEN_ID
+            onnx_input["input_ids"] = np.insert(
+                onnx_input["input_ids"], 1, self.QUERY_MARKER_TOKEN_ID, axis=1
+            )
+
+        onnx_input["attention_mask"] = np.insert(onnx_input["attention_mask"], 1, 1, axis=1)
         return onnx_input
 
     def tokenize(self, documents: List[str], is_doc: bool = True) -> List[Encoding]:
@@ -83,9 +89,6 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         )
 
     def _tokenize_query(self, query: str) -> List[Encoding]:
-        # "@ " is added to a query to be replaced with a special query token
-        # make sure that "@ " is considered as a single token
-        query = f"@ {query}"
         encoded = self.tokenizer.encode_batch([query])
         # colbert authors recommend to pad queries with [MASK] tokens for query augmentation to improve performance
         if len(encoded[0].ids) < self.MIN_QUERY_LENGTH:
@@ -105,9 +108,6 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         return encoded
 
     def _tokenize_documents(self, documents: List[str]) -> List[Encoding]:
-        # "@ " is added to a document to be replaced with a special document token
-        # make sure that "@ " is considered as a single token
-        documents = ["@ " + doc for doc in documents]
         encoded = self.tokenizer.encode_batch(documents)
         return encoded
 
