@@ -1,0 +1,22 @@
+name: Feature
+description: New functionality request
+title: "[Feature]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this report!
+  - type: textarea
+    id: feature-description
+    attributes:
+      label: What feature would you like to request?
+      description: Please provide the description of the feature you would like to request.
+      placeholder: <Description>
+    validations:
+      required: true
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: Is there any additional information you would like to provide?
+      description: Please provide any additional information that you think might be useful.
+      placeholder: <Info>

@@ -1,6 +1,6 @@
-name: Bug/New Model Request
-description: File a bug report/Request a new Model
-title: "[Bug/Model Request]: "
+name: Bug
+description: File a bug report
+title: "[Bug]: "
 body:
   - type: markdown
     attributes:
@@ -10,11 +10,22 @@ body:
     id: what-happened
     attributes:
       label: What happened?
-      description: Also tell us, what did you expect to happen?
-      placeholder: Tell us what you see!
-      value: "A bug happened!"
+      description: Describe the error you encountered.
+      placeholder: <Description>
     validations:
       required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What is the expected behaviour?
+      description: Describe the way you expected the code to behave.
+      placeholder: <Description>
+  - type: textarea
+    id: code-snippet
+    attributes:
+      label: A minimal reproducible example
+      description: It would really help us to fix the problem if you could provide a code snippet that reproduces the issue.
+      placeholder: <Code snippet>
   - type: textarea
     id: python-version
     attributes:
@@ -23,21 +34,12 @@ body:
       placeholder: Python3.10
     validations:
       required: true
-  - type: dropdown
+  - type: textarea
     id: version
     attributes:
-      label: Version
+      label: FastEmbed version
       description: What version of FastEmbed are you running? python -c "import fastembed; print(fastembed.__version__)". If you're not on the latest, please upgrade and see if the problem persists.
-      options:
-        - 0.2.7 (Latest)
-        - 0.2.6
-        - 0.2.5
-        - 0.2.4 
-        - 0.2.3 
-        - 0.2.2
-        - 0.2.1
-        - 0.1.x 
-      default: 0
+      placeholder: v0.4.2
     validations:
       required: true
   - type: dropdown
