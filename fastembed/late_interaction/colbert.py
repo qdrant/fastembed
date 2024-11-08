@@ -175,8 +175,8 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         self._model_dir = self.download_model(
             self.model_description, self.cache_dir, local_files_only=self._local_files_only
         )
-        self.mask_token_id = None
-        self.pad_token_id = None
+        self.mask_token_id = int()
+        self.pad_token_id = int()
         self.skip_list = set()
 
         if not self.lazy_load:
