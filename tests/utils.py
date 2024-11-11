@@ -1,4 +1,5 @@
 import shutil
+import traceback
 
 from pathlib import Path
 from typing import Union
@@ -16,15 +17,10 @@ def delete_model_cache(model_dir: Union[str, Path]) -> None:
     """
 
     def on_error(func, path, exc_info):
-        import stat
-        import os
-
-        # Is the error an access error?
-        if not os.access(path, os.W_OK):
-            os.chmod(path, stat.S_IWUSR)
-            func(path)
-        else:
-            raise
+        exc_type, exc_value, exc_traceback = exc_info
+        print("Failed to remove: ", path)
+        print("Exception: ", exc_value)
+        print("Traceback: ", traceback.format_tb(exc_traceback))
 
     if isinstance(model_dir, str):
         model_dir = Path(model_dir)
