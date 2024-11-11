@@ -16,7 +16,15 @@ def delete_model_cache(model_dir: Union[str, Path]) -> None:
     """
 
     def on_error(func, path, exc_info):
-        print(f"Failed to remove {path}. {exc_info}")
+        import stat
+        import os
+
+        # Is the error an access error?
+        if not os.access(path, os.W_OK):
+            os.chmod(path, stat.S_IWUSR)
+            func(path)
+        else:
+            raise
 
     if isinstance(model_dir, str):
         model_dir = Path(model_dir)
