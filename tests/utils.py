@@ -21,4 +21,13 @@ def delete_model_cache(model_dir: Union[str, Path]) -> None:
         model_dir = model_dir.parent.parent
 
     if model_dir.exists():
-        shutil.rmtree(model_dir)
+        try:
+            shutil.rmtree(model_dir)
+        except PermissionError as e:
+            print(e)
+            print("sleeping for 3 seconds...")
+            import time
+
+            time.sleep(3)
+            print("trying out again")
+            shutil.rmtree(model_dir)
