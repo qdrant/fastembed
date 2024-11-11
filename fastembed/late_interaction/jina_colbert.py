@@ -43,18 +43,18 @@ class JinaColbert(Colbert):
     def _preprocess_onnx_input(
         self, onnx_input: Dict[str, np.ndarray], is_doc: bool = True
     ) -> Dict[str, np.ndarray]:
-        if is_doc:
-            onnx_input["input_ids"] = np.insert(
-                onnx_input["input_ids"], 1, self.DOCUMENT_MARKER_TOKEN_ID, axis=1
-            )
-        else:
-            onnx_input["input_ids"] = np.insert(
-                onnx_input["input_ids"], 1, self.QUERY_MARKER_TOKEN_ID, axis=1
-            )
+        original_length = onnx_input["input_ids"].shape[1]
+        marker_token = self.DOCUMENT_MARKER_TOKEN_ID if is_doc else self.QUERY_MARKER_TOKEN_ID
+
+        onnx_input["input_ids"] = np.insert(onnx_input["input_ids"], 1, marker_token, axis=1)
+        onnx_input["attention_mask"] = np.insert(onnx_input["attention_mask"], 1, 1, axis=1)
+
+        if not is_doc:
+            if onnx_input["input_ids"].shape[1] > original_length:
+                onnx_input["input_ids"] = onnx_input["input_ids"][:, :original_length]
+                onnx_input["attention_mask"] = onnx_input["attention_mask"][:, :original_length]
             # the attention mask for jina-colbert-v2 is always 1 in queries
             onnx_input["attention_mask"][:] = 1
-
-        onnx_input["attention_mask"] = np.insert(onnx_input["attention_mask"], 1, 1, axis=1)
         return onnx_input
 
 
