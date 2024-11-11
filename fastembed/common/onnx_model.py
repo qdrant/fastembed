@@ -1,19 +1,7 @@
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
-from typing import (
-    Any,
-    Dict,
-    Generic,
-    Iterable,
-    Optional,
-    Sequence,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-    List,
-)
+from typing import Any, Dict, Generic, Iterable, Optional, Sequence, Tuple, Type, TypeVar
 
 import numpy as np
 import onnxruntime as ort
@@ -108,7 +96,7 @@ class OnnxModel(Generic[T]):
     def load_onnx_model(self) -> None:
         raise NotImplementedError("Subclasses must implement this method")
 
-    def onnx_embed(self, *args, **kwargs) -> Union[OnnxOutputContext, List[float]]:
+    def onnx_embed(self, *args, **kwargs) -> OnnxOutputContext:
         raise NotImplementedError("Subclasses must implement this method")
 
 
