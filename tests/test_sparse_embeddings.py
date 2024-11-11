@@ -1,11 +1,11 @@
 import os
-import shutil
 
 import pytest
 import numpy as np
 
 from fastembed.sparse.bm25 import Bm25
 from fastembed.sparse.sparse_text_embedding import SparseTextEmbedding
+from tests.utils import delete_model_cache
 
 CANONICAL_COLUMN_VALUES = {
     "prithvida/Splade_PP_en_v1": {
@@ -61,7 +61,7 @@ def test_batch_embedding():
         for i, value in enumerate(result.values):
             assert pytest.approx(value, abs=0.001) == expected_result["values"][i]
         if is_ci:
-            shutil.rmtree(model.model._model_dir)
+            delete_model_cache(model.model._model_dir)
 
 
 def test_single_embedding():
@@ -77,7 +77,7 @@ def test_single_embedding():
             for i, value in enumerate(result.values):
                 assert pytest.approx(value, abs=0.001) == expected_result["values"][i]
         if is_ci:
-            shutil.rmtree(model.model._model_dir)
+            delete_model_cache(model.model._model_dir)
 
 
 def test_parallel_processing():
@@ -107,7 +107,7 @@ def test_parallel_processing():
         assert np.allclose(sparse_embedding.values, sparse_embedding_all.values, atol=1e-3)
 
     if is_ci:
-        shutil.rmtree(model.model._model_dir)
+        delete_model_cache(model.model._model_dir)
 
 
 @pytest.fixture
@@ -116,7 +116,7 @@ def bm25_instance():
     model = Bm25("Qdrant/bm25", language="english")
     yield model
     if ci:
-        shutil.rmtree(model._model_dir)
+        delete_model_cache(model._model_dir)
 
 
 def test_stem_with_stopwords_and_punctuation(bm25_instance):
@@ -150,11 +150,13 @@ def test_stem_case_insensitive_stopwords(bm25_instance):
     expected = ["quick", "brown", "fox", "test", "sentenc"]
     assert result == expected, f"Expected {expected}, but got {result}"
 
+
 @pytest.mark.parametrize(
     "model_name",
     ["prithivida/Splade_PP_en_v1"],
 )
 def test_lazy_load(model_name):
+    is_ci = os.getenv("CI")
     model = SparseTextEmbedding(model_name=model_name, lazy_load=True)
     assert not hasattr(model.model, "model")
 
@@ -167,3 +169,6 @@ def test_lazy_load(model_name):
 
     model = SparseTextEmbedding(model_name=model_name, lazy_load=True)
     list(model.passage_embed(docs))
+
+    if is_ci:
+        delete_model_cache(model.model._model_dir)

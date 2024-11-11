@@ -1,10 +1,10 @@
 import os
-import shutil
 
 import numpy as np
 import pytest
 
 from fastembed.text.text_embedding import TextEmbedding
+from tests.utils import delete_model_cache
 
 CANONICAL_VECTOR_VALUES = {
     "BAAI/bge-small-en": np.array([-0.0232, -0.0255, 0.0174, -0.0639, -0.0006]),
@@ -85,7 +85,7 @@ def test_embedding():
             embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3
         ), model_desc["model"]
         if is_ci:
-            shutil.rmtree(model.model._model_dir)
+            delete_model_cache(model.model._model_dir)
 
 
 @pytest.mark.parametrize(
@@ -102,7 +102,7 @@ def test_batch_embedding(n_dims, model_name):
 
     assert embeddings.shape == (200, n_dims)
     if is_ci:
-        shutil.rmtree(model.model._model_dir)
+        delete_model_cache(model.model._model_dir)
 
 
 @pytest.mark.parametrize(
@@ -128,7 +128,7 @@ def test_parallel_processing(n_dims, model_name):
     assert np.allclose(embeddings, embeddings_3, atol=1e-3)
 
     if is_ci:
-        shutil.rmtree(model.model._model_dir)
+        delete_model_cache(model.model._model_dir)
 
 
 @pytest.mark.parametrize(
@@ -136,6 +136,7 @@ def test_parallel_processing(n_dims, model_name):
     ["BAAI/bge-small-en-v1.5"],
 )
 def test_lazy_load(model_name):
+    is_ci = os.getenv("CI")
     model = TextEmbedding(model_name=model_name, lazy_load=True)
     assert not hasattr(model.model, "model")
     docs = ["hello world", "flag embedding"]
@@ -147,3 +148,6 @@ def test_lazy_load(model_name):
 
     model = TextEmbedding(model_name=model_name, lazy_load=True)
     list(model.passage_embed(docs))
+
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
