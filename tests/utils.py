@@ -23,8 +23,8 @@ def delete_model_cache(model_dir: Union[str, Path]) -> None:
     if model_dir.exists():
         try:
             shutil.rmtree(model_dir)
-        except Exception as e:
-            print(e)
+        except Exception:
+            # print(e)
             print("sleeping for 3 seconds...")
             import time
 
