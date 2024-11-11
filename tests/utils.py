@@ -14,6 +14,10 @@ def delete_model_cache(model_dir: Union[str, Path]) -> None:
     Args:
         model_dir (Union[str, Path]): The path to the model cache directory.
     """
+
+    def on_error(func, path, exc_info):
+        print(f"Failed to remove {path}. {exc_info}")
+
     if isinstance(model_dir, str):
         model_dir = Path(model_dir)
 
@@ -21,18 +25,4 @@ def delete_model_cache(model_dir: Union[str, Path]) -> None:
         model_dir = model_dir.parent.parent
 
     if model_dir.exists():
-        try:
-            shutil.rmtree(model_dir)
-        except Exception:
-            # print(e)
-            print("sleeping for 3 seconds...")
-            import time
-
-            time.sleep(3)
-            print("trying out again")
-
-            if model_dir.exists():
-                # shutil.rmtree(model_dir)
-                shutil.rmtree(model_dir / "refs")
-                shutil.rmtree(model_dir / "snapshots")
-                shutil.rmtree(model_dir / "blobs")
+        shutil.rmtree(model_dir, onerror=on_error)
