@@ -75,11 +75,21 @@ def delete_model_cache(model_dir: Union[str, Path]) -> None:
 
     import sys
 
+    def get_size(path: Path) -> int:
+        if path.is_file():
+            return path.stat().st_size
+        elif path.is_dir():
+            # Sum up the sizes of all files in the directory
+            return sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
+        return 0
+
     try:
         print(sys.getwindowsversion())
         path = Path("C:/Users/RUNNER~1/AppData/Local/Temp/fastembed_cache/")
         if path.exists():
             for path in path.rglob("*"):
                 print(path)
+                size = get_size(path)
+                print(f"{path}: {size / (1024 * 1024):.2f} MB")
     except Exception:
         print("Not windows")
