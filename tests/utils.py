@@ -74,6 +74,7 @@ def delete_model_cache(model_dir: Union[str, Path]) -> None:
             print("content of parent", p, list(p.iterdir()))
 
     import sys
+    import stat
 
     def get_size(path: Path) -> int:
         if path.is_file():
@@ -83,6 +84,10 @@ def delete_model_cache(model_dir: Union[str, Path]) -> None:
             return sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
         return 0
 
+    def get_permissions(path: Path) -> str:
+        mode = path.stat().st_mode
+        return stat.filemode(mode)
+
     try:
         print(sys.getwindowsversion())
         path = Path("C:/Users/RUNNER~1/AppData/Local/Temp/fastembed_cache/")
@@ -91,5 +96,7 @@ def delete_model_cache(model_dir: Union[str, Path]) -> None:
                 print(path)
                 size = get_size(path)
                 print(f"{path}: {size / (1024 * 1024):.2f} MB")
+                permissions = get_permissions(path)
+                print(f"{permissions} {path}")
     except Exception:
         print("Not windows")
