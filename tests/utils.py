@@ -55,7 +55,7 @@ def delete_model_cache(model_dir: Union[str, Path]) -> None:
             print("Exception: ", exc_value)
             print("Traceback: ", traceback.format_tb(exc_traceback))
 
-        recursive_chmod(path, 0o755)
+        recursive_chmod(path, 0o777)
         shutil.rmtree(path, onerror=last_resort)
 
     if isinstance(model_dir, str):
