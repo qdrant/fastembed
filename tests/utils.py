@@ -28,4 +28,5 @@ def delete_model_cache(model_dir: Union[str, Path]) -> None:
         model_dir = model_dir.parent.parent
 
     if model_dir.exists():
+        # todo: PermissionDenied is raised on blobs removal in Windows, with blobs > 2GB
         shutil.rmtree(model_dir, onerror=on_error)
