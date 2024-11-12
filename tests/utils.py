@@ -40,6 +40,9 @@ def delete_model_cache(model_dir: Union[str, Path]) -> None:
                     recursive_chmod(full_path, mode)
 
     def on_error(func, path, exc_info):
+        if not Path(path).exists():
+            print("path does not exist", path)
+            return
         exc_type, exc_value, exc_traceback = exc_info
 
         # Example usage:
@@ -50,7 +53,7 @@ def delete_model_cache(model_dir: Union[str, Path]) -> None:
             print("Traceback: ", traceback.format_tb(exc_traceback))
 
         recursive_chmod(path, 0o755)
-        shutil.rmtree(model_dir, onerror=last_resort)
+        shutil.rmtree(path, onerror=last_resort)
 
     if isinstance(model_dir, str):
         model_dir = Path(model_dir)
