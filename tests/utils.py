@@ -29,7 +29,7 @@ def delete_model_cache(model_dir: Union[str, Path]) -> None:
         if os.path.exists(str(path)):
             print("path does not exist", path)
             p = Path(path)
-            if p.parent.exists():
+            if p.parent.exists() and p.parent.is_dir():
                 print("parent content: ", list(p.iterdir()))
             os.chmod(str(path), mode)
 
