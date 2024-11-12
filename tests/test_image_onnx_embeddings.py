@@ -1,5 +1,4 @@
 import os
-import shutil
 from io import BytesIO
 
 import numpy as np
@@ -9,6 +8,7 @@ from PIL import Image
 
 from fastembed import ImageEmbedding
 from tests.config import TEST_MISC_DIR
+from tests.utils import delete_model_cache
 
 CANONICAL_VECTOR_VALUES = {
     "Qdrant/clip-ViT-B-32-vision": np.array([-0.0098, 0.0128, -0.0274, 0.002, -0.0059]),
@@ -54,7 +54,7 @@ def test_embedding():
         assert np.allclose(embeddings[1], embeddings[2]), model_desc["model"]
 
         if is_ci:
-            shutil.rmtree(model.model._model_dir)
+            delete_model_cache(model.model._model_dir)
 
 
 @pytest.mark.parametrize("n_dims,model_name", [(512, "Qdrant/clip-ViT-B-32-vision")])
@@ -74,7 +74,7 @@ def test_batch_embedding(n_dims, model_name):
 
     assert embeddings.shape == (len(test_images) * n_images, n_dims)
     if is_ci:
-        shutil.rmtree(model.model._model_dir)
+        delete_model_cache(model.model._model_dir)
 
 
 @pytest.mark.parametrize("n_dims,model_name", [(512, "Qdrant/clip-ViT-B-32-vision")])
@@ -102,11 +102,12 @@ def test_parallel_processing(n_dims, model_name):
     assert np.allclose(embeddings, embeddings_2, atol=1e-3)
     assert np.allclose(embeddings, embeddings_3, atol=1e-3)
     if is_ci:
-        shutil.rmtree(model.model._model_dir)
+        delete_model_cache(model.model._model_dir)
 
 
 @pytest.mark.parametrize("model_name", ["Qdrant/clip-ViT-B-32-vision"])
 def test_lazy_load(model_name):
+    is_ci = os.getenv("CI")
     model = ImageEmbedding(model_name=model_name, lazy_load=True)
     assert not hasattr(model.model, "model")
     images = [
@@ -115,3 +116,5 @@ def test_lazy_load(model_name):
     ]
     list(model.embed(images))
     assert hasattr(model.model, "model")
+    if is_ci:
+        delete_model_cache(model.model._model_dir)

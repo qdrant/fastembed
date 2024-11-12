@@ -1,10 +1,10 @@
 import os
-import shutil
 
 import numpy as np
 import pytest
 
 from fastembed import SparseTextEmbedding
+from tests.utils import delete_model_cache
 
 
 @pytest.mark.parametrize("model_name", ["Qdrant/bm42-all-minilm-l6-v2-attentions", "Qdrant/bm25"])
@@ -67,7 +67,7 @@ def test_attention_embeddings(model_name):
         assert len(result.indices) == 2
 
     if is_ci:
-        shutil.rmtree(model.model._model_dir)
+        delete_model_cache(model.model._model_dir)
 
 
 @pytest.mark.parametrize("model_name", ["Qdrant/bm42-all-minilm-l6-v2-attentions", "Qdrant/bm25"])
@@ -92,7 +92,7 @@ def test_parallel_processing(model_name):
         assert np.allclose(emb_1.values, emb_3.values)
 
     if is_ci:
-        shutil.rmtree(model.model._model_dir)
+        delete_model_cache(model.model._model_dir)
 
 
 @pytest.mark.parametrize("model_name", ["Qdrant/bm25"])
@@ -118,7 +118,7 @@ def test_multilanguage(model_name):
     assert embeddings[1].indices.shape == (4,)
 
     if is_ci:
-        shutil.rmtree(model.model._model_dir)
+        delete_model_cache(model.model._model_dir)
 
 
 @pytest.mark.parametrize("model_name", ["Qdrant/bm25"])
@@ -141,7 +141,7 @@ def test_special_characters(model_name):
         assert embeddings[idx].indices.shape == (shape,)
 
     if is_ci:
-        shutil.rmtree(model.model._model_dir)
+        delete_model_cache(model.model._model_dir)
 
 
 @pytest.mark.parametrize("model_name", ["Qdrant/bm42-all-minilm-l6-v2-attentions"])
