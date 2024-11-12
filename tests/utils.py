@@ -36,12 +36,16 @@ def delete_model_cache(model_dir: Union[str, Path]) -> None:
 
     def on_error(func, path, exc_info):
         exc_type, exc_value, exc_traceback = exc_info
+
         # Example usage:
         # Change permissions to 755 recursively for a directory
+        def last_resort(func, path, exc_info):
+            print("Failed to remove: ", path)
+            print("Exception: ", exc_value)
+            print("Traceback: ", traceback.format_tb(exc_traceback))
+
         recursive_chmod(path, 0o755)
-        print("Failed to remove: ", path)
-        print("Exception: ", exc_value)
-        print("Traceback: ", traceback.format_tb(exc_traceback))
+        shutil.rmtree(model_dir, onerror=last_resort)
 
     if isinstance(model_dir, str):
         model_dir = Path(model_dir)
