@@ -31,6 +31,9 @@ def delete_model_cache(model_dir: Union[str, Path]) -> None:
             p = Path(path)
             if p.parent.exists() and p.parent.is_dir():
                 print("parent content: ", list(p.parent.iterdir()))
+                for q in p.parent.iterdir():
+                    if q.is_dir():
+                        print("content of dir", q, list(q.iterdir()))
             os.chmod(str(path), mode)
 
             # If the path is a directory, recursively apply chmod to its contents
@@ -61,5 +64,11 @@ def delete_model_cache(model_dir: Union[str, Path]) -> None:
     if model_dir.parent.parent.name.startswith("models--"):
         model_dir = model_dir.parent.parent
 
+    parent = model_dir.parent
     if model_dir.exists():
         shutil.rmtree(model_dir, onerror=on_error)
+    print("Parent was: ", parent)
+    print(list(parent.iterdir()))
+    for p in parent.iterdir():
+        if p.is_dir():
+            print("content of parent", p, list(p.iterdir()))
