@@ -27,10 +27,10 @@ def delete_model_cache(model_dir: Union[str, Path]) -> None:
         # Change the permission of the current path
         print("change permission", path, mode)
         if os.path.exists(str(path)):
-            print("path does not exist", path)
+            print("path exist", path)
             p = Path(path)
             if p.parent.exists() and p.parent.is_dir():
-                print("parent content: ", list(p.iterdir()))
+                print("parent content: ", list(p.parent.iterdir()))
             os.chmod(str(path), mode)
 
             # If the path is a directory, recursively apply chmod to its contents
