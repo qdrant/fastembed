@@ -72,3 +72,14 @@ def delete_model_cache(model_dir: Union[str, Path]) -> None:
     for p in parent.iterdir():
         if p.is_dir():
             print("content of parent", p, list(p.iterdir()))
+
+    import sys
+
+    try:
+        print(sys.getwindowsversion())
+        path = Path("C:/Users/RUNNER~1/AppData/Local/Temp/fastembed_cache/")
+        if path.exists():
+            for path in path.rglob("*"):
+                print(path)
+    except Exception:
+        print("Not windows")
