@@ -5,6 +5,8 @@ This product includes software developed by Qdrant
 This distribution includes the following Jina AI models, each with its respective license:
 - jinaai/jina-colbert-v2
     - License: cc-by-nc-4.0
+- jinaai/jina-reranker-v2-base-multilingual
+    - License: cc-by-nc-4.0
 
 These models are developed by Jina (https://jina.ai/) and are subject to Jina AI's licensing terms.
 

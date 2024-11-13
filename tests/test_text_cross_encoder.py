@@ -10,6 +10,9 @@ CANONICAL_SCORE_VALUES = {
     "Xenova/ms-marco-MiniLM-L-6-v2": np.array([8.500708, -2.541011]),
     "Xenova/ms-marco-MiniLM-L-12-v2": np.array([9.330912, -2.0380247]),
     "BAAI/bge-reranker-base": np.array([6.15733337, -3.65939403]),
+    "jinaai/jina-reranker-v1-tiny-en": np.array([2.5911, 0.1122]),
+    "jinaai/jina-reranker-v1-turbo-en": np.array([1.8295, -2.8908]),
+    "jinaai/jina-reranker-v2-base-multilingual": np.array([1.6533, -1.6455]),
 }
 
 
@@ -37,7 +40,11 @@ def test_rerank():
 
 @pytest.mark.parametrize(
     "model_name",
-    ["Xenova/ms-marco-MiniLM-L-6-v2", "Xenova/ms-marco-MiniLM-L-12-v2", "BAAI/bge-reranker-base"],
+    [
+        model_desc["model"]
+        for model_desc in TextCrossEncoder.list_supported_models()
+        if model_desc["size_in_GB"] < 1 and model_desc["model"] in CANONICAL_SCORE_VALUES.keys()
+    ],
 )
 def test_batch_rerank(model_name):
     is_ci = os.getenv("CI")
