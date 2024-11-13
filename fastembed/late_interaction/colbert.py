@@ -12,6 +12,7 @@ from fastembed.late_interaction.late_interaction_embedding_base import (
 )
 from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
 
+
 supported_colbert_models = [
     {
         "model": "colbert-ir/colbertv2.0",
@@ -41,7 +42,7 @@ supported_colbert_models = [
 class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
     QUERY_MARKER_TOKEN_ID = 1
     DOCUMENT_MARKER_TOKEN_ID = 2
-    MIN_QUERY_LENGTH = 32
+    MIN_QUERY_LENGTH = 31  # it's 32, we add one additional special token in the beginning
     MASK_TOKEN = "[MASK]"
 
     def _post_process_onnx_output(
@@ -69,15 +70,9 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
     def _preprocess_onnx_input(
         self, onnx_input: Dict[str, np.ndarray], is_doc: bool = True
     ) -> Dict[str, np.ndarray]:
-        original_length = onnx_input["input_ids"].shape[1]
         marker_token = self.DOCUMENT_MARKER_TOKEN_ID if is_doc else self.QUERY_MARKER_TOKEN_ID
-
         onnx_input["input_ids"] = np.insert(onnx_input["input_ids"], 1, marker_token, axis=1)
         onnx_input["attention_mask"] = np.insert(onnx_input["attention_mask"], 1, 1, axis=1)
-
-        if not is_doc:
-            onnx_input["input_ids"] = onnx_input["input_ids"][:, :original_length]
-            onnx_input["attention_mask"] = onnx_input["attention_mask"][:, :original_length]
         return onnx_input
 
     def tokenize(self, documents: List[str], is_doc: bool = True) -> List[Encoding]:
