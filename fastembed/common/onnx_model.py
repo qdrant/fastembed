@@ -1,17 +1,7 @@
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
-from typing import (
-    Any,
-    Dict,
-    Generic,
-    Iterable,
-    Optional,
-    Sequence,
-    Tuple,
-    Type,
-    TypeVar,
-)
+from typing import Any, Dict, Generic, Iterable, Optional, Sequence, Tuple, Type, TypeVar
 
 import numpy as np
 import onnxruntime as ort

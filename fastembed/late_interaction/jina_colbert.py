@@ -42,7 +42,7 @@ class JinaColbert(Colbert):
         return supported_jina_colbert_models
 
     def _preprocess_onnx_input(
-        self, onnx_input: Dict[str, np.ndarray], is_doc: bool = True
+        self, onnx_input: Dict[str, np.ndarray], is_doc: bool = True, **kwargs: Any
     ) -> Dict[str, np.ndarray]:
         onnx_input = super()._preprocess_onnx_input(onnx_input, is_doc)
 
