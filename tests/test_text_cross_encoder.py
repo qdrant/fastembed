@@ -12,7 +12,7 @@ CANONICAL_SCORE_VALUES = {
     "BAAI/bge-reranker-base": np.array([6.15733337, -3.65939403]),
     "jinaai/jina-reranker-v1-tiny-en": np.array([2.5911, 0.1122]),
     "jinaai/jina-reranker-v1-turbo-en": np.array([1.8295, -2.8908]),
-    "jinaai/jina-reranker-v2-base-multilingual": np.array([1.6484, -1.6328]),
+    "jinaai/jina-reranker-v2-base-multilingual": np.array([1.6533, -1.6455]),
 }
 
 
