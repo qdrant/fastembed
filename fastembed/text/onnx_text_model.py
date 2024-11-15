@@ -1,7 +1,7 @@
 import os
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Type, Union
+from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
 from tokenizers import Encoding
@@ -14,7 +14,7 @@ from fastembed.parallel_processor import ParallelWorkerPool
 
 
 class OnnxTextModel(OnnxModel[T]):
-    ONNX_OUTPUT_NAMES: Optional[List[str]] = None
+    ONNX_OUTPUT_NAMES: Optional[list[str]] = None
 
     @classmethod
     def _get_worker_class(cls) -> Type["TextEmbeddingWorker"]:
@@ -29,8 +29,8 @@ class OnnxTextModel(OnnxModel[T]):
         self.special_token_to_id = {}
 
     def _preprocess_onnx_input(
-        self, onnx_input: Dict[str, np.ndarray], **kwargs
-    ) -> Dict[str, np.ndarray]:
+        self, onnx_input: dict[str, np.ndarray], **kwargs
+    ) -> dict[str, np.ndarray]:
         """
         Preprocess the onnx input.
         """
@@ -58,12 +58,12 @@ class OnnxTextModel(OnnxModel[T]):
     def load_onnx_model(self) -> None:
         raise NotImplementedError("Subclasses must implement this method")
 
-    def tokenize(self, documents: List[str], **kwargs) -> List[Encoding]:
+    def tokenize(self, documents: list[str], **kwargs) -> list[Encoding]:
         return self.tokenizer.encode_batch(documents)
 
     def onnx_embed(
         self,
-        documents: List[str],
+        documents: list[str],
         **kwargs,
     ) -> OnnxOutputContext:
         encoded = self.tokenize(documents, **kwargs)
@@ -98,7 +98,7 @@ class OnnxTextModel(OnnxModel[T]):
         parallel: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
         cuda: bool = False,
-        device_ids: Optional[List[int]] = None,
+        device_ids: Optional[list[int]] = None,
         **kwargs,
     ) -> Iterable[T]:
         is_small = False
@@ -140,7 +140,7 @@ class OnnxTextModel(OnnxModel[T]):
 
 
 class TextEmbeddingWorker(EmbeddingWorker):
-    def process(self, items: Iterable[Tuple[int, Any]]) -> Iterable[Tuple[int, Any]]:
+    def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, Any]]:
         for idx, batch in items:
             onnx_output = self.model.onnx_embed(batch)
             yield idx, onnx_output
