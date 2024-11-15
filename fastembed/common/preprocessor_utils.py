@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Tuple
+
 from tokenizers import AddedToken, Tokenizer
 
 from fastembed.image.transform.operators import Compose
@@ -17,7 +17,7 @@ def load_special_tokens(model_dir: Path) -> dict:
     return tokens_map
 
 
-def load_tokenizer(model_dir: Path) -> Tuple[Tokenizer, dict]:
+def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict]:
     config_path = model_dir / "config.json"
     if not config_path.exists():
         raise ValueError(f"Could not find config.json in {model_dir}")

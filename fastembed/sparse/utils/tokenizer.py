@@ -1,12 +1,11 @@
 # This code is a modified copy of the `NLTKWordTokenizer` class from `NLTK` library.
 
 import re
-from typing import List
 
 
 class SimpleTokenizer:
     @staticmethod
-    def tokenize(text: str) -> List[str]:
+    def tokenize(text: str) -> list[str]:
         text = re.sub(r"[^\w]", " ", text.lower())
         text = re.sub(r"\s+", " ", text)
 
@@ -81,7 +80,7 @@ class WordTokenizer:
     ]
 
     @classmethod
-    def tokenize(cls, text: str) -> List[str]:
+    def tokenize(cls, text: str) -> list[str]:
         """Return a tokenized copy of `text`.
 
         >>> s = '''Good muffins cost $3.88 (roughly 3,36 euros)\nin New York.'''

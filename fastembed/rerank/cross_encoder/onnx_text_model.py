@@ -1,4 +1,4 @@
-from typing import Sequence, Optional, List, Dict, Iterable
+from typing import Sequence, Optional, Iterable
 from pathlib import Path
 
 import numpy as np
@@ -10,7 +10,7 @@ from fastembed.common.utils import iter_batch
 
 
 class OnnxCrossEncoderModel(OnnxModel):
-    ONNX_OUTPUT_NAMES: Optional[List[str]] = None
+    ONNX_OUTPUT_NAMES: Optional[list[str]] = None
 
     def _load_onnx_model(
         self,
@@ -31,10 +31,10 @@ class OnnxCrossEncoderModel(OnnxModel):
         )
         self.tokenizer, _ = load_tokenizer(model_dir=model_dir)
 
-    def tokenize(self, query: str, documents: List[str], **kwargs) -> List[Encoding]:
+    def tokenize(self, query: str, documents: list[str], **kwargs) -> list[Encoding]:
         return self.tokenizer.encode_batch([(query, doc) for doc in documents])
 
-    def onnx_embed(self, query: str, documents: List[str], **kwargs) -> OnnxOutputContext:
+    def onnx_embed(self, query: str, documents: list[str], **kwargs) -> OnnxOutputContext:
         tokenized_input = self.tokenize(query, documents, **kwargs)
 
         inputs = {
@@ -62,8 +62,8 @@ class OnnxCrossEncoderModel(OnnxModel):
             yield from self.onnx_embed(query, batch, **kwargs).model_output
 
     def _preprocess_onnx_input(
-        self, onnx_input: Dict[str, np.ndarray], **kwargs
-    ) -> Dict[str, np.ndarray]:
+        self, onnx_input: dict[str, np.ndarray], **kwargs
+    ) -> dict[str, np.ndarray]:
         """
         Preprocess the onnx input.
         """

@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Type
+from typing import Any, Iterable, Optional, Sequence, Type
 
 import numpy as np
 
@@ -8,15 +8,15 @@ from fastembed.image.onnx_embedding import OnnxImageEmbedding
 
 
 class ImageEmbedding(ImageEmbeddingBase):
-    EMBEDDINGS_REGISTRY: List[Type[ImageEmbeddingBase]] = [OnnxImageEmbedding]
+    EMBEDDINGS_REGISTRY: list[Type[ImageEmbeddingBase]] = [OnnxImageEmbedding]
 
     @classmethod
-    def list_supported_models(cls) -> List[Dict[str, Any]]:
+    def list_supported_models(cls) -> list[dict[str, Any]]:
         """
         Lists the supported models.
 
         Returns:
-            List[Dict[str, Any]]: A list of dictionaries containing the model information.
+            list[dict[str, Any]]: A list of dictionaries containing the model information.
 
             Example:
                 ```
@@ -47,7 +47,7 @@ class ImageEmbedding(ImageEmbeddingBase):
         threads: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
         cuda: bool = False,
-        device_ids: Optional[List[int]] = None,
+        device_ids: Optional[list[int]] = None,
         lazy_load: bool = False,
         **kwargs,
     ):

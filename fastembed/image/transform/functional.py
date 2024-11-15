@@ -1,4 +1,4 @@
-from typing import Sized, Tuple, Union
+from typing import Sized, Union
 
 import numpy as np
 from PIL import Image
@@ -14,7 +14,7 @@ def convert_to_rgb(image: Image.Image) -> Image.Image:
 
 def center_crop(
     image: Union[Image.Image, np.ndarray],
-    size: Tuple[int, int],
+    size: tuple[int, int],
 ) -> np.ndarray:
     if isinstance(image, np.ndarray):
         _, orig_height, orig_width = image.shape
@@ -97,7 +97,7 @@ def normalize(
 
 def resize(
     image: Image,
-    size: Union[int, Tuple[int, int]],
+    size: Union[int, tuple[int, int]],
     resample: Image.Resampling = Image.Resampling.BILINEAR,
 ) -> Image:
     if isinstance(size, tuple):

@@ -2,7 +2,7 @@ import os
 from collections import defaultdict
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
+from typing import Any, Iterable, Optional, Type, Union
 
 import mmh3
 import numpy as np
@@ -133,16 +133,16 @@ class Bm25(SparseTextEmbeddingBase):
         self.tokenizer = SimpleTokenizer
 
     @classmethod
-    def list_supported_models(cls) -> List[Dict[str, Any]]:
+    def list_supported_models(cls) -> list[dict[str, Any]]:
         """Lists the supported models.
 
         Returns:
-            List[Dict[str, Any]]: A list of dictionaries containing the model information.
+            list[dict[str, Any]]: A list of dictionaries containing the model information.
         """
         return supported_bm25_models
 
     @classmethod
-    def _load_stopwords(cls, model_dir: Path, language: str) -> List[str]:
+    def _load_stopwords(cls, model_dir: Path, language: str) -> list[str]:
         stopwords_path = model_dir / f"{language}.txt"
         if not stopwords_path.exists():
             return []
@@ -222,7 +222,7 @@ class Bm25(SparseTextEmbeddingBase):
             parallel=parallel,
         )
 
-    def _stem(self, tokens: List[str]) -> List[str]:
+    def _stem(self, tokens: list[str]) -> list[str]:
         stemmed_tokens = []
         for token in tokens:
             if token in self.punctuation:
@@ -242,8 +242,8 @@ class Bm25(SparseTextEmbeddingBase):
 
     def raw_embed(
         self,
-        documents: List[str],
-    ) -> List[SparseEmbedding]:
+        documents: list[str],
+    ) -> list[SparseEmbedding]:
         embeddings = []
         for document in documents:
             document = remove_non_alphanumeric(document)
@@ -253,7 +253,7 @@ class Bm25(SparseTextEmbeddingBase):
             embeddings.append(SparseEmbedding.from_dict(token_id2value))
         return embeddings
 
-    def _term_frequency(self, tokens: List[str]) -> Dict[int, float]:
+    def _term_frequency(self, tokens: list[str]) -> dict[int, float]:
         """Calculate the term frequency part of the BM25 formula.
 
         (
@@ -263,10 +263,10 @@ class Bm25(SparseTextEmbeddingBase):
         )
 
         Args:
-            tokens (List[str]): The list of tokens in the document.
+            tokens (list[str]): The list of tokens in the document.
 
         Returns:
-            Dict[int, float]: The token_id to term frequency mapping.
+            dict[int, float]: The token_id to term frequency mapping.
         """
         tf_map = {}
         counter = defaultdict(int)
@@ -323,7 +323,7 @@ class Bm25Worker(Worker):
     def start(cls, model_name: str, cache_dir: str, **kwargs: Any) -> "Bm25Worker":
         return cls(model_name=model_name, cache_dir=cache_dir, **kwargs)
 
-    def process(self, items: Iterable[Tuple[int, Any]]) -> Iterable[Tuple[int, Any]]:
+    def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, Any]]:
         for idx, batch in items:
             onnx_output = self.model.raw_embed(batch)
             yield idx, onnx_output

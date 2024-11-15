@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Type
+from typing import Any, Type
 
 import numpy as np
 
@@ -39,17 +39,17 @@ class E5OnnxEmbedding(OnnxTextEmbedding):
         return E5OnnxEmbeddingWorker
 
     @classmethod
-    def list_supported_models(cls) -> List[Dict[str, Any]]:
+    def list_supported_models(cls) -> list[dict[str, Any]]:
         """Lists the supported models.
 
         Returns:
-            List[Dict[str, Any]]: A list of dictionaries containing the model information.
+            list[dict[str, Any]]: A list of dictionaries containing the model information.
         """
         return supported_multilingual_e5_models
 
     def _preprocess_onnx_input(
-        self, onnx_input: Dict[str, np.ndarray], **kwargs
-    ) -> Dict[str, np.ndarray]:
+        self, onnx_input: dict[str, np.ndarray], **kwargs
+    ) -> dict[str, np.ndarray]:
         """
         Preprocess the onnx input.
         """

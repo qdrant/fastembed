@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Type
+from typing import Any, Iterable, Optional, Sequence, Type
 
 import numpy as np
 
@@ -64,7 +64,7 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
         threads: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
         cuda: bool = False,
-        device_ids: Optional[List[int]] = None,
+        device_ids: Optional[list[int]] = None,
         lazy_load: bool = False,
         device_id: Optional[int] = None,
         **kwargs,
@@ -129,7 +129,7 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
         )
 
     @classmethod
-    def list_supported_models(cls) -> List[Dict[str, Any]]:
+    def list_supported_models(cls) -> list[dict[str, Any]]:
         """
         Lists the supported models.
 
@@ -178,8 +178,8 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
         return OnnxImageEmbeddingWorker
 
     def _preprocess_onnx_input(
-        self, onnx_input: Dict[str, np.ndarray], **kwargs
-    ) -> Dict[str, np.ndarray]:
+        self, onnx_input: dict[str, np.ndarray], **kwargs
+    ) -> dict[str, np.ndarray]:
         """
         Preprocess the onnx input.
         """

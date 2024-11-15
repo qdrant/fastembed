@@ -1,5 +1,5 @@
 import string
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Type, Union
+from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
 from tokenizers import Encoding
@@ -68,21 +68,21 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         return output.model_output.astype(np.float32)
 
     def _preprocess_onnx_input(
-        self, onnx_input: Dict[str, np.ndarray], is_doc: bool = True, **kwargs: Any
-    ) -> Dict[str, np.ndarray]:
+        self, onnx_input: dict[str, np.ndarray], is_doc: bool = True, **kwargs: Any
+    ) -> dict[str, np.ndarray]:
         marker_token = self.DOCUMENT_MARKER_TOKEN_ID if is_doc else self.QUERY_MARKER_TOKEN_ID
         onnx_input["input_ids"] = np.insert(onnx_input["input_ids"], 1, marker_token, axis=1)
         onnx_input["attention_mask"] = np.insert(onnx_input["attention_mask"], 1, 1, axis=1)
         return onnx_input
 
-    def tokenize(self, documents: List[str], is_doc: bool = True, **kwargs: Any) -> List[Encoding]:
+    def tokenize(self, documents: list[str], is_doc: bool = True, **kwargs: Any) -> list[Encoding]:
         return (
             self._tokenize_documents(documents=documents)
             if is_doc
             else self._tokenize_query(query=next(iter(documents)))
         )
 
-    def _tokenize_query(self, query: str) -> List[Encoding]:
+    def _tokenize_query(self, query: str) -> list[Encoding]:
         encoded = self.tokenizer.encode_batch([query])
         # colbert authors recommend to pad queries with [MASK] tokens for query augmentation to improve performance
         if len(encoded[0].ids) < self.MIN_QUERY_LENGTH:
@@ -101,16 +101,16 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
                 self.tokenizer.enable_padding(**prev_padding)
         return encoded
 
-    def _tokenize_documents(self, documents: List[str]) -> List[Encoding]:
+    def _tokenize_documents(self, documents: list[str]) -> list[Encoding]:
         encoded = self.tokenizer.encode_batch(documents)
         return encoded
 
     @classmethod
-    def list_supported_models(cls) -> List[Dict[str, Any]]:
+    def list_supported_models(cls) -> list[dict[str, Any]]:
         """Lists the supported models.
 
         Returns:
-            List[Dict[str, Any]]: A list of dictionaries containing the model information.
+            list[dict[str, Any]]: A list of dictionaries containing the model information.
         """
         return supported_colbert_models
 
@@ -121,7 +121,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         threads: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
         cuda: bool = False,
-        device_ids: Optional[List[int]] = None,
+        device_ids: Optional[list[int]] = None,
         lazy_load: bool = False,
         device_id: Optional[int] = None,
         **kwargs,
@@ -137,7 +137,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
                 Mutually exclusive with the `cuda` and `device_ids` arguments. Defaults to None.
             cuda (bool, optional): Whether to use cuda for inference. Mutually exclusive with `providers`
                 Defaults to False.
-            device_ids (Optional[List[int]], optional): The list of device ids to use for data parallel processing in
+            device_ids (Optional[list[int]], optional): The list of device ids to use for data parallel processing in
                 workers. Should be used with `cuda=True`, mutually exclusive with `providers`. Defaults to None.
             lazy_load (bool, optional): Whether to load the model during class initialization or on demand.
                 Should be set to True when using multiple-gpu and parallel encoding. Defaults to False.

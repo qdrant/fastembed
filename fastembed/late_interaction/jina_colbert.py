@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Type
+from typing import Any, Type
 
 import numpy as np
 
@@ -33,17 +33,17 @@ class JinaColbert(Colbert):
         return JinaColbertEmbeddingWorker
 
     @classmethod
-    def list_supported_models(cls) -> List[Dict[str, Any]]:
+    def list_supported_models(cls) -> list[dict[str, Any]]:
         """Lists the supported models.
 
         Returns:
-            List[Dict[str, Any]]: A list of dictionaries containing the model information.
+            list[dict[str, Any]]: A list of dictionaries containing the model information.
         """
         return supported_jina_colbert_models
 
     def _preprocess_onnx_input(
-        self, onnx_input: Dict[str, np.ndarray], is_doc: bool = True, **kwargs: Any
-    ) -> Dict[str, np.ndarray]:
+        self, onnx_input: dict[str, np.ndarray], is_doc: bool = True, **kwargs: Any
+    ) -> dict[str, np.ndarray]:
         onnx_input = super()._preprocess_onnx_input(onnx_input, is_doc)
 
         # the attention mask for jina-colbert-v2 is always 1 in queries
