@@ -93,7 +93,7 @@ class ModelManagement:
     def download_files_from_huggingface(
         cls,
         hf_source_repo: str,
-        cache_dir: Optional[str] = None,
+        cache_dir: str,
         extra_patterns: Optional[list[str]] = None,
         local_files_only: bool = False,
         **kwargs,
