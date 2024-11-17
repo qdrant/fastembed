@@ -1,13 +1,13 @@
 import os
-import tempfile
-from itertools import islice
-from pathlib import Path
-from typing import Generator, Iterable, Optional, Union
-import unicodedata
 import sys
-import numpy as np
 import re
-from typing import Set
+import tempfile
+import unicodedata
+from pathlib import Path
+from itertools import islice
+from typing import Generator, Iterable, Optional, Union
+
+import numpy as np
 
 
 def normalize(input_array, p=2, dim=1, eps=1e-12) -> np.ndarray:
@@ -45,7 +45,7 @@ def define_cache_dir(cache_dir: Optional[str] = None) -> Path:
     return cache_path
 
 
-def get_all_punctuation() -> Set[str]:
+def get_all_punctuation() -> set[str]:
     return set(
         chr(i) for i in range(sys.maxunicode) if unicodedata.category(chr(i)).startswith("P")
     )

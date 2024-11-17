@@ -28,10 +28,10 @@ pip install fastembed-gpu
 
 ```python
 from fastembed import TextEmbedding
-from typing import List
+
 
 # Example list of documents
-documents: List[str] = [
+documents: list[str] = [
     "This is built to be faster and lighter than other embedding libraries e.g. Transformers, Sentence-Transformers, etc.",
     "fastembed is supported by and maintained by Qdrant.",
 ]
@@ -139,11 +139,10 @@ embeddings = list(model.embed(images))
 
 ### 🔄 Rerankers
 ```python
-from typing import List
 from fastembed.rerank.cross_encoder import TextCrossEncoder
 
 query = "Who is maintaining Qdrant?"
-documents: List[str] = [
+documents: list[str] = [
     "This is built to be faster and lighter than other embedding libraries e.g. Transformers, Sentence-Transformers, etc.",
     "fastembed is supported by and maintained by Qdrant.",
 ]

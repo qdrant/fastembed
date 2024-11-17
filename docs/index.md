@@ -26,14 +26,14 @@ pip install fastembed
 ```python
 from fastembed import TextEmbedding
 
-documents: List[str] = [
+documents: list[str] = [
     "passage: Hello, World!",
     "query: Hello, World!",
     "passage: This is an example passage.",
     "fastembed is supported by and maintained by Qdrant."
 ]
 embedding_model = TextEmbedding()
-embeddings: List[np.ndarray] = embedding_model.embed(documents)
+embeddings: list[np.ndarray] = embedding_model.embed(documents)
 ```
 
 ## Usage with Qdrant
