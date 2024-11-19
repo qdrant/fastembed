@@ -70,11 +70,6 @@ class OnnxImageModel(OnnxModel[T]):
             encoded = self.processor(image_files)
         onnx_input = self._build_onnx_input(encoded)
         onnx_input = self._preprocess_onnx_input(onnx_input)
-        onnx_input["input_ids"] = [
-            np.array([257152] * 1024 + [2, 50721, 573, 2416, 235265, 108])
-            for _ in onnx_input["input_ids"]
-        ]
-        onnx_input["attention_mask"] = [np.array([1] * 1030) for _ in onnx_input["input_ids"]]
 
         model_output = self.model.run(None, onnx_input)
         embeddings = model_output[0].reshape(len(images), -1)

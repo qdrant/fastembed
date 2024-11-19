@@ -5,10 +5,11 @@ import numpy as np
 from fastembed.common import ImageInput, OnnxProvider
 from fastembed.image.image_embedding_base import ImageEmbeddingBase
 from fastembed.image.onnx_embedding import OnnxImageEmbedding
+from fastembed.image.colpali_model import ColpaliImageModel
 
 
 class ImageEmbedding(ImageEmbeddingBase):
-    EMBEDDINGS_REGISTRY: List[Type[ImageEmbeddingBase]] = [OnnxImageEmbedding]
+    EMBEDDINGS_REGISTRY: List[Type[ImageEmbeddingBase]] = [OnnxImageEmbedding, ColpaliImageModel]
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Any]]:
