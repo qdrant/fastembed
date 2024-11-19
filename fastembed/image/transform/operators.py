@@ -1,4 +1,4 @@
-from typing import Any, Union
+from typing import Any, Union, Optional
 
 import numpy as np
 from PIL import Image
@@ -10,6 +10,7 @@ from fastembed.image.transform.functional import (
     pil2ndarray,
     rescale,
     resize,
+    pad2sqaure,
 )
 
 
@@ -66,6 +67,22 @@ class PILtoNDarray(Transform):
         return [pil2ndarray(image) for image in images]
 
 
+class PadtoSquare(Transform):
+    def __init__(
+        self,
+        fill_color: Optional[Union[str, int, tuple[int, ...]]] = None,
+        resample: Image.Resampling = Image.Resampling.BICUBIC,
+    ):
+        self.fill_color = fill_color
+        self.resample = resample
+
+    def __call__(self, images: list[np.ndarray]) -> list[np.ndarray]:
+        return [
+            pad2sqaure(image=image, fill_color=self.fill_color, resample=self.resample)
+            for image in images
+        ]
+
+
 class Compose:
     def __init__(self, transforms: list[Transform]):
         self.transforms = transforms
@@ -85,14 +102,20 @@ class Compose:
 
                 Valid keys:
                     - do_resize
+                    - resize_mode
                     - size
+                    - fill_color
                     - do_center_crop
                     - crop_size
                     - do_rescale
                     - rescale_factor
                     - do_normalize
                     - image_mean
+                    - mean
                     - image_std
+                    - std
+                    - resample
+                    - interpolation
                 Valid size keys (nested):
                     - {"height", "width"}
                     - {"shortest_edge"}
@@ -103,6 +126,7 @@ class Compose:
         transforms = []
         cls._get_convert_to_rgb(transforms, config)
         cls._get_resize(transforms, config)
+        cls._get_padtosquare(transforms, config)
         cls._get_center_crop(transforms, config)
         cls._get_pil2ndarray(transforms, config)
         cls._get_rescale(transforms, config)
@@ -157,6 +181,18 @@ class Compose:
                         resample=config.get("resample", Image.Resampling.BICUBIC),
                     )
                 )
+        elif mode == "JinaCLIPImageProcessor":
+            if "size" in config:
+                resize_mode = config.get("resize_mode", "shortest")
+                if resize_mode == "shortest":
+                    transforms.append(
+                        Resize(
+                            size=config["size"],
+                            resample=config.get("interpolation", Image.Resampling.BICUBIC),
+                        )
+                    )
+        else:
+            raise ValueError(f"Preprocessor {mode} is not supported")
 
     @staticmethod
     def _get_center_crop(transforms: list[Transform], config: dict[str, Any]):
@@ -173,6 +209,8 @@ class Compose:
                 transforms.append(CenterCrop(size=crop_size))
         elif mode == "ConvNextFeatureExtractor":
             pass
+        elif mode == "JinaCLIPImageProcessor":
+            pass
         else:
             raise ValueError(f"Preprocessor {mode} is not supported")
 
@@ -188,5 +226,22 @@ class Compose:
 
     @staticmethod
     def _get_normalize(transforms: list[Transform], config: dict[str, Any]):
-        if config.get("do_normalize", False):
-            transforms.append(Normalize(mean=config["image_mean"], std=config["image_std"]))
+        if config.get("do_normalize", False) or ("mean" in config and "std" in config):
+            transforms.append(
+                Normalize(
+                    mean=config["image_mean"] or config["mean"],
+                    std=config["image_std"] or config["std"],
+                )
+            )
+
+    @staticmethod
+    def _get_padtosquare(transforms: list[Transform], config: dict[str, Any]):
+        if config.get("do_pad_to_square", False):
+            transforms.append(
+                PadtoSquare(
+                    fill_color=config["fill_color"],
+                    resample=config.get("interpolation")
+                    or config.get("resample")
+                    or Image.Resampling.BICUBIC,
+                )
+            )

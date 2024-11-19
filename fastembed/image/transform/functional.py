@@ -1,7 +1,7 @@
 from typing import Sized, Union
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 
 
 def convert_to_rgb(image: Image.Image) -> Image.Image:
@@ -122,3 +122,18 @@ def pil2ndarray(image: Union[Image.Image, np.ndarray]):
     if isinstance(image, Image.Image):
         return np.asarray(image).transpose((2, 0, 1))
     return image
+
+
+def pad2square(
+    image: Image,
+    fill_color: str | int | tuple[int, ...] | None = None,
+    resample: Image.Resampling = Image.Resampling.BILINEAR,
+):
+    width, height = image.size
+    max_dim = max(width, height)
+    return ImageOps.pad(
+        image=image,
+        size=(max_dim, max_dim),
+        color=fill_color,
+        method=resample,
+    )
