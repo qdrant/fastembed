@@ -10,7 +10,7 @@ from fastembed.image.transform.functional import (
     pil2ndarray,
     rescale,
     resize,
-    pad2sqaure,
+    pad2square,
 )
 
 
@@ -71,14 +71,14 @@ class PadtoSquare(Transform):
     def __init__(
         self,
         fill_color: Optional[Union[str, int, tuple[int, ...]]] = None,
-        resample: Image.Resampling = Image.Resampling.BICUBIC,
+        resample: Union[Image.Resampling, int] = Image.Resampling.BICUBIC,
     ):
         self.fill_color = fill_color
         self.resample = resample
 
     def __call__(self, images: list[np.ndarray]) -> list[np.ndarray]:
         return [
-            pad2sqaure(image=image, fill_color=self.fill_color, resample=self.resample)
+            pad2square(image=image, fill_color=self.fill_color, resample=self.resample)
             for image in images
         ]
 
@@ -125,8 +125,8 @@ class Compose:
         """
         transforms = []
         cls._get_convert_to_rgb(transforms, config)
+        cls._get_pad2square(transforms, config)
         cls._get_resize(transforms, config)
-        cls._get_padtosquare(transforms, config)
         cls._get_center_crop(transforms, config)
         cls._get_pil2ndarray(transforms, config)
         cls._get_rescale(transforms, config)
@@ -188,7 +188,11 @@ class Compose:
                     transforms.append(
                         Resize(
                             size=config["size"],
-                            resample=config.get("interpolation", Image.Resampling.BICUBIC),
+                            resample=(
+                                Compose._interpolation_resolver(config.get("interpolation"))
+                                if isinstance(config.get("interpolation"), str)
+                                else config.get("interpolation") or Image.Resampling.BICUBIC
+                            ),
                         )
                     )
         else:
@@ -229,19 +233,38 @@ class Compose:
         if config.get("do_normalize", False) or ("mean" in config and "std" in config):
             transforms.append(
                 Normalize(
-                    mean=config["image_mean"] or config["mean"],
-                    std=config["image_std"] or config["std"],
+                    mean=config.get("image_mean", config.get("mean")),
+                    std=config.get("image_std", config.get("std")),
                 )
             )
 
     @staticmethod
-    def _get_padtosquare(transforms: list[Transform], config: dict[str, Any]):
-        if config.get("do_pad_to_square", False):
-            transforms.append(
-                PadtoSquare(
-                    fill_color=config["fill_color"],
-                    resample=config.get("interpolation")
-                    or config.get("resample")
-                    or Image.Resampling.BICUBIC,
-                )
+    def _get_pad2square(transforms: list[Transform], config: dict[str, Any]):
+        mode = config.get("image_processor_type", "CLIPImageProcessor")
+        if mode == "CLIPImageProcessor":
+            pass
+        elif mode == "ConvNextFeatureExtractor":
+            pass
+        elif mode == "JinaCLIPImageProcessor":
+            resample = (
+                Compose._interpolation_resolver(config.get("interpolation"))
+                if isinstance(config.get("interpolation"), str)
+                else config.get("interpolation") or Image.Resampling.BICUBIC
             )
+            transforms.append(PadtoSquare(fill_color=config["fill_color"], resample=resample))
+
+    @staticmethod
+    def _interpolation_resolver(resample: Optional[str] = None) -> Image.Resampling:
+        interpolation_map = {
+            "nearest": Image.Resampling.NEAREST,
+            "lanczos": Image.Resampling.LANCZOS,
+            "bilinear": Image.Resampling.BILINEAR,
+            "bicubic": Image.Resampling.BICUBIC,
+            "box": Image.Resampling.BOX,
+            "hamming": Image.Resampling.HAMMING,
+        }
+
+        if resample and (method := interpolation_map.get(resample.lower())):
+            return method
+
+        raise ValueError(f"Unknown interpolation method: {resample}")

@@ -1,4 +1,4 @@
-from typing import Sized, Union
+from typing import Sized, Union, Optional
 
 import numpy as np
 from PIL import Image, ImageOps
@@ -126,8 +126,8 @@ def pil2ndarray(image: Union[Image.Image, np.ndarray]):
 
 def pad2square(
     image: Image,
-    fill_color: str | int | tuple[int, ...] | None = None,
-    resample: Image.Resampling = Image.Resampling.BILINEAR,
+    fill_color: Optional[Union[str, int, tuple[int, ...]]] = None,
+    resample: Union[Image.Resampling, int] = Image.Resampling.BILINEAR,
 ):
     width, height = image.size
     max_dim = max(width, height)
