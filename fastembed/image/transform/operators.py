@@ -49,7 +49,6 @@ class Resize(Transform):
         self.size = size
         self.resample = resample
 
-
     def __call__(self, images: list[Image.Image]) -> list[Image.Image]:
         return [resize(image, size=self.size, resample=self.resample) for image in images]
 

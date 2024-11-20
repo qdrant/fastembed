@@ -69,9 +69,16 @@ class OnnxTextModel(OnnxModel[T]):
         encoded = self.tokenize(documents, **kwargs)
         input_ids = np.array([e.ids for e in encoded])
         attention_mask = np.array([e.attention_mask for e in encoded])
+        input_names = {node.name for node in self.model.get_inputs()}
         onnx_input = {
             "input_ids": np.array(input_ids, dtype=np.int64),
         }
+        if "attention_mask" in input_names:
+            onnx_input["attention_mask"] = np.array(attention_mask, dtype=np.int64)
+        if "token_type_ids" in input_names:
+            onnx_input["token_type_ids"] = np.array(
+                [np.zeros(len(e), dtype=np.int64) for e in input_ids], dtype=np.int64
+            )
         onnx_input = self._preprocess_onnx_input(onnx_input, **kwargs)
 
         model_output = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)
