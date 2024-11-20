@@ -18,17 +18,6 @@ supported_clip_models = [
         },
         "model_file": "model.onnx",
     },
-    {
-        "model": "jinaai/jina-clip-v1",
-        "dim": 768,
-        "description": "Text embeddings, Multimodal (text&image), English, Prefixes for queries/documents: not necessary, 2024 year",
-        "license": "apache-2.0",
-        "size_in_GB": 0.55,
-        "sources": {
-            "hf": "jinaai/jina-clip-v1",
-        },
-        "model_file": "onnx/text_model.onnx",
-    },
 ]
 
 
