@@ -1,14 +1,15 @@
 import logging
 import os
 from collections import defaultdict
+from copy import deepcopy
 from enum import Enum
 from multiprocessing import Queue, get_context
 from multiprocessing.context import BaseContext
 from multiprocessing.process import BaseProcess
 from multiprocessing.sharedctypes import Synchronized as BaseValue
 from queue import Empty
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Type
-from copy import deepcopy
+from typing import Any, Iterable, Optional, Type
+
 
 # Single item should be processed in less than:
 processing_timeout = 10 * 60  # seconds
@@ -24,10 +25,10 @@ class QueueSignals(str, Enum):
 
 class Worker:
     @classmethod
-    def start(cls, **kwargs: Any) -> "Worker":
+    def start(cls, *args: Any, **kwargs: Any) -> "Worker":
         raise NotImplementedError()
 
-    def process(self, items: Iterable[Tuple[int, Any]]) -> Iterable[Tuple[int, Any]]:
+    def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, Any]]:
         raise NotImplementedError()
 
 
@@ -37,7 +38,7 @@ def _worker(
     output_queue: Queue,
     num_active_workers: BaseValue,
     worker_id: int,
-    kwargs: Optional[Dict[str, Any]] = None,
+    kwargs: Optional[dict[str, Any]] = None,
 ) -> None:
     """
     A worker that pulls data pints off the input queue, and places the execution result on the output queue.
@@ -93,7 +94,7 @@ class ParallelWorkerPool:
         num_workers: int,
         worker: Type[Worker],
         start_method: Optional[str] = None,
-        device_ids: Optional[List[int]] = None,
+        device_ids: Optional[list[int]] = None,
         cuda: bool = False,
     ):
         self.worker_class = worker
@@ -101,7 +102,7 @@ class ParallelWorkerPool:
         self.input_queue: Optional[Queue] = None
         self.output_queue: Optional[Queue] = None
         self.ctx: BaseContext = get_context(start_method)
-        self.processes: List[BaseProcess] = []
+        self.processes: list[BaseProcess] = []
         self.queue_size = self.num_workers * max_internal_batch_size
         self.emergency_shutdown = False
         self.device_ids = device_ids
@@ -150,7 +151,7 @@ class ParallelWorkerPool:
 
     def semi_ordered_map(
         self, stream: Iterable[Any], *args: Any, **kwargs: Any
-    ) -> Iterable[Tuple[int, Any]]:
+    ) -> Iterable[tuple[int, Any]]:
         try:
             self.start(**kwargs)
 

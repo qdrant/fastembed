@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Type
+from typing import Any, Iterable, Type
 
 import numpy as np
 
@@ -57,6 +57,24 @@ supported_pooled_normalized_models = [
         "sources": {"hf": "jinaai/jina-embeddings-v2-base-code"},
         "model_file": "onnx/model.onnx",
     },
+    {
+        "model": "jinaai/jina-embeddings-v2-base-zh",
+        "dim": 768,
+        "description": "Text embeddings, Unimodal (text), supports mixed Chinese-English input text, 8192 input tokens truncation, Prefixes for queries/documents: not necessary, 2024 year.",
+        "license": "apache-2.0",
+        "size_in_GB": 0.64,
+        "sources": {"hf": "jinaai/jina-embeddings-v2-base-zh"},
+        "model_file": "onnx/model.onnx",
+    },
+    {
+        "model": "jinaai/jina-embeddings-v2-base-es",
+        "dim": 768,
+        "description": "Text embeddings, Unimodal (text), supports mixed Spanish-English input text, 8192 input tokens truncation, Prefixes for queries/documents: not necessary, 2024 year.",
+        "license": "apache-2.0",
+        "size_in_GB": 0.64,
+        "sources": {"hf": "jinaai/jina-embeddings-v2-base-es"},
+        "model_file": "onnx/model.onnx",
+    },
 ]
 
 
@@ -66,11 +84,11 @@ class PooledNormalizedEmbedding(PooledEmbedding):
         return PooledNormalizedEmbeddingWorker
 
     @classmethod
-    def list_supported_models(cls) -> List[Dict[str, Any]]:
+    def list_supported_models(cls) -> list[dict[str, Any]]:
         """Lists the supported models.
 
         Returns:
-            List[Dict[str, Any]]: A list of dictionaries containing the model information.
+            list[dict[str, Any]]: A list of dictionaries containing the model information.
         """
         return supported_pooled_normalized_models
 

@@ -1,9 +1,10 @@
-from typing import Any, Dict, List, Type
+from typing import Any, Type
 
 import numpy as np
 
 from fastembed.late_interaction.colbert import Colbert
 from fastembed.text.onnx_text_model import TextEmbeddingWorker
+
 
 supported_jina_colbert_models = [
     {
@@ -24,7 +25,7 @@ supported_jina_colbert_models = [
 class JinaColbert(Colbert):
     QUERY_MARKER_TOKEN_ID = 250002
     DOCUMENT_MARKER_TOKEN_ID = 250003
-    MIN_QUERY_LENGTH = 32
+    MIN_QUERY_LENGTH = 31  # it's 32, we add one additional special token in the beginning
     MASK_TOKEN = "<mask>"
 
     @classmethod
@@ -32,22 +33,21 @@ class JinaColbert(Colbert):
         return JinaColbertEmbeddingWorker
 
     @classmethod
-    def list_supported_models(cls) -> List[Dict[str, Any]]:
+    def list_supported_models(cls) -> list[dict[str, Any]]:
         """Lists the supported models.
 
         Returns:
-            List[Dict[str, Any]]: A list of dictionaries containing the model information.
+            list[dict[str, Any]]: A list of dictionaries containing the model information.
         """
         return supported_jina_colbert_models
 
     def _preprocess_onnx_input(
-        self, onnx_input: Dict[str, np.ndarray], is_doc: bool = True
-    ) -> Dict[str, np.ndarray]:
-        if is_doc:
-            onnx_input["input_ids"][:, 1] = self.DOCUMENT_MARKER_TOKEN_ID
-        else:
-            onnx_input["input_ids"][:, 1] = self.QUERY_MARKER_TOKEN_ID
-            # the attention mask for jina-colbert-v2 is always 1 in queries
+        self, onnx_input: dict[str, np.ndarray], is_doc: bool = True, **kwargs: Any
+    ) -> dict[str, np.ndarray]:
+        onnx_input = super()._preprocess_onnx_input(onnx_input, is_doc)
+
+        # the attention mask for jina-colbert-v2 is always 1 in queries
+        if not is_doc:
             onnx_input["attention_mask"][:] = 1
         return onnx_input
 

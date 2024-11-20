@@ -3,7 +3,7 @@ import time
 import shutil
 import tarfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import requests
 from huggingface_hub import snapshot_download
@@ -14,16 +14,16 @@ from tqdm import tqdm
 
 class ModelManagement:
     @classmethod
-    def list_supported_models(cls) -> List[Dict[str, Any]]:
+    def list_supported_models(cls) -> list[dict[str, Any]]:
         """Lists the supported models.
 
         Returns:
-            List[Dict[str, Any]]: A list of dictionaries containing the model information.
+            list[dict[str, Any]]: A list of dictionaries containing the model information.
         """
         raise NotImplementedError()
 
     @classmethod
-    def _get_model_description(cls, model_name: str) -> Dict[str, Any]:
+    def _get_model_description(cls, model_name: str) -> dict[str, Any]:
         """
         Gets the model description from the model_name.
 
@@ -34,7 +34,7 @@ class ModelManagement:
             ValueError: If the model_name is not supported.
 
         Returns:
-            Dict[str, Any]: The model description.
+            dict[str, Any]: The model description.
         """
         for model in cls.list_supported_models():
             if model_name.lower() == model["model"].lower():
@@ -94,7 +94,7 @@ class ModelManagement:
         cls,
         hf_source_repo: str,
         cache_dir: Optional[str] = None,
-        extra_patterns: Optional[List[str]] = None,
+        extra_patterns: Optional[list[str]] = None,
         local_files_only: bool = False,
         **kwargs,
     ) -> str:
@@ -103,7 +103,7 @@ class ModelManagement:
         Args:
             hf_source_repo (str): Name of the model on HuggingFace Hub, e.g. "qdrant/all-MiniLM-L6-v2-onnx".
             cache_dir (Optional[str]): The path to the cache directory.
-            extra_patterns (Optional[List[str]]): extra patterns to allow in the snapshot download, typically
+            extra_patterns (Optional[list[str]]): extra patterns to allow in the snapshot download, typically
                 includes the required model files.
             local_files_only (bool, optional): Whether to only use local files. Defaults to False.
         Returns:
@@ -211,13 +211,13 @@ class ModelManagement:
 
     @classmethod
     def download_model(
-        cls, model: Dict[str, Any], cache_dir: Path, retries: int = 3, **kwargs
+        cls, model: dict[str, Any], cache_dir: Path, retries: int = 3, **kwargs
     ) -> Path:
         """
         Downloads a model from HuggingFace Hub or Google Cloud Storage.
 
         Args:
-            model (Dict[str, Any]): The model description.
+            model (dict[str, Any]): The model description.
                 Example:
                 ```
                 {

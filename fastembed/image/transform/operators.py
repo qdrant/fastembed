@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Union
 
 import numpy as np
 from PIL import Image
@@ -14,42 +14,43 @@ from fastembed.image.transform.functional import (
 
 
 class Transform:
-    def __call__(self, images: List) -> Union[List[Image.Image], List[np.ndarray]]:
+    def __call__(self, images: list) -> Union[list[Image.Image], list[np.ndarray]]:
         raise NotImplementedError("Subclasses must implement this method")
 
 
 class ConvertToRGB(Transform):
-    def __call__(self, images: List[Image.Image]) -> List[Image.Image]:
+    def __call__(self, images: list[Image.Image]) -> list[Image.Image]:
         return [convert_to_rgb(image=image) for image in images]
 
 
 class CenterCrop(Transform):
-    def __init__(self, size: Tuple[int, int]):
+    def __init__(self, size: tuple[int, int]):
         self.size = size
 
-    def __call__(self, images: List[Image.Image]) -> List[np.ndarray]:
+    def __call__(self, images: list[Image.Image]) -> list[np.ndarray]:
         return [center_crop(image=image, size=self.size) for image in images]
 
 
 class Normalize(Transform):
-    def __init__(self, mean: Union[float, List[float]], std: Union[float, List[float]]):
+    def __init__(self, mean: Union[float, list[float]], std: Union[float, list[float]]):
         self.mean = mean
         self.std = std
 
-    def __call__(self, images: List[np.ndarray]) -> List[np.ndarray]:
+    def __call__(self, images: list[np.ndarray]) -> list[np.ndarray]:
         return [normalize(image, mean=self.mean, std=self.std) for image in images]
 
 
 class Resize(Transform):
     def __init__(
         self,
-        size: Union[int, Tuple[int, int]],
+        size: Union[int, tuple[int, int]],
         resample: Image.Resampling = Image.Resampling.BICUBIC,
     ):
         self.size = size
         self.resample = resample
 
-    def __call__(self, images: List[Image.Image]) -> List[Image.Image]:
+
+    def __call__(self, images: list[Image.Image]) -> list[Image.Image]:
         return [resize(image, size=self.size, resample=self.resample) for image in images]
 
 
@@ -57,31 +58,31 @@ class Rescale(Transform):
     def __init__(self, scale: float = 1 / 255):
         self.scale = scale
 
-    def __call__(self, images: List[np.ndarray]) -> List[np.ndarray]:
+    def __call__(self, images: list[np.ndarray]) -> list[np.ndarray]:
         return [rescale(image, scale=self.scale) for image in images]
 
 
 class PILtoNDarray(Transform):
-    def __call__(self, images: List[Union[Image.Image, np.ndarray]]) -> List[np.ndarray]:
+    def __call__(self, images: list[Union[Image.Image, np.ndarray]]) -> list[np.ndarray]:
         return [pil2ndarray(image) for image in images]
 
 
 class Compose:
-    def __init__(self, transforms: List[Transform]):
+    def __init__(self, transforms: list[Transform]):
         self.transforms = transforms
 
     def __call__(
-        self, images: Union[List[Image.Image], List[np.ndarray]]
-    ) -> Union[List[np.ndarray], List[Image.Image]]:
+        self, images: Union[list[Image.Image], list[np.ndarray]]
+    ) -> Union[list[np.ndarray], list[Image.Image]]:
         for transform in self.transforms:
             images = transform(images)
         return images
 
     @classmethod
-    def from_config(cls, config: Dict[str, Any]) -> "Compose":
+    def from_config(cls, config: dict[str, Any]) -> "Compose":
         """Creates processor from a config dict.
         Args:
-            config (Dict[str, Any]): Configuration dictionary.
+            config (dict[str, Any]): Configuration dictionary.
 
                 Valid keys:
                     - do_resize
@@ -110,11 +111,11 @@ class Compose:
         return cls(transforms=transforms)
 
     @staticmethod
-    def _get_convert_to_rgb(transforms: List[Transform], config: Dict[str, Any]):
+    def _get_convert_to_rgb(transforms: list[Transform], config: dict[str, Any]):
         transforms.append(ConvertToRGB())
 
     @staticmethod
-    def _get_resize(transforms: List[Transform], config: Dict[str, Any]):
+    def _get_resize(transforms: list[Transform], config: dict[str, Any]):
         mode = config.get("image_processor_type", "CLIPImageProcessor")
         if mode == "CLIPImageProcessor" or mode == "SiglipImageProcessor":
             if config.get("do_resize", False):
@@ -159,7 +160,7 @@ class Compose:
                 )
 
     @staticmethod
-    def _get_center_crop(transforms: List[Transform], config: Dict[str, Any]):
+    def _get_center_crop(transforms: list[Transform], config: dict[str, Any]):
         mode = config.get("image_processor_type", "CLIPImageProcessor")
         if mode == "CLIPImageProcessor" or mode == "SiglipImageProcessor":
             if config.get("do_center_crop", False):
@@ -177,16 +178,16 @@ class Compose:
             raise ValueError(f"Preprocessor {mode} is not supported")
 
     @staticmethod
-    def _get_pil2ndarray(transforms: List[Transform], config: Dict[str, Any]):
+    def _get_pil2ndarray(transforms: list[Transform], config: dict[str, Any]):
         transforms.append(PILtoNDarray())
 
     @staticmethod
-    def _get_rescale(transforms: List[Transform], config: Dict[str, Any]):
+    def _get_rescale(transforms: list[Transform], config: dict[str, Any]):
         if config.get("do_rescale", True):
             rescale_factor = config.get("rescale_factor", 1 / 255)
             transforms.append(Rescale(scale=rescale_factor))
 
     @staticmethod
-    def _get_normalize(transforms: List[Transform], config: Dict[str, Any]):
+    def _get_normalize(transforms: list[Transform], config: dict[str, Any]):
         if config.get("do_normalize", False):
             transforms.append(Normalize(mean=config["image_mean"], std=config["image_std"]))

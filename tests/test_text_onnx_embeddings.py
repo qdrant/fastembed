@@ -1,10 +1,10 @@
 import os
-import shutil
 
 import numpy as np
 import pytest
 
 from fastembed.text.text_embedding import TextEmbedding
+from tests.utils import delete_model_cache
 
 CANONICAL_VECTOR_VALUES = {
     "BAAI/bge-small-en": np.array([-0.0232, -0.0255, 0.0174, -0.0639, -0.0006]),
@@ -41,6 +41,8 @@ CANONICAL_VECTOR_VALUES = {
     "jinaai/jina-embeddings-v2-base-en": np.array([-0.0332, -0.0509, 0.0287, -0.0043, -0.0077]),
     "jinaai/jina-embeddings-v2-base-de": np.array([-0.0085, 0.0417, 0.0342, 0.0309, -0.0149]),
     "jinaai/jina-embeddings-v2-base-code": np.array([0.0145, -0.0164, 0.0136, -0.0170, 0.0734]),
+    "jinaai/jina-embeddings-v2-base-zh": np.array([0.0381, 0.0286, -0.0231, 0.0052, -0.0151]),
+    "jinaai/jina-embeddings-v2-base-es": np.array([-0.0108, -0.0092, -0.0373, 0.0171, -0.0301]),
     "nomic-ai/nomic-embed-text-v1": np.array([0.3708, 0.2031, -0.3406, -0.2114, -0.3230]),
     "nomic-ai/nomic-embed-text-v1.5": np.array(
         [-0.15407836, -0.03053198, -3.9138033, 0.1910364, 0.13224715]
@@ -85,7 +87,7 @@ def test_embedding():
             embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3
         ), model_desc["model"]
         if is_ci:
-            shutil.rmtree(model.model._model_dir)
+            delete_model_cache(model.model._model_dir)
 
 
 @pytest.mark.parametrize(
@@ -102,7 +104,7 @@ def test_batch_embedding(n_dims, model_name):
 
     assert embeddings.shape == (200, n_dims)
     if is_ci:
-        shutil.rmtree(model.model._model_dir)
+        delete_model_cache(model.model._model_dir)
 
 
 @pytest.mark.parametrize(
@@ -128,7 +130,7 @@ def test_parallel_processing(n_dims, model_name):
     assert np.allclose(embeddings, embeddings_3, atol=1e-3)
 
     if is_ci:
-        shutil.rmtree(model.model._model_dir)
+        delete_model_cache(model.model._model_dir)
 
 
 @pytest.mark.parametrize(
@@ -136,6 +138,7 @@ def test_parallel_processing(n_dims, model_name):
     ["BAAI/bge-small-en-v1.5"],
 )
 def test_lazy_load(model_name):
+    is_ci = os.getenv("CI")
     model = TextEmbedding(model_name=model_name, lazy_load=True)
     assert not hasattr(model.model, "model")
     docs = ["hello world", "flag embedding"]
@@ -147,3 +150,6 @@ def test_lazy_load(model_name):
 
     model = TextEmbedding(model_name=model_name, lazy_load=True)
     list(model.passage_embed(docs))
+
+    if is_ci:
+        delete_model_cache(model.model._model_dir)

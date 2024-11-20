@@ -1,7 +1,7 @@
 import os
 import sys
 from PIL import Image
-from typing import Any, Dict, Iterable, Tuple, Union
+from typing import Any, Iterable, Union
 
 if sys.version_info >= (3, 10):
     from typing import TypeAlias
@@ -13,4 +13,4 @@ PathInput: TypeAlias = Union[str, os.PathLike]
 PilInput: TypeAlias = Union[Image.Image, Iterable[Image.Image]]
 ImageInput: TypeAlias = Union[PathInput, Iterable[PathInput], PilInput]
 
-OnnxProvider: TypeAlias = Union[str, Tuple[str, Dict[Any, Any]]]
+OnnxProvider: TypeAlias = Union[str, tuple[str, dict[Any, Any]]]

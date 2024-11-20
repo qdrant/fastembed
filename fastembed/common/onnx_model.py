@@ -1,17 +1,7 @@
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
-from typing import (
-    Any,
-    Dict,
-    Generic,
-    Iterable,
-    Optional,
-    Sequence,
-    Tuple,
-    Type,
-    TypeVar,
-)
+from typing import Any, Generic, Iterable, Optional, Sequence, Type, TypeVar
 
 import numpy as np
 import onnxruntime as ort
@@ -43,8 +33,8 @@ class OnnxModel(Generic[T]):
         self.tokenizer = None
 
     def _preprocess_onnx_input(
-        self, onnx_input: Dict[str, np.ndarray], **kwargs
-    ) -> Dict[str, np.ndarray]:
+        self, onnx_input: dict[str, np.ndarray], **kwargs
+    ) -> dict[str, np.ndarray]:
         """
         Preprocess the onnx input.
         """
@@ -131,5 +121,5 @@ class EmbeddingWorker(Worker):
     def start(cls, model_name: str, cache_dir: str, **kwargs: Any) -> "EmbeddingWorker":
         return cls(model_name=model_name, cache_dir=cache_dir, **kwargs)
 
-    def process(self, items: Iterable[Tuple[int, Any]]) -> Iterable[Tuple[int, Any]]:
+    def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, Any]]:
         raise NotImplementedError("Subclasses must implement this method")

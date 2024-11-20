@@ -14,7 +14,6 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - '3.8.x'
           - '3.9.x'
           - '3.10.x'
           - '3.11.x'
@@ -42,4 +41,4 @@ jobs:
 
       - name: Run pytest
         run: |
-          poetry run pytest
+          poetry run pytest 

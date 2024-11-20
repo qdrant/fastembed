@@ -1,5 +1,4 @@
 import os
-import shutil
 
 import pytest
 import numpy as np
@@ -7,6 +6,7 @@ import numpy as np
 from fastembed.late_interaction.late_interaction_text_embedding import (
     LateInteractionTextEmbedding,
 )
+from tests.utils import delete_model_cache
 
 # vectors are abridged and rounded for brevity
 CANONICAL_COLUMN_VALUES = {
@@ -167,7 +167,7 @@ def test_batch_embedding():
             assert np.allclose(value[:, :abridged_dim], expected_result, atol=2e-3)
 
         if is_ci:
-            shutil.rmtree(model.model._model_dir)
+            delete_model_cache(model.model._model_dir)
 
 
 def test_single_embedding():
@@ -182,7 +182,7 @@ def test_single_embedding():
         assert np.allclose(result[:, :abridged_dim], expected_result, atol=2e-3)
 
         if is_ci:
-            shutil.rmtree(model.model._model_dir)
+            delete_model_cache(model.model._model_dir)
 
 
 def test_single_embedding_query():
@@ -197,7 +197,7 @@ def test_single_embedding_query():
         assert np.allclose(result[:, :abridged_dim], expected_result, atol=2e-3)
 
         if is_ci:
-            shutil.rmtree(model.model._model_dir)
+            delete_model_cache(model.model._model_dir)
 
 
 def test_parallel_processing():
@@ -219,7 +219,7 @@ def test_parallel_processing():
     assert np.allclose(embeddings, embeddings_3, atol=1e-3)
 
     if is_ci:
-        shutil.rmtree(model.model._model_dir)
+        delete_model_cache(model.model._model_dir)
 
 
 @pytest.mark.parametrize(
@@ -227,6 +227,8 @@ def test_parallel_processing():
     ["colbert-ir/colbertv2.0"],
 )
 def test_lazy_load(model_name):
+    is_ci = os.getenv("CI")
+
     model = LateInteractionTextEmbedding(model_name=model_name, lazy_load=True)
     assert not hasattr(model.model, "model")
 
@@ -239,3 +241,6 @@ def test_lazy_load(model_name):
 
     model = LateInteractionTextEmbedding(model_name=model_name, lazy_load=True)
     list(model.passage_embed(docs))
+
+    if is_ci:
+        delete_model_cache(model.model._model_dir)

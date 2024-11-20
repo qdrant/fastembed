@@ -1,4 +1,4 @@
-from typing import List, Iterable, Dict, Any, Sequence, Optional
+from typing import Iterable, Any, Sequence, Optional
 
 from loguru import logger
 
@@ -38,16 +38,46 @@ supported_onnx_models = [
         "description": "BGE reranker base model for cross-encoder re-ranking.",
         "license": "mit",
     },
+    {
+        "model": "jinaai/jina-reranker-v1-tiny-en",
+        "size_in_GB": 0.13,
+        "sources": {
+            "hf": "jinaai/jina-reranker-v1-tiny-en",
+        },
+        "model_file": "onnx/model.onnx",
+        "description": "Designed for blazing-fast re-ranking with 8K context length and fewer parameters than jina-reranker-v1-turbo-en.",
+        "license": "apache-2.0",
+    },
+    {
+        "model": "jinaai/jina-reranker-v1-turbo-en",
+        "size_in_GB": 0.15,
+        "sources": {
+            "hf": "jinaai/jina-reranker-v1-turbo-en",
+        },
+        "model_file": "onnx/model.onnx",
+        "description": "Designed for blazing-fast re-ranking with 8K context length.",
+        "license": "apache-2.0",
+    },
+    {
+        "model": "jinaai/jina-reranker-v2-base-multilingual",
+        "size_in_GB": 1.11,
+        "sources": {
+            "hf": "jinaai/jina-reranker-v2-base-multilingual",
+        },
+        "model_file": "onnx/model.onnx",
+        "description": "A multi-lingual reranker model for cross-encoder re-ranking with 1K context length and sliding window",
+        "license": "cc-by-nc-4.0",
+    },
 ]
 
 
 class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
     @classmethod
-    def list_supported_models(cls) -> List[Dict[str, Any]]:
+    def list_supported_models(cls) -> list[dict[str, Any]]:
         """Lists the supported models.
 
         Returns:
-            List[Dict[str, Any]]: A list of dictionaries containing the model information.
+            list[dict[str, Any]]: A list of dictionaries containing the model information.
         """
         return supported_onnx_models
 
@@ -58,7 +88,7 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
         threads: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
         cuda: bool = False,
-        device_ids: Optional[List[int]] = None,
+        device_ids: Optional[list[int]] = None,
         lazy_load: bool = False,
         device_id: Optional[int] = None,
         **kwargs,
@@ -74,7 +104,7 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
                 Mutually exclusive with the `cuda` and `device_ids` arguments. Defaults to None.
             cuda (bool, optional): Whether to use cuda for inference. Mutually exclusive with `providers`
                 Defaults to False.
-            device_ids (Optional[List[int]], optional): The list of device ids to use for data parallel processing in
+            device_ids (Optional[list[int]], optional): The list of device ids to use for data parallel processing in
                 workers. Should be used with `cuda=True`, mutually exclusive with `providers`. Defaults to None.
             lazy_load (bool, optional): Whether to load the model during class initialization or on demand.
                 Should be set to True when using multiple-gpu and parallel encoding. Defaults to False.

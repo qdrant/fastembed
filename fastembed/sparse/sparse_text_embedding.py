@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Type, Union
+from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 from fastembed.common import OnnxProvider
 from fastembed.sparse.bm25 import Bm25
@@ -12,15 +12,15 @@ import warnings
 
 
 class SparseTextEmbedding(SparseTextEmbeddingBase):
-    EMBEDDINGS_REGISTRY: List[Type[SparseTextEmbeddingBase]] = [SpladePP, Bm42, Bm25]
+    EMBEDDINGS_REGISTRY: list[Type[SparseTextEmbeddingBase]] = [SpladePP, Bm42, Bm25]
 
     @classmethod
-    def list_supported_models(cls) -> List[Dict[str, Any]]:
+    def list_supported_models(cls) -> list[dict[str, Any]]:
         """
         Lists the supported models.
 
         Returns:
-            List[Dict[str, Any]]: A list of dictionaries containing the model information.
+            list[dict[str, Any]]: A list of dictionaries containing the model information.
 
             Example:
                 ```
@@ -50,7 +50,7 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
         threads: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
         cuda: bool = False,
-        device_ids: Optional[List[int]] = None,
+        device_ids: Optional[list[int]] = None,
         lazy_load: bool = False,
         **kwargs,
     ):

@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Type, Union
+from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
 
@@ -12,7 +12,7 @@ from fastembed.text.text_embedding_base import TextEmbeddingBase
 
 
 class TextEmbedding(TextEmbeddingBase):
-    EMBEDDINGS_REGISTRY: List[Type[TextEmbeddingBase]] = [
+    EMBEDDINGS_REGISTRY: list[Type[TextEmbeddingBase]] = [
         OnnxTextEmbedding,
         E5OnnxEmbedding,
         CLIPOnnxEmbedding,
@@ -21,12 +21,12 @@ class TextEmbedding(TextEmbeddingBase):
     ]
 
     @classmethod
-    def list_supported_models(cls) -> List[Dict[str, Any]]:
+    def list_supported_models(cls) -> list[dict[str, Any]]:
         """
         Lists the supported models.
 
         Returns:
-            List[Dict[str, Any]]: A list of dictionaries containing the model information.
+            list[dict[str, Any]]: A list of dictionaries containing the model information.
 
             Example:
                 ```
@@ -57,7 +57,7 @@ class TextEmbedding(TextEmbeddingBase):
         threads: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
         cuda: bool = False,
-        device_ids: Optional[List[int]] = None,
+        device_ids: Optional[list[int]] = None,
         lazy_load: bool = False,
         **kwargs,
     ):

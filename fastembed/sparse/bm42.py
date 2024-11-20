@@ -1,7 +1,7 @@
 import math
 import string
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Type, Union
+from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import mmh3
 import numpy as np
@@ -63,7 +63,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         providers: Optional[Sequence[OnnxProvider]] = None,
         alpha: float = 0.5,
         cuda: bool = False,
-        device_ids: Optional[List[int]] = None,
+        device_ids: Optional[list[int]] = None,
         lazy_load: bool = False,
         device_id: Optional[int] = None,
         **kwargs,
@@ -81,7 +81,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
                 It is recommended to only change this parameter based on training data for a specific dataset.
             cuda (bool, optional): Whether to use cuda for inference. Mutually exclusive with `providers`
                 Defaults to False.
-            device_ids (Optional[List[int]], optional): The list of device ids to use for data parallel processing in
+            device_ids (Optional[list[int]], optional): The list of device ids to use for data parallel processing in
                 workers. Should be used with `cuda=True`, mutually exclusive with `providers`. Defaults to None.
             lazy_load (bool, optional): Whether to load the model during class initialization or on demand.
                 Should be set to True when using multiple-gpu and parallel encoding. Defaults to False.
@@ -141,7 +141,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         self.special_tokens_ids = set(self.special_token_to_id.values())
         self.stopwords = set(self._load_stopwords(self._model_dir))
 
-    def _filter_pair_tokens(self, tokens: List[Tuple[str, Any]]) -> List[Tuple[str, Any]]:
+    def _filter_pair_tokens(self, tokens: list[tuple[str, Any]]) -> list[tuple[str, Any]]:
         result = []
         for token, value in tokens:
             if token in self.stopwords or token in self.punctuation:
@@ -149,7 +149,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             result.append((token, value))
         return result
 
-    def _stem_pair_tokens(self, tokens: List[Tuple[str, Any]]) -> List[Tuple[str, Any]]:
+    def _stem_pair_tokens(self, tokens: list[tuple[str, Any]]) -> list[tuple[str, Any]]:
         result = []
         for token, value in tokens:
             processed_token = self.stemmer.stem_word(token)
@@ -158,8 +158,8 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
     @classmethod
     def _aggregate_weights(
-        cls, tokens: List[Tuple[str, List[int]]], weights: List[float]
-    ) -> List[Tuple[str, float]]:
+        cls, tokens: list[tuple[str, list[int]]], weights: list[float]
+    ) -> list[tuple[str, float]]:
         result = []
         for token, idxs in tokens:
             sum_weight = sum(weights[idx] for idx in idxs)
@@ -167,8 +167,8 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         return result
 
     def _reconstruct_bpe(
-        self, bpe_tokens: Iterable[Tuple[int, str]]
-    ) -> List[Tuple[str, List[int]]]:
+        self, bpe_tokens: Iterable[tuple[int, str]]
+    ) -> list[tuple[str, list[int]]]:
         result = []
         acc = ""
         acc_idx = []
@@ -195,7 +195,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
         return result
 
-    def _rescore_vector(self, vector: Dict[str, float]) -> Dict[int, float]:
+    def _rescore_vector(self, vector: dict[str, float]) -> dict[int, float]:
         """
         Orders all tokens in the vector by their importance and generates a new score based on the importance order.
         So that the scoring doesn't depend on absolute values assigned by the model, but on the relative importance.
@@ -246,16 +246,16 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             yield SparseEmbedding.from_dict(rescored)
 
     @classmethod
-    def list_supported_models(cls) -> List[Dict[str, Any]]:
+    def list_supported_models(cls) -> list[dict[str, Any]]:
         """Lists the supported models.
 
         Returns:
-            List[Dict[str, Any]]: A list of dictionaries containing the model information.
+            list[dict[str, Any]]: A list of dictionaries containing the model information.
         """
         return supported_bm42_models
 
     @classmethod
-    def _load_stopwords(cls, model_dir: Path) -> List[str]:
+    def _load_stopwords(cls, model_dir: Path) -> list[str]:
         stopwords_path = model_dir / "stopwords.txt"
         if not stopwords_path.exists():
             return []
@@ -298,7 +298,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         )
 
     @classmethod
-    def _query_rehash(cls, tokens: Iterable[str]) -> Dict[int, float]:
+    def _query_rehash(cls, tokens: Iterable[str]) -> dict[int, float]:
         result = {}
         for token in tokens:
             token_id = abs(mmh3.hash(token))

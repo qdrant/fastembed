@@ -11,7 +11,7 @@ repository = "https://github.com/qdrant/fastembed"
 keywords = ["vector", "embedding", "neural", "search", "qdrant", "sentence-transformers"]
 
 [tool.poetry.dependencies]
-python = ">=3.8.0,<3.13"
+python = ">=3.9.0,<3.13"
 onnx = "^1.15.0"
 onnxruntime = ">=1.17.0,<1.20.0"
 tqdm = "^4.66"
@@ -20,8 +20,8 @@ tokenizers = ">=0.15,<1.0"
 huggingface-hub = ">=0.20,<1.0"
 loguru = "^0.7.2"
 numpy = [
-    { version = ">=1.21, <2", python = "<3.12" },
-    { version = ">=1.26, <2", python = ">=3.12" }
+    { version = ">=1.21", python = "<3.12" },
+    { version = ">=1.26", python = ">=3.12" }
 ]
 pillow = "^10.3.0"
 mmh3 = "^4.1.0"
@@ -31,7 +31,7 @@ py-rust-stemmers = "^0.1.0"
 pytest = "^7.4.2"
 ruff = ">=0.3.1,<1.0"
 notebook = ">=7.0.2"
-pre-commit = {version = "^3.6.2", python = ">=3.9,<3.12" }
+pre-commit = "^3.6.2"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs-material = "^9.5.10"
