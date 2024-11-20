@@ -72,19 +72,7 @@ CANONICAL_VECTOR_VALUES = {
 def test_embedding():
     is_ci = os.getenv("CI")
 
-    for model_desc in [
-        {
-            "model": "jinaai/jina-clip-v1",
-            "dim": 768,
-            "description": "Text embeddings, Multimodal (text&image), English, 77 input tokens truncation, Prefixes for queries/documents: not necessary, 2024 year",
-            "license": "apache-2.0",
-            "size_in_GB": 0.55,
-            "sources": {
-                "hf": "jinaai/jina-clip-v1",
-            },
-            "model_file": "onnx/text_model.onnx",
-        }
-    ]:
+    for model_desc in TextEmbedding.list_supported_models():
         if not is_ci and model_desc["size_in_GB"] > 1:
             continue
 
@@ -104,66 +92,66 @@ def test_embedding():
             delete_model_cache(model.model._model_dir)
 
 
-# @pytest.mark.parametrize(
-#     "n_dims,model_name",
-#     [(384, "BAAI/bge-small-en-v1.5"), (768, "jinaai/jina-embeddings-v2-base-en")],
-# )
-# def test_batch_embedding(n_dims, model_name):
-#     is_ci = os.getenv("CI")
-#     model = TextEmbedding(model_name=model_name)
+@pytest.mark.parametrize(
+    "n_dims,model_name",
+    [(384, "BAAI/bge-small-en-v1.5"), (768, "jinaai/jina-embeddings-v2-base-en")],
+)
+def test_batch_embedding(n_dims, model_name):
+    is_ci = os.getenv("CI")
+    model = TextEmbedding(model_name=model_name)
 
-#     docs = ["hello world", "flag embedding"] * 100
-#     embeddings = list(model.embed(docs, batch_size=10))
-#     embeddings = np.stack(embeddings, axis=0)
+    docs = ["hello world", "flag embedding"] * 100
+    embeddings = list(model.embed(docs, batch_size=10))
+    embeddings = np.stack(embeddings, axis=0)
 
-#     assert embeddings.shape == (200, n_dims)
-#     if is_ci:
-#         delete_model_cache(model.model._model_dir)
-
-
-# @pytest.mark.parametrize(
-#     "n_dims,model_name",
-#     [(384, "BAAI/bge-small-en-v1.5"), (768, "jinaai/jina-embeddings-v2-base-en")],
-# )
-# def test_parallel_processing(n_dims, model_name):
-#     is_ci = os.getenv("CI")
-#     model = TextEmbedding(model_name=model_name)
-
-#     docs = ["hello world", "flag embedding"] * 100
-#     embeddings = list(model.embed(docs, batch_size=10, parallel=2))
-#     embeddings = np.stack(embeddings, axis=0)
-
-#     embeddings_2 = list(model.embed(docs, batch_size=10, parallel=None))
-#     embeddings_2 = np.stack(embeddings_2, axis=0)
-
-#     embeddings_3 = list(model.embed(docs, batch_size=10, parallel=0))
-#     embeddings_3 = np.stack(embeddings_3, axis=0)
-
-#     assert embeddings.shape == (200, n_dims)
-#     assert np.allclose(embeddings, embeddings_2, atol=1e-3)
-#     assert np.allclose(embeddings, embeddings_3, atol=1e-3)
-
-#     if is_ci:
-#         delete_model_cache(model.model._model_dir)
+    assert embeddings.shape == (200, n_dims)
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
 
 
-# @pytest.mark.parametrize(
-#     "model_name",
-#     ["BAAI/bge-small-en-v1.5"],
-# )
-# def test_lazy_load(model_name):
-#     is_ci = os.getenv("CI")
-#     model = TextEmbedding(model_name=model_name, lazy_load=True)
-#     assert not hasattr(model.model, "model")
-#     docs = ["hello world", "flag embedding"]
-#     list(model.embed(docs))
-#     assert hasattr(model.model, "model")
+@pytest.mark.parametrize(
+    "n_dims,model_name",
+    [(384, "BAAI/bge-small-en-v1.5"), (768, "jinaai/jina-embeddings-v2-base-en")],
+)
+def test_parallel_processing(n_dims, model_name):
+    is_ci = os.getenv("CI")
+    model = TextEmbedding(model_name=model_name)
 
-#     model = TextEmbedding(model_name=model_name, lazy_load=True)
-#     list(model.query_embed(docs))
+    docs = ["hello world", "flag embedding"] * 100
+    embeddings = list(model.embed(docs, batch_size=10, parallel=2))
+    embeddings = np.stack(embeddings, axis=0)
 
-#     model = TextEmbedding(model_name=model_name, lazy_load=True)
-#     list(model.passage_embed(docs))
+    embeddings_2 = list(model.embed(docs, batch_size=10, parallel=None))
+    embeddings_2 = np.stack(embeddings_2, axis=0)
 
-#     if is_ci:
-#         delete_model_cache(model.model._model_dir)
+    embeddings_3 = list(model.embed(docs, batch_size=10, parallel=0))
+    embeddings_3 = np.stack(embeddings_3, axis=0)
+
+    assert embeddings.shape == (200, n_dims)
+    assert np.allclose(embeddings, embeddings_2, atol=1e-3)
+    assert np.allclose(embeddings, embeddings_3, atol=1e-3)
+
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
+
+
+@pytest.mark.parametrize(
+    "model_name",
+    ["BAAI/bge-small-en-v1.5"],
+)
+def test_lazy_load(model_name):
+    is_ci = os.getenv("CI")
+    model = TextEmbedding(model_name=model_name, lazy_load=True)
+    assert not hasattr(model.model, "model")
+    docs = ["hello world", "flag embedding"]
+    list(model.embed(docs))
+    assert hasattr(model.model, "model")
+
+    model = TextEmbedding(model_name=model_name, lazy_load=True)
+    list(model.query_embed(docs))
+
+    model = TextEmbedding(model_name=model_name, lazy_load=True)
+    list(model.passage_embed(docs))
+
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
