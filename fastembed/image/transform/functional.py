@@ -1,7 +1,7 @@
 from typing import Sized, Union, Optional
 
 import numpy as np
-from PIL import Image, ImageOps
+from PIL import Image
 
 
 def convert_to_rgb(image: Image.Image) -> Image.Image:
@@ -62,8 +62,8 @@ def center_crop(
 
 def normalize(
     image: np.ndarray,
-    mean=Union[float, np.ndarray],
-    std=Union[float, np.ndarray],
+    mean: Union[float, np.ndarray],
+    std: Union[float, np.ndarray],
 ) -> np.ndarray:
     if not isinstance(image, np.ndarray):
         raise ValueError("image must be a numpy array")
@@ -96,10 +96,10 @@ def normalize(
 
 
 def resize(
-    image: Image,
+    image: Image.Image,
     size: Union[int, tuple[int, int]],
-    resample: Image.Resampling = Image.Resampling.BILINEAR,
-) -> Image:
+    resample: Union[int, Image.Resampling] = Image.Resampling.BILINEAR,
+) -> Image.Image:
     if isinstance(size, tuple):
         return image.resize(size, resample)
 
@@ -124,16 +124,16 @@ def pil2ndarray(image: Union[Image.Image, np.ndarray]):
     return image
 
 
-def pad2square(
-    image: Image,
+def resize2square(
+    image: Image.Image,
+    size: int,
     fill_color: Optional[Union[str, int, tuple[int, ...]]] = None,
-    resample: Union[Image.Resampling, int] = Image.Resampling.BILINEAR,
-):
-    width, height = image.size
-    max_dim = max(width, height)
-    return ImageOps.pad(
-        image=image,
-        size=(max_dim, max_dim),
-        color=fill_color,
-        method=resample,
-    )
+    resample: Union[Image.Resampling, int] = Image.Resampling.BICUBIC,
+) -> Image.Image:
+    resized_image = resize(image=image, size=size, resample=resample)
+
+    new_image = Image.new(mode="RGB", size=(size, size), color=fill_color)
+    left = (size - resized_image.size[0]) // 2
+    top = (size - resized_image.size[1]) // 2
+    new_image.paste(resized_image, (left, top))
+    return new_image
