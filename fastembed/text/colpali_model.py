@@ -31,6 +31,7 @@ supported_onnx_models = [
 class ColpaliTextModel(OnnxTextEmbedding):
     query_prefix = "Query: "
     bos_token = "<s>"
+    pad_token = "<pad>"
 
     def _preprocess_onnx_input(
         self, onnx_input: Dict[str, np.ndarray], **kwargs
@@ -59,7 +60,7 @@ class ColpaliTextModel(OnnxTextEmbedding):
         texts_query: List[str] = []
 
         for query in documents:
-            query = self.bos_token + self.query_prefix + query
+            query = self.bos_token + self.query_prefix + query + self.pad_token * 10
             query += "\n"
 
             texts_query.append(query)
@@ -71,12 +72,14 @@ class ColpaliTextModel(OnnxTextEmbedding):
         **kwargs,
     ) -> OnnxOutputContext:
         documents = self._preprocess_queries(documents)
+        self.tokenizer.enable_truncation(max_length=10000)
         encoded = self.tokenize(documents, **kwargs)
-        input_ids = np.array([e.ids for e in encoded])
+        input_ids = np.array([[2, 9413] + e.ids[2:] for e in encoded])
+
         attention_mask = np.array([e.attention_mask for e in encoded])
         onnx_input = {"input_ids": np.array(input_ids, dtype=np.int64)}
         onnx_input = self._preprocess_onnx_input(onnx_input, **kwargs)
-        print(onnx_input)
+        onnx_input["attention_mask"] = attention_mask
         model_output = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)
         return OnnxOutputContext(
             model_output=model_output[0],

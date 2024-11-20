@@ -9,7 +9,7 @@ from fastembed.image.colpali_model import ColpaliImageModel
 
 
 class ImageEmbedding(ImageEmbeddingBase):
-    EMBEDDINGS_REGISTRY: List[Type[ImageEmbeddingBase]] = [OnnxImageEmbedding, ColpaliImageModel]
+    EMBEDDINGS_REGISTRY: list[Type[ImageEmbeddingBase]] = [OnnxImageEmbedding, ColpaliImageModel]
 
     @classmethod
     def list_supported_models(cls) -> list[dict[str, Any]]:

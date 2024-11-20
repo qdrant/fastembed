@@ -7,7 +7,6 @@ from fastembed.image.transform.operators import Compose
 
 
 def load_special_tokens(model_dir: Path) -> dict:
-    print(model_dir)
     tokens_map_path = model_dir / "special_tokens_map.json"
     if not tokens_map_path.exists():
         raise ValueError(f"Could not find special_tokens_map.json in {model_dir}")
