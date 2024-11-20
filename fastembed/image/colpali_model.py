@@ -11,7 +11,7 @@ from fastembed.image.onnx_embedding import OnnxImageEmbedding
 supported_onnx_models = [
     {
         "model": "akshayballal/colpali-v1.2-merged",
-        "dim": 128,
+        "dim": (1030, 128),
         "description": "",
         "license": "mit",
         "size_in_GB": 6.08,
@@ -62,5 +62,5 @@ class ColpaliImageModel(OnnxImageEmbedding):
         onnx_input = self._preprocess_onnx_input(onnx_input)
 
         model_output = self.model.run(None, onnx_input)
-        embeddings = model_output[0].reshape(len(images), -1, supported_onnx_models[0]["dim"])
+        embeddings = model_output[0].reshape(len(images), *supported_onnx_models[0]["dim"])
         return OnnxOutputContext(model_output=embeddings)

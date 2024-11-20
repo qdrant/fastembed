@@ -64,6 +64,15 @@ CANONICAL_VECTOR_VALUES = {
     ),
     "snowflake/snowflake-arctic-embed-l": np.array([0.0189, -0.0673, 0.0183, 0.0124, 0.0146]),
     "Qdrant/clip-ViT-B-32-text": np.array([0.0083, 0.0103, -0.0138, 0.0199, -0.0069]),
+    "akshayballal/colpali-v1.2-merged": [
+        0.1581,
+        -0.03748,
+        0.09265,
+        -0.0002161,
+        0.0762,
+        0.02055,
+        0.09937,
+    ],
 }
 
 
@@ -80,12 +89,19 @@ def test_embedding():
         docs = ["hello world", "flag embedding"]
         embeddings = list(model.embed(docs))
         embeddings = np.stack(embeddings, axis=0)
-        assert embeddings.shape == (2, dim)
 
         canonical_vector = CANONICAL_VECTOR_VALUES[model_desc["model"]]
-        assert np.allclose(
-            embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3
-        ), model_desc["model"]
+
+        if isinstance(dim, tuple):
+            assert embeddings.shape == (len(docs), *dim)
+            assert np.allclose(
+                embeddings[0][0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3
+            ), model_desc["model"]
+        else:
+            assert embeddings.shape == (len(docs), dim)
+            assert np.allclose(
+                embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3
+            ), model_desc["model"]
         if is_ci:
             delete_model_cache(model.model._model_dir)
 

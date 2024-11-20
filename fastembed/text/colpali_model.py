@@ -8,7 +8,7 @@ from fastembed.text.onnx_embedding import OnnxTextEmbedding
 supported_onnx_models = [
     {
         "model": "akshayballal/colpali-v1.2-merged",
-        "dim": 128,
+        "dim": (16, 128),
         "description": "",
         "license": "mit",
         "size_in_GB": 6.08,

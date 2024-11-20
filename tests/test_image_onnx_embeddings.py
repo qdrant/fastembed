@@ -21,6 +21,9 @@ CANONICAL_VECTOR_VALUES = {
     "Qdrant/Unicom-ViT-B-32": np.array(
         [0.0418, 0.0550, 0.0003, 0.0253, -0.0185, 0.0016, -0.0368, -0.0402, -0.0891, -0.0186]
     ),
+    "akshayballal/colpali-v1.2-merged": np.array(
+        [0.01533, 0.05118, 0.05948, 0.02583, -0.06128, -0.02682]
+    ),
 }
 
 
@@ -43,13 +46,19 @@ def test_embedding():
         ]
         embeddings = list(model.embed(images))
         embeddings = np.stack(embeddings, axis=0)
-        assert embeddings.shape == (len(images), dim)
 
         canonical_vector = CANONICAL_VECTOR_VALUES[model_desc["model"]]
 
-        assert np.allclose(
-            embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3
-        ), model_desc["model"]
+        if isinstance(dim, tuple):
+            assert embeddings.shape == (len(images), *dim)
+            assert np.allclose(
+                embeddings[0][0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3
+            ), model_desc["model"]
+        else:
+            assert embeddings.shape == (len(images), dim)
+            assert np.allclose(
+                embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3
+            ), model_desc["model"]
 
         assert np.allclose(embeddings[1], embeddings[2]), model_desc["model"]
 
