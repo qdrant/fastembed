@@ -218,8 +218,7 @@ class Compose:
 
     @staticmethod
     def _get_rescale(transforms: list[Transform], config: dict[str, Any]):
-        # mode = config.get("image_processor_type", "CLIPImageProcessor")
-        if config.get("do_rescale", True):  # or (mode == "JinaCLIPImageProcessor"):
+        if config.get("do_rescale", True):
             rescale_factor = config.get("rescale_factor", 1 / 255)
             transforms.append(Rescale(scale=rescale_factor))
 
