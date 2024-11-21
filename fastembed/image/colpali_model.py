@@ -12,7 +12,7 @@ supported_onnx_models = [
     {
         "model": "akshayballal/colpali-v1.2-merged",
         "dim": (1030, 128),
-        "description": "",
+        "description": "Image embeddings, Unimodal (image), Aligned to text latent space via PaliGemma-3B, 512 patches max, 2024.",
         "license": "mit",
         "size_in_GB": 6.08,
         "sources": {

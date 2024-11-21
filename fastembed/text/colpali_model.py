@@ -9,7 +9,7 @@ supported_onnx_models = [
     {
         "model": "akshayballal/colpali-v1.2-merged",
         "dim": (16, 128),
-        "description": "",
+        "description": "Text embeddings, Unimodal (text), Aligned to image latent space, ColBERT-compatible, 512 tokens max, 2024.",
         "license": "mit",
         "size_in_GB": 6.08,
         "sources": {
@@ -19,9 +19,7 @@ supported_onnx_models = [
             "model.onnx_data",
             "tokenizer.json",
             "tokenizer_config.json",
-            "special_tokens_map.json",
             "config.json",
-            "preprocessor_config.json",
         ],
         "model_file": "model.onnx",
     }
