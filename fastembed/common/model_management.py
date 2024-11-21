@@ -7,7 +7,11 @@ from typing import Any, Optional
 
 import requests
 from huggingface_hub import snapshot_download
-from huggingface_hub.utils import RepositoryNotFoundError
+from huggingface_hub.utils import (
+    RepositoryNotFoundError,
+    disable_progress_bars,
+    enable_progress_bars,
+)
 from loguru import logger
 from tqdm import tqdm
 
@@ -93,7 +97,7 @@ class ModelManagement:
     def download_files_from_huggingface(
         cls,
         hf_source_repo: str,
-        cache_dir: Optional[str] = None,
+        cache_dir: str,
         extra_patterns: Optional[list[str]] = None,
         local_files_only: bool = False,
         **kwargs,
@@ -118,6 +122,12 @@ class ModelManagement:
         ]
         if extra_patterns is not None:
             allow_patterns.extend(extra_patterns)
+
+        snapshot_dir = Path(cache_dir) / f"models--{hf_source_repo.replace('/', '--')}"
+        is_cached = snapshot_dir.exists()
+
+        if is_cached:
+            disable_progress_bars()
 
         return snapshot_download(
             repo_id=hf_source_repo,
@@ -265,6 +275,8 @@ class ModelManagement:
                             f"Could not download model from HuggingFace: {e} "
                             "Falling back to other sources."
                         )
+                finally:
+                    enable_progress_bars()
             if url_source or local_files_only:
                 try:
                     return cls.retrieve_model_gcs(
