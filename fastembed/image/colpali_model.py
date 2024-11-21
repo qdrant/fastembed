@@ -25,16 +25,17 @@ supported_onnx_models = [
 
 
 class ColpaliImageModel(OnnxImageEmbedding):
+    empty_text_placeholder = np.array([257152] * 1024 + [2, 50721, 573, 2416, 235265, 108])
+    even_attention_mask = np.array([1] * 1030)
+
     def _preprocess_onnx_input(
         self, onnx_input: Dict[str, np.ndarray], **kwargs
     ) -> Dict[str, np.ndarray]:
-        empty_text_placeholder = np.array([257152] * 1024 + [2, 50721, 573, 2416, 235265, 108])
-        even_attention_mask = np.array([1] * 1030)
         onnx_input["input_ids"] = np.array(
-            [empty_text_placeholder for _ in onnx_input["input_ids"]]
+            [self.empty_text_placeholder for _ in onnx_input["input_ids"]]
         )
         onnx_input["attention_mask"] = np.array(
-            [even_attention_mask for _ in onnx_input["input_ids"]]
+            [self.even_attention_mask for _ in onnx_input["input_ids"]]
         )
         return onnx_input
 

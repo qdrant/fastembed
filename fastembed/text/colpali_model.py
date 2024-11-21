@@ -30,11 +30,13 @@ class ColpaliTextModel(OnnxTextEmbedding):
     query_prefix = "Query: "
     bos_token = "<s>"
     pad_token = "<pad>"
+    query_tokens = [2, 9413]
+    image_placeholder_size = (3, 448, 448)
 
     def _preprocess_onnx_input(
         self, onnx_input: Dict[str, np.ndarray], **kwargs
     ) -> Dict[str, np.ndarray]:
-        empty_image_placeholder = np.zeros((3, 448, 448), dtype=np.float32)
+        empty_image_placeholder = np.zeros(self.image_placeholder_size, dtype=np.float32)
         onnx_input["pixel_values"] = np.array(
             [empty_image_placeholder for _ in onnx_input["input_ids"]]
         )
@@ -72,7 +74,7 @@ class ColpaliTextModel(OnnxTextEmbedding):
         documents = self._preprocess_queries(documents)
         self.tokenizer.enable_truncation(max_length=10000)
         encoded = self.tokenize(documents, **kwargs)
-        input_ids = np.array([[2, 9413] + e.ids[2:] for e in encoded])
+        input_ids = np.array([self.query_tokens + e.ids[2:] for e in encoded])
 
         attention_mask = np.array([e.attention_mask for e in encoded])
         onnx_input = {"input_ids": np.array(input_ids, dtype=np.int64)}
