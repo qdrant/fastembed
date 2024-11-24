@@ -224,10 +224,10 @@ class Compose:
 
     @staticmethod
     def _get_normalize(transforms: list[Transform], config: dict[str, Any]):
-if config.get("do_normalize", False):
-    transforms.append(Normalize(mean=config["image_mean"], std=config["image_std"]))
-elif "mean" in config and "std" in config:
-    transforms.append(Normalize(mean=config["mean"], std=config["std"]))
+        if config.get("do_normalize", False):
+            transforms.append(Normalize(mean=config["image_mean"], std=config["image_std"]))
+        elif "mean" in config and "std" in config:
+            transforms.append(Normalize(mean=config["mean"], std=config["std"]))
 
     @staticmethod
     def _get_resize2square(transforms: list[Transform], config: dict[str, Any]):
