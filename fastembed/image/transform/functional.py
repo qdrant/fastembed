@@ -124,16 +124,15 @@ def pil2ndarray(image: Union[Image.Image, np.ndarray]):
     return image
 
 
-def resize2square(
+def pad2square(
     image: Image.Image,
     size: int,
     fill_color: Optional[Union[str, int, tuple[int, ...]]] = None,
-    resample: Union[Image.Resampling, int] = Image.Resampling.BICUBIC,
 ) -> Image.Image:
-    resized_image = resize(image=image, size=size, resample=resample)
+    height, width = image.height, image.width
 
     new_image = Image.new(mode="RGB", size=(size, size), color=fill_color)
-    left = (size - resized_image.size[0]) // 2
-    top = (size - resized_image.size[1]) // 2
-    new_image.paste(resized_image, (left, top))
+    left = (size - height) // 2
+    top = (size - width) // 2
+    new_image.paste(image, (left, top))
     return new_image

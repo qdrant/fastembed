@@ -10,7 +10,7 @@ from fastembed.image.transform.functional import (
     pil2ndarray,
     rescale,
     resize,
-    resize2square,
+    pad2square,
 )
 
 
@@ -69,23 +69,18 @@ class PILtoNDarray(Transform):
         return [pil2ndarray(image) for image in images]
 
 
-class ResizetoSquare(Transform):
+class PadtoSquare(Transform):
     def __init__(
         self,
         size: int,
         fill_color: Optional[Union[str, int, tuple[int, ...]]] = None,
-        resample: Union[Image.Resampling, int] = Image.Resampling.BICUBIC,
     ):
         self.size = size
         self.fill_color = fill_color
-        self.resample = resample
 
     def __call__(self, images: list[Image.Image]) -> list[Image.Image]:
         return [
-            resize2square(
-                image=image, size=self.size, fill_color=self.fill_color, resample=self.resample
-            )
-            for image in images
+            pad2square(image=image, size=self.size, fill_color=self.fill_color) for image in images
         ]
 
 
@@ -132,7 +127,7 @@ class Compose:
         transforms = []
         cls._get_convert_to_rgb(transforms, config)
         cls._get_resize(transforms, config)
-        cls._get_resize2square(transforms, config)
+        cls._get_pad2square(transforms, config)
         cls._get_center_crop(transforms, config)
         cls._get_pil2ndarray(transforms, config)
         cls._get_rescale(transforms, config)
@@ -188,7 +183,20 @@ class Compose:
                     )
                 )
         elif mode == "JinaCLIPImageProcessor":
-            pass
+            resample = (
+                Compose._interpolation_resolver(config.get("interpolation"))
+                if isinstance(config.get("interpolation"), str)
+                else config.get("interpolation") or Image.Resampling.BICUBIC
+            )
+            if "size" in config:
+                resize_mode = config.get("resize_mode", "shortest")
+                if resize_mode == "shortest":
+                    transforms.append(
+                        Resize(
+                            size=config["size"],
+                            resample=resample,
+                        )
+                    )
         else:
             raise ValueError(f"Preprocessor {mode} is not supported")
 
@@ -230,28 +238,19 @@ class Compose:
             transforms.append(Normalize(mean=config["mean"], std=config["std"]))
 
     @staticmethod
-    def _get_resize2square(transforms: list[Transform], config: dict[str, Any]):
+    def _get_pad2square(transforms: list[Transform], config: dict[str, Any]):
         mode = config.get("image_processor_type", "CLIPImageProcessor")
         if mode == "CLIPImageProcessor":
             pass
         elif mode == "ConvNextFeatureExtractor":
             pass
         elif mode == "JinaCLIPImageProcessor":
-            resample = (
-                Compose._interpolation_resolver(config.get("interpolation"))
-                if isinstance(config.get("interpolation"), str)
-                else config.get("interpolation") or Image.Resampling.BICUBIC
+            transforms.append(
+                PadtoSquare(
+                    size=config["size"],
+                    fill_color=config.get("fill_color", 0),
+                )
             )
-            if "size" in config:
-                resize_mode = config.get("resize_mode", "shortest")
-                if resize_mode == "shortest":
-                    transforms.append(
-                        ResizetoSquare(
-                            size=config["size"],
-                            fill_color=config.get("fill_color", 0),
-                            resample=resample,
-                        )
-                    )
 
     @staticmethod
     def _interpolation_resolver(resample: Optional[str] = None) -> Image.Resampling:
