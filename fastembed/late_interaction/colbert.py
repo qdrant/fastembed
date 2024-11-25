@@ -102,6 +102,9 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         return encoded
 
     def _tokenize_documents(self, documents: list[str]) -> list[Encoding]:
+        current_max_length = self.tokenizer.truncation["max_length"]
+        # ensure not to overflow after adding document-marker
+        self.tokenizer.enable_truncation(max_length=current_max_length - 1)
         encoded = self.tokenizer.encode_batch(documents)
         return encoded
 
