@@ -131,8 +131,17 @@ def pad2square(
 ) -> Image.Image:
     height, width = image.height, image.width
 
+    # if the size is larger than the new canvas
+    if width > size or height > size:
+        left = (width - size) // 2
+        top = (height - size) // 2
+        right = left + size
+        bottom = top + size
+        image = image.crop((left, top, right, bottom))
+        return image
+
     new_image = Image.new(mode="RGB", size=(size, size), color=fill_color)
-    left = (size - height) // 2
-    top = (size - width) // 2
+    left = (size - width) // 2
+    top = (size - height) // 2
     new_image.paste(image, (left, top))
     return new_image
