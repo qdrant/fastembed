@@ -186,7 +186,7 @@ class Compose:
             resample = (
                 Compose._interpolation_resolver(config.get("interpolation"))
                 if isinstance(config.get("interpolation"), str)
-                else config.get("interpolation") or Image.Resampling.BICUBIC
+                else config.get("interpolation", Image.Resampling.BICUBIC)
             )
             if "size" in config:
                 resize_mode = config.get("resize_mode", "shortest")
