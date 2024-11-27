@@ -3,15 +3,14 @@ from typing import Any, Iterable, Optional, Sequence, Type, Union
 import numpy as np
 
 from fastembed.common import OnnxProvider
-from fastembed.late_interaction.colbert import Colbert
-from fastembed.late_interaction.jina_colbert import JinaColbert
-from fastembed.late_interaction.late_interaction_text_embedding_base import (
-    LateInteractionTextEmbeddingBase,
+from fastembed.late_interaction.colpali import ColPali
+from fastembed.late_interaction.late_interaction_image_embedding_base import (
+    LateInteractionImageEmbeddingBase,
 )
 
 
-class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
-    EMBEDDINGS_REGISTRY: list[Type[LateInteractionTextEmbeddingBase]] = [Colbert, JinaColbert]
+class LateInteractionTextEmbedding(LateInteractionImageEmbeddingBase):
+    EMBEDDINGS_REGISTRY: list[Type[LateInteractionImageEmbeddingBase]] = [ColPali]
 
     @classmethod
     def list_supported_models(cls) -> list[dict[str, Any]]:
