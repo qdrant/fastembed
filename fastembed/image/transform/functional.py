@@ -96,7 +96,7 @@ def normalize(
 
 
 def resize(
-    image: Image,
+    image: Image.Image,
     size: Union[int, tuple[int, int]],
     resample: Image.Resampling = Image.Resampling.BILINEAR,
 ) -> Image:

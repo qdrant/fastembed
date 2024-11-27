@@ -121,7 +121,7 @@ class ColPali(
 
     def embed(
         self,
-        inputs: list[Union[str, Image]],
+        inputs: list[Union[str, Image.Image]],
         is_doc: bool = False,
         **kwargs,
     ) -> OnnxOutputContext:
