@@ -1,7 +1,7 @@
-from typing import Any, Iterable, Optional, Sequence, Union
+from typing import Any, Iterable, Optional, Sequence, Union, List, Dict
 
 import numpy as np
-
+from sys import maxsize
 from fastembed.common import OnnxProvider
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.image.onnx_image_model import OnnxImageModel
@@ -18,7 +18,7 @@ from fastembed.common.preprocessor_utils import load_preprocessor
 supported_colpali_models = [
     {
         "model": "akshayballal/colpali-v1.2-merged",
-        "dim": (16, 128),
+        "dim": 128,
         "description": "Text embeddings, Unimodal (text), Aligned to image latent space, ColBERT-compatible, 512 tokens max, 2024.",
         "license": "mit",
         "size_in_GB": 6.08,
@@ -40,7 +40,6 @@ class ColPali(
     LateInteractionImageEmbeddingBase, OnnxTextModel[np.ndarray], OnnxImageModel[np.array]
 ):
     DOCUMENT_MARKER_TOKEN_ID = 2
-
     QUERY_PREFIX = "Query: "
     BOS_TOKEN = "<s>"
     PAD_TOKEN = "<pad>"
@@ -55,25 +54,6 @@ class ColPali(
     ) -> Iterable[np.ndarray]:
         return output.model_output.astype(np.float32)
 
-    def _preprocess_image_input(
-        self, onnx_input: dict[str, np.ndarray], is_doc: bool = True, **kwargs: Any
-    ) -> dict[str, np.ndarray]:
-        if is_doc:
-            onnx_input["input_ids"] = np.array(
-                [self.EMPTY_TEXT_PLACEHOLDER for _ in onnx_input["input_ids"]]
-            )
-            onnx_input["attention_mask"] = np.array(
-                [self.EVEN_ATTENTION_MASK for _ in onnx_input["input_ids"]]
-            )
-            return onnx_input
-        else:
-            empty_image_placeholder = np.zeros(self.image_placeholder_size, dtype=np.float32)
-            onnx_input["pixel_values"] = np.array(
-                [empty_image_placeholder for _ in onnx_input["input_ids"]]
-            )
-            onnx_input["attention_mask"] = np.array([[1] for _ in onnx_input["input_ids"]])
-            return onnx_input
-
     @classmethod
     def list_supported_models(cls) -> list[dict[str, Any]]:
         """Lists the supported models.
@@ -87,24 +67,11 @@ class ColPali(
         texts_query: list[str] = []
 
         for query in documents:
-            query = self.bos_token + self.query_prefix + query + self.pad_token * 10
+            query = self.BOS_TOKEN + self.QUERY_PREFIX + query + self.PAD_TOKEN * 10
             query += "\n"
 
             texts_query.append(query)
         return texts_query
-
-    def _preprocess_query_input(
-        self, inputs: list[Union[str]], **kwargs: Any
-    ) -> dict[str, np.ndarray]:
-        documents = self._preprocess_queries(inputs)
-        encoded = self.tokenize(documents, **kwargs)
-        input_ids = np.array([self.query_tokens + e.ids[2:] for e in encoded])
-
-        attention_mask = np.array([e.attention_mask for e in encoded])
-        onnx_input = {"input_ids": np.array(input_ids, dtype=np.int64)}
-        onnx_input = self._preprocess_onnx_input(onnx_input, **kwargs)
-        onnx_input["attention_mask"] = attention_mask
-        return onnx_input
 
     def _preprocess_images_input(
         self, inputs: list[Union[ImageInput]], **kwargs: Any
@@ -121,21 +88,97 @@ class ColPali(
 
     def embed(
         self,
-        inputs: list[Union[str, Image]],
+        inputs: Union[ImageInput, str],
+        batch_size: int = 16,
+        parallel: Optional[int] = None,
         is_doc: bool = False,
         **kwargs,
     ) -> OnnxOutputContext:
         if is_doc:
-            onnx_input = self._preprocess_query_input(inputs, **kwargs)
+            yield from self._embed_documents(
+                model_name=self.model_name,
+                cache_dir=str(self.cache_dir),
+                documents=inputs,
+                batch_size=batch_size,
+                parallel=parallel,
+                providers=self.providers,
+                cuda=self.cuda,
+                device_ids=self.device_ids,
+                **kwargs,
+            )
         else:
-            onnx_input = self._preprocess_images_input(inputs, **kwargs)
+            # onnx_input = self._preprocess_images_input(inputs, **kwargs)
+            yield from self._embed_images(
+                model_name=self.model_name,
+                cache_dir=str(self.cache_dir),
+                images=inputs,
+                batch_size=batch_size,
+                parallel=parallel,
+                providers=self.providers,
+                cuda=self.cuda,
+                device_ids=self.device_ids,
+                **kwargs,
+            )
 
+    def onnx_embed(self, inputs: Union[ImageInput, str], **kwargs) -> OnnxOutputContext:
+        if isinstance(inputs[0], str):
+            return self.onnx_embed_text(inputs, **kwargs)
+        else:
+            return self.onnx_embed_image(inputs, **kwargs)
+
+    def onnx_embed_image(self, images: List[ImageInput], **kwargs) -> OnnxOutputContext:
+        with contextlib.ExitStack():
+            image_files = [
+                Image.open(image) if not isinstance(image, Image.Image) else image
+                for image in images
+            ]
+            encoded = self.processor(image_files)
+        onnx_input = self._build_onnx_input(encoded)
+        onnx_input = self._preprocess_onnx_image_input(onnx_input)
+        model_output = self.model.run(None, onnx_input)
+        embeddings = model_output[0].reshape(len(images), -1, self.model_description["dim"])
+        return OnnxOutputContext(model_output=embeddings)
+
+    def onnx_embed_text(
+        self,
+        documents: List[str],
+        **kwargs,
+    ) -> OnnxOutputContext:
+        documents = self._preprocess_queries(documents)
+        encoded = self.tokenize(documents, **kwargs)
+        input_ids = np.array([self.QUERY_MARKER_TOKEN_ID + e.ids[2:] for e in encoded])
+
+        attention_mask = np.array([e.attention_mask for e in encoded])
+        onnx_input = {"input_ids": np.array(input_ids, dtype=np.int64)}
+        onnx_input = self._preprocess_onnx_text_input(onnx_input, **kwargs)
+        onnx_input["attention_mask"] = attention_mask
         model_output = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)
         return OnnxOutputContext(
             model_output=model_output[0],
-            attention_mask=onnx_input.get("attention_mask", onnx_input["attention_mask"]),
-            input_ids=onnx_input.get("input_ids", onnx_input["input_ids"]),
+            attention_mask=onnx_input.get("attention_mask", attention_mask),
+            input_ids=onnx_input.get("input_ids", input_ids),
         )
+
+    def _preprocess_onnx_image_input(
+        self, onnx_input: Dict[str, np.ndarray], **kwargs
+    ) -> Dict[str, np.ndarray]:
+        onnx_input["input_ids"] = np.array(
+            [self.EMPTY_TEXT_PLACEHOLDER for _ in onnx_input["input_ids"]]
+        )
+        onnx_input["attention_mask"] = np.array(
+            [self.EVEN_ATTENTION_MASK for _ in onnx_input["input_ids"]]
+        )
+        return onnx_input
+
+    def _preprocess_onnx_text_input(
+        self, onnx_input: Dict[str, np.ndarray], **kwargs
+    ) -> Dict[str, np.ndarray]:
+        empty_image_placeholder = np.zeros(self.image_placeholder_size, dtype=np.float32)
+        onnx_input["pixel_values"] = np.array(
+            [empty_image_placeholder for _ in onnx_input["input_ids"]]
+        )
+        onnx_input["attention_mask"] = np.array([[1] for _ in onnx_input["input_ids"]])
+        return onnx_input
 
     def __init__(
         self,
@@ -166,8 +209,7 @@ class ColPali(
             self.device_id = None
         self.load_onnx_model()
         self.processor = load_preprocessor(model_dir=self._model_dir)
-
-        # self.tokenizer.enable_truncation(max_length=10000)
+        self.tokenizer.enable_truncation(max_length=maxsize)
 
     def load_onnx_model(self) -> None:
         """
