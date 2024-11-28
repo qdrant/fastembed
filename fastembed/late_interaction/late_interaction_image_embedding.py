@@ -9,7 +9,7 @@ from fastembed.late_interaction.late_interaction_image_embedding_base import (
 )
 
 
-class LateInteractionTextEmbedding(LateInteractionImageEmbeddingBase):
+class LateInteractionImageEmbedding(LateInteractionImageEmbeddingBase):
     EMBEDDINGS_REGISTRY: list[Type[LateInteractionImageEmbeddingBase]] = [ColPali]
 
     @classmethod
