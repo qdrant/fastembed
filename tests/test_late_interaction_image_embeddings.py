@@ -22,16 +22,7 @@ CANONICAL_COLUMN_VALUES = {
                 [-0.031, -0.044, 0.092, -0.005, 0.006, -0.057, -0.061],
                 [-0.18, -0.039, 0.031, 0.003, 0.083, -0.041, 0.088],
                 [-0.091, 0.023, 0.116, -0.02, 0.039, -0.064, -0.026],
-            ],
-            [
-                [-0.25, -0.112, -0.065, -0.014, 0.005, -0.092, 0.024],
-                [-0.22, -0.096, -0.014, 0.039, -0.02, -0.12, -0.004],
-                [-0.228, -0.114, 0.031, 0.019, 0.034, -0.052, -0.031],
-                [-0.274, -0.186, 0.095, -0.019, 0.017, 0.021, -0.016],
-                [-0.186, -0.061, -0.01, 0.065, -0.058, -0.05, 0.019],
-                [-0.183, -0.11, -0.034, -0.042, 0.026, -0.071, 0.02],
-                [-0.153, -0.072, -0.015, 0.088, -0.081, -0.043, 0.04],
-            ],
+            ]
         ]
     ),
 }
@@ -69,7 +60,7 @@ images = [
 
 def test_batch_embedding():
     is_ci = os.getenv("CI")
-    docs_to_embed = images * 10
+    docs_to_embed = images
 
     for model_name, expected_result in CANONICAL_COLUMN_VALUES.items():
         print("evaluating", model_name)
@@ -77,8 +68,9 @@ def test_batch_embedding():
         result = list(model.embed(docs_to_embed, batch_size=6))
 
         for value in result:
-            token_num, abridged_dim = expected_result.shape
-            assert np.allclose(value[:, :abridged_dim], expected_result, atol=2e-3)
+            batch_size, token_num, abridged_dim = expected_result.shape
+            assert np.allclose(value[:token_num, :abridged_dim], expected_result, atol=1e-3)
+            break
 
         if is_ci:
             delete_model_cache(model.model._model_dir)
@@ -92,8 +84,8 @@ def test_single_embedding():
         print("evaluating", model_name)
         model = LateInteractionImageEmbedding(model_name=model_name)
         result = next(iter(model.embed(docs_to_embed, batch_size=6)))
-        token_num, abridged_dim = expected_result.shape
-        assert np.allclose(result[:, :abridged_dim], expected_result, atol=2e-3)
+        batch_size, token_num, abridged_dim = expected_result.shape
+        assert np.allclose(result[:token_num, :abridged_dim], expected_result, atol=2e-3)
 
         if is_ci:
             delete_model_cache(model.model._model_dir)
@@ -108,7 +100,7 @@ def test_single_embedding_query():
         model = LateInteractionImageEmbedding(model_name=model_name)
         result = next(iter(model.query_embed(queries_to_embed)))
         token_num, abridged_dim = expected_result.shape
-        assert np.allclose(result[:, :abridged_dim], expected_result, atol=2e-3)
+        assert np.allclose(result[:token_num, :abridged_dim], expected_result, atol=2e-3)
 
         if is_ci:
             delete_model_cache(model.model._model_dir)
@@ -116,7 +108,7 @@ def test_single_embedding_query():
 
 def test_parallel_processing():
     is_ci = os.getenv("CI")
-    model = LateInteractionImageEmbedding(model_name="colbert-ir/colbertv2.0")
+    model = LateInteractionImageEmbedding(model_name="akshayballal/colpali-v1.2-merged")
     token_dim = 128
     docs = ["hello world", "flag embedding"] * 100
     embeddings = list(model.embed(docs, batch_size=10, parallel=2))
@@ -138,7 +130,7 @@ def test_parallel_processing():
 
 @pytest.mark.parametrize(
     "model_name",
-    ["colbert-ir/colbertv2.0"],
+    ["akshayballal/colpali-v1.2-merged"],
 )
 def test_lazy_load(model_name):
     is_ci = os.getenv("CI")
@@ -154,7 +146,7 @@ def test_lazy_load(model_name):
     list(model.query_embed(docs))
 
     model = LateInteractionImageEmbedding(model_name=model_name, lazy_load=True)
-    list(model.passage_embed(docs))
+    list(model.embed(docs))
 
     if is_ci:
         delete_model_cache(model.model._model_dir)

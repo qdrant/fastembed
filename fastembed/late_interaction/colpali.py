@@ -1,4 +1,4 @@
-from typing import Any, Iterable, Optional, Sequence, Union, List, Dict
+from typing import Any, Iterable, Optional, Sequence, Union, List, Dict, Type
 
 import numpy as np
 from sys import maxsize
@@ -225,6 +225,10 @@ class ColPali(
             device_id=self.device_id,
         )
         self.tokenizer.enable_truncation(max_length=maxsize)
+
+    @classmethod
+    def _get_worker_class(cls) -> Type[TextEmbeddingWorker]:
+        return ColPaliEmbeddingWorker
 
 
 class ColPaliEmbeddingWorker(TextEmbeddingWorker):
