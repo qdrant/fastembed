@@ -43,7 +43,7 @@ def test_embedding():
         ]
         embeddings = list(model.embed(images))
         embeddings = np.stack(embeddings, axis=0)
-
+        assert embeddings.shape == (len(images), dim)
         canonical_vector = CANONICAL_VECTOR_VALUES[model_desc["model"]]
 
         assert np.allclose(
