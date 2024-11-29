@@ -207,9 +207,10 @@ class ColPali(
             self.device_id = self.device_ids[0]
         else:
             self.device_id = None
-        self.load_onnx_model()
+        if not self.lazy_load:
+            self.load_onnx_model()
+
         self.processor = load_preprocessor(model_dir=self._model_dir)
-        self.tokenizer.enable_truncation(max_length=maxsize)
 
     def load_onnx_model(self) -> None:
         """
@@ -223,6 +224,7 @@ class ColPali(
             cuda=self.cuda,
             device_id=self.device_id,
         )
+        self.tokenizer.enable_truncation(max_length=maxsize)
 
 
 class ColPaliEmbeddingWorker(TextEmbeddingWorker):

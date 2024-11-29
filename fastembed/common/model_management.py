@@ -119,8 +119,6 @@ class ModelManagement:
         if extra_patterns is not None:
             allow_patterns.extend(extra_patterns)
 
-        os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
-
         return snapshot_download(
             repo_id=hf_source_repo,
             allow_patterns=allow_patterns,
