@@ -17,7 +17,7 @@ onnxruntime = ">=1.17.0,<1.20.0"
 tqdm = "^4.66"
 requests = "^2.31"
 tokenizers = ">=0.15,<1.0"
-huggingface-hub = {version = ">=0.20,<1.0", extras = ["hf_transfer"]}
+huggingface-hub = ">=0.20,<1.0"
 loguru = "^0.7.2"
 numpy = [
     { version = ">=1.21", python = "<3.12" },
