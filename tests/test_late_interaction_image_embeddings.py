@@ -60,6 +60,9 @@ images = [
 
 def test_batch_embedding():
     is_ci = os.getenv("CI")
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
+
     docs_to_embed = images
 
     for model_name, expected_result in CANONICAL_COLUMN_VALUES.items():
@@ -78,6 +81,9 @@ def test_batch_embedding():
 
 def test_single_embedding():
     is_ci = os.getenv("CI")
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
+
     docs_to_embed = images
 
     for model_name, expected_result in CANONICAL_COLUMN_VALUES.items():
@@ -93,6 +99,9 @@ def test_single_embedding():
 
 def test_single_embedding_query():
     is_ci = os.getenv("CI")
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
+
     queries_to_embed = queries
 
     for model_name, expected_result in CANONICAL_QUERY_VALUES.items():
@@ -108,6 +117,9 @@ def test_single_embedding_query():
 
 def test_parallel_processing():
     is_ci = os.getenv("CI")
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
+
     model = LateInteractionImageEmbedding(model_name="akshayballal/colpali-v1.2-merged")
     token_dim = 128
     docs = ["hello world", "flag embedding"] * 100
@@ -134,6 +146,8 @@ def test_parallel_processing():
 )
 def test_lazy_load(model_name):
     is_ci = os.getenv("CI")
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
 
     model = LateInteractionImageEmbedding(model_name=model_name, lazy_load=True)
     assert not hasattr(model.model, "model")
