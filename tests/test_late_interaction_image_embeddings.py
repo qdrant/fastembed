@@ -65,7 +65,7 @@ def test_batch_embedding():
     for model_name, expected_result in CANONICAL_COLUMN_VALUES.items():
         print("evaluating", model_name)
         model = LateInteractionImageEmbedding(model_name=model_name)
-        result = list(model.embed(docs_to_embed, batch_size=6))
+        result = list(model.embed(docs_to_embed, batch_size=2))
 
         for value in result:
             batch_size, token_num, abridged_dim = expected_result.shape
