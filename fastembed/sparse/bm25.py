@@ -105,6 +105,7 @@ class Bm25(SparseTextEmbeddingBase):
         avg_len: float = 256.0,
         language: str = "english",
         token_max_length: int = 40,
+        disable_stemmer: bool = False,
         **kwargs,
     ):
         super().__init__(model_name, cache_dir, **kwargs)
@@ -129,7 +130,8 @@ class Bm25(SparseTextEmbeddingBase):
         self.punctuation = set(get_all_punctuation())
         self.stopwords = set(self._load_stopwords(self._model_dir, self.language))
 
-        self.stemmer = SnowballStemmer(language)
+        self.disable_stemmer = disable_stemmer
+        self.stemmer = SnowballStemmer(language) if not disable_stemmer else None
         self.tokenizer = SimpleTokenizer
 
     @classmethod
@@ -223,6 +225,9 @@ class Bm25(SparseTextEmbeddingBase):
         )
 
     def _stem(self, tokens: list[str]) -> list[str]:
+        if self.disable_stemmer:
+            return tokens
+
         stemmed_tokens = []
         for token in tokens:
             if token in self.punctuation:
