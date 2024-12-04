@@ -75,6 +75,15 @@ supported_pooled_normalized_models = [
         "sources": {"hf": "jinaai/jina-embeddings-v2-base-es"},
         "model_file": "onnx/model.onnx",
     },
+    {
+        "model": "thenlper/gte-base",
+        "dim": 768,
+        "description": "General text embeddings, Unimodal (text), supports English only input text, 512 input tokens truncation, Prefixes for queries/documents: not necessary, 2024 year.",
+        "license": "mit",
+        "size_in_GB": 0.44,
+        "sources": {"hf": "thenlper/gte-base"},
+        "model_file": "onnx/model.onnx",
+    },
 ]
 
 
