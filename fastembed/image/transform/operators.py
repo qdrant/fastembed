@@ -38,9 +38,7 @@ class Normalize(Transform):
         self.std = std
 
     def __call__(self, images: list[np.ndarray]) -> list[np.ndarray]:
-        return [
-            normalize(image, mean=np.array(self.mean), std=np.array(self.std)) for image in images
-        ]
+        return [normalize(image, mean=self.mean, std=self.std) for image in images]
 
 
 class Resize(Transform):
@@ -183,11 +181,12 @@ class Compose:
                     )
                 )
         elif mode == "JinaCLIPImageProcessor":
-            resample = (
-                Compose._interpolation_resolver(config.get("interpolation"))
-                if isinstance(config.get("interpolation"), str)
-                else config.get("interpolation", Image.Resampling.BICUBIC)
-            )
+            interpolation = config.get("interpolation")
+            if isinstance(interpolation, str):
+                resample = Compose._interpolation_resolver(interpolation)
+            else:
+                resample = interpolation or Image.Resampling.BICUBIC
+
             if "size" in config:
                 resize_mode = config.get("resize_mode", "shortest")
                 if resize_mode == "shortest":

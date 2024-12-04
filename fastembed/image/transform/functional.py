@@ -140,7 +140,7 @@ def pad2square(
         image = image.crop((left, top, right, bottom))
         return image
 
-    new_image = Image.new(mode="RGB", size=(size, size), color=fill_color)
+    new_image = Image.new(mode="RGB", size=(size, size), color=fill_color or 0)
     left = (size - width) // 2
     top = (size - height) // 2
     new_image.paste(image, (left, top))
