@@ -116,7 +116,7 @@ class Compose:
     @staticmethod
     def _get_resize(transforms: list[Transform], config: dict[str, Any]):
         mode = config.get("image_processor_type", "CLIPImageProcessor")
-        if mode == "CLIPImageProcessor":
+        if mode == "CLIPImageProcessor" or mode == "SiglipImageProcessor":
             if config.get("do_resize", False):
                 size = config["size"]
                 if "shortest_edge" in size:
@@ -161,7 +161,7 @@ class Compose:
     @staticmethod
     def _get_center_crop(transforms: list[Transform], config: dict[str, Any]):
         mode = config.get("image_processor_type", "CLIPImageProcessor")
-        if mode == "CLIPImageProcessor":
+        if mode == "CLIPImageProcessor" or mode == "SiglipImageProcessor":
             if config.get("do_center_crop", False):
                 crop_size = config["crop_size"]
                 if isinstance(crop_size, int):
