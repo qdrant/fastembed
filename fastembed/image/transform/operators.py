@@ -136,8 +136,8 @@ class Compose:
     def _get_convert_to_rgb(transforms: list[Transform], config: dict[str, Any]):
         transforms.append(ConvertToRGB())
 
-    @staticmethod
-    def _get_resize(transforms: list[Transform], config: dict[str, Any]):
+    @classmethod
+    def _get_resize(cls, transforms: list[Transform], config: dict[str, Any]):
         mode = config.get("image_processor_type", "CLIPImageProcessor")
         if mode == "CLIPImageProcessor":
             if config.get("do_resize", False):
@@ -183,7 +183,7 @@ class Compose:
         elif mode == "JinaCLIPImageProcessor":
             interpolation = config.get("interpolation")
             if isinstance(interpolation, str):
-                resample = Compose._interpolation_resolver(interpolation)
+                resample = cls._interpolation_resolver(interpolation)
             else:
                 resample = interpolation or Image.Resampling.BICUBIC
 
