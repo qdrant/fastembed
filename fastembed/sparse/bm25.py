@@ -112,7 +112,9 @@ class Bm25(SparseTextEmbeddingBase):
     ):
         super().__init__(model_name, cache_dir, **kwargs)
 
-        if language is not None and language not in supported_languages:
+        if language is None:
+            language = "english"
+        elif language not in supported_languages:
             raise ValueError(f"{language} language is not supported")
         else:
             self.language = language
