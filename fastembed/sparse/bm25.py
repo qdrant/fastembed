@@ -132,6 +132,7 @@ class Bm25(SparseTextEmbeddingBase):
 
         self.token_max_length = token_max_length
         self.punctuation = set(get_all_punctuation())
+        self.disable_stemmer = disable_stemmer
 
         if disable_stemmer:
             self.stopwords = []
