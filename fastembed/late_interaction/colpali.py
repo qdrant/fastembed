@@ -52,18 +52,37 @@ class ColPali(
         self,
         output: OnnxOutputContext,
     ) -> Iterable[np.ndarray]:
+        """
+        Post-process the ONNX model output to convert it into a usable format.
+
+        Args:
+            output (OnnxOutputContext): The raw output from the ONNX model.
+
+        Returns:
+            Iterable[np.ndarray]: Post-processed output as NumPy arrays.
+        """
         return output.model_output.astype(np.float32)
 
     @classmethod
     def list_supported_models(cls) -> list[dict[str, Any]]:
-        """Lists the supported models.
+        """
+        Lists the supported models.
 
         Returns:
             list[dict[str, Any]]: A list of dictionaries containing the model information.
         """
         return supported_colpali_models
 
-    def _preprocess_queries(self, documents: list[str]):
+    def _preprocess_queries(self, documents: list[str]) -> list[str]:
+        """
+        Preprocess the input text queries by adding special tokens and padding.
+
+        Args:
+            documents (list[str]): List of text queries.
+
+        Returns:
+            list[str]: Preprocessed text queries.
+        """
         texts_query: list[str] = []
 
         for query in documents:
@@ -76,6 +95,16 @@ class ColPali(
     def _preprocess_images_input(
         self, inputs: list[Union[ImageInput]], **kwargs: Any
     ) -> dict[str, np.ndarray]:
+        """
+        Preprocess the input images for ONNX model inference.
+
+        Args:
+            inputs (list[Union[ImageInput]]): List of image inputs.
+            **kwargs: Additional preprocessing arguments.
+
+        Returns:
+            dict[str, np.ndarray]: Preprocessed image inputs as a dictionary.
+        """
         with contextlib.ExitStack():
             image_files = [
                 Image.open(image) if not isinstance(image, Image.Image) else image
@@ -94,6 +123,19 @@ class ColPali(
         is_doc: bool = False,
         **kwargs,
     ) -> OnnxOutputContext:
+        """
+        Generate embeddings for the given input, either images or text.
+
+        Args:
+            inputs (Union[ImageInput, str]): Input data (images or text).
+            batch_size (int, optional): Batch size for embedding. Defaults to 16.
+            parallel (Optional[int], optional): Number of parallel threads. Defaults to None.
+            is_doc (bool, optional): Indicates if input is a document. Defaults to False.
+            **kwargs: Additional arguments for embedding.
+
+        Yields:
+            OnnxOutputContext: Embedding output context.
+        """
         if is_doc:
             yield from self._embed_documents(
                 model_name=self.model_name,
@@ -121,12 +163,32 @@ class ColPali(
             )
 
     def onnx_embed(self, inputs: Union[ImageInput, str], **kwargs) -> OnnxOutputContext:
+        """
+        Embed inputs using the ONNX model.
+
+        Args:
+            inputs (Union[ImageInput, str]): Input data (images or text).
+            **kwargs: Additional arguments for embedding.
+
+        Returns:
+            OnnxOutputContext: Embedding output context.
+        """
         if isinstance(inputs[0], str):
             return self.onnx_embed_text(inputs, **kwargs)
         else:
             return self.onnx_embed_image(inputs, **kwargs)
 
     def onnx_embed_image(self, images: List[ImageInput], **kwargs) -> OnnxOutputContext:
+        """
+        Embed images using the ONNX model.
+
+        Args:
+            images (List[ImageInput]): List of image inputs.
+            **kwargs: Additional arguments for embedding.
+
+        Returns:
+            OnnxOutputContext: Embedding output context for images.
+        """
         with contextlib.ExitStack():
             image_files = [
                 Image.open(image) if not isinstance(image, Image.Image) else image
@@ -144,6 +206,16 @@ class ColPali(
         documents: List[str],
         **kwargs,
     ) -> OnnxOutputContext:
+        """
+        Embed text using the ONNX model.
+
+        Args:
+            documents (List[str]): List of text documents.
+            **kwargs: Additional arguments for embedding.
+
+        Returns:
+            OnnxOutputContext: Embedding output context for text.
+        """
         documents = self._preprocess_queries(documents)
         encoded = self.tokenize(documents, **kwargs)
         input_ids = np.array([self.QUERY_MARKER_TOKEN_ID + e.ids[2:] for e in encoded])
@@ -162,6 +234,16 @@ class ColPali(
     def _preprocess_onnx_image_input(
         self, onnx_input: Dict[str, np.ndarray], **kwargs
     ) -> Dict[str, np.ndarray]:
+        """
+        Add placeholders for text input when processing image data for ONNX.
+
+        Args:
+            onnx_input (Dict[str, np.ndarray]): Preprocessed image inputs.
+            **kwargs: Additional arguments.
+
+        Returns:
+            Dict[str, np.ndarray]: ONNX input with text placeholders.
+        """
         onnx_input["input_ids"] = np.array(
             [self.EMPTY_TEXT_PLACEHOLDER for _ in onnx_input["input_ids"]]
         )
@@ -173,6 +255,16 @@ class ColPali(
     def _preprocess_onnx_text_input(
         self, onnx_input: Dict[str, np.ndarray], **kwargs
     ) -> Dict[str, np.ndarray]:
+        """
+        Add placeholders for image input when processing text data for ONNX.
+
+        Args:
+            onnx_input (Dict[str, np.ndarray]): Preprocessed text inputs.
+            **kwargs: Additional arguments.
+
+        Returns:
+            Dict[str, np.ndarray]: ONNX input with image placeholders.
+        """
         empty_image_placeholder = np.zeros(self.image_placeholder_size, dtype=np.float32)
         onnx_input["pixel_values"] = np.array(
             [empty_image_placeholder for _ in onnx_input["input_ids"]]
@@ -192,6 +284,20 @@ class ColPali(
         device_id: Optional[int] = None,
         **kwargs,
     ):
+        """
+        Initialize the ColPali model.
+
+        Args:
+            model_name (str): Name of the model to use.
+            cache_dir (Optional[str], optional): Directory for caching model files. Defaults to None.
+            threads (Optional[int], optional): Number of threads for inference. Defaults to None.
+            providers (Optional[Sequence[OnnxProvider]], optional): ONNX providers for model execution. Defaults to None.
+            cuda (bool, optional): Whether to use CUDA for inference. Defaults to False.
+            device_ids (Optional[list[int]], optional): List of CUDA device IDs. Defaults to None.
+            lazy_load (bool, optional): Whether to lazily load the model. Defaults to False.
+            device_id (Optional[int], optional): Specific device ID to use. Defaults to None.
+            **kwargs: Additional arguments for model initialization.
+        """
         super().__init__(model_name, cache_dir, threads, **kwargs)
         self.model_description = self._get_model_description(model_name)
         self._model_dir = self.download_model(
@@ -214,7 +320,7 @@ class ColPali(
 
     def load_onnx_model(self) -> None:
         """
-        Load the onnx model.
+        Load the ONNX model for inference.
         """
         self._load_onnx_model(
             model_dir=self._model_dir,
@@ -228,11 +334,28 @@ class ColPali(
 
     @classmethod
     def _get_worker_class(cls) -> Type[TextEmbeddingWorker]:
+        """
+        Get the worker class for text/image embedding.
+
+        Returns:
+            Type[TextEmbeddingWorker]: The worker class.
+        """
         return ColPaliEmbeddingWorker
 
 
 class ColPaliEmbeddingWorker(TextEmbeddingWorker):
     def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> ColPali:
+        """
+        Initialize the ColPali embedding worker.
+
+        Args:
+            model_name (str): Name of the model to use.
+            cache_dir (str): Directory for caching model files.
+            **kwargs: Additional arguments for initialization.
+
+        Returns:
+            ColPali: Initialized ColPali model instance.
+        """
         return ColPali(
             model_name=model_name,
             cache_dir=cache_dir,
