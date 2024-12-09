@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Type
+from typing import Any, Dict, Iterable, List, Type, Self
 
 import numpy as np
 
@@ -57,7 +57,7 @@ class PooledEmbedding(OnnxTextEmbedding):
         sum_embeddings = np.sum(token_embeddings * input_mask_expanded, axis=1)
         sum_mask = np.sum(input_mask_expanded, axis=1)
         pooled_embeddings = sum_embeddings / np.maximum(sum_mask, 1e-9)
-        return pooled_embeddings
+        return pooled_embeddings # type: ignore[no-any-return]
 
     @classmethod
     def list_supported_models(cls) -> List[Dict[str, Any]]:
@@ -79,10 +79,10 @@ class PooledEmbedding(OnnxTextEmbedding):
 
 class PooledEmbeddingWorker(OnnxTextEmbeddingWorker):
     def init_embedding(
-        self,
+        self: Self,
         model_name: str,
         cache_dir: str,
-        **kwargs,
+        **kwargs: Any,
     ) -> OnnxTextEmbedding:
         return PooledEmbedding(
             model_name=model_name,

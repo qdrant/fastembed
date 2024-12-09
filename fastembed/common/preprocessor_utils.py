@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 from typing import Tuple
-from tokenizers import AddedToken, Tokenizer
+from tokenizers import AddedToken, Tokenizer # type: ignore
 
 from fastembed.image.transform.operators import Compose
 

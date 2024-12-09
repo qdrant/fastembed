@@ -1,0 +1,6 @@
+{
+  "include": ["fastembed/"],
+  "exclude": ["tests/", "docs/", "experiments/"],
+  "strict": true,
+  "venvPath": ".venv"
+}

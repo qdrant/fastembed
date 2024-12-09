@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Type, Union
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Type, Union, Self
 
 import numpy as np
 
@@ -14,7 +14,7 @@ class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
     EMBEDDINGS_REGISTRY: List[Type[LateInteractionTextEmbeddingBase]] = [Colbert, JinaColbert]
 
     @classmethod
-    def list_supported_models(cls) -> List[Dict[str, Any]]:
+    def list_supported_models(cls: type[Self]) -> List[Dict[str, Any]]:
         """
         Lists the supported models.
 
@@ -44,7 +44,7 @@ class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
         return result
 
     def __init__(
-        self,
+        self: Self,
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
@@ -52,7 +52,7 @@ class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
         cuda: bool = False,
         device_ids: Optional[List[int]] = None,
         lazy_load: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
@@ -76,11 +76,11 @@ class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
         )
 
     def embed(
-        self,
+        self: Self,
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
         parallel: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Iterable[np.ndarray]:
         """
         Encode a list of documents into list of embeddings.
@@ -99,7 +99,7 @@ class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
         """
         yield from self.model.embed(documents, batch_size, parallel, **kwargs)
 
-    def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> Iterable[np.ndarray]:
+    def query_embed(self: Self, query: Union[str, Iterable[str]], **kwargs: Any) -> Iterable[np.ndarray]:
         """
         Embeds queries
 

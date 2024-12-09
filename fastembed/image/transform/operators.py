@@ -33,8 +33,8 @@ class CenterCrop(Transform):
 
 class Normalize(Transform):
     def __init__(self, mean: Union[float, List[float]], std: Union[float, List[float]]):
-        self.mean = mean
-        self.std = std
+        self.mean = np.array(mean)
+        self.std = np.array(std)
 
     def __call__(self, images: List[np.ndarray]) -> List[np.ndarray]:
         return [normalize(image, mean=self.mean, std=self.std) for image in images]
@@ -100,7 +100,7 @@ class Compose:
         Returns:
             Compose: Image processor.
         """
-        transforms = []
+        transforms: List[Transform] = []
         cls._get_convert_to_rgb(transforms, config)
         cls._get_resize(transforms, config)
         cls._get_center_crop(transforms, config)
@@ -110,11 +110,11 @@ class Compose:
         return cls(transforms=transforms)
 
     @staticmethod
-    def _get_convert_to_rgb(transforms: List[Transform], config: Dict[str, Any]):
+    def _get_convert_to_rgb(transforms: List[Transform], config: Dict[str, Any]) -> None:
         transforms.append(ConvertToRGB())
 
     @staticmethod
-    def _get_resize(transforms: List[Transform], config: Dict[str, Any]):
+    def _get_resize(transforms: List[Transform], config: Dict[str, Any])  -> None:
         mode = config.get("image_processor_type", "CLIPImageProcessor")
         if mode == "CLIPImageProcessor" or mode == "SiglipImageProcessor":
             if config.get("do_resize", False):
@@ -159,7 +159,7 @@ class Compose:
                 )
 
     @staticmethod
-    def _get_center_crop(transforms: List[Transform], config: Dict[str, Any]):
+    def _get_center_crop(transforms: List[Transform], config: Dict[str, Any]) -> None:
         mode = config.get("image_processor_type", "CLIPImageProcessor")
         if mode == "CLIPImageProcessor" or mode == "SiglipImageProcessor":
             if config.get("do_center_crop", False):
@@ -177,16 +177,16 @@ class Compose:
             raise ValueError(f"Preprocessor {mode} is not supported")
 
     @staticmethod
-    def _get_pil2ndarray(transforms: List[Transform], config: Dict[str, Any]):
+    def _get_pil2ndarray(transforms: List[Transform], config: Dict[str, Any]) -> None:
         transforms.append(PILtoNDarray())
 
     @staticmethod
-    def _get_rescale(transforms: List[Transform], config: Dict[str, Any]):
+    def _get_rescale(transforms: List[Transform], config: Dict[str, Any]) -> None:
         if config.get("do_rescale", True):
             rescale_factor = config.get("rescale_factor", 1 / 255)
             transforms.append(Rescale(scale=rescale_factor))
 
     @staticmethod
-    def _get_normalize(transforms: List[Transform], config: Dict[str, Any]):
+    def _get_normalize(transforms: List[Transform], config: Dict[str, Any]) -> None:
         if config.get("do_normalize", False):
             transforms.append(Normalize(mean=config["image_mean"], std=config["image_std"]))

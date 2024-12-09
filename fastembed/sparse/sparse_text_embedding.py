@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Type, Union
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Type, Union, Self
 
 from fastembed.common import OnnxProvider
 from fastembed.sparse.bm25 import Bm25
@@ -15,7 +15,7 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
     EMBEDDINGS_REGISTRY: List[Type[SparseTextEmbeddingBase]] = [SpladePP, Bm42, Bm25]
 
     @classmethod
-    def list_supported_models(cls) -> List[Dict[str, Any]]:
+    def list_supported_models(cls: type[Self]) -> List[Dict[str, Any]]:
         """
         Lists the supported models.
 
@@ -44,7 +44,7 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
         return result
 
     def __init__(
-        self,
+        self: Self,
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
@@ -52,7 +52,7 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
         cuda: bool = False,
         device_ids: Optional[List[int]] = None,
         lazy_load: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
         if model_name == "prithvida/Splade_PP_en_v1":
@@ -85,11 +85,11 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
         )
 
     def embed(
-        self,
+        self: Self,
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
         parallel: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Iterable[SparseEmbedding]:
         """
         Encode a list of documents into list of embeddings.
@@ -108,7 +108,7 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
         """
         yield from self.model.embed(documents, batch_size, parallel, **kwargs)
 
-    def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> Iterable[SparseEmbedding]:
+    def query_embed(self: Self, query: Union[str, Iterable[str]], **kwargs: Any) -> Iterable[SparseEmbedding]:
         """
         Embeds queries
 

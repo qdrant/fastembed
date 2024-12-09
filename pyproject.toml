@@ -32,6 +32,8 @@ pytest = "^7.4.2"
 ruff = ">=0.3.1,<1.0"
 notebook = ">=7.0.2"
 pre-commit = {version = "^3.6.2", python = ">=3.9,<3.12" }
+mypy = "^1.13.0"
+pyright = "^1.1.390"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs-material = "^9.5.10"
@@ -47,3 +49,11 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
 line-length = 99
+
+[tool.mypy]
+plugins = []
+strict = true
+disable_error_code = ["type-arg"]
+
+
+

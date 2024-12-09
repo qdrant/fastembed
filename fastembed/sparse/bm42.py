@@ -1,7 +1,7 @@
 import math
 import string
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Type, Union
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Type, Union, Self
 
 import mmh3
 import numpy as np
@@ -56,7 +56,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
     ONNX_OUTPUT_NAMES = ["attention_6"]
 
     def __init__(
-        self,
+        self: Self,
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
@@ -66,7 +66,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         device_ids: Optional[List[int]] = None,
         lazy_load: bool = False,
         device_id: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         """
         Args:
@@ -141,7 +141,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         self.special_tokens_ids = set(self.special_token_to_id.values())
         self.stopwords = set(self._load_stopwords(self._model_dir))
 
-    def _filter_pair_tokens(self, tokens: List[Tuple[str, Any]]) -> List[Tuple[str, Any]]:
+    def _filter_pair_tokens(self: Self, tokens: List[Tuple[str, Any]]) -> List[Tuple[str, Any]]:
         result = []
         for token, value in tokens:
             if token in self.stopwords or token in self.punctuation:
@@ -149,7 +149,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             result.append((token, value))
         return result
 
-    def _stem_pair_tokens(self, tokens: List[Tuple[str, Any]]) -> List[Tuple[str, Any]]:
+    def _stem_pair_tokens(self: Self, tokens: List[Tuple[str, Any]]) -> List[Tuple[str, Any]]:
         result = []
         for token, value in tokens:
             processed_token = self.stemmer.stem_word(token)
@@ -167,7 +167,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         return result
 
     def _reconstruct_bpe(
-        self, bpe_tokens: Iterable[Tuple[int, str]]
+        self: Self, bpe_tokens: Iterable[Tuple[int, str]]
     ) -> List[Tuple[str, List[int]]]:
         result = []
         acc = ""
@@ -195,7 +195,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
         return result
 
-    def _rescore_vector(self, vector: Dict[str, float]) -> Dict[int, float]:
+    def _rescore_vector(self: Self, vector: Dict[str, float]) -> Dict[int, float]:
         """
         Orders all tokens in the vector by their importance and generates a new score based on the importance order.
         So that the scoring doesn't depend on absolute values assigned by the model, but on the relative importance.
@@ -213,7 +213,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
         return new_vector
 
-    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[SparseEmbedding]:
+    def _post_process_onnx_output(self: Self, output: OnnxOutputContext) -> Iterable[SparseEmbedding]:
         if output.input_ids is None:
             raise ValueError("input_ids must be provided for document post-processing")
 
@@ -264,11 +264,11 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             return f.read().splitlines()
 
     def embed(
-        self,
+        self: Self,
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
         parallel: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Iterable[SparseEmbedding]:
         """
         Encode a list of documents into list of embeddings.
@@ -305,7 +305,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             result[token_id] = 1.0
         return result
 
-    def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> Iterable[SparseEmbedding]:
+    def query_embed(self: Self, query: Union[str, Iterable[str]], **kwargs: Any) -> Iterable[SparseEmbedding]:
         """
         To emulate BM25 behaviour, we don't need to use smart weights in the query, and
         it's enough to just hash the tokens and assign a weight of 1.0 to them.
@@ -332,7 +332,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
 
 class Bm42TextEmbeddingWorker(TextEmbeddingWorker):
-    def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> Bm42:
+    def init_embedding(self: Self, model_name: str, cache_dir: str, **kwargs: Any) -> Bm42:
         return Bm42(
             model_name=model_name,
             cache_dir=cache_dir,

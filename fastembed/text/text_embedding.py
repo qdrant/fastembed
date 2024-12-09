@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Type, Union
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Type, Union, Self
 
 import numpy as np
 
@@ -51,7 +51,7 @@ class TextEmbedding(TextEmbeddingBase):
         return result
 
     def __init__(
-        self,
+        self: Self,
         model_name: str = "BAAI/bge-small-en-v1.5",
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
@@ -59,7 +59,7 @@ class TextEmbedding(TextEmbeddingBase):
         cuda: bool = False,
         device_ids: Optional[List[int]] = None,
         lazy_load: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
@@ -83,11 +83,11 @@ class TextEmbedding(TextEmbeddingBase):
         )
 
     def embed(
-        self,
+        self: Self,
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
         parallel: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Iterable[np.ndarray]:
         """
         Encode a list of documents into list of embeddings.

@@ -11,12 +11,13 @@ from typing import (
     Tuple,
     Type,
     TypeVar,
+    Self
 )
 
 import numpy as np
 import onnxruntime as ort
 
-from fastembed.common.types import OnnxProvider
+from fastembed.common.types import OnnxProvider # type: ignore
 from fastembed.parallel_processor import Worker
 
 # Holds type of the embedding result
@@ -39,11 +40,11 @@ class OnnxModel(Generic[T]):
         raise NotImplementedError("Subclasses must implement this method")
 
     def __init__(self) -> None:
-        self.model = None
+        self.model: ort.InferenceSession = None
         self.tokenizer = None
 
     def _preprocess_onnx_input(
-        self, onnx_input: Dict[str, np.ndarray], **kwargs
+        self, onnx_input: Dict[str, np.ndarray], **kwargs: Any
     ) -> Dict[str, np.ndarray]:
         """
         Preprocess the onnx input.
@@ -51,7 +52,7 @@ class OnnxModel(Generic[T]):
         return onnx_input
 
     def _load_onnx_model(
-        self,
+        self: Self,
         model_dir: Path,
         model_file: str,
         threads: Optional[int],
@@ -106,30 +107,36 @@ class OnnxModel(Generic[T]):
     def load_onnx_model(self) -> None:
         raise NotImplementedError("Subclasses must implement this method")
 
-    def onnx_embed(self, *args, **kwargs) -> OnnxOutputContext:
+    def onnx_embed(self: Self, *args: Any, **kwargs: Any) -> OnnxOutputContext:
         raise NotImplementedError("Subclasses must implement this method")
 
 
 class EmbeddingWorker(Worker):
     def init_embedding(
-        self,
+        self: Self,
         model_name: str,
         cache_dir: str,
-        **kwargs,
+        **kwargs: Any,
     ) -> OnnxModel:
         raise NotImplementedError()
 
     def __init__(
-        self,
+        self: Self,
         model_name: str,
         cache_dir: str,
-        **kwargs,
+        **kwargs: Any,
     ):
         self.model = self.init_embedding(model_name, cache_dir, **kwargs)
 
     @classmethod
-    def start(cls, model_name: str, cache_dir: str, **kwargs: Any) -> "EmbeddingWorker":
+    def start(cls: type[Self], **kwargs: Any) -> "EmbeddingWorker":
+        model_name = kwargs.get("model_name", None)
+        if model_name is None:
+            raise ValueError("model_name must be provided")
+        cache_dir = kwargs.get("cache_dir", None)
+        if cache_dir is None:
+            raise ValueError("cache_dir must be provided")
         return cls(model_name=model_name, cache_dir=cache_dir, **kwargs)
 
-    def process(self, items: Iterable[Tuple[int, Any]]) -> Iterable[Tuple[int, Any]]:
+    def process(self: Self, items: Iterable[Tuple[int, Any]]) -> Iterable[Tuple[int, Any]]:
         raise NotImplementedError("Subclasses must implement this method")

@@ -1,7 +1,7 @@
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Type
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Type, Self
 
 import numpy as np
-
+from pathlib import Path
 from fastembed.common import ImageInput, OnnxProvider
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.utils import define_cache_dir, normalize
@@ -70,7 +70,7 @@ supported_onnx_models = [
 
 class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
     def __init__(
-        self,
+        self: Self,
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
@@ -79,12 +79,12 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
         device_ids: Optional[List[int]] = None,
         lazy_load: bool = False,
         device_id: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         """
         Args:
             model_name (str): The name of the model to use.
-            cache_dir (str, optional): The path to the cache directory.
+            cache_dir (Path, str, optional): The path to the cache directory.
                                        Can be set using the `FASTEMBED_CACHE_PATH` env variable.
                                        Defaults to `fastembed_cache` in the system's temp directory.
             threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
@@ -115,11 +115,9 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
             self.device_id = device_id
         elif self.device_ids is not None:
             self.device_id = self.device_ids[0]
-        else:
-            self.device_id = None
 
         self.model_description = self._get_model_description(model_name)
-        self.cache_dir = define_cache_dir(cache_dir)
+        self.cache_dir: Path = define_cache_dir(cache_dir)
         self._model_dir = self.download_model(
             self.model_description, self.cache_dir, local_files_only=self._local_files_only
         )
@@ -151,11 +149,11 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
         return supported_onnx_models
 
     def embed(
-        self,
+        self: Self,
         images: ImageInput,
         batch_size: int = 16,
         parallel: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Iterable[np.ndarray]:
         """
         Encode a list of images into list of embeddings.
@@ -190,7 +188,7 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
         return OnnxImageEmbeddingWorker
 
     def _preprocess_onnx_input(
-        self, onnx_input: Dict[str, np.ndarray], **kwargs
+        self: Self, onnx_input: Dict[str, np.ndarray], **kwargs: Any
     ) -> Dict[str, np.ndarray]:
         """
         Preprocess the onnx input.
@@ -198,12 +196,12 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
 
         return onnx_input
 
-    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
+    def _post_process_onnx_output(self: Self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
         return normalize(output.model_output).astype(np.float32)
 
 
 class OnnxImageEmbeddingWorker(ImageEmbeddingWorker):
-    def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> OnnxImageEmbedding:
+    def init_embedding(self: Self, model_name: str, cache_dir: str, **kwargs: Any) -> OnnxImageEmbedding:
         return OnnxImageEmbedding(
             model_name=model_name,
             cache_dir=cache_dir,

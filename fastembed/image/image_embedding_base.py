@@ -1,5 +1,5 @@
-from typing import Iterable, Optional
-
+from typing import Iterable, Optional, Self, Any
+from pathlib import Path
 import numpy as np
 
 from fastembed.common.model_management import ModelManagement
@@ -8,11 +8,11 @@ from fastembed.common.types import ImageInput
 
 class ImageEmbeddingBase(ModelManagement):
     def __init__(
-        self,
+        self: Self,
         model_name: str,
-        cache_dir: Optional[str] = None,
+        cache_dir: Optional[str|Path] = None,
         threads: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         self.model_name = model_name
         self.cache_dir = cache_dir
@@ -20,11 +20,11 @@ class ImageEmbeddingBase(ModelManagement):
         self._local_files_only = kwargs.pop("local_files_only", False)
 
     def embed(
-        self,
+        self: Self,
         images: ImageInput,
         batch_size: int = 16,
         parallel: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Iterable[np.ndarray]:
         """
         Embeds a list of images into a list of embeddings.

@@ -2,7 +2,7 @@ import os
 from collections import defaultdict
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union, Self
 
 import mmh3
 import numpy as np
@@ -97,7 +97,7 @@ class Bm25(SparseTextEmbeddingBase):
     """
 
     def __init__(
-        self,
+        self: Self,
         model_name: str,
         cache_dir: Optional[str] = None,
         k: float = 1.2,
@@ -105,7 +105,7 @@ class Bm25(SparseTextEmbeddingBase):
         avg_len: float = 256.0,
         language: str = "english",
         token_max_length: int = 40,
-        **kwargs,
+        **kwargs: Any,
     ):
         super().__init__(model_name, cache_dir, **kwargs)
 
@@ -133,7 +133,7 @@ class Bm25(SparseTextEmbeddingBase):
         self.tokenizer = SimpleTokenizer
 
     @classmethod
-    def list_supported_models(cls) -> List[Dict[str, Any]]:
+    def list_supported_models(cls: type[Self]) -> List[Dict[str, Any]]:
         """Lists the supported models.
 
         Returns:
@@ -142,7 +142,7 @@ class Bm25(SparseTextEmbeddingBase):
         return supported_bm25_models
 
     @classmethod
-    def _load_stopwords(cls, model_dir: Path, language: str) -> List[str]:
+    def _load_stopwords(cls: type[Self], model_dir: Path, language: str) -> List[str]:
         stopwords_path = model_dir / f"{language}.txt"
         if not stopwords_path.exists():
             return []
@@ -151,7 +151,7 @@ class Bm25(SparseTextEmbeddingBase):
             return f.read().splitlines()
 
     def _embed_documents(
-        self,
+        self: Self,
         model_name: str,
         cache_dir: str,
         documents: Union[str, Iterable[str]],
@@ -193,11 +193,11 @@ class Bm25(SparseTextEmbeddingBase):
                     yield record
 
     def embed(
-        self,
+        self: Self,
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
         parallel: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Iterable[SparseEmbedding]:
         """
         Encode a list of documents into list of embeddings.
@@ -222,7 +222,7 @@ class Bm25(SparseTextEmbeddingBase):
             parallel=parallel,
         )
 
-    def _stem(self, tokens: List[str]) -> List[str]:
+    def _stem(self: Self, tokens: List[str]) -> List[str]:
         stemmed_tokens = []
         for token in tokens:
             if token in self.punctuation:
@@ -241,7 +241,7 @@ class Bm25(SparseTextEmbeddingBase):
         return stemmed_tokens
 
     def raw_embed(
-        self,
+        self: Self,
         documents: List[str],
     ) -> List[SparseEmbedding]:
         embeddings = []
@@ -253,7 +253,7 @@ class Bm25(SparseTextEmbeddingBase):
             embeddings.append(SparseEmbedding.from_dict(token_id2value))
         return embeddings
 
-    def _term_frequency(self, tokens: List[str]) -> Dict[int, float]:
+    def _term_frequency(self: Self, tokens: List[str]) -> Dict[int, float]:
         """Calculate the term frequency part of the BM25 formula.
 
         (
@@ -284,10 +284,10 @@ class Bm25(SparseTextEmbeddingBase):
         return tf_map
 
     @classmethod
-    def compute_token_id(cls, token: str) -> int:
+    def compute_token_id(cls: type[Self], token: str) -> int:
         return abs(mmh3.hash(token))
 
-    def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> Iterable[SparseEmbedding]:
+    def query_embed(self: Self, query: Union[str, Iterable[str]], **kwargs: Any) -> Iterable[SparseEmbedding]:
         """To emulate BM25 behaviour, we don't need to use weights in the query, and
         it's enough to just hash the tokens and assign a weight of 1.0 to them.
         """
@@ -312,22 +312,22 @@ class Bm25(SparseTextEmbeddingBase):
 
 class Bm25Worker(Worker):
     def __init__(
-        self,
+        self: Self,
         model_name: str,
         cache_dir: str,
-        **kwargs,
+        **kwargs: Any,
     ):
         self.model = self.init_embedding(model_name, cache_dir, **kwargs)
 
     @classmethod
-    def start(cls, model_name: str, cache_dir: str, **kwargs: Any) -> "Bm25Worker":
+    def start(cls: type[Self], model_name: str, cache_dir: str, **kwargs: Any) -> "Bm25Worker":
         return cls(model_name=model_name, cache_dir=cache_dir, **kwargs)
 
-    def process(self, items: Iterable[Tuple[int, Any]]) -> Iterable[Tuple[int, Any]]:
+    def process(self: Self, items: Iterable[Tuple[int, Any]]) -> Iterable[Tuple[int, Any]]:
         for idx, batch in items:
             onnx_output = self.model.raw_embed(batch)
             yield idx, onnx_output
 
     @staticmethod
-    def init_embedding(model_name: str, cache_dir: str, **kwargs) -> Bm25:
+    def init_embedding(model_name: str, cache_dir: str, **kwargs: Any) -> Bm25:
         return Bm25(model_name=model_name, cache_dir=cache_dir, **kwargs)

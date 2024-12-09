@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Type
+from typing import Any, Dict, Iterable, List, Type, Self
 
 import numpy as np
 
@@ -41,10 +41,10 @@ class CLIPOnnxEmbedding(OnnxTextEmbedding):
 
 class CLIPEmbeddingWorker(OnnxTextEmbeddingWorker):
     def init_embedding(
-        self,
+        self: Self,
         model_name: str,
         cache_dir: str,
-        **kwargs,
+        **kwargs: Any,
     ) -> OnnxTextEmbedding:
         return CLIPOnnxEmbedding(
             model_name=model_name,

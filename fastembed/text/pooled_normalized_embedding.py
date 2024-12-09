@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Type
+from typing import Any, Dict, Iterable, List, Type, Self
 
 import numpy as np
 
@@ -85,10 +85,10 @@ class PooledNormalizedEmbedding(PooledEmbedding):
 
 class PooledNormalizedEmbeddingWorker(OnnxTextEmbeddingWorker):
     def init_embedding(
-        self,
+        self: Self,
         model_name: str,
         cache_dir: str,
-        **kwargs,
+        **kwargs: Any,
     ) -> OnnxTextEmbedding:
         return PooledNormalizedEmbedding(
             model_name=model_name,

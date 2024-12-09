@@ -62,8 +62,8 @@ def center_crop(
 
 def normalize(
     image: np.ndarray,
-    mean=Union[float, np.ndarray],
-    std=Union[float, np.ndarray],
+    mean:Union[float, np.ndarray],
+    std:Union[float, np.ndarray],
 ) -> np.ndarray:
     if not isinstance(image, np.ndarray):
         raise ValueError("image must be a numpy array")
@@ -79,7 +79,7 @@ def normalize(
                 f"mean must have {num_channels} elements if it is an iterable, got {len(mean)}"
             )
     else:
-        mean = [mean] * num_channels
+        mean = np.array([mean] * num_channels)
     mean = np.array(mean, dtype=image.dtype)
 
     if isinstance(std, Sized):
@@ -88,7 +88,7 @@ def normalize(
                 f"std must have {num_channels} elements if it is an iterable, got {len(std)}"
             )
     else:
-        std = [std] * num_channels
+        std = np.array([std] * num_channels)
     std = np.array(std, dtype=image.dtype)
 
     image = ((image.T - mean) / std).T
@@ -96,10 +96,10 @@ def normalize(
 
 
 def resize(
-    image: Image,
+    image: Image.Image,
     size: Union[int, Tuple[int, int]],
     resample: Image.Resampling = Image.Resampling.BILINEAR,
-) -> Image:
+) -> Image.Image:
     if isinstance(size, tuple):
         return image.resize(size, resample)
 
@@ -114,11 +114,14 @@ def resize(
     return image.resize(new_size, resample)
 
 
-def rescale(image: np.ndarray, scale: float, dtype=np.float32) -> np.ndarray:
+def rescale(
+    image: np.ndarray[Union[np.float32, np.int32]],
+    scale: float,
+    dtype: Union[np.dtype[np.float32], np.dtype[np.int32]] = np.float32
+) -> np.ndarray:
     return (image * scale).astype(dtype)
 
-
-def pil2ndarray(image: Union[Image.Image, np.ndarray]):
+def pil2ndarray(image: Union[Image.Image, np.ndarray]) -> np.ndarray:
     if isinstance(image, Image.Image):
         return np.asarray(image).transpose((2, 0, 1))
     return image

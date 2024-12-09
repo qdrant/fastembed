@@ -1,10 +1,10 @@
 import os
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Type, Union
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Type, Union, Self
 
 import numpy as np
-from tokenizers import Encoding
+from tokenizers import Encoding # type: ignore
 
 from fastembed.common import OnnxProvider
 from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
@@ -26,10 +26,10 @@ class OnnxTextModel(OnnxModel[T]):
     def __init__(self) -> None:
         super().__init__()
         self.tokenizer = None
-        self.special_token_to_id = {}
+        self.special_token_to_id: dict[str, int] = {}
 
     def _preprocess_onnx_input(
-        self, onnx_input: Dict[str, np.ndarray], **kwargs
+        self: Self, onnx_input: Dict[str, np.ndarray], **kwargs: Any
     ) -> Dict[str, np.ndarray]:
         """
         Preprocess the onnx input.
@@ -53,18 +53,18 @@ class OnnxTextModel(OnnxModel[T]):
             cuda=cuda,
             device_id=device_id,
         )
-        self.tokenizer, self.special_token_to_id = load_tokenizer(model_dir=model_dir)
+        self.tokenizer, self.special_token_to_id = load_tokenizer(model_dir=model_dir) # type: ignore[no-any-return]
 
     def load_onnx_model(self) -> None:
         raise NotImplementedError("Subclasses must implement this method")
 
-    def tokenize(self, documents: List[str], **kwargs) -> List[Encoding]:
-        return self.tokenizer.encode_batch(documents)
+    def tokenize(self: Self, documents: List[str], **kwargs: Any) -> List[Encoding]:
+        return self.tokenizer.encode_batch(documents) # type: ignore[no-any-return]
 
     def onnx_embed(
-        self,
+        self: Self,
         documents: List[str],
-        **kwargs,
+        **kwargs: Any,
     ) -> OnnxOutputContext:
         encoded = self.tokenize(documents, **kwargs)
         input_ids = np.array([e.ids for e in encoded])
@@ -94,7 +94,7 @@ class OnnxTextModel(OnnxModel[T]):
         )
 
     def _embed_documents(
-        self,
+        self: Self,
         model_name: str,
         cache_dir: str,
         documents: Union[str, Iterable[str]],
@@ -103,7 +103,7 @@ class OnnxTextModel(OnnxModel[T]):
         providers: Optional[Sequence[OnnxProvider]] = None,
         cuda: bool = False,
         device_ids: Optional[List[int]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Iterable[T]:
         is_small = False
 
@@ -144,7 +144,7 @@ class OnnxTextModel(OnnxModel[T]):
 
 
 class TextEmbeddingWorker(EmbeddingWorker):
-    def process(self, items: Iterable[Tuple[int, Any]]) -> Iterable[Tuple[int, Any]]:
+    def process(self: Self, items: Iterable[Tuple[int, Any]]) -> Iterable[Tuple[int, Any]]:
         for idx, batch in items:
             onnx_output = self.model.onnx_embed(batch)
             yield idx, onnx_output

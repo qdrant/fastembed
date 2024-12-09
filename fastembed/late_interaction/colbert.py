@@ -1,5 +1,5 @@
 import string
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Type, Union
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Type, Union, Self
 
 import numpy as np
 from tokenizers import Encoding
@@ -45,7 +45,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
     MASK_TOKEN = "[MASK]"
 
     def _post_process_onnx_output(
-        self, output: OnnxOutputContext, is_doc: bool = True
+        self: Self, output: OnnxOutputContext, is_doc: bool = True
     ) -> Iterable[np.ndarray]:
         if not is_doc:
             return output.model_output.astype(np.float32)
@@ -67,7 +67,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         return output.model_output.astype(np.float32)
 
     def _preprocess_onnx_input(
-        self, onnx_input: Dict[str, np.ndarray], is_doc: bool = True
+        self: Self, onnx_input: Dict[str, np.ndarray], is_doc: bool = True
     ) -> Dict[str, np.ndarray]:
         if is_doc:
             onnx_input["input_ids"][:, 1] = self.DOCUMENT_MARKER_TOKEN_ID
@@ -75,14 +75,14 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
             onnx_input["input_ids"][:, 1] = self.QUERY_MARKER_TOKEN_ID
         return onnx_input
 
-    def tokenize(self, documents: List[str], is_doc: bool = True) -> List[Encoding]:
+    def tokenize(self: Self, documents: List[str], is_doc: bool = True) -> List[Encoding]:
         return (
             self._tokenize_documents(documents=documents)
             if is_doc
             else self._tokenize_query(query=next(iter(documents)))
         )
 
-    def _tokenize_query(self, query: str) -> List[Encoding]:
+    def _tokenize_query(self: Self, query: str) -> List[Encoding]:
         # "@ " is added to a query to be replaced with a special query token
         # make sure that "@ " is considered as a single token
         query = f"@ {query}"
@@ -104,7 +104,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
                 self.tokenizer.enable_padding(**prev_padding)
         return encoded
 
-    def _tokenize_documents(self, documents: List[str]) -> List[Encoding]:
+    def _tokenize_documents(self: Self, documents: List[str]) -> List[Encoding]:
         # "@ " is added to a document to be replaced with a special document token
         # make sure that "@ " is considered as a single token
         documents = ["@ " + doc for doc in documents]
@@ -112,7 +112,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         return encoded
 
     @classmethod
-    def list_supported_models(cls) -> List[Dict[str, Any]]:
+    def list_supported_models(cls: type[Self]) -> List[Dict[str, Any]]:
         """Lists the supported models.
 
         Returns:
@@ -121,7 +121,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         return supported_colbert_models
 
     def __init__(
-        self,
+        self: Self,
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
@@ -130,7 +130,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         device_ids: Optional[List[int]] = None,
         lazy_load: bool = False,
         device_id: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         """
         Args:
@@ -182,7 +182,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         if not self.lazy_load:
             self.load_onnx_model()
 
-    def load_onnx_model(self) -> None:
+    def load_onnx_model(self: Self) -> None:
         self._load_onnx_model(
             model_dir=self._model_dir,
             model_file=self.model_description["model_file"],
@@ -199,11 +199,11 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         }
 
     def embed(
-        self,
+        self: Self,
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
         parallel: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Iterable[np.ndarray]:
         """
         Encode a list of documents into list of embeddings.
@@ -232,7 +232,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
             **kwargs,
         )
 
-    def query_embed(self, query: Union[str, List[str]], **kwargs) -> Iterable[np.ndarray]:
+    def query_embed(self: Self, query: Union[str, List[str]], **kwargs: Any) -> Iterable[np.ndarray]:
         if isinstance(query, str):
             query = [query]
 
@@ -245,12 +245,12 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
             )
 
     @classmethod
-    def _get_worker_class(cls) -> Type[TextEmbeddingWorker]:
+    def _get_worker_class(cls: type[Self]) -> Type[TextEmbeddingWorker]:
         return ColbertEmbeddingWorker
 
 
 class ColbertEmbeddingWorker(TextEmbeddingWorker):
-    def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> Colbert:
+    def init_embedding(self: Self, model_name: str, cache_dir: str, **kwargs: Any) -> Colbert:
         return Colbert(
             model_name=model_name,
             cache_dir=cache_dir,

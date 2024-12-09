@@ -3,11 +3,11 @@ import time
 import shutil
 import tarfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Self
 
 import requests
-from huggingface_hub import snapshot_download
-from huggingface_hub.utils import RepositoryNotFoundError
+from huggingface_hub import snapshot_download # type: ignore
+from huggingface_hub.utils import RepositoryNotFoundError # type: ignore
 from loguru import logger
 from tqdm import tqdm
 
@@ -91,12 +91,12 @@ class ModelManagement:
 
     @classmethod
     def download_files_from_huggingface(
-        cls,
+        cls: type[Self],
         hf_source_repo: str,
         cache_dir: Optional[str] = None,
         extra_patterns: Optional[List[str]] = None,
         local_files_only: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ) -> str:
         """
         Downloads a model from HuggingFace Hub.
@@ -119,16 +119,16 @@ class ModelManagement:
         if extra_patterns is not None:
             allow_patterns.extend(extra_patterns)
 
-        return snapshot_download(
+        return str(snapshot_download(
             repo_id=hf_source_repo,
             allow_patterns=allow_patterns,
             cache_dir=cache_dir,
             local_files_only=local_files_only,
             **kwargs,
-        )
+        ))
 
     @classmethod
-    def decompress_to_cache(cls, targz_path: str, cache_dir: str):
+    def decompress_to_cache(cls: type[Self], targz_path: str, cache_dir: str) -> str:
         """
         Decompresses a .tar.gz file to a cache directory.
 
@@ -211,7 +211,7 @@ class ModelManagement:
 
     @classmethod
     def download_model(
-        cls, model: Dict[str, Any], cache_dir: Path, retries: int = 3, **kwargs
+        cls: type[Self], model: Dict[str, Any], cache_dir: Path, retries: int = 3, **kwargs: Any
     ) -> Path:
         """
         Downloads a model from HuggingFace Hub or Google Cloud Storage.

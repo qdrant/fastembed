@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Type
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Type, Self
 
 import numpy as np
 
@@ -41,7 +41,7 @@ class ImageEmbedding(ImageEmbeddingBase):
         return result
 
     def __init__(
-        self,
+        self: Self,
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
@@ -49,7 +49,7 @@ class ImageEmbedding(ImageEmbeddingBase):
         cuda: bool = False,
         device_ids: Optional[List[int]] = None,
         lazy_load: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
@@ -73,11 +73,11 @@ class ImageEmbedding(ImageEmbeddingBase):
         )
 
     def embed(
-        self,
+        self: Self,
         images: ImageInput,
         batch_size: int = 16,
         parallel: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Iterable[np.ndarray]:
         """
         Encode a list of documents into list of embeddings.

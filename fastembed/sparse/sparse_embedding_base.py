@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, Iterable, Optional, Union
+from typing import Dict, Iterable, Optional, Union, Self, Any
 
 import numpy as np
 
@@ -21,7 +21,7 @@ class SparseEmbedding:
         return {i: v for i, v in zip(self.indices, self.values)}
 
     @classmethod
-    def from_dict(cls, data: Dict[int, float]) -> "SparseEmbedding":
+    def from_dict(cls: type[Self], data: Dict[int, float]) -> "SparseEmbedding":
         if len(data) == 0:
             return cls(values=np.array([]), indices=np.array([]))
         indices, values = zip(*data.items())
@@ -30,11 +30,11 @@ class SparseEmbedding:
 
 class SparseTextEmbeddingBase(ModelManagement):
     def __init__(
-        self,
+        self: Self,
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         self.model_name = model_name
         self.cache_dir = cache_dir
@@ -42,16 +42,16 @@ class SparseTextEmbeddingBase(ModelManagement):
         self._local_files_only = kwargs.pop("local_files_only", False)
 
     def embed(
-        self,
+        self: Self,
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
         parallel: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Iterable[SparseEmbedding]:
         raise NotImplementedError()
 
     def passage_embed(
-        self, texts: Iterable[str], **kwargs
+        self: Self, texts: Iterable[str], **kwargs: Any
     ) -> Iterable[SparseEmbedding]:
         """
         Embeds a list of text passages into a list of embeddings.
@@ -68,7 +68,7 @@ class SparseTextEmbeddingBase(ModelManagement):
         yield from self.embed(texts, **kwargs)
 
     def query_embed(
-        self, query: Union[str, Iterable[str]], **kwargs
+        self: Self, query: Union[str, Iterable[str]], **kwargs: Any
     ) -> Iterable[SparseEmbedding]:
         """
         Embeds queries

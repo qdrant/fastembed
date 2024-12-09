@@ -2,7 +2,7 @@ import contextlib
 import os
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Type
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Type, Self
 
 import numpy as np
 from PIL import Image
@@ -29,7 +29,7 @@ class OnnxImageModel(OnnxModel[T]):
         self.processor = None
 
     def _preprocess_onnx_input(
-        self, onnx_input: Dict[str, np.ndarray], **kwargs
+        self: Self, onnx_input: Dict[str, np.ndarray], **kwargs: Any
     ) -> Dict[str, np.ndarray]:
         """
         Preprocess the onnx input.
@@ -37,7 +37,7 @@ class OnnxImageModel(OnnxModel[T]):
         return onnx_input
 
     def _load_onnx_model(
-        self,
+        self: Self,
         model_dir: Path,
         model_file: str,
         threads: Optional[int],
@@ -58,10 +58,10 @@ class OnnxImageModel(OnnxModel[T]):
     def load_onnx_model(self) -> None:
         raise NotImplementedError("Subclasses must implement this method")
 
-    def _build_onnx_input(self, encoded: np.ndarray) -> Dict[str, np.ndarray]:
+    def _build_onnx_input(self: Self, encoded: np.ndarray) -> Dict[str, np.ndarray]:
         return {node.name: encoded for node in self.model.get_inputs()}
 
-    def onnx_embed(self, images: List[ImageInput], **kwargs) -> OnnxOutputContext:
+    def onnx_embed(self: Self, images: List[ImageInput], **kwargs: Any) -> OnnxOutputContext:
         with contextlib.ExitStack():
             image_files = [
                 Image.open(image) if not isinstance(image, Image.Image) else image
@@ -75,7 +75,7 @@ class OnnxImageModel(OnnxModel[T]):
         return OnnxOutputContext(model_output=embeddings)
 
     def _embed_images(
-        self,
+        self: Self,
         model_name: str,
         cache_dir: str,
         images: ImageInput,
@@ -84,7 +84,7 @@ class OnnxImageModel(OnnxModel[T]):
         providers: Optional[Sequence[OnnxProvider]] = None,
         cuda: bool = False,
         device_ids: Optional[List[int]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Iterable[T]:
         is_small = False
 
@@ -125,7 +125,7 @@ class OnnxImageModel(OnnxModel[T]):
 
 
 class ImageEmbeddingWorker(EmbeddingWorker):
-    def process(self, items: Iterable[Tuple[int, Any]]) -> Iterable[Tuple[int, Any]]:
+    def process(self: Self, items: Iterable[Tuple[int, Any]]) -> Iterable[Tuple[int, Any]]:
         for idx, batch in items:
             embeddings = self.model.onnx_embed(batch)
             yield idx, embeddings

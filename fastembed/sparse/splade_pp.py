@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Type, Union
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Type, Union, Self
 
 import numpy as np
 from fastembed.common import OnnxProvider
@@ -64,7 +64,7 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         return supported_splade_models
 
     def __init__(
-        self,
+        self: Self,
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
@@ -73,7 +73,7 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         device_ids: Optional[List[int]] = None,
         lazy_load: bool = False,
         device_id: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         """
         Args:
@@ -132,11 +132,11 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         )
 
     def embed(
-        self,
+        self: Self,
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
         parallel: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Iterable[SparseEmbedding]:
         """
         Encode a list of documents into list of embeddings.
@@ -171,7 +171,7 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
 
 class SpladePPEmbeddingWorker(TextEmbeddingWorker):
-    def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> SpladePP:
+    def init_embedding(self: Self, model_name: str, cache_dir: str, **kwargs: Any) -> SpladePP:
         return SpladePP(
             model_name=model_name,
             cache_dir=cache_dir,

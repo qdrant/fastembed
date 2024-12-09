@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Type
+from typing import Any, Dict, List, Type, Self
 
 import numpy as np
 
@@ -48,7 +48,7 @@ class E5OnnxEmbedding(OnnxTextEmbedding):
         return supported_multilingual_e5_models
 
     def _preprocess_onnx_input(
-        self, onnx_input: Dict[str, np.ndarray], **kwargs
+        self: Self, onnx_input: Dict[str, np.ndarray], **kwargs: Any
     ) -> Dict[str, np.ndarray]:
         """
         Preprocess the onnx input.
@@ -59,10 +59,10 @@ class E5OnnxEmbedding(OnnxTextEmbedding):
 
 class E5OnnxEmbeddingWorker(OnnxTextEmbeddingWorker):
     def init_embedding(
-        self,
+        self: Self,
         model_name: str,
         cache_dir: str,
-        **kwargs,
+        **kwargs: Any,
     ) -> E5OnnxEmbedding:
         return E5OnnxEmbedding(
             model_name=model_name,

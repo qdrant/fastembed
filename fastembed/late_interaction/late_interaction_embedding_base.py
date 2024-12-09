@@ -1,4 +1,4 @@
-from typing import Iterable, Optional, Union
+from typing import Iterable, Optional, Union, Any, Self
 
 import numpy as np
 
@@ -7,11 +7,11 @@ from fastembed.common.model_management import ModelManagement
 
 class LateInteractionTextEmbeddingBase(ModelManagement):
     def __init__(
-        self,
+        self: Self,
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         self.model_name = model_name
         self.cache_dir = cache_dir
@@ -19,15 +19,15 @@ class LateInteractionTextEmbeddingBase(ModelManagement):
         self._local_files_only = kwargs.pop("local_files_only", False)
 
     def embed(
-        self,
+        self: Self,
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
         parallel: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Iterable[np.ndarray]:
         raise NotImplementedError()
 
-    def passage_embed(self, texts: Iterable[str], **kwargs) -> Iterable[np.ndarray]:
+    def passage_embed(self: Self, texts: Iterable[str], **kwargs: Any) -> Iterable[np.ndarray]:
         """
         Embeds a list of text passages into a list of embeddings.
 
@@ -43,7 +43,7 @@ class LateInteractionTextEmbeddingBase(ModelManagement):
         yield from self.embed(texts, **kwargs)
 
     def query_embed(
-        self, query: Union[str, Iterable[str]], **kwargs
+        self: Self, query: Union[str, Iterable[str]], **kwargs: Any
     ) -> Iterable[np.ndarray]:
         """
         Embeds queries
