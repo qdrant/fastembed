@@ -191,6 +191,9 @@ class Bm25(SparseTextEmbeddingBase):
                 "k": self.k,
                 "b": self.b,
                 "avg_len": self.avg_len,
+                "language": self.language,
+                "token_max_length": self.token_max_length,
+                "disable_stemmer": self.disable_stemmer,
             }
             pool = ParallelWorkerPool(
                 num_workers=parallel or 1,
