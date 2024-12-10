@@ -7,7 +7,7 @@ from tokenizers import Encoding
 from fastembed.common import OnnxProvider
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.utils import define_cache_dir
-from fastembed.late_interaction.late_interaction_embedding_base import (
+from fastembed.late_interaction.late_interaction_text_embedding_base import (
     LateInteractionTextEmbeddingBase,
 )
 from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
