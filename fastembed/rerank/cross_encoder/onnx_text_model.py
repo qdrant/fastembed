@@ -91,9 +91,6 @@ class OnnxCrossEncoderModel(OnnxModel):
             if len(pairs) < batch_size:
                 is_small = True
 
-        if not hasattr(self, "model") or self.model is None:
-            self.load_onnx_model()
-
         if parallel is None or is_small:
             for batch in iter_batch(pairs, batch_size):
                 yield from self.onnx_embed_pairs(batch, **kwargs).model_output
