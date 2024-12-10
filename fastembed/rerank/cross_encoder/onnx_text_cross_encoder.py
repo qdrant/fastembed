@@ -1,4 +1,8 @@
-from typing import Iterable, Any, Sequence, Optional, Self, Type
+from typing import Iterable, Any, Sequence, Optional, Type
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 
 from loguru import logger
 import numpy as np

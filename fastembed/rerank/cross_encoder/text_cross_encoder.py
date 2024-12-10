@@ -1,4 +1,9 @@
-from typing import Any, Iterable, Optional, Sequence, Type, Self
+from typing import Any, Iterable, Optional, Sequence, Type
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
+
 
 from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
 from fastembed.rerank.cross_encoder.onnx_text_cross_encoder import OnnxTextCrossEncoder

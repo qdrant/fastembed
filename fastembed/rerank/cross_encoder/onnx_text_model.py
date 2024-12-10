@@ -1,4 +1,9 @@
-from typing import Sequence, Optional, Iterable, Any, Self
+from typing import Sequence, Optional, Iterable, Any
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
+
 from pathlib import Path
 import os
 import numpy as np

@@ -1,5 +1,10 @@
 from abc import abstractclassmethod
-from typing import Iterable, Optional, Any, Self
+from typing import Iterable, Optional, Any
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
+
 
 from fastembed.common.model_management import ModelManagement
 
