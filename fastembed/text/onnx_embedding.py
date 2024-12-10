@@ -164,6 +164,17 @@ supported_onnx_models = [
         },
         "model_file": "onnx/model.onnx",
     },
+    {
+        "model": "jinaai/jina-clip-v1",
+        "dim": 768,
+        "description": "Text embeddings, Multimodal (text&image), English, Prefixes for queries/documents: not necessary, 2024 year",
+        "license": "apache-2.0",
+        "size_in_GB": 0.55,
+        "sources": {
+            "hf": "jinaai/jina-clip-v1",
+        },
+        "model_file": "onnx/text_model.onnx",
+    },
 ]
 
 
@@ -285,7 +296,13 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
 
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
         embeddings = output.model_output
-        return normalize(embeddings[:, 0]).astype(np.float32)
+        if embeddings.ndim == 3:  # (batch_size, seq_len, embedding_dim)
+            processed_embeddings = embeddings[:, 0]
+        elif embeddings.ndim == 2:  # (batch_size, embedding_dim)
+            processed_embeddings = embeddings
+        else:
+            raise ValueError(f"Unsupported embedding shape: {embeddings.shape}")
+        return normalize(processed_embeddings).astype(np.float32)
 
     def load_onnx_model(self) -> None:
         self._load_onnx_model(
