@@ -151,6 +151,27 @@ def test_stem_case_insensitive_stopwords(bm25_instance):
     assert result == expected, f"Expected {expected}, but got {result}"
 
 
+@pytest.mark.parametrize("disable_stemmer", [True, False])
+def test_disable_stemmer_behavior(disable_stemmer):
+    # Setup
+    model = Bm25("Qdrant/bm25", language="english", disable_stemmer=disable_stemmer)
+    model.stopwords = {"the", "is", "a"}
+    model.punctuation = {".", ",", "!"}
+
+    # Test data
+    tokens = ["The", "quick", "brown", "fox", "is", "a", "test", "sentence", ".", "!"]
+
+    # Execute
+    result = model._stem(tokens)
+
+    # Assert
+    if disable_stemmer:
+        expected = ["quick", "brown", "fox", "test", "sentence"]  # no stemming, lower case only
+    else:
+        expected = ["quick", "brown", "fox", "test", "sentenc"]
+    assert result == expected, f"Expected {expected}, but got {result}"
+
+
 @pytest.mark.parametrize(
     "model_name",
     ["prithivida/Splade_PP_en_v1"],
