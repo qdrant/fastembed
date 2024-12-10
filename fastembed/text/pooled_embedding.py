@@ -50,10 +50,6 @@ class PooledEmbedding(OnnxTextEmbedding):
 
     @classmethod
     def mean_pooling(cls, model_output: np.ndarray, attention_mask: np.ndarray) -> np.ndarray:
-        if model_output.ndim == 2:  # (batch, embedding_dim)
-            seq_length = attention_mask.shape[1]
-            # (batch, seq_length, embedding_dim)
-            model_output = np.tile(np.expand_dims(model_output, axis=1), (1, seq_length, 1))
         token_embeddings = model_output
         input_mask_expanded = np.expand_dims(attention_mask, axis=-1)
         input_mask_expanded = np.tile(input_mask_expanded, (1, 1, token_embeddings.shape[-1]))
