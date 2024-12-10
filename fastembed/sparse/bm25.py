@@ -133,7 +133,7 @@ class Bm25(SparseTextEmbeddingBase):
         self.disable_stemmer = disable_stemmer
 
         if disable_stemmer:
-            self.stopwords = []
+            self.stopwords = set()
             self.stemmer = None
         else:
             self.stopwords = set(self._load_stopwords(self._model_dir, self.language))
