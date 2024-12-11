@@ -1,17 +1,12 @@
 from abc import abstractclassmethod
 from typing import Iterable, Optional, Any
-try:
-    from typing import Self
-except ImportError:
-    from typing_extensions import Self
-
 
 from fastembed.common.model_management import ModelManagement
 
 
 class TextCrossEncoderBase(ModelManagement):
     def __init__(
-        self: Self,
+        self,
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
@@ -24,7 +19,7 @@ class TextCrossEncoderBase(ModelManagement):
 
     @classmethod
     def rerank(
-        self: Self,
+        self,
         query: str,
         documents: Iterable[str],
         batch_size: int = 64,
@@ -44,7 +39,7 @@ class TextCrossEncoderBase(ModelManagement):
         raise NotImplementedError("This method should be overridden by subclasses")
 
     @classmethod
-    def rerank_pairs(self: Self, pairs: Iterable[tuple[str]], batch_size: int = 64,
+    def rerank_pairs(self, pairs: Iterable[tuple[str]], batch_size: int = 64,
         **kwargs: Any,) -> Iterable[float]:
         raise NotImplementedError("This method should be overridden by subclasses")
 

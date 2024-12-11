@@ -1,8 +1,4 @@
 from typing import Sequence, Optional, Iterable, Any
-try:
-    from typing import Self
-except ImportError:
-    from typing_extensions import Self
 
 from pathlib import Path
 import os
@@ -20,7 +16,7 @@ class OnnxCrossEncoderModel(OnnxModel):
     ONNX_OUTPUT_NAMES: Optional[list[str]] = None
 
     def _load_onnx_model(
-        self: Self,
+        self,
         model_dir: Path,
         model_file: str,
         threads: Optional[int],
@@ -38,7 +34,7 @@ class OnnxCrossEncoderModel(OnnxModel):
         )
         self.tokenizer, _ = load_tokenizer(model_dir=model_dir)
 
-    def tokenize(self: Self, pairs: Iterable[tuple[str, str]], **kwargs: Any) -> list[Encoding]:
+    def tokenize(self, pairs: Iterable[tuple[str, str]], **kwargs: Any) -> list[Encoding]:
         return self.tokenizer.encode_batch([pair for pair in pairs], **kwargs)
 
     def _build_onnx_input(self, tokenized_input):
@@ -55,11 +51,11 @@ class OnnxCrossEncoderModel(OnnxModel):
             )
         return inputs
 
-    def onnx_embed(self: Self, query: str, documents: list[str], **kwargs: Any) -> OnnxOutputContext:
+    def onnx_embed(self, query: str, documents: list[str], **kwargs: Any) -> OnnxOutputContext:
         pairs = ((query, doc) for doc in documents)
         return self.onnx_embed_pairs(pairs, **kwargs)
 
-    def onnx_embed_pairs(self: Self, pairs: Iterable[tuple[str, str]], **kwargs: Any):
+    def onnx_embed_pairs(self, pairs: Iterable[tuple[str, str]], **kwargs: Any):
         tokenized_input = self.tokenize(pairs, **kwargs)
         inputs = self._build_onnx_input(tokenized_input)
         onnx_input = self._preprocess_onnx_input(inputs, **kwargs)
@@ -69,7 +65,7 @@ class OnnxCrossEncoderModel(OnnxModel):
         return OnnxOutputContext(model_output=scores.tolist())
 
     def _rerank_documents(
-        self: Self, query: str, documents: Iterable[str], batch_size: int, **kwargs: Any
+        self, query: str, documents: Iterable[str], batch_size: int, **kwargs: Any
     ) -> Iterable[float]:
         if not hasattr(self, "model") or self.model is None:
             self.load_onnx_model()
@@ -77,7 +73,7 @@ class OnnxCrossEncoderModel(OnnxModel):
             yield from self.onnx_embed(query, batch, **kwargs).model_output
 
     def _rerank_pairs(
-        self: Self, pairs: Iterable[tuple[str,str]], batch_size: int, parallel: Optional[int] = None,
+        self, pairs: Iterable[tuple[str,str]], batch_size: int, parallel: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
         cuda: bool = False,
         device_ids: Optional[list[int]] = None,
@@ -125,7 +121,7 @@ class OnnxCrossEncoderModel(OnnxModel):
         raise NotImplementedError("Subclasses must implement this method")
 
     def _preprocess_onnx_input(
-        self: Self, onnx_input: dict[str, np.ndarray], **kwargs: Any
+        self, onnx_input: dict[str, np.ndarray], **kwargs: Any
     ) -> dict[str, np.ndarray]:
         """
         Preprocess the onnx input.

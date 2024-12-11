@@ -1,8 +1,4 @@
 from typing import Iterable, Any, Sequence, Optional, Type
-try:
-    from typing import Self
-except ImportError:
-    from typing_extensions import Self
 
 from loguru import logger
 import numpy as np
@@ -87,7 +83,7 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
         return supported_onnx_models
 
     def __init__(
-        self: Self,
+        self,
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
@@ -160,7 +156,7 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
         )
 
     def rerank(
-        self: Self,
+        self,
         query: str,
         documents: Iterable[str],
         batch_size: int = 64,
@@ -182,7 +178,7 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
         )
 
     def rerank_pairs(
-        self: Self,
+        self,
         pairs: Iterable[tuple[str, str]],
         batch_size: int = 64,
         **kwargs: Any,

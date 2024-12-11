@@ -26,7 +26,6 @@ numpy = [
 pillow = "^10.3.0"
 mmh3 = "^4.1.0"
 py-rust-stemmers = "^0.1.0"
-typing-extensions = "^4.12.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.2"

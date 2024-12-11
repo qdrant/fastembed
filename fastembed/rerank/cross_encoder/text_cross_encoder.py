@@ -1,9 +1,4 @@
 from typing import Any, Iterable, Optional, Sequence, Type
-try:
-    from typing import Self
-except ImportError:
-    from typing_extensions import Self
-
 
 from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
 from fastembed.rerank.cross_encoder.onnx_text_cross_encoder import OnnxTextCrossEncoder
@@ -44,7 +39,7 @@ class TextCrossEncoder(TextCrossEncoderBase):
         return result
 
     def __init__(
-        self: Self,
+        self,
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
@@ -77,7 +72,7 @@ class TextCrossEncoder(TextCrossEncoderBase):
         )
 
     def rerank(
-        self: Self, query: str, documents: Iterable[str], batch_size: int = 64, **kwargs: Any
+        self, query: str, documents: Iterable[str], batch_size: int = 64, **kwargs: Any
     ) -> Iterable[float]:
         """Rerank a list of documents based on a query.
 
@@ -91,6 +86,6 @@ class TextCrossEncoder(TextCrossEncoderBase):
         """
         yield from self.model.rerank(query, documents, batch_size=batch_size, **kwargs)
 
-    def rerank_pairs(self: Self, pairs: Iterable[tuple[str]], batch_size: int = 64,
+    def rerank_pairs(self, pairs: Iterable[tuple[str]], batch_size: int = 64,
         **kwargs: Any,) -> Iterable[float]:
         yield from self.model.rerank_pairs(pairs, batch_size=batch_size, **kwargs)
