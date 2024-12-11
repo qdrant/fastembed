@@ -1,4 +1,4 @@
-from typing import Sized, Union, Optional
+from typing import Sized, Union
 
 import numpy as np
 from PIL import Image
@@ -127,18 +127,24 @@ def pil2ndarray(image: Union[Image.Image, np.ndarray]):
 def pad2square(
     image: Image.Image,
     size: int,
-    fill_color: Optional[Union[str, int, tuple[int, ...]]] = None,
+    fill_color: Union[str, int, tuple[int, ...]] = 0,
 ) -> Image.Image:
     height, width = image.height, image.width
 
-    # if the size is larger than the new canvas
-    if width > size or height > size:
-        left = (width - size) // 2
-        top = (height - size) // 2
-        right = left + size
-        bottom = top + size
-        image = image.crop((left, top, right, bottom))
+    left, right = 0, width
+    top, bottom = 0, height
 
-    new_image = Image.new(mode="RGB", size=(size, size), color=fill_color or 0)
-    new_image.paste(image)
+    crop_required = False
+    if width > size:
+        left = (width - size) // 2
+        right = left + size
+        crop_required = True
+
+    if height > size:
+        top = (height - size) // 2
+        bottom = top + size
+        crop_required = True
+
+    new_image = Image.new(mode="RGB", size=(size, size), color=fill_color)
+    new_image.paste(image.crop((left, top, right, bottom)) if crop_required else image)
     return new_image

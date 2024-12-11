@@ -78,7 +78,7 @@ class TextEmbedding(TextEmbeddingBase):
                 return
 
         raise ValueError(
-            f"Model {model_name} is not supported in TextEmbedding."
+            f"Model {model_name} is not supported in TextEmbedding. "
             "Please check the supported models using `TextEmbedding.list_supported_models()`"
         )
 
