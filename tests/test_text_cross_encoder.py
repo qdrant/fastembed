@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 import pytest
+from sympy.polys.polyconfig import query
 
 from fastembed.rerank.cross_encoder import TextCrossEncoder
 from tests.utils import delete_model_cache
@@ -30,6 +31,12 @@ def test_rerank():
         documents = ["Paris is the capital of France.", "Berlin is the capital of Germany."]
         scores = np.array(list(model.rerank(query, documents)))
 
+        pairs = [(query, doc)for doc in documents]
+        scores2 = np.array(list(model.rerank_pairs(pairs)))
+        assert np.allclose(
+            scores, scores2, atol=1e-5
+        ), f"Model: {model_name}, Scores: {scores}, Scores2: {scores2}"
+
         canonical_scores = CANONICAL_SCORE_VALUES[model_name]
         assert np.allclose(
             scores, canonical_scores, atol=1e-3
@@ -54,6 +61,12 @@ def test_batch_rerank(model_name):
     query = "What is the capital of France?"
     documents = ["Paris is the capital of France.", "Berlin is the capital of Germany."] * 50
     scores = np.array(list(model.rerank(query, documents, batch_size=10)))
+
+    pairs = [(query, doc) for doc in documents]
+    scores2 = np.array(list(model.rerank_pairs(pairs)))
+    assert np.allclose(
+        scores, scores2, atol=1e-5
+    ), f"Model: {model_name}, Scores: {scores}, Scores2: {scores2}"
 
     canonical_scores = np.tile(CANONICAL_SCORE_VALUES[model_name], 50)
 

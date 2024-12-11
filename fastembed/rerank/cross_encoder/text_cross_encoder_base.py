@@ -32,7 +32,7 @@ class TextCrossEncoderBase(ModelManagement):
             **kwargs: Additional keyword argument to pass to the rerank method.
 
         Yields:
-            Iterable[float]: The scores of the reranked documents.
+            Iterable[float]: The scores of the reranked the documents.
         """
         raise NotImplementedError("This method should be overridden by subclasses")
 
@@ -44,7 +44,6 @@ class TextCrossEncoderBase(ModelManagement):
         **kwargs: Any,
     ) -> Iterable[float]:
         """Rerank query-document pairs.
-
         Args:
             pairs Iterable[tuple[str, str]]: Query-document pairs to rerank
             batch_size (int): The batch size to use for reranking.
@@ -53,7 +52,6 @@ class TextCrossEncoderBase(ModelManagement):
                 If 0, use all available cores.
                 If None, don't use data-parallel processing, use default onnxruntime threading instead.
             **kwargs: Additional keyword argument to pass to the rerank method.
-
         Yields:
             Iterable[float]: Scores for each individual pair
         """

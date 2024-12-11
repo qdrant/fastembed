@@ -1,6 +1,6 @@
 from typing import Iterable, Any, Sequence, Optional, Type
 
-from loguru import logger
+
 import numpy as np
 
 from fastembed.common import OnnxProvider
@@ -10,7 +10,16 @@ from fastembed.rerank.cross_encoder.onnx_text_model import (
 )
 from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
 from fastembed.common.utils import define_cache_dir
+from loguru import logger
+
+from fastembed.common import OnnxProvider
 from fastembed.common.onnx_model import OnnxOutputContext
+from fastembed.common.utils import define_cache_dir
+from fastembed.rerank.cross_encoder.onnx_text_model import (
+    OnnxCrossEncoderModel,
+    TextRerankerWorker,
+)
+from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
 
 
 supported_onnx_models = [
@@ -144,7 +153,9 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
         self.model_description = self._get_model_description(model_name)
         self.cache_dir = define_cache_dir(cache_dir)
         self._model_dir = self.download_model(
-            self.model_description, self.cache_dir, local_files_only=self._local_files_only
+            self.model_description,
+            self.cache_dir,
+            local_files_only=self._local_files_only,
         )
 
         if not self.lazy_load:
@@ -194,7 +205,9 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
     def _get_worker_class(cls) -> Type[TextRerankerWorker]:
         return TextCrossEncoderWorker
 
-    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
+    def _post_process_onnx_output(
+        self, output: OnnxOutputContext
+    ) -> Iterable[np.ndarray]:
         return output.model_output
 
 

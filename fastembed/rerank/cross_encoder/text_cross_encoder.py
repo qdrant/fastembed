@@ -1,8 +1,8 @@
 from typing import Any, Iterable, Optional, Sequence, Type
 
-from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
-from fastembed.rerank.cross_encoder.onnx_text_cross_encoder import OnnxTextCrossEncoder
 from fastembed.common import OnnxProvider
+from fastembed.rerank.cross_encoder.onnx_text_cross_encoder import OnnxTextCrossEncoder
+from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
 
 
 class TextCrossEncoder(TextCrossEncoderBase):
@@ -53,7 +53,10 @@ class TextCrossEncoder(TextCrossEncoderBase):
 
         for CROSS_ENCODER_TYPE in self.CROSS_ENCODER_REGISTRY:
             supported_models = CROSS_ENCODER_TYPE.list_supported_models()
-            if any(model_name.lower() == model["model"].lower() for model in supported_models):
+            if any(
+                model_name.lower() == model["model"].lower()
+                for model in supported_models
+            ):
                 self.model = CROSS_ENCODER_TYPE(
                     model_name=model_name,
                     cache_dir=cache_dir,

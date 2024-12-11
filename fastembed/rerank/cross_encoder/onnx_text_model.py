@@ -7,10 +7,11 @@ import numpy as np
 from tokenizers import Encoding
 
 from fastembed.common.onnx_model import (
-    OnnxModel,
-    OnnxProvider,
-    OnnxOutputContext,
     EmbeddingWorker,
+    OnnxModel,
+    OnnxOutputContext,
+    OnnxProvider,
+    T,
 )
 from fastembed.common.preprocessor_utils import load_tokenizer
 from fastembed.common.utils import iter_batch
@@ -106,14 +107,15 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         if parallel is None or is_small:
             if not hasattr(self, "model") or self.model is None:
                 self.load_onnx_model()
-
             for batch in iter_batch(pairs, batch_size):
                 yield from self._post_process_onnx_output(self.onnx_embed_pairs(batch, **kwargs))
         else:
             if parallel == 0:
                 parallel = os.cpu_count()
 
-            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
+            start_method = (
+                "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
+            )
             params = {
                 "model_name": model_name,
                 "cache_dir": cache_dir,
@@ -129,7 +131,9 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
                 start_method=start_method,
             )
             for batch in pool.ordered_map(iter_batch(pairs, batch_size), **params):
-                yield from self._post_process_onnx_output(batch)
+                yield from self._post_process_onnx_output(
+                    self.onnx_embed_pairs(batch, **kwargs)
+                )
 
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[float]:
         return output.model_output

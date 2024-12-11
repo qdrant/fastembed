@@ -79,6 +79,7 @@ class OnnxTextModel(OnnxModel[T]):
             onnx_input["token_type_ids"] = np.array(
                 [np.zeros(len(e), dtype=np.int64) for e in input_ids], dtype=np.int64
             )
+
         onnx_input = self._preprocess_onnx_input(onnx_input, **kwargs)
 
         model_output = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)
@@ -115,7 +116,6 @@ class OnnxTextModel(OnnxModel[T]):
                 self.load_onnx_model()
             for batch in iter_batch(documents, batch_size):
                 yield from self._post_process_onnx_output(self.onnx_embed(batch))
-
         else:
             if parallel == 0:
                 parallel = os.cpu_count()
