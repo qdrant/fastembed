@@ -1,4 +1,4 @@
-from typing import Any, Iterable, Optional
+from typing import Iterable, Optional, Any
 
 from fastembed.common.model_management import ModelManagement
 
@@ -23,7 +23,7 @@ class TextCrossEncoderBase(ModelManagement):
         batch_size: int = 64,
         **kwargs,
     ) -> Iterable[float]:
-        """Reranks a list of documents given a query.
+        """Rerank a list of documents given a query.
 
         Args:
             query (str): The query to rerank the documents.

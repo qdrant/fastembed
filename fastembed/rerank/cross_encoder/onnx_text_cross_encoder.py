@@ -1,6 +1,15 @@
-from typing import Any, Iterable, Optional, Sequence, Type
+from typing import Iterable, Any, Sequence, Optional, Type
+
 
 import numpy as np
+
+from fastembed.common import OnnxProvider
+from fastembed.rerank.cross_encoder.onnx_text_model import (
+    OnnxCrossEncoderModel,
+    TextRerankerWorker,
+)
+from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
+from fastembed.common.utils import define_cache_dir
 from loguru import logger
 
 from fastembed.common import OnnxProvider
@@ -11,6 +20,7 @@ from fastembed.rerank.cross_encoder.onnx_text_model import (
     TextRerankerWorker,
 )
 from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
+
 
 supported_onnx_models = [
     {
