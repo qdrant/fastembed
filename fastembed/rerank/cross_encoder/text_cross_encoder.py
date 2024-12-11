@@ -1,8 +1,8 @@
 from typing import Any, Iterable, Optional, Sequence, Type
 
-from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
-from fastembed.rerank.cross_encoder.onnx_text_cross_encoder import OnnxTextCrossEncoder
 from fastembed.common import OnnxProvider
+from fastembed.rerank.cross_encoder.onnx_text_cross_encoder import OnnxTextCrossEncoder
+from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
 
 
 class TextCrossEncoder(TextCrossEncoderBase):
@@ -47,13 +47,16 @@ class TextCrossEncoder(TextCrossEncoderBase):
         cuda: bool = False,
         device_ids: Optional[list[int]] = None,
         lazy_load: bool = False,
-        **kwargs : Any,
+        **kwargs: Any,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
 
         for CROSS_ENCODER_TYPE in self.CROSS_ENCODER_REGISTRY:
             supported_models = CROSS_ENCODER_TYPE.list_supported_models()
-            if any(model_name.lower() == model["model"].lower() for model in supported_models):
+            if any(
+                model_name.lower() == model["model"].lower()
+                for model in supported_models
+            ):
                 self.model = CROSS_ENCODER_TYPE(
                     model_name=model_name,
                     cache_dir=cache_dir,
@@ -86,6 +89,10 @@ class TextCrossEncoder(TextCrossEncoderBase):
         """
         yield from self.model.rerank(query, documents, batch_size=batch_size, **kwargs)
 
-    def rerank_pairs(self, pairs: Iterable[tuple[str]], batch_size: int = 64,
-        **kwargs: Any,) -> Iterable[float]:
+    def rerank_pairs(
+        self,
+        pairs: Iterable[tuple[str, str]],
+        batch_size: int = 64,
+        **kwargs: Any,
+    ) -> Iterable[float]:
         yield from self.model.rerank_pairs(pairs, batch_size=batch_size, **kwargs)

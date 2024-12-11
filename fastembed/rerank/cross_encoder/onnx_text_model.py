@@ -1,12 +1,18 @@
-from typing import Sequence, Optional, Iterable, Any
-
-from pathlib import Path
 import os
+from multiprocessing import get_all_start_methods
+from pathlib import Path
+from typing import Any, Iterable, Optional, Sequence
+
 import numpy as np
 from tokenizers import Encoding
-from multiprocessing import get_all_start_methods
 
-from fastembed.common.onnx_model import OnnxModel, OnnxProvider, OnnxOutputContext, EmbeddingWorker, T
+from fastembed.common.onnx_model import (
+    EmbeddingWorker,
+    OnnxModel,
+    OnnxOutputContext,
+    OnnxProvider,
+    T,
+)
 from fastembed.common.preprocessor_utils import load_tokenizer
 from fastembed.common.utils import iter_batch
 from fastembed.parallel_processor import ParallelWorkerPool
@@ -34,7 +40,9 @@ class OnnxCrossEncoderModel(OnnxModel):
         )
         self.tokenizer, _ = load_tokenizer(model_dir=model_dir)
 
-    def tokenize(self, pairs: Iterable[tuple[str, str]], **kwargs: Any) -> list[Encoding]:
+    def tokenize(
+        self, pairs: Iterable[tuple[str, str]], **kwargs: Any
+    ) -> list[Encoding]:
         return self.tokenizer.encode_batch([pair for pair in pairs], **kwargs)
 
     def _build_onnx_input(self, tokenized_input):
@@ -51,11 +59,13 @@ class OnnxCrossEncoderModel(OnnxModel):
             )
         return inputs
 
-    def onnx_embed(self, query: str, documents: list[str], **kwargs: Any) -> OnnxOutputContext:
+    def onnx_embed(
+        self, query: str, documents: list[str], **kwargs: Any
+    ) -> OnnxOutputContext:
         pairs = ((query, doc) for doc in documents)
         return self.onnx_embed_pairs(pairs, **kwargs)
 
-    def onnx_embed_pairs(self, pairs: Iterable[tuple[str, str]], **kwargs: Any):
+    def onnx_embed_pairs(self, pairs: list[tuple[str, str]], **kwargs: Any):
         tokenized_input = self.tokenize(pairs, **kwargs)
         inputs = self._build_onnx_input(tokenized_input)
         onnx_input = self._preprocess_onnx_input(inputs, **kwargs)
@@ -73,7 +83,12 @@ class OnnxCrossEncoderModel(OnnxModel):
             yield from self.onnx_embed(query, batch, **kwargs).model_output
 
     def _rerank_pairs(
-        self, pairs: Iterable[tuple[str,str]], batch_size: int, parallel: Optional[int] = None,
+        self,
+        model_name: str,
+        cache_dir: str,
+        pairs: Iterable[tuple[str, str]],
+        batch_size: int,
+        parallel: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
         cuda: bool = False,
         device_ids: Optional[list[int]] = None,
@@ -93,16 +108,20 @@ class OnnxCrossEncoderModel(OnnxModel):
                 is_small = True
 
         if parallel is None or is_small:
+            if not hasattr(self, "model") or self.model is None:
+                self.load_onnx_model()
             for batch in iter_batch(pairs, batch_size):
                 yield from self.onnx_embed_pairs(batch, **kwargs).model_output
         else:
             if parallel == 0:
                 parallel = os.cpu_count()
 
-            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
+            start_method = (
+                "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
+            )
             params = {
-                "model_name": self.model_description['model'],
-                "cache_dir": self.cache_dir,
+                "model_name": model_name,
+                "cache_dir": cache_dir,
                 "providers": providers,
                 **kwargs,
             }
@@ -115,10 +134,12 @@ class OnnxCrossEncoderModel(OnnxModel):
                 start_method=start_method,
             )
             for batch in pool.ordered_map(iter_batch(pairs, batch_size), **params):
-                yield from self._post_process_onnx_output(batch)
+                yield from self._post_process_onnx_output(
+                    self.onnx_embed_pairs(batch, **kwargs)
+                )
 
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[T]:
-        raise NotImplementedError("Subclasses must implement this method")
+        return output.model_output
 
     def _preprocess_onnx_input(
         self, onnx_input: dict[str, np.ndarray], **kwargs: Any
