@@ -1,8 +1,10 @@
 from typing import Any, Iterable, Optional, Sequence, Type
 
 from fastembed.common import OnnxProvider
-from fastembed.rerank.cross_encoder.onnx_text_cross_encoder import OnnxTextCrossEncoder
-from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
+from fastembed.rerank.cross_encoder.onnx_text_cross_encoder import \
+    OnnxTextCrossEncoder
+from fastembed.rerank.cross_encoder.text_cross_encoder_base import \
+    TextCrossEncoderBase
 
 
 class TextCrossEncoder(TextCrossEncoderBase):

@@ -1,26 +1,15 @@
-from typing import Iterable, Any, Sequence, Optional, Type
-
+from typing import Any, Iterable, Optional, Sequence, Type
 
 import numpy as np
-
-from fastembed.common import OnnxProvider
-from fastembed.rerank.cross_encoder.onnx_text_model import (
-    OnnxCrossEncoderModel,
-    TextRerankerWorker,
-)
-from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
-from fastembed.common.utils import define_cache_dir
 from loguru import logger
 
 from fastembed.common import OnnxProvider
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.utils import define_cache_dir
 from fastembed.rerank.cross_encoder.onnx_text_model import (
-    OnnxCrossEncoderModel,
-    TextRerankerWorker,
-)
-from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
-
+    OnnxCrossEncoderModel, TextRerankerWorker)
+from fastembed.rerank.cross_encoder.text_cross_encoder_base import \
+    TextCrossEncoderBase
 
 supported_onnx_models = [
     {
@@ -199,7 +188,13 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
         batch_size: int = 64,
         **kwargs: Any,
     ) -> Iterable[float]:
-        yield from self._rerank_pairs(pairs=pairs, batch_size=batch_size, **kwargs)
+        yield from self._rerank_pairs(
+            model_name=self._model_dir,
+            cache_dir=self.cache_dir,
+            pairs=pairs,
+            batch_size=batch_size,
+            **kwargs,
+        )
 
     @classmethod
     def _get_worker_class(cls) -> Type[TextRerankerWorker]:

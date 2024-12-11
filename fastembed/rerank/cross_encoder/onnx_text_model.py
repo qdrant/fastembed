@@ -1,18 +1,13 @@
 import os
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Sequence, Optional, Iterable, Any, Type
+from typing import Any, Iterable, Optional, Sequence, Type
 
 import numpy as np
 from tokenizers import Encoding
 
-from fastembed.common.onnx_model import (
-    EmbeddingWorker,
-    OnnxModel,
-    OnnxOutputContext,
-    OnnxProvider,
-    T,
-)
+from fastembed.common.onnx_model import (EmbeddingWorker, OnnxModel,
+                                         OnnxOutputContext, OnnxProvider, T)
 from fastembed.common.preprocessor_utils import load_tokenizer
 from fastembed.common.utils import iter_batch
 from fastembed.parallel_processor import ParallelWorkerPool
@@ -61,7 +56,9 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
             )
         return inputs
 
-    def onnx_embed(self, query: str, documents: list[str], **kwargs: Any) -> OnnxOutputContext:
+    def onnx_embed(
+        self, query: str, documents: list[str], **kwargs: Any
+    ) -> OnnxOutputContext:
         pairs = [(query, doc) for doc in documents]
         return self.onnx_embed_pairs(pairs, **kwargs)
 
@@ -80,7 +77,9 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         if not hasattr(self, "model") or self.model is None:
             self.load_onnx_model()
         for batch in iter_batch(documents, batch_size):
-            yield from self._post_process_onnx_output(self.onnx_embed(query, batch, **kwargs))
+            yield from self._post_process_onnx_output(
+                self.onnx_embed(query, batch, **kwargs)
+            )
 
     def _rerank_pairs(
         self,
@@ -108,7 +107,9 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
             if not hasattr(self, "model") or self.model is None:
                 self.load_onnx_model()
             for batch in iter_batch(pairs, batch_size):
-                yield from self._post_process_onnx_output(self.onnx_embed_pairs(batch, **kwargs))
+                yield from self._post_process_onnx_output(
+                    self.onnx_embed_pairs(batch, **kwargs)
+                )
         else:
             if parallel == 0:
                 parallel = os.cpu_count()

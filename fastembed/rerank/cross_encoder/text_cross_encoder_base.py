@@ -1,4 +1,4 @@
-from typing import Iterable, Optional, Any
+from typing import Any, Iterable, Optional
 
 from fastembed.common.model_management import ModelManagement
 
