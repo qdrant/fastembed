@@ -79,11 +79,6 @@ class OnnxTextModel(OnnxModel[T]):
             onnx_input["token_type_ids"] = np.array(
                 [np.zeros(len(e), dtype=np.int64) for e in input_ids], dtype=np.int64
             )
-        if "pixel_values" in input_names:
-            onnx_input["pixel_values"] = np.zeros(
-                (np.array(input_ids, dtype=np.int64).shape[0], 3, 448, 448), dtype=np.float32
-            )
-
         onnx_input = self._preprocess_onnx_input(onnx_input, **kwargs)
 
         model_output = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)

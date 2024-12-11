@@ -1,12 +1,17 @@
-from typing import Iterable, Any, Sequence, Optional, Self, Type
+from typing import Iterable, Any, Sequence, Optional, Type
 
 from loguru import logger
 import numpy as np
+
 from fastembed.common import OnnxProvider
-from fastembed.rerank.cross_encoder.onnx_text_model import OnnxCrossEncoderModel, TextRerankerWorker
+from fastembed.rerank.cross_encoder.onnx_text_model import (
+    OnnxCrossEncoderModel,
+    TextRerankerWorker,
+)
 from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
 from fastembed.common.utils import define_cache_dir
 from fastembed.common.onnx_model import OnnxOutputContext
+
 
 supported_onnx_models = [
     {
@@ -83,7 +88,7 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
         return supported_onnx_models
 
     def __init__(
-        self: Self,
+        self,
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
@@ -156,7 +161,7 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
         )
 
     def rerank(
-        self: Self,
+        self,
         query: str,
         documents: Iterable[str],
         batch_size: int = 64,
@@ -178,14 +183,12 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
         )
 
     def rerank_pairs(
-        self: Self,
+        self,
         pairs: Iterable[tuple[str, str]],
         batch_size: int = 64,
         **kwargs: Any,
     ) -> Iterable[float]:
-        yield from self._rerank_pairs(
-            pairs=pairs, batch_size=batch_size, **kwargs
-        )
+        yield from self._rerank_pairs(pairs=pairs, batch_size=batch_size, **kwargs)
 
     @classmethod
     def _get_worker_class(cls) -> Type[TextRerankerWorker]:
