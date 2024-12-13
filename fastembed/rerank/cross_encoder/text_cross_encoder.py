@@ -95,6 +95,7 @@ class TextCrossEncoder(TextCrossEncoderBase):
         self,
         pairs: Iterable[tuple[str, str]],
         batch_size: int = 64,
+        parallel: Optional[int] = None,
         **kwargs: Any,
     ) -> Iterable[float]:
         yield from self.model.rerank_pairs(pairs, batch_size=batch_size, **kwargs)
