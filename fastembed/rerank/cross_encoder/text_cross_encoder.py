@@ -98,4 +98,4 @@ class TextCrossEncoder(TextCrossEncoderBase):
         parallel: Optional[int] = None,
         **kwargs: Any,
     ) -> Iterable[float]:
-        yield from self.model.rerank_pairs(pairs, batch_size=batch_size, **kwargs)
+        yield from self.model.rerank_pairs(pairs, batch_size=batch_size, parallel=parallel, **kwargs)
