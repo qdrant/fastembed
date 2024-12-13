@@ -6,8 +6,13 @@ from typing import Any, Iterable, Optional, Sequence, Type
 import numpy as np
 from tokenizers import Encoding
 
-from fastembed.common.onnx_model import (EmbeddingWorker, OnnxModel,
-                                         OnnxOutputContext, OnnxProvider, T)
+from fastembed.common.onnx_model import (
+    EmbeddingWorker,
+    OnnxModel,
+    OnnxOutputContext,
+    OnnxProvider,
+    T,
+)
 from fastembed.common.preprocessor_utils import load_tokenizer
 from fastembed.common.utils import iter_batch
 from fastembed.parallel_processor import ParallelWorkerPool
@@ -132,9 +137,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
                 start_method=start_method,
             )
             for batch in pool.ordered_map(iter_batch(pairs, batch_size), **params):
-                yield from self._post_process_onnx_output(
-                    self.onnx_embed_pairs(batch, **kwargs)
-                )
+                yield from self._post_process_onnx_output(batch)
 
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[float]:
         return output.model_output

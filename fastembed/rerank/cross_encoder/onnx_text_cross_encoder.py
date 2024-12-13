@@ -7,9 +7,10 @@ from fastembed.common import OnnxProvider
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.utils import define_cache_dir
 from fastembed.rerank.cross_encoder.onnx_text_model import (
-    OnnxCrossEncoderModel, TextRerankerWorker)
-from fastembed.rerank.cross_encoder.text_cross_encoder_base import \
-    TextCrossEncoderBase
+    OnnxCrossEncoderModel,
+    TextRerankerWorker,
+)
+from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
 
 supported_onnx_models = [
     {
@@ -189,7 +190,7 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
         **kwargs: Any,
     ) -> Iterable[float]:
         yield from self._rerank_pairs(
-            model_name=self._model_dir,
+            model_name=self.model_name,
             cache_dir=self.cache_dir,
             pairs=pairs,
             batch_size=batch_size,

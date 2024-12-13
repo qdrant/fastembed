@@ -93,3 +93,30 @@ def test_lazy_load(model_name):
 
     if is_ci:
         delete_model_cache(model.model._model_dir)
+
+@pytest.mark.parametrize(
+    "model_name",
+    [
+        model_desc["model"]
+        for model_desc in TextCrossEncoder.list_supported_models()
+        if model_desc["size_in_GB"] < 1 and model_desc["model"] in CANONICAL_SCORE_VALUES.keys()
+    ],
+)
+def test_rerank_pairs_parallel(model_name):
+    is_ci = os.getenv("CI")
+
+    model = TextCrossEncoder(model_name=model_name)
+    query = "What is the capital of France?"
+    documents = ["Paris is the capital of France.", "Berlin is the capital of Germany."] * 10
+    pairs = [(query, doc) for doc in documents]
+    scores_parallel = np.array(list(model.rerank_pairs(pairs, parallel=2, batch_size=10)))
+    scores_sequential = np.array(list(model.rerank_pairs(pairs, batch_size=10)))
+    assert np.allclose(
+        scores_parallel, scores_sequential, atol=1e-5
+    ), f"Model: {model_name}, Scores (Parallel): {scores_parallel}, Scores (Sequential): {scores_sequential}"
+    canonical_scores = CANONICAL_SCORE_VALUES[model_name]
+    assert np.allclose(
+        scores_parallel[:len(canonical_scores)], canonical_scores, atol=1e-3
+    ), f"Model: {model_name}, Scores (Parallel): {scores_parallel}, Expected: {canonical_scores}"
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
