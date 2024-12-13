@@ -45,7 +45,7 @@ class TextCrossEncoderBase(ModelManagement):
     ) -> Iterable[float]:
         """Rerank query-document pairs.
         Args:
-            pairs Iterable[tuple[str, str]]: Query-document pairs to rerank
+            pairs (Iterable[tuple[str, str]]): Query-document pairs to rerank
             batch_size (int): The batch size to use for reranking.
             parallel: parallel:
                 If > 1, data-parallel encoding will be used, recommended for offline encoding of large datasets.
