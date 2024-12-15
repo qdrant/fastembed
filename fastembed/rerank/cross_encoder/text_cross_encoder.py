@@ -96,6 +96,28 @@ class TextCrossEncoder(TextCrossEncoderBase):
         parallel: Optional[int] = None,
         **kwargs: Any,
     ) -> Iterable[float]:
+        """
+        Rerank a list of query-document pairs.
+
+        Args:
+            pairs (Iterable[tuple[str, str]]): An iterable of tuples, where each tuple contains a query and a document
+                to be scored together.
+            batch_size (int, optional): The number of query-document pairs to process in a single batch. Defaults to 64.
+            parallel (Optional[int], optional): The number of parallel processes to use for reranking.
+                If None, parallelization is disabled. Defaults to None.
+            **kwargs (Any): Additional arguments to pass to the underlying reranking model.
+
+        Returns:
+            Iterable[float]: An iterable of scores corresponding to each query-document pair in the input.
+            Higher scores indicate a stronger match between the query and the document.
+
+        Example:
+            >>> encoder = TextCrossEncoder("some-model")
+            >>> pairs = [("What is AI?", "Artificial intelligence is ..."), ("What is ML?", "Machine learning is ...")]
+            >>> scores = list(encoder.rerank_pairs(pairs))
+            >>> print(scores)
+            [0.92, 0.87]
+        """
         yield from self.model.rerank_pairs(
             pairs, batch_size=batch_size, parallel=parallel, **kwargs
         )

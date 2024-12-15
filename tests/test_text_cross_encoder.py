@@ -2,7 +2,6 @@ import os
 
 import numpy as np
 import pytest
-from sympy.polys.polyconfig import query
 
 from fastembed.rerank.cross_encoder import TextCrossEncoder
 from tests.utils import delete_model_cache
