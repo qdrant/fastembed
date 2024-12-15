@@ -187,13 +187,18 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
         self,
         pairs: Iterable[tuple[str, str]],
         batch_size: int = 64,
+        parallel: Optional[int] = None,
         **kwargs: Any,
     ) -> Iterable[float]:
         yield from self._rerank_pairs(
             model_name=self.model_name,
-            cache_dir=self.cache_dir,
+            cache_dir=str(self.cache_dir),
             pairs=pairs,
             batch_size=batch_size,
+            parallel=parallel,
+            providers=self.providers,
+            cuda=self.cuda,
+            device_ids=self.device_ids,
             **kwargs,
         )
 
@@ -203,7 +208,7 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
 
     def _post_process_onnx_output(
         self, output: OnnxOutputContext
-    ) -> Iterable[np.ndarray]:
+    ) -> Iterable[float]:
         return output.model_output
 
 
