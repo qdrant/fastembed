@@ -62,8 +62,8 @@ def center_crop(
 
 def normalize(
     image: np.ndarray,
-    mean=Union[float, np.ndarray],
-    std=Union[float, np.ndarray],
+    mean: Union[float, np.ndarray],
+    std: Union[float, np.ndarray],
 ) -> np.ndarray:
     if not isinstance(image, np.ndarray):
         raise ValueError("image must be a numpy array")
@@ -96,10 +96,10 @@ def normalize(
 
 
 def resize(
-    image: Image,
+    image: Image.Image,
     size: Union[int, tuple[int, int]],
-    resample: Image.Resampling = Image.Resampling.BILINEAR,
-) -> Image:
+    resample: Union[int, Image.Resampling] = Image.Resampling.BILINEAR,
+) -> Image.Image:
     if isinstance(size, tuple):
         return image.resize(size, resample)
 
@@ -122,3 +122,29 @@ def pil2ndarray(image: Union[Image.Image, np.ndarray]):
     if isinstance(image, Image.Image):
         return np.asarray(image).transpose((2, 0, 1))
     return image
+
+
+def pad2square(
+    image: Image.Image,
+    size: int,
+    fill_color: Union[str, int, tuple[int, ...]] = 0,
+) -> Image.Image:
+    height, width = image.height, image.width
+
+    left, right = 0, width
+    top, bottom = 0, height
+
+    crop_required = False
+    if width > size:
+        left = (width - size) // 2
+        right = left + size
+        crop_required = True
+
+    if height > size:
+        top = (height - size) // 2
+        bottom = top + size
+        crop_required = True
+
+    new_image = Image.new(mode="RGB", size=(size, size), color=fill_color)
+    new_image.paste(image.crop((left, top, right, bottom)) if crop_required else image)
+    return new_image

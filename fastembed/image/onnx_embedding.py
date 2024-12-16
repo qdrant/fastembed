@@ -53,6 +53,17 @@ supported_onnx_models = [
         },
         "model_file": "model.onnx",
     },
+    {
+        "model": "jinaai/jina-clip-v1",
+        "dim": 768,
+        "description": "Image embeddings, Multimodal (text&image), 2024 year",
+        "license": "apache-2.0",
+        "size_in_GB": 0.34,
+        "sources": {
+            "hf": "jinaai/jina-clip-v1",
+        },
+        "model_file": "onnx/vision_model.onnx",
+    },
 ]
 
 
