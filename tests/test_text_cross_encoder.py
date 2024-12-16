@@ -26,7 +26,7 @@ SELECTED_MODELS = {
     "model_name",
     [
         model_name
-        for provider, model_name in SELECTED_MODELS.items()
+        for model_name in CANONICAL_SCORE_VALUES.keys()
     ],
 )
 def test_rerank(model_name):
