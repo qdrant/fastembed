@@ -1,8 +1,8 @@
 from typing import Any, Iterable, Optional, Sequence, Type
 
-from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
-from fastembed.rerank.cross_encoder.onnx_text_cross_encoder import OnnxTextCrossEncoder
 from fastembed.common import OnnxProvider
+from fastembed.rerank.cross_encoder.onnx_text_cross_encoder import OnnxTextCrossEncoder
+from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
 
 
 class TextCrossEncoder(TextCrossEncoderBase):
@@ -47,7 +47,7 @@ class TextCrossEncoder(TextCrossEncoderBase):
         cuda: bool = False,
         device_ids: Optional[list[int]] = None,
         lazy_load: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
 
@@ -72,7 +72,7 @@ class TextCrossEncoder(TextCrossEncoderBase):
         )
 
     def rerank(
-        self, query: str, documents: Iterable[str], batch_size: int = 64, **kwargs
+        self, query: str, documents: Iterable[str], batch_size: int = 64, **kwargs: Any
     ) -> Iterable[float]:
         """Rerank a list of documents based on a query.
 
@@ -85,3 +85,36 @@ class TextCrossEncoder(TextCrossEncoderBase):
             Iterable of scores for each document
         """
         yield from self.model.rerank(query, documents, batch_size=batch_size, **kwargs)
+
+    def rerank_pairs(
+        self,
+        pairs: Iterable[tuple[str, str]],
+        batch_size: int = 64,
+        parallel: Optional[int] = None,
+        **kwargs: Any,
+    ) -> Iterable[float]:
+        """
+        Rerank a list of query-document pairs.
+
+        Args:
+            pairs (Iterable[tuple[str, str]]): An iterable of tuples, where each tuple contains a query and a document
+                to be scored together.
+            batch_size (int, optional): The number of query-document pairs to process in a single batch. Defaults to 64.
+            parallel (Optional[int], optional): The number of parallel processes to use for reranking.
+                If None, parallelization is disabled. Defaults to None.
+            **kwargs (Any): Additional arguments to pass to the underlying reranking model.
+
+        Returns:
+            Iterable[float]: An iterable of scores corresponding to each query-document pair in the input.
+            Higher scores indicate a stronger match between the query and the document.
+
+        Example:
+            >>> encoder = TextCrossEncoder("Xenova/ms-marco-MiniLM-L-6-v2")
+            >>> pairs = [("What is AI?", "Artificial intelligence is ..."), ("What is ML?", "Machine learning is ...")]
+            >>> scores = list(encoder.rerank_pairs(pairs))
+            >>> print(list(map(lambda x: round(x, 2), scores)))
+            [-1.24, -10.6]
+        """
+        yield from self.model.rerank_pairs(
+            pairs, batch_size=batch_size, parallel=parallel, **kwargs
+        )
