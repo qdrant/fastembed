@@ -48,16 +48,17 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         return self.tokenizer.encode_batch(pairs, **kwargs)
 
     def _build_onnx_input(self, tokenized_input):
+        input_names = {node.name for node in self.model.get_inputs()}
         inputs = {
             "input_ids": np.array([enc.ids for enc in tokenized_input], dtype=np.int64),
-            "attention_mask": np.array(
-                [enc.attention_mask for enc in tokenized_input], dtype=np.int64
-            ),
         }
-        input_names = {node.name for node in self.model.get_inputs()}
         if "token_type_ids" in input_names:
             inputs["token_type_ids"] = np.array(
                 [enc.type_ids for enc in tokenized_input], dtype=np.int64
+            )
+        if "attention_mask" in input_names:
+            inputs['attention_mask'] =  np.array(
+                [enc.attention_mask for enc in tokenized_input], dtype=np.int64
             )
         return inputs
 
@@ -67,7 +68,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         pairs = [(query, doc) for doc in documents]
         return self.onnx_embed_pairs(pairs, **kwargs)
 
-    def onnx_embed_pairs(self, pairs: list[tuple[str, str]], **kwargs: Any):
+    def onnx_embed_pairs(self, pairs: list[tuple[str, str]], **kwargs: Any) -> OnnxOutputContext:
         tokenized_input = self.tokenize(pairs, **kwargs)
         inputs = self._build_onnx_input(tokenized_input)
         onnx_input = self._preprocess_onnx_input(inputs, **kwargs)

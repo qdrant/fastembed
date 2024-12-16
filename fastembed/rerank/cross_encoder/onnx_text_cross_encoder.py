@@ -209,7 +209,7 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
     def _post_process_onnx_output(
         self, output: OnnxOutputContext
     ) -> Iterable[float]:
-        return output.model_output
+        return (float(elem) for elem in output.model_output)
 
 
 class TextCrossEncoderWorker(TextRerankerWorker):
