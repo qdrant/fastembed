@@ -53,10 +53,7 @@ class TextCrossEncoder(TextCrossEncoderBase):
 
         for CROSS_ENCODER_TYPE in self.CROSS_ENCODER_REGISTRY:
             supported_models = CROSS_ENCODER_TYPE.list_supported_models()
-            if any(
-                model_name.lower() == model["model"].lower()
-                for model in supported_models
-            ):
+            if any(model_name.lower() == model["model"].lower() for model in supported_models):
                 self.model = CROSS_ENCODER_TYPE(
                     model_name=model_name,
                     cache_dir=cache_dir,
@@ -112,11 +109,11 @@ class TextCrossEncoder(TextCrossEncoderBase):
             Higher scores indicate a stronger match between the query and the document.
 
         Example:
-            >>> encoder = TextCrossEncoder("some-model")
+            >>> encoder = TextCrossEncoder("Xenova/ms-marco-MiniLM-L-6-v2")
             >>> pairs = [("What is AI?", "Artificial intelligence is ..."), ("What is ML?", "Machine learning is ...")]
             >>> scores = list(encoder.rerank_pairs(pairs))
-            >>> print(scores)
-            [0.92, 0.87]
+            >>> print(list(map(lambda x: round(x, 2), scores)))
+            [-1.24, -10.6]
         """
         yield from self.model.rerank_pairs(
             pairs, batch_size=batch_size, parallel=parallel, **kwargs

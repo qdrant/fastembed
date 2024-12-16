@@ -1,6 +1,5 @@
 from typing import Any, Iterable, Optional, Sequence, Type
 
-import numpy as np
 from loguru import logger
 
 from fastembed.common import OnnxProvider
@@ -206,9 +205,7 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
     def _get_worker_class(cls) -> Type[TextRerankerWorker]:
         return TextCrossEncoderWorker
 
-    def _post_process_onnx_output(
-        self, output: OnnxOutputContext
-    ) -> Iterable[float]:
+    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[float]:
         return (float(elem) for elem in output.model_output)
 
 

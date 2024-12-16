@@ -24,10 +24,7 @@ SELECTED_MODELS = {
 
 @pytest.mark.parametrize(
     "model_name",
-    [
-        model_name
-        for model_name in CANONICAL_SCORE_VALUES.keys()
-    ],
+    [model_name for model_name in CANONICAL_SCORE_VALUES],
 )
 def test_rerank(model_name):
     is_ci = os.getenv("CI")
@@ -51,12 +48,10 @@ def test_rerank(model_name):
     if is_ci:
         delete_model_cache(model.model._model_dir)
 
+
 @pytest.mark.parametrize(
     "model_name",
-    [
-        model_name
-        for provider, model_name in SELECTED_MODELS.items()
-    ],
+    [model_name for model_name in SELECTED_MODELS.values()],
 )
 def test_batch_rerank(model_name):
     is_ci = os.getenv("CI")
@@ -99,12 +94,10 @@ def test_lazy_load(model_name):
     if is_ci:
         delete_model_cache(model.model._model_dir)
 
+
 @pytest.mark.parametrize(
     "model_name",
-    [
-        model_name
-        for provider, model_name in SELECTED_MODELS.items()
-    ],
+    [model_name for model_name in SELECTED_MODELS.values()],
 )
 def test_rerank_pairs_parallel(model_name):
     is_ci = os.getenv("CI")
@@ -120,7 +113,7 @@ def test_rerank_pairs_parallel(model_name):
     ), f"Model: {model_name}, Scores (Parallel): {scores_parallel}, Scores (Sequential): {scores_sequential}"
     canonical_scores = CANONICAL_SCORE_VALUES[model_name]
     assert np.allclose(
-        scores_parallel[:len(canonical_scores)], canonical_scores, atol=1e-3
+        scores_parallel[: len(canonical_scores)], canonical_scores, atol=1e-3
     ), f"Model: {model_name}, Scores (Parallel): {scores_parallel}, Expected: {canonical_scores}"
     if is_ci:
         delete_model_cache(model.model._model_dir)

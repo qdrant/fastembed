@@ -11,7 +11,6 @@ from fastembed.common.onnx_model import (
     OnnxModel,
     OnnxOutputContext,
     OnnxProvider,
-    T,
 )
 from fastembed.common.preprocessor_utils import load_tokenizer
 from fastembed.common.utils import iter_batch
@@ -44,8 +43,8 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         )
         self.tokenizer, _ = load_tokenizer(model_dir=model_dir)
 
-    def tokenize(self, pairs: list[tuple[str, str]], **kwargs: Any) -> list[Encoding]:
-        return self.tokenizer.encode_batch(pairs, **kwargs)
+    def tokenize(self, pairs: list[tuple[str, str]], **_: Any) -> list[Encoding]:
+        return self.tokenizer.encode_batch(pairs)
 
     def _build_onnx_input(self, tokenized_input):
         input_names = {node.name for node in self.model.get_inputs()}
@@ -57,14 +56,12 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
                 [enc.type_ids for enc in tokenized_input], dtype=np.int64
             )
         if "attention_mask" in input_names:
-            inputs['attention_mask'] =  np.array(
+            inputs["attention_mask"] = np.array(
                 [enc.attention_mask for enc in tokenized_input], dtype=np.int64
             )
         return inputs
 
-    def onnx_embed(
-        self, query: str, documents: list[str], **kwargs: Any
-    ) -> OnnxOutputContext:
+    def onnx_embed(self, query: str, documents: list[str], **kwargs: Any) -> OnnxOutputContext:
         pairs = [(query, doc) for doc in documents]
         return self.onnx_embed_pairs(pairs, **kwargs)
 
@@ -83,9 +80,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         if not hasattr(self, "model") or self.model is None:
             self.load_onnx_model()
         for batch in iter_batch(documents, batch_size):
-            yield from self._post_process_onnx_output(
-                self.onnx_embed(query, batch, **kwargs)
-            )
+            yield from self._post_process_onnx_output(self.onnx_embed(query, batch, **kwargs))
 
     def _rerank_pairs(
         self,
@@ -113,16 +108,12 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
             if not hasattr(self, "model") or self.model is None:
                 self.load_onnx_model()
             for batch in iter_batch(pairs, batch_size):
-                yield from self._post_process_onnx_output(
-                    self.onnx_embed_pairs(batch, **kwargs)
-                )
+                yield from self._post_process_onnx_output(self.onnx_embed_pairs(batch, **kwargs))
         else:
             if parallel == 0:
                 parallel = os.cpu_count()
 
-            start_method = (
-                "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
-            )
+            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
             params = {
                 "model_name": model_name,
                 "cache_dir": cache_dir,
@@ -141,7 +132,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
                 yield from self._post_process_onnx_output(batch)
 
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[float]:
-        return output.model_output
+        raise NotImplementedError("Subclasses must implement this method")
 
     def _preprocess_onnx_input(
         self, onnx_input: dict[str, np.ndarray], **kwargs: Any
