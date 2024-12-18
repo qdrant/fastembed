@@ -52,6 +52,13 @@ class OnnxModel(Generic[T]):
         model_path = model_dir / model_file
         # List of Execution Providers: https://onnxruntime.ai/docs/execution-providers
 
+        if cuda and providers is not None:
+            warnings.warn(
+                "You have specified both `cuda=True` and `providers`. This creates a conflict because `providers` takes precedence. "
+                "Avoid specifying `providers` and use `cuda=True` at the same time.",
+                category=UserWarning,
+            )
+
         if providers is not None:
             onnx_providers = list(providers)
         elif cuda:
