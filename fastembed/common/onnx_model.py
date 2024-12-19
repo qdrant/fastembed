@@ -52,6 +52,13 @@ class OnnxModel(Generic[T]):
         model_path = model_dir / model_file
         # List of Execution Providers: https://onnxruntime.ai/docs/execution-providers
 
+        if cuda and providers is not None:
+            warnings.warn(
+                f"`cuda` and `providers` are mutually exclusive parameters, cuda: {cuda}, providers: {providers}",
+                category=UserWarning,
+                stacklevel=6,
+            )
+
         if providers is not None:
             onnx_providers = list(providers)
         elif cuda:
