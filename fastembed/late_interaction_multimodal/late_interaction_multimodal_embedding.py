@@ -1,14 +1,17 @@
-from typing import Any, Iterable, Optional, Sequence, Type
+from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
 
-from fastembed.common import ImageInput, OnnxProvider
-from fastembed.image.image_embedding_base import ImageEmbeddingBase
-from fastembed.image.onnx_embedding import OnnxImageEmbedding
+from fastembed.common import OnnxProvider, ImageInput
+from fastembed.late_interaction_multimodal.colpali import ColPali
+
+from fastembed.late_interaction_multimodal.late_interaction_multimodal_embedding_base import (
+    LateInteractionMultimodalEmbeddingBase,
+)
 
 
-class ImageEmbedding(ImageEmbeddingBase):
-    EMBEDDINGS_REGISTRY: list[Type[ImageEmbeddingBase]] = [OnnxImageEmbedding]
+class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase):
+    EMBEDDINGS_REGISTRY: list[Type[LateInteractionMultimodalEmbeddingBase]] = [ColPali]
 
     @classmethod
     def list_supported_models(cls) -> list[dict[str, Any]]:
@@ -22,16 +25,16 @@ class ImageEmbedding(ImageEmbeddingBase):
                 ```
                 [
                     {
-                        "model": "Qdrant/clip-ViT-B-32-vision",
-                        "dim": 512,
-                        "description": "CLIP vision encoder based on ViT-B/32",
+                        "model": "colpali",
+                        "dim": ...,
+                        "description": "Late interaction model",
                         "license": "mit",
-                        "size_in_GB": 0.33,
+                        "size_in_GB": 6.06,
                         "sources": {
-                            "hf": "Qdrant/clip-ViT-B-32-vision",
+                            "hf": "colpali",
                         },
                         "model_file": "model.onnx",
-                    }
+                    },
                 ]
                 ```
         """
@@ -68,11 +71,34 @@ class ImageEmbedding(ImageEmbeddingBase):
                 return
 
         raise ValueError(
-            f"Model {model_name} is not supported in ImageEmbedding."
-            "Please check the supported models using `ImageEmbedding.list_supported_models()`"
+            f"Model {model_name} is not supported in LateInteractionMultimodalEmbedding."
+            "Please check the supported models using `LateInteractionMultimodalEmbedding.list_supported_models()`"
         )
 
-    def embed(
+    def embed_text(
+        self,
+        documents: Union[str, Iterable[str]],
+        batch_size: int = 256,
+        parallel: Optional[int] = None,
+        **kwargs,
+    ) -> Iterable[np.ndarray]:
+        """
+        Encode a list of documents into list of embeddings.
+
+        Args:
+            documents: Iterator of documents or single document to embed
+            batch_size: Batch size for encoding -- higher values will use more memory, but be faster
+            parallel:
+                If > 1, data-parallel encoding will be used, recommended for offline encoding of large datasets.
+                If 0, use all available cores.
+                If None, don't use data-parallel processing, use default onnxruntime threading instead.
+
+        Returns:
+            List of embeddings, one per document
+        """
+        yield from self.model.embed_text(documents, batch_size, parallel, **kwargs)
+
+    def embed_image(
         self,
         images: ImageInput,
         batch_size: int = 16,
@@ -80,7 +106,8 @@ class ImageEmbedding(ImageEmbeddingBase):
         **kwargs,
     ) -> Iterable[np.ndarray]:
         """
-        Encode a list of images into list of embeddings.
+        Encode a list of documents into list of embeddings.
+        We use mean pooling with attention so that the model can handle variable-length inputs.
 
         Args:
             images: Iterator of image paths or single image path to embed
@@ -93,4 +120,4 @@ class ImageEmbedding(ImageEmbeddingBase):
         Returns:
             List of embeddings, one per document
         """
-        yield from self.model.embed(images, batch_size, parallel, **kwargs)
+        yield from self.model.embed_image(images, batch_size, parallel, **kwargs)
