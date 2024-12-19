@@ -54,9 +54,9 @@ class OnnxModel(Generic[T]):
 
         if cuda and providers is not None:
             warnings.warn(
-                "You have specified both `cuda=True` and `providers`. This creates a conflict because `providers` takes precedence. "
-                "Avoid specifying `providers` and use `cuda=True` at the same time.",
+                f"`cuda` and `providers` are mutually exclusive parameters, cuda: {cuda}, providers: {providers}",
                 category=UserWarning,
+                stacklevel=6,
             )
 
         if providers is not None:
