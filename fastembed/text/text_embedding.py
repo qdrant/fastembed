@@ -8,6 +8,7 @@ from fastembed.text.clip_embedding import CLIPOnnxEmbedding
 from fastembed.text.e5_onnx_embedding import E5OnnxEmbedding
 from fastembed.text.pooled_normalized_embedding import PooledNormalizedEmbedding
 from fastembed.text.pooled_embedding import PooledEmbedding
+from fastembed.text.multitask_embedding import JinaEmbeddingV3
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
 from fastembed.text.text_embedding_base import TextEmbeddingBase
 
@@ -19,6 +20,7 @@ class TextEmbedding(TextEmbeddingBase):
         CLIPOnnxEmbedding,
         PooledNormalizedEmbedding,
         PooledEmbedding,
+        JinaEmbeddingV3,
     ]
 
     @classmethod
