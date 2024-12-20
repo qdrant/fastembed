@@ -141,7 +141,9 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
         Returns:
             Iterable[np.ndarray]: Post-processed output as NumPy arrays.
         """
-        return output.model_output.reshape(output.model_output.shape[0], -1, self.model_description['dim']).astype(np.float32)
+        return output.model_output.reshape(
+            output.model_output.shape[0], -1, self.model_description["dim"]
+        ).astype(np.float32)
 
     def _post_process_onnx_text_output(
         self,
@@ -172,7 +174,10 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
         self, onnx_input: dict[str, np.ndarray], **kwargs
     ) -> dict[str, np.ndarray]:
         onnx_input["input_ids"] = np.array(
-            [self.QUERY_MARKER_TOKEN_ID + input_ids[2:].tolist() for input_ids in onnx_input["input_ids"]]
+            [
+                self.QUERY_MARKER_TOKEN_ID + input_ids[2:].tolist()
+                for input_ids in onnx_input["input_ids"]
+            ]
         )
         empty_image_placeholder = np.zeros(self.IMAGE_PLACEHOLDER_SIZE, dtype=np.float32)
         onnx_input["pixel_values"] = np.array(
@@ -232,7 +237,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
             **kwargs,
         )
 
-    def embed_images(
+    def embed_image(
         self,
         images: ImageInput,
         batch_size: int = 16,
