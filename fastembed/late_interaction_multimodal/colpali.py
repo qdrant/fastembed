@@ -16,18 +16,24 @@ from fastembed.late_interaction_multimodal.onnx_multimodal_model import (
 )
 
 
-supported_colbert_models = [
+supported_colpali_models = [
     {
-        "model": "colpali",
-        "dim": ...,
-        "description": "Late interaction model",
+        "model": "akshayballal/colpali-v1.2-merged",
+        "dim": 128,
+        "description": "Text embeddings, Unimodal (text), Aligned to image latent space, ColBERT-compatible, 512 tokens max, 2024.",
         "license": "mit",
-        "size_in_GB": 6.06,
+        "size_in_GB": 6.08,
         "sources": {
-            "hf": "colpali",
+            "hf": "akshayballal/colpali-v1.2-merged-onnx",
         },
+        "additional_files": [
+            "model.onnx_data",
+            "tokenizer.json",
+            "tokenizer_config.json",
+            "config.json",
+        ],
         "model_file": "model.onnx",
-    },
+    }
 ]
 
 
@@ -110,7 +116,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
         Returns:
             list[dict[str, Any]]: A list of dictionaries containing the model information.
         """
-        return supported_colbert_models
+        return supported_colpali_models
 
     def load_onnx_model(self) -> None:
         self._load_onnx_model(
@@ -135,7 +141,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
         Returns:
             Iterable[np.ndarray]: Post-processed output as NumPy arrays.
         """
-        return output.model_output.astype(np.float32)
+        return output.model_output.reshape(output.model_output.shape[0], -1, self.model_description['dim']).astype(np.float32)
 
     def _post_process_onnx_text_output(
         self,
@@ -154,20 +160,42 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
 
     def tokenize(self, documents: list[str], **_) -> list[Encoding]:
         texts_query: list[str] = []
-
         for query in documents:
             query = self.BOS_TOKEN + self.QUERY_PREFIX + query + self.PAD_TOKEN * 10
             query += "\n"
 
             texts_query.append(query)
-        encoded = self.tokenizer.encode_batch(documents)
+        encoded = self.tokenizer.encode_batch(texts_query)
         return encoded
 
     def _preprocess_onnx_text_input(
         self, onnx_input: dict[str, np.ndarray], **kwargs
     ) -> dict[str, np.ndarray]:
         onnx_input["input_ids"] = np.array(
-            [self.QUERY_MARKER_TOKEN_ID + input_ids[2:] for input_ids in onnx_input["input_ids"]]
+            [self.QUERY_MARKER_TOKEN_ID + input_ids[2:].tolist() for input_ids in onnx_input["input_ids"]]
+        )
+        empty_image_placeholder = np.zeros(self.IMAGE_PLACEHOLDER_SIZE, dtype=np.float32)
+        onnx_input["pixel_values"] = np.array(
+            [empty_image_placeholder for _ in onnx_input["input_ids"]]
+        )
+        return onnx_input
+
+    def _preprocess_onnx_image_input(
+        self, onnx_input: dict[str, np.ndarray], **kwargs
+    ) -> dict[str, np.ndarray]:
+        """
+        Add placeholders for text input when processing image data for ONNX.
+        Args:
+            onnx_input (Dict[str, np.ndarray]): Preprocessed image inputs.
+            **kwargs: Additional arguments.
+        Returns:
+            Dict[str, np.ndarray]: ONNX input with text placeholders.
+        """
+        onnx_input["input_ids"] = np.array(
+            [self.EMPTY_TEXT_PLACEHOLDER for _ in onnx_input["input_ids"]]
+        )
+        onnx_input["attention_mask"] = np.array(
+            [self.EVEN_ATTENTION_MASK for _ in onnx_input["input_ids"]]
         )
         return onnx_input
 
