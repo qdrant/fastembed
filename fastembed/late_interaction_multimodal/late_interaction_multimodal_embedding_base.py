@@ -31,8 +31,11 @@ class LateInteractionMultimodalEmbeddingBase(ModelManagement):
 
         Args:
             documents (Iterable[str]): The list of texts to embed.
-            batch_size (int) - ...
-            parallel (Optional[int]) - ...
+            batch_size: Batch size for encoding -- higher values will use more memory, but be faster
+            parallel:
+                If > 1, data-parallel encoding will be used, recommended for offline encoding of large datasets.
+                If 0, use all available cores.
+                If None, don't use data-parallel processing, use default onnxruntime threading instead.
             **kwargs: Additional keyword argument to pass to the embed method.
 
         Yields:

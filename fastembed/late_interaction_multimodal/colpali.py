@@ -28,9 +28,6 @@ supported_colpali_models = [
         },
         "additional_files": [
             "model.onnx_data",
-            "tokenizer.json",
-            "tokenizer_config.json",
-            "config.json",
         ],
         "model_file": "model.onnx",
     }
