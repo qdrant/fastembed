@@ -9,7 +9,7 @@ from fastembed.text.onnx_text_model import TextEmbeddingWorker
 supported_multitask_models = [
     {
         "model": "jinaai/jina-embeddings-v3",
-        "dim": [32, 64, 128, 256, 512, 768, 1024],
+        "dim": 1024,
         "tasks": {
             "retrieval.query": 0,
             "retrieval.passage": 1,
