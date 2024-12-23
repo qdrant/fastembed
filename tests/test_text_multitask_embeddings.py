@@ -65,8 +65,8 @@ def test_batch_embedding():
     default_task = 4
 
     for model_desc in TextEmbedding.list_supported_models():
-        # if not is_ci and model_desc["size_in_GB"] > 1:
-        #     continue
+        if not is_ci and model_desc["size_in_GB"] > 1:
+            continue
 
         model_name = model_desc["model"]
         dim = model_desc["dim"]
@@ -96,8 +96,8 @@ def test_single_embedding():
     is_ci = os.getenv("CI")
 
     for model_desc in TextEmbedding.list_supported_models():
-        # if not is_ci and model_desc["size_in_GB"] > 1:
-        #     continue
+        if not is_ci and model_desc["size_in_GB"] > 1:
+            continue
 
         model_name = model_desc["model"]
         dim = model_desc["dim"]
@@ -129,8 +129,8 @@ def test_single_embedding_query():
     task_id = 0
 
     for model_desc in TextEmbedding.list_supported_models():
-        # if not is_ci and model_desc["size_in_GB"] > 1:
-        #     continue
+        if not is_ci and model_desc["size_in_GB"] > 1:
+            continue
 
         model_name = model_desc["model"]
         dim = model_desc["dim"]
@@ -161,8 +161,8 @@ def test_single_embedding_passage():
     task_id = 1
 
     for model_desc in TextEmbedding.list_supported_models():
-        # if not is_ci and model_desc["size_in_GB"] > 1:
-        #     continue
+        if not is_ci and model_desc["size_in_GB"] > 1:
+            continue
 
         model_name = model_desc["model"]
         dim = model_desc["dim"]
@@ -196,22 +196,22 @@ def test_parallel_processing():
     model_name = "jinaai/jina-embeddings-v3"
     dim = 1024
 
-    model = TextEmbedding(model_name=model_name)
-
-    embeddings = list(model.embed(docs, batch_size=10, parallel=2))
-    embeddings = np.stack(embeddings, axis=0)
-
-    embeddings_2 = list(model.embed(docs, batch_size=10, parallel=None))
-    embeddings_2 = np.stack(embeddings_2, axis=0)
-
-    embeddings_3 = list(model.embed(docs, batch_size=10, parallel=0))
-    embeddings_3 = np.stack(embeddings_3, axis=0)
-
-    assert embeddings.shape[0] == len(docs) and embeddings.shape[-1] == dim
-    assert np.allclose(embeddings, embeddings_2, atol=1e-4)
-    assert np.allclose(embeddings, embeddings_3, atol=1e-4)
-
     if is_ci:
+        model = TextEmbedding(model_name=model_name)
+
+        embeddings = list(model.embed(docs, batch_size=10, parallel=2))
+        embeddings = np.stack(embeddings, axis=0)
+
+        embeddings_2 = list(model.embed(docs, batch_size=10, parallel=None))
+        embeddings_2 = np.stack(embeddings_2, axis=0)
+
+        embeddings_3 = list(model.embed(docs, batch_size=10, parallel=0))
+        embeddings_3 = np.stack(embeddings_3, axis=0)
+
+        assert embeddings.shape[0] == len(docs) and embeddings.shape[-1] == dim
+        assert np.allclose(embeddings, embeddings_2, atol=1e-4)
+        assert np.allclose(embeddings, embeddings_3, atol=1e-4)
+
         delete_model_cache(model.model._model_dir)
 
 
