@@ -16,6 +16,7 @@ supported_onnx_models = [
         "license": "mit",
         "size_in_GB": 0.42,
         "sources": {
+            "hf": "Qdrant/fast-bge-base-en",
             "url": "https://storage.googleapis.com/qdrant-fastembed/fast-bge-base-en.tar.gz",
         },
         "model_file": "model_optimized.onnx",
@@ -50,6 +51,7 @@ supported_onnx_models = [
         "license": "mit",
         "size_in_GB": 0.13,
         "sources": {
+            "hf": "Qdrant/bge-small-en",
             "url": "https://storage.googleapis.com/qdrant-fastembed/BAAI-bge-small-en.tar.gz",
         },
         "model_file": "model_optimized.onnx",
@@ -72,6 +74,7 @@ supported_onnx_models = [
         "license": "mit",
         "size_in_GB": 0.09,
         "sources": {
+            "hf": "Qdrant/bge-small-zh-v1.5",
             "url": "https://storage.googleapis.com/qdrant-fastembed/fast-bge-small-zh-v1.5.tar.gz",
         },
         "model_file": "model_optimized.onnx",
