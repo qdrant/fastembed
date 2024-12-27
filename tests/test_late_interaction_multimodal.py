@@ -3,7 +3,7 @@ import os
 import numpy as np
 import pytest
 
-from fastembed.late_interaction_multimodal.colpali import ColPali
+from fastembed.late_interaction_multimodal import LateInteractionMultimodalEmbedding
 from tests.utils import delete_model_cache
 from tests.config import TEST_MISC_DIR
 from PIL import Image
@@ -62,8 +62,8 @@ def test_batch_embedding():
 
     for model_name, expected_result in CANONICAL_COLUMN_VALUES.items():
         print("evaluating", model_name)
-        model = ColPali(model_name=model_name)
-        result = list(model.embed_images(docs_to_embed, batch_size=2))
+        model = LateInteractionMultimodalEmbedding(model_name=model_name)
+        result = list(model.embed_image(docs_to_embed, batch_size=2))
 
         for value in result:
             batch_size, token_num, abridged_dim = expected_result.shape
@@ -81,7 +81,7 @@ def test_single_embedding():
 
         for model_name, expected_result in CANONICAL_COLUMN_VALUES.items():
             print("evaluating", model_name)
-            model = ColPali(model_name=model_name)
+            model = LateInteractionMultimodalEmbedding(model_name=model_name)
             result = next(iter(model.embed_images(docs_to_embed, batch_size=6)))
             batch_size, token_num, abridged_dim = expected_result.shape
             assert np.allclose(result[:token_num, :abridged_dim], expected_result, atol=2e-3)
@@ -94,7 +94,7 @@ def test_single_embedding_query():
 
         for model_name, expected_result in CANONICAL_QUERY_VALUES.items():
             print("evaluating", model_name)
-            model = ColPali(model_name=model_name)
+            model = LateInteractionMultimodalEmbedding(model_name=model_name)
             result = next(iter(model.embed_text(queries_to_embed)))
             token_num, abridged_dim = expected_result.shape
             assert np.allclose(result[:token_num, :abridged_dim], expected_result, atol=2e-3)
@@ -103,7 +103,7 @@ def test_single_embedding_query():
 def test_parallel_processing():
     is_ci = os.getenv("CI")
     if not is_ci:
-        model = ColPali(model_name="akshayballal/colpali-v1.2-merged")
+        model = LateInteractionMultimodalEmbedding(model_name="akshayballal/colpali-v1.2-merged")
 
         token_dim = 128
         docs = ["hello world", "flag embedding"] * 100
@@ -128,15 +128,15 @@ def test_parallel_processing():
 def test_lazy_load(model_name):
     is_ci = os.getenv("CI")
     if not is_ci:
-        model = ColPali(model_name=model_name, lazy_load=True)
+        model = LateInteractionMultimodalEmbedding(model_name=model_name, lazy_load=True)
         assert not hasattr(model.model, "model")
 
         docs = ["hello world", "flag embedding"]
         list(model.embed_text(docs))
         assert hasattr(model.model, "model")
 
-        model = ColPali(model_name=model_name, lazy_load=True)
+        model = LateInteractionMultimodalEmbedding(model_name=model_name, lazy_load=True)
         list(model.embed_text(docs))
 
-        model = ColPali(model_name=model_name, lazy_load=True)
+        model = LateInteractionMultimodalEmbedding(model_name=model_name, lazy_load=True)
         list(model.embed_text(docs))
