@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Any, Type, Iterable, Union, Optional
 
 import numpy as np
@@ -29,10 +30,22 @@ supported_multitask_models = [
 ]
 
 
+class Task(str, Enum):
+    RETRIEVAL_QUERY = 0
+    RETRIEVAL_PASSAGE = 1
+    SEPARATION = 2
+    CLASSIFICATION = 3
+    TEXT_MATCHING = 4
+
+
 class JinaEmbeddingV3(PooledNormalizedEmbedding):
+    DEFAULT_TASK = Task.TEXT_MATCHING
+    PASSAGE_TASK = Task.RETRIEVAL_PASSAGE
+    QUERY_TASK = Task.RETRIEVAL_QUERY
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._current_task_id = 4
+        self._current_task_id = self.DEFAULT_TASK
 
     @classmethod
     def _get_worker_class(cls) -> Type["TextEmbeddingWorker"]:
@@ -60,7 +73,7 @@ class JinaEmbeddingV3(PooledNormalizedEmbedding):
         yield from super().embed(documents, batch_size, parallel, **kwargs)
 
     def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> Iterable[np.ndarray]:
-        self._current_task_id = 0
+        self._current_task_id = self.QUERY_TASK
 
         if isinstance(query, str):
             query = [query]
@@ -72,7 +85,7 @@ class JinaEmbeddingV3(PooledNormalizedEmbedding):
             yield from self._post_process_onnx_output(self.onnx_embed([text]))
 
     def passage_embed(self, texts: Iterable[str], **kwargs) -> Iterable[np.ndarray]:
-        self._current_task_id = 1
+        self._current_task_id = self.PASSAGE_TASK
 
         if not hasattr(self, "model") or self.model is None:
             self.load_onnx_model()
