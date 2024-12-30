@@ -1,5 +1,6 @@
 import os
 import time
+import json
 import shutil
 import tarfile
 from pathlib import Path
@@ -124,18 +125,43 @@ class ModelManagement:
             allow_patterns.extend(extra_patterns)
 
         snapshot_dir = Path(cache_dir) / f"models--{hf_source_repo.replace('/', '--')}"
-        is_cached = snapshot_dir.exists()
+        metadata_file = snapshot_dir / "files_metadata.json"
 
-        if is_cached:
-            disable_progress_bars()
+        def _verify_files_from_metadata(model_dir: Path, stored_metadata: dict[str, Any]) -> bool:
+            for rel_path, meta in stored_metadata.items():
+                file_path = model_dir / rel_path
+                if not file_path.exists() or file_path.stat().st_size != meta["size"]:
+                    return False
+            return True
 
-        return snapshot_download(
+        def _save_file_metadata(model_dir: Path) -> None:
+            metadata = {}
+            for file_path in model_dir.rglob("*"):
+                if file_path.is_file() and file_path.name != "files_metadata.json":
+                    rel_path = str(file_path.relative_to(model_dir))
+                    metadata[rel_path] = {
+                        "size": file_path.stat().st_size,
+                    }
+
+            metadata_file = model_dir / "files_metadata.json"
+            metadata_file.write_text(json.dumps(metadata))
+
+        if snapshot_dir.exists() and metadata_file.exists():
+            stored_metadata = json.loads(metadata_file.read_text())
+            if _verify_files_from_metadata(snapshot_dir, stored_metadata):
+                disable_progress_bars()
+
+        result = snapshot_download(
             repo_id=hf_source_repo,
             allow_patterns=allow_patterns,
             cache_dir=cache_dir,
             local_files_only=local_files_only,
             **kwargs,
         )
+
+        if not local_files_only:
+            _save_file_metadata(snapshot_dir)
+        return result
 
     @classmethod
     def decompress_to_cache(cls, targz_path: str, cache_dir: str):
