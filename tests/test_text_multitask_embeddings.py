@@ -197,7 +197,7 @@ def test_parallel_processing():
     dim = 1024
 
     if is_ci:
-        model = TextEmbedding(model_name=model_name)
+        model = TextEmbedding(model_name=model_name, lazy_load=True)
 
         embeddings = list(model.embed(docs, batch_size=10, parallel=2))
         embeddings = np.stack(embeddings, axis=0)
