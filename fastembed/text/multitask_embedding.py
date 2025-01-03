@@ -30,7 +30,7 @@ supported_multitask_models = [
 ]
 
 
-class Task(str, Enum):
+class Task(int, Enum):
     RETRIEVAL_QUERY = 0
     RETRIEVAL_PASSAGE = 1
     SEPARATION = 2
