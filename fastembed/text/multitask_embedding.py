@@ -66,7 +66,7 @@ class JinaEmbeddingV3(PooledNormalizedEmbedding):
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
         parallel: Optional[int] = None,
-        task_id: int = 4,
+        task_id: int = DEFAULT_TASK,
         **kwargs,
     ) -> Iterable[np.ndarray]:
         self._current_task_id = task_id
