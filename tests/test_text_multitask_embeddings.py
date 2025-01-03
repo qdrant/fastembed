@@ -11,7 +11,7 @@ from tests.utils import delete_model_cache
 CANONICAL_VECTOR_VALUES = {
     "jinaai/jina-embeddings-v3": [
         {
-            "task_id": 0,
+            "task_id": Task.RETRIEVAL_QUERY,
             "vectors": np.array(
                 [
                     [0.0623, -0.0402, 0.1706, -0.0143, 0.0617],
@@ -20,7 +20,7 @@ CANONICAL_VECTOR_VALUES = {
             ),
         },
         {
-            "task_id": 1,
+            "task_id": Task.RETRIEVAL_PASSAGE,
             "vectors": np.array(
                 [
                     [0.0513, -0.0247, 0.1751, -0.0075, 0.0679],
@@ -29,7 +29,7 @@ CANONICAL_VECTOR_VALUES = {
             ),
         },
         {
-            "task_id": 2,
+            "task_id": Task.SEPARATION,
             "vectors": np.array(
                 [
                     [0.094, -0.1065, 0.1305, 0.0547, 0.0556],
@@ -38,7 +38,7 @@ CANONICAL_VECTOR_VALUES = {
             ),
         },
         {
-            "task_id": 3,
+            "task_id": Task.CLASSIFICATION,
             "vectors": np.array(
                 [
                     [0.0606, -0.0877, 0.1384, 0.0065, 0.0722],
@@ -47,7 +47,7 @@ CANONICAL_VECTOR_VALUES = {
             ),
         },
         {
-            "task_id": 4,
+            "task_id": Task.TEXT_MATCHING,
             "vectors": np.array(
                 [
                     [0.0911, -0.0341, 0.1305, -0.026, 0.0576],
@@ -63,7 +63,7 @@ docs = ["Hello World", "Follow the white rabbit."]
 def test_batch_embedding():
     is_ci = os.getenv("CI")
     docs_to_embed = docs * 10
-    default_task = 4
+    default_task = Task.TEXT_MATCHING
 
     for model_desc in TextEmbedding.list_supported_models():
         if not is_ci and model_desc["size_in_GB"] > 1:
@@ -127,7 +127,7 @@ def test_single_embedding():
 
 def test_single_embedding_query():
     is_ci = os.getenv("CI")
-    task_id = 0
+    task_id = Task.RETRIEVAL_QUERY
 
     for model_desc in TextEmbedding.list_supported_models():
         if not is_ci and model_desc["size_in_GB"] > 1:
@@ -159,7 +159,7 @@ def test_single_embedding_query():
 
 def test_single_embedding_passage():
     is_ci = os.getenv("CI")
-    task_id = 1
+    task_id = Task.RETRIEVAL_PASSAGE
 
     for model_desc in TextEmbedding.list_supported_models():
         if not is_ci and model_desc["size_in_GB"] > 1:
@@ -202,19 +202,9 @@ def test_task_assignment():
 
         model = TextEmbedding(model_name=model_name)
 
-        _ = list(model.embed(documents=docs, batch_size=1, task_id=2))
-        assert model.model._current_task_id == Task.SEPARATION
-
-        _ = list(
-            model.embed(documents=docs, batch_size=1, parallel=1, task_id=Task.CLASSIFICATION)
-        )
-        assert model.model._current_task_id == 3
-
-        _ = list(model.query_embed(query=docs))
-        assert model.model._current_task_id == Task.RETRIEVAL_QUERY
-
-        _ = list(model.passage_embed(texts=docs))
-        assert model.model._current_task_id == Task.RETRIEVAL_PASSAGE
+        for i, task_id in enumerate(Task):
+            _ = list(model.embed(documents=docs, batch_size=1, task_id=i))
+            assert model.model._current_task_id == task_id
 
         if is_ci:
             delete_model_cache(model.model._model_dir)
