@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from fastembed import TextEmbedding
+from fastembed.text.multitask_embedding import Task
 from tests.utils import delete_model_cache
 
 
@@ -188,31 +189,35 @@ def test_single_embedding_passage():
             delete_model_cache(model.model._model_dir)
 
 
-def test_parallel_processing():
+def test_task_assignment():
     is_ci = os.getenv("CI")
 
-    docs = ["Hello World", "Follow the white rabbit."] * 100
+    for model_desc in TextEmbedding.list_supported_models():
+        if not is_ci and model_desc["size_in_GB"] > 1:
+            continue
 
-    model_name = "jinaai/jina-embeddings-v3"
-    dim = 1024
+        model_name = model_desc["model"]
+        if model_name not in CANONICAL_VECTOR_VALUES.keys():
+            continue
 
-    if is_ci:
-        model = TextEmbedding(model_name=model_name, lazy_load=True)
+        model = TextEmbedding(model_name=model_name)
 
-        embeddings = list(model.embed(docs, batch_size=10, parallel=2))
-        embeddings = np.stack(embeddings, axis=0)
+        _ = list(model.embed(documents=docs, batch_size=1, task_id=2))
+        assert model.model._current_task_id == Task.SEPARATION
 
-        embeddings_2 = list(model.embed(docs, batch_size=10, parallel=None))
-        embeddings_2 = np.stack(embeddings_2, axis=0)
+        _ = list(
+            model.embed(documents=docs, batch_size=1, parallel=1, task_id=Task.CLASSIFICATION)
+        )
+        assert model.model._current_task_id == 3
 
-        embeddings_3 = list(model.embed(docs, batch_size=10, parallel=0))
-        embeddings_3 = np.stack(embeddings_3, axis=0)
+        _ = list(model.query_embed(query=docs))
+        assert model.model._current_task_id == Task.RETRIEVAL_QUERY
 
-        assert embeddings.shape[0] == len(docs) and embeddings.shape[-1] == dim
-        assert np.allclose(embeddings, embeddings_2, atol=1e-4)
-        assert np.allclose(embeddings, embeddings_3, atol=1e-4)
+        _ = list(model.passage_embed(texts=docs))
+        assert model.model._current_task_id == Task.RETRIEVAL_PASSAGE
 
-        delete_model_cache(model.model._model_dir)
+        if is_ci:
+            delete_model_cache(model.model._model_dir)
 
 
 @pytest.mark.parametrize(
