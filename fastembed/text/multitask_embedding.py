@@ -70,6 +70,7 @@ class JinaEmbeddingV3(PooledNormalizedEmbedding):
         **kwargs,
     ) -> Iterable[np.ndarray]:
         self._current_task_id = task_id
+        kwargs["task_id"] = task_id
         yield from super().embed(documents, batch_size, parallel, **kwargs)
 
     def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> Iterable[np.ndarray]:
@@ -101,9 +102,11 @@ class JinaEmbeddingV3Worker(OnnxTextEmbeddingWorker):
         cache_dir: str,
         **kwargs,
     ) -> JinaEmbeddingV3:
-        return JinaEmbeddingV3(
+        model = JinaEmbeddingV3(
             model_name=model_name,
             cache_dir=cache_dir,
             threads=1,
             **kwargs,
         )
+        model._current_task_id = kwargs["task_id"]
+        return model
