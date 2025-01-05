@@ -4,7 +4,7 @@ import json
 import shutil
 import tarfile
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import requests
 from huggingface_hub import snapshot_download
@@ -99,7 +99,7 @@ class ModelManagement:
         cls,
         hf_source_repo: str,
         cache_dir: str,
-        extra_patterns: Optional[list[str]] = None,
+        extra_patterns: list[str],
         local_files_only: bool = False,
         **kwargs,
     ) -> str:
@@ -108,7 +108,7 @@ class ModelManagement:
         Args:
             hf_source_repo (str): Name of the model on HuggingFace Hub, e.g. "qdrant/all-MiniLM-L6-v2-onnx".
             cache_dir (Optional[str]): The path to the cache directory.
-            extra_patterns (Optional[list[str]]): extra patterns to allow in the snapshot download, typically
+            extra_patterns (list[str]): extra patterns to allow in the snapshot download, typically
                 includes the required model files.
             local_files_only (bool, optional): Whether to only use local files. Defaults to False.
         Returns:
@@ -121,8 +121,9 @@ class ModelManagement:
             "special_tokens_map.json",
             "preprocessor_config.json",
         ]
-        if extra_patterns is not None:
-            allow_patterns.extend(extra_patterns)
+
+        model_file = next((file for file in extra_patterns if file.endswith(".onnx")), "")
+        allow_patterns.extend(extra_patterns)
 
         snapshot_dir = Path(cache_dir) / f"models--{hf_source_repo.replace('/', '--')}"
         metadata_file = snapshot_dir / "files_metadata.json"
@@ -158,6 +159,9 @@ class ModelManagement:
             local_files_only=local_files_only,
             **kwargs,
         )
+
+        if not os.path.exists(os.path.join(result, model_file)):
+            raise FileNotFoundError("Couldn't download model from huggingface")
 
         if not local_files_only:
             _save_file_metadata(snapshot_dir)
