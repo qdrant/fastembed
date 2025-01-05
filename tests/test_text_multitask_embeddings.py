@@ -189,6 +189,29 @@ def test_single_embedding_passage():
             delete_model_cache(model.model._model_dir)
 
 
+def test_parallel_processing():
+    is_ci = os.getenv("CI")
+
+    docs = ["Hello World", "Follow the white rabbit."] * 10
+
+    model_name = "jinaai/jina-embeddings-v3"
+    dim = 1024
+
+    model = TextEmbedding(model_name=model_name)
+
+    embeddings_1 = list(model.embed(docs, batch_size=10, parallel=None))
+    embeddings_1 = np.stack(embeddings_1, axis=0)
+
+    embeddings_2 = list(model.embed(docs, batch_size=10, parallel=1))
+    embeddings_2 = np.stack(embeddings_2, axis=0)
+
+    assert embeddings_1.shape[0] == len(docs) and embeddings_1.shape[-1] == dim
+    assert np.allclose(embeddings_1, embeddings_2, atol=1e-4)
+
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
+
+
 def test_task_assignment():
     is_ci = os.getenv("CI")
 
