@@ -18,7 +18,7 @@ supported_multitask_models = [
             "classification": 3,
             "text-matching": 4,
         },
-        "description": "Multi-task, multi-lingual embedding model with Matryoshka architecture",
+        "description": "Multi-task unimodal (text) embedding model, multi-lingual (~100), 1024 tokens truncation, and 8192 sequence length. Prefixes for queries/documents: not necessary, 2024 year.",
         "license": "cc-by-nc-4.0",
         "size_in_GB": 2.29,
         "sources": {
