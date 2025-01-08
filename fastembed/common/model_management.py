@@ -3,6 +3,7 @@ import time
 import json
 import shutil
 import tarfile
+import hashlib
 from pathlib import Path
 from typing import Any
 
@@ -114,6 +115,50 @@ class ModelManagement:
         Returns:
             Path: The path to the model directory.
         """
+
+        def _should_update_metadata(
+            model_dir: Path, stored_metadata: dict[str, Any], model_file: str
+        ) -> bool:
+            model_path = model_dir / model_file
+            if not model_path.exists():
+                return True
+            current_hash = _get_file_hash(model_path)
+            return (
+                model_file not in stored_metadata
+                or stored_metadata[model_file]["hash"] != current_hash
+            )
+
+        def _get_file_hash(file_path: Path) -> str:
+            sha256_hash = hashlib.sha256()
+            with file_path.open("rb") as f:
+                for byte_block in iter(lambda: f.read(4096), b""):
+                    sha256_hash.update(byte_block)
+            return sha256_hash.hexdigest()
+
+        def _verify_files_from_metadata(model_dir: Path, stored_metadata: dict[str, Any]) -> bool:
+            for rel_path, meta in stored_metadata.items():
+                file_path = model_dir / rel_path
+                if (
+                    not file_path.exists()
+                    or file_path.stat().st_size != meta["size"]
+                    or _get_file_hash(file_path) != meta["hash"]
+                ):
+                    return False
+            return True
+
+        def _save_file_metadata(model_dir: Path) -> None:
+            metadata = {}
+            for file_path in model_dir.rglob("*"):
+                if file_path.is_file() and file_path.name != "files_metadata.json":
+                    rel_path = str(file_path.relative_to(model_dir))
+                    metadata[rel_path] = {
+                        "size": file_path.stat().st_size,
+                        "hash": _get_file_hash(file_path),
+                    }
+
+            metadata_file = model_dir / "files_metadata.json"
+            metadata_file.write_text(json.dumps(metadata))
+
         allow_patterns = [
             "config.json",
             "tokenizer.json",
@@ -128,29 +173,11 @@ class ModelManagement:
         snapshot_dir = Path(cache_dir) / f"models--{hf_source_repo.replace('/', '--')}"
         metadata_file = snapshot_dir / "files_metadata.json"
 
-        def _verify_files_from_metadata(model_dir: Path, stored_metadata: dict[str, Any]) -> bool:
-            for rel_path, meta in stored_metadata.items():
-                file_path = model_dir / rel_path
-                if not file_path.exists() or file_path.stat().st_size != meta["size"]:
-                    return False
-            return True
-
-        def _save_file_metadata(model_dir: Path) -> None:
-            metadata = {}
-            for file_path in model_dir.rglob("*"):
-                if file_path.is_file() and file_path.name != "files_metadata.json":
-                    rel_path = str(file_path.relative_to(model_dir))
-                    metadata[rel_path] = {
-                        "size": file_path.stat().st_size,
-                    }
-
-            metadata_file = model_dir / "files_metadata.json"
-            metadata_file.write_text(json.dumps(metadata))
-
         if snapshot_dir.exists() and metadata_file.exists():
             stored_metadata = json.loads(metadata_file.read_text())
             if _verify_files_from_metadata(snapshot_dir, stored_metadata):
-                disable_progress_bars()
+                if not _should_update_metadata(snapshot_dir, stored_metadata, model_file):
+                    disable_progress_bars()
 
         result = snapshot_download(
             repo_id=hf_source_repo,
@@ -163,8 +190,7 @@ class ModelManagement:
         if not os.path.exists(os.path.join(result, model_file)):
             raise FileNotFoundError("Couldn't download model from huggingface")
 
-        if not local_files_only:
-            _save_file_metadata(snapshot_dir)
+        _save_file_metadata(snapshot_dir)
         return result
 
     @classmethod
