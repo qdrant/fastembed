@@ -199,14 +199,18 @@ def test_parallel_processing():
 
     model = TextEmbedding(model_name=model_name)
 
-    embeddings_1 = list(model.embed(docs, batch_size=10, parallel=None))
+    task_id = Task.SEPARATION
+    embeddings_1 = list(model.embed(docs, batch_size=10, parallel=None, task_id=task_id))
     embeddings_1 = np.stack(embeddings_1, axis=0)
 
-    embeddings_2 = list(model.embed(docs, batch_size=10, parallel=1))
+    embeddings_2 = list(model.embed(docs, batch_size=10, parallel=1, task_id=task_id))
     embeddings_2 = np.stack(embeddings_2, axis=0)
 
     assert embeddings_1.shape[0] == len(docs) and embeddings_1.shape[-1] == dim
     assert np.allclose(embeddings_1, embeddings_2, atol=1e-4)
+
+    canonical_vector = CANONICAL_VECTOR_VALUES[model_name][task_id]["vectors"]
+    assert np.allclose(embeddings_2[:2, : canonical_vector.shape[1]], canonical_vector, atol=1e-4)
 
     if is_ci:
         delete_model_cache(model.model._model_dir)
