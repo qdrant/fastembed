@@ -75,24 +75,11 @@ class JinaEmbeddingV3(PooledNormalizedEmbedding):
 
     def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> Iterable[np.ndarray]:
         self._current_task_id = self.QUERY_TASK
-
-        if isinstance(query, str):
-            query = [query]
-
-        if not hasattr(self, "model") or self.model is None:
-            self.load_onnx_model()
-
-        for text in query:
-            yield from self._post_process_onnx_output(self.onnx_embed([text]))
+        yield from super().embed(query, **kwargs)
 
     def passage_embed(self, texts: Iterable[str], **kwargs) -> Iterable[np.ndarray]:
         self._current_task_id = self.PASSAGE_TASK
-
-        if not hasattr(self, "model") or self.model is None:
-            self.load_onnx_model()
-
-        for text in texts:
-            yield from self._post_process_onnx_output(self.onnx_embed([text]))
+        yield from super().embed(texts, **kwargs)
 
 
 class JinaEmbeddingV3Worker(OnnxTextEmbeddingWorker):
