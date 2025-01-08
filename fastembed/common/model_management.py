@@ -116,18 +116,6 @@ class ModelManagement:
             Path: The path to the model directory.
         """
 
-        def _should_update_metadata(
-            model_dir: Path, stored_metadata: dict[str, Any], model_file: str
-        ) -> bool:
-            model_path = model_dir / model_file
-            if not model_path.exists():
-                return True
-            current_hash = _get_file_hash(model_path)
-            return (
-                model_file not in stored_metadata
-                or stored_metadata[model_file]["hash"] != current_hash
-            )
-
         def _get_file_hash(file_path: Path) -> str:
             sha256_hash = hashlib.sha256()
             with file_path.open("rb") as f:
@@ -167,7 +155,7 @@ class ModelManagement:
             "preprocessor_config.json",
         ]
 
-        model_file = next((file for file in extra_patterns if file.endswith(".onnx")), "")
+        model_file = next((file for file in extra_patterns if file.endswith((".onnx"))), "")
         allow_patterns.extend(extra_patterns)
 
         snapshot_dir = Path(cache_dir) / f"models--{hf_source_repo.replace('/', '--')}"
@@ -176,8 +164,7 @@ class ModelManagement:
         if snapshot_dir.exists() and metadata_file.exists():
             stored_metadata = json.loads(metadata_file.read_text())
             if _verify_files_from_metadata(snapshot_dir, stored_metadata):
-                if not _should_update_metadata(snapshot_dir, stored_metadata, model_file):
-                    disable_progress_bars()
+                disable_progress_bars()
 
         result = snapshot_download(
             repo_id=hf_source_repo,
