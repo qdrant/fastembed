@@ -1,4 +1,4 @@
-from typing import Union, Iterable, Optional, List, Dict, Any
+from typing import Union, Iterable, Optional, List, Dict, Any, Type
 
 import numpy as np
 
@@ -30,6 +30,10 @@ class TokenEmbeddingsModel(OnnxTextEmbedding, LateInteractionTextEmbeddingBase):
             List[Dict[str, Any]]: A list of dictionaries containing the model information.
         """
         return supported_token_embeddings_models
+
+    @classmethod
+    def _get_worker_class(cls) -> Type[TextEmbeddingWorker]:
+        return TokensEmbeddingWorker
 
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
         # Size: (batch_size, sequence_length, hidden_size)
