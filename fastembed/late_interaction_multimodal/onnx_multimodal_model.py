@@ -100,7 +100,6 @@ class OnnxMultimodalModel(OnnxModel[T]):
             )
 
         onnx_input = self._preprocess_onnx_text_input(onnx_input, **kwargs)
-
         model_output = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)
         return OnnxOutputContext(
             model_output=model_output[0],

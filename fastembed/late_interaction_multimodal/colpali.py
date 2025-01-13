@@ -30,7 +30,21 @@ supported_colpali_models = [
             "model.onnx_data",
         ],
         "model_file": "model.onnx",
-    }
+    },
+    {
+        "model": "AndrewOgn/colpali-v1.3-merged-onnx",
+        "dim": 128,
+        "description": "Text embeddings, Unimodal (text), Aligned to image latent space, ColBERT-compatible, 512 tokens max, 2024.",
+        "license": "mit",
+        "size_in_GB": 10.08,
+        "sources": {
+            "hf": "AndrewOgn/colpali-v1.3-merged-onnx",
+        },
+        "additional_files": [
+            "model.onnx_data",
+        ],
+        "model_file": "model.onnx",
+    },
 ]
 
 
@@ -39,7 +53,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
     QUERY_PREFIX = "Query: "
     BOS_TOKEN = "<s>"
     PAD_TOKEN = "<pad>"
-    QUERY_MARKER_TOKEN_ID = [2, 9413]
+    QUERY_MARKER_TOKEN_ID = [2, 5098]
     IMAGE_PLACEHOLDER_SIZE = (3, 448, 448)
     EMPTY_TEXT_PLACEHOLDER = np.array([257152] * 1024 + [2, 50721, 573, 2416, 235265, 108])
     EVEN_ATTENTION_MASK = np.array([1] * 1030)
