@@ -51,9 +51,7 @@ class LateInteractionMultimodalEmbeddingBase(ModelManagement):
         **kwargs,
     ) -> Iterable[np.ndarray]:
         """
-        Encode a list of documents into list of embeddings.
-        We use mean pooling with attention so that the model can handle variable-length inputs.
-
+        Encode a list of images into list of embeddings.
         Args:
             images: Iterator of image paths or single image path to embed
             batch_size: Batch size for encoding -- higher values will use more memory, but be faster
@@ -63,6 +61,6 @@ class LateInteractionMultimodalEmbeddingBase(ModelManagement):
                 If None, don't use data-parallel processing, use default onnxruntime threading instead.
 
         Returns:
-            List of embeddings, one per document
+            List of embeddings, one per image
         """
         raise NotImplementedError()

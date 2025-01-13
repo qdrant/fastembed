@@ -20,7 +20,7 @@ supported_colpali_models = [
     {
         "model": "AndrewOgn/colpali-v1.3-merged-onnx",
         "dim": 128,
-        "description": "Text embeddings, Unimodal (text), Aligned to image latent space, ColBERT-compatible, 512 tokens max, 2024.",
+        "description": "Text embeddings, Bimodal (text/image), Aligned to image latent space, fp16 quantized, 2024.",
         "license": "mit",
         "size_in_GB": 10.08,
         "sources": {
@@ -97,11 +97,12 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
         self.cache_dir = define_cache_dir(cache_dir)
 
         self._model_dir = self.download_model(
-            self.model_description, self.cache_dir, local_files_only=self._local_files_only
+            self.model_description,
+            self.cache_dir,
+            local_files_only=self._local_files_only,
         )
         self.mask_token_id = None
         self.pad_token_id = None
-        self.skip_list = set()
 
         if not self.lazy_load:
             self.load_onnx_model()

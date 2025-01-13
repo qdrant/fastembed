@@ -25,15 +25,18 @@ class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase)
                 ```
                 [
                     {
-                        "model": "colpali",
-                        "dim": ...,
-                        "description": "Late interaction model",
-                        "license": "mit",
-                        "size_in_GB": 6.06,
-                        "sources": {
-                            "hf": "colpali",
-                        },
-                        "model_file": "model.onnx",
+                         "model": "AndrewOgn/colpali-v1.3-merged-onnx",
+                         "dim": 128,
+                         "description": "Text embeddings, Unimodal (text), Aligned to image latent space, ColBERT-compatible, 512 tokens max, 2024.",
+                         "license": "mit",
+                         "size_in_GB": 6.06,
+                         "sources": {
+                            "hf": "AndrewOgn/colpali-v1.3-merged-onnx",
+                            },
+                         "additional_files": [
+                         "model.onnx_data",
+                ],
+                "model_file": "model.onnx",
                     },
                 ]
                 ```
@@ -106,8 +109,7 @@ class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase)
         **kwargs,
     ) -> Iterable[np.ndarray]:
         """
-        Encode a list of documents into list of embeddings.
-        We use mean pooling with attention so that the model can handle variable-length inputs.
+        Encode a list of images into list of embeddings.
 
         Args:
             images: Iterator of image paths or single image path to embed
@@ -118,6 +120,6 @@ class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase)
                 If None, don't use data-parallel processing, use default onnxruntime threading instead.
 
         Returns:
-            List of embeddings, one per document
+            List of embeddings, one per image
         """
         yield from self.model.embed_image(images, batch_size, parallel, **kwargs)
