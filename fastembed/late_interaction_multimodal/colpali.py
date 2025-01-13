@@ -43,6 +43,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
     IMAGE_PLACEHOLDER_SIZE = (3, 448, 448)
     EMPTY_TEXT_PLACEHOLDER = np.array([257152] * 1024 + [2, 50721, 573, 2416, 235265, 108])
     EVEN_ATTENTION_MASK = np.array([1] * 1030)
+    QUERY_MAX_LENGTH = 50
 
     def __init__(
         self,
@@ -165,7 +166,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
             query += "\n"
 
             texts_query.append(query)
-        encoded = self.tokenizer.encode_batch(texts_query)
+        encoded = self.tokenizer.encode_batch(texts_query, max_length=self.QUERY_MAX_LENGTH)
         return encoded
 
     def _preprocess_onnx_text_input(
