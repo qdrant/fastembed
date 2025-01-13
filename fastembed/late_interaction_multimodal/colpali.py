@@ -18,20 +18,6 @@ from fastembed.late_interaction_multimodal.onnx_multimodal_model import (
 
 supported_colpali_models = [
     {
-        "model": "akshayballal/colpali-v1.2-merged",
-        "dim": 128,
-        "description": "Text embeddings, Unimodal (text), Aligned to image latent space, ColBERT-compatible, 512 tokens max, 2024.",
-        "license": "mit",
-        "size_in_GB": 6.08,
-        "sources": {
-            "hf": "akshayballal/colpali-v1.2-merged-onnx",
-        },
-        "additional_files": [
-            "model.onnx_data",
-        ],
-        "model_file": "model.onnx",
-    },
-    {
         "model": "AndrewOgn/colpali-v1.3-merged-onnx",
         "dim": 128,
         "description": "Text embeddings, Unimodal (text), Aligned to image latent space, ColBERT-compatible, 512 tokens max, 2024.",
