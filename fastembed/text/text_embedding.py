@@ -70,6 +70,14 @@ class TextEmbedding(TextEmbeddingBase):
                 UserWarning,
                 stacklevel=2,
             )
+        if model_name == "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2":
+            warnings.warn(
+                "The model 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2' has been updated to "
+                "include a mean pooling layer. Please ensure your usage aligns with the new functionality. "
+                "Support for the previous version without mean pooling is removed.",
+                UserWarning,
+                stacklevel=2,
+            )
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
             supported_models = EMBEDDING_MODEL_TYPE.list_supported_models()
             if any(model_name.lower() == model["model"].lower() for model in supported_models):
