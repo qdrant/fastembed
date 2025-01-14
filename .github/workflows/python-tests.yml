@@ -35,6 +35,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
+        shell: bash
         run: |
           if [[ "${{ matrix.python-version }}" == "3.13.x" && "${{ matrix.os }}" == "ubuntu-latest" ]]; then
             apt install build-essential
