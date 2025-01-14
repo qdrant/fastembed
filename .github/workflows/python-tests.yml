@@ -36,7 +36,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          apt install build-essential
+          if [[ "${{ matrix.python-version }}" == "3.13.x" && "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            apt install build-essential
+          fi
           python -m pip install poetry
           poetry config virtualenvs.create false
           poetry install --no-interaction --no-ansi --without dev,docs
