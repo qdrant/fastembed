@@ -38,7 +38,7 @@ jobs:
         shell: bash
         run: |
           if [[ "${{ matrix.python-version }}" == "3.13.x" && "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            apt install build-essential
+            sudo apt install build-essential
           fi
           python -m pip install poetry
           poetry config virtualenvs.create false
