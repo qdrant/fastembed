@@ -44,6 +44,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
     EMPTY_TEXT_PLACEHOLDER = np.array([257152] * 1024 + [2, 50721, 573, 2416, 235265, 108])
     EVEN_ATTENTION_MASK = np.array([1] * 1030)
     QUERY_MAX_LENGTH = 50
+    VISUAL_PROMPT_PREFIX = "<image><bos>Describe the image."
 
     def __init__(
         self,
@@ -195,6 +196,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
         Returns:
             Dict[str, np.ndarray]: ONNX input with text placeholders.
         """
+
         onnx_input["input_ids"] = np.array(
             [self.EMPTY_TEXT_PLACEHOLDER for _ in onnx_input["input_ids"]]
         )
