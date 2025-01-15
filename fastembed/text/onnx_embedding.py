@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, Optional, Sequence, Type, Union
+from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
 
@@ -185,12 +185,12 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
     """Implementation of the Flag Embedding model."""
 
     @classmethod
-    def list_supported_models(cls) -> list[Dict[str, Any]]:
+    def list_supported_models(cls) -> list[dict[str, Any]]:
         """
         Lists the supported models.
 
         Returns:
-            List[Dict[str, Any]]: A list of dictionaries containing the model information.
+            list[dict[str, Any]]: A list of dictionaries containing the model information.
         """
         return supported_onnx_models
 
@@ -299,7 +299,13 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
 
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
         embeddings = output.model_output
-        return normalize(embeddings[:, 0]).astype(np.float32)
+        if embeddings.ndim == 3:  # (batch_size, seq_len, embedding_dim)
+            processed_embeddings = embeddings[:, 0]
+        elif embeddings.ndim == 2:  # (batch_size, embedding_dim)
+            processed_embeddings = embeddings
+        else:
+            raise ValueError(f"Unsupported embedding shape: {embeddings.shape}")
+        return normalize(processed_embeddings).astype(np.float32)
 
     def load_onnx_model(self) -> None:
         self._load_onnx_model(
