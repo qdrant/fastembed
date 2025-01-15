@@ -12,7 +12,6 @@ keywords = ["vector", "embedding", "neural", "search", "qdrant", "sentence-trans
 
 [tool.poetry.dependencies]
 python = ">=3.9.0"
-onnx = ">=1.15.0"
 numpy = [
     { version = ">=1.21,<2.1.0", python = "<3.10" },
     { version = ">=1.21", python = ">=3.10,<3.12" },
@@ -33,11 +32,14 @@ pillow = "^10.3.0"
 mmh3 = "^4.1.0"
 py-rust-stemmers = "^0.1.0"
 
-[tool.poetry.group.dev.dependencies]
+[tool.poetry.group.test.dependencies]
 pytest = "^7.4.2"
 ruff = ">=0.3.1,<1.0"
+
+[tool.poetry.group.dev.dependencies]
 notebook = ">=7.0.2"
 pre-commit = "^3.6.2"
+onnx = ">=1.15.0"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs-material = "^9.5.10"
