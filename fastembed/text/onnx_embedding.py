@@ -168,16 +168,15 @@ supported_onnx_models = [
         "model_file": "onnx/model.onnx",
     },
     {
-        "model": "akshayballal/colpali-v1.2-merged",
-        "dim": 128,
-        "description": "",
-        "license": "mit",
-        "size_in_GB": 6.08,
+        "model": "jinaai/jina-clip-v1",
+        "dim": 768,
+        "description": "Text embeddings, Multimodal (text&image), English, Prefixes for queries/documents: not necessary, 2024 year",
+        "license": "apache-2.0",
+        "size_in_GB": 0.55,
         "sources": {
-            "hf": "akshayballal/colpali-v1.2-merged-onnx",
+            "hf": "jinaai/jina-clip-v1",
         },
-        "additional_files": ["model.onnx_data"],
-        "model_file": "model.onnx",
+        "model_file": "onnx/text_model.onnx",
     },
 ]
 
