@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fastembed"
-version = "0.5.0"
+version = "0.5.1"
 description = "Fast, light, accurate library built for retrieval embedding generation"
 authors = ["Qdrant Team <info@qdrant.tech>", "NirantK <nirant.bits@gmail.com>"]
 license = "Apache License"
