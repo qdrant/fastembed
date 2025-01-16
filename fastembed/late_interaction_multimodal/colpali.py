@@ -41,7 +41,9 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
     PAD_TOKEN = "<pad>"
     QUERY_MARKER_TOKEN_ID = [2, 5098]
     IMAGE_PLACEHOLDER_SIZE = (3, 448, 448)
-    EMPTY_TEXT_PLACEHOLDER = np.array([257152] * 1024 + [2, 50721, 573, 2416, 235265, 108])
+    EMPTY_TEXT_PLACEHOLDER = np.array(
+        [257152] * 1024 + [2, 50721, 573, 2416, 235265, 108]
+    )  # This is a tokenization of '<image>' * 1024 + '<bos>Describe the image.\n' line which is used as placeholder while processing just image
     EVEN_ATTENTION_MASK = np.array([1] * 1030)
     QUERY_MAX_LENGTH = 50
     VISUAL_PROMPT_PREFIX = "<image><bos>Describe the image."
