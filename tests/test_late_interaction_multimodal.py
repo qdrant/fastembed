@@ -58,7 +58,6 @@ def test_batch_embedding():
         for value in result:
             batch_size, token_num, abridged_dim = expected_result.shape
             assert np.allclose(value[:token_num, :abridged_dim], expected_result, atol=1e-3)
-            break
 
         if is_ci:
             delete_model_cache(model.model._model_dir)
