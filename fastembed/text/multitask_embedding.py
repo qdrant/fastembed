@@ -39,13 +39,12 @@ class Task(int, Enum):
 
 
 class JinaEmbeddingV3(PooledNormalizedEmbedding):
-    DEFAULT_TASK = Task.TEXT_MATCHING
     PASSAGE_TASK = Task.RETRIEVAL_PASSAGE
     QUERY_TASK = Task.RETRIEVAL_QUERY
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._current_task_id = self.DEFAULT_TASK
+        self._current_task_id = self.PASSAGE_TASK
 
     @classmethod
     def _get_worker_class(cls) -> Type["TextEmbeddingWorker"]:
@@ -66,7 +65,7 @@ class JinaEmbeddingV3(PooledNormalizedEmbedding):
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
         parallel: Optional[int] = None,
-        task_id: int = DEFAULT_TASK,
+        task_id: int = PASSAGE_TASK,
         **kwargs,
     ) -> Iterable[np.ndarray]:
         self._current_task_id = task_id
