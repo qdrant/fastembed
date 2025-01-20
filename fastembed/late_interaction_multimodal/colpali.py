@@ -46,7 +46,6 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
     )  # This is a tokenization of '<image>' * 1024 + '<bos>Describe the image.\n' line which is used as placeholder while processing just image
     EVEN_ATTENTION_MASK = np.array([1] * 1030)
     QUERY_MAX_LENGTH = 50
-    VISUAL_PROMPT_PREFIX = "<image><bos>Describe the image."
 
     def __init__(
         self,
