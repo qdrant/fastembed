@@ -63,7 +63,7 @@ docs = ["Hello World", "Follow the white rabbit."]
 def test_batch_embedding():
     is_ci = os.getenv("CI")
     docs_to_embed = docs * 10
-    default_task = Task.TEXT_MATCHING
+    default_task = Task.RETRIEVAL_PASSAGE
 
     for model_desc in TextEmbedding.list_supported_models():
         if not is_ci and model_desc["size_in_GB"] > 1:
