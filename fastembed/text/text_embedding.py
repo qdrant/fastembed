@@ -74,7 +74,7 @@ class TextEmbedding(TextEmbeddingBase):
             warnings.warn(
                 "The model 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2' has been updated to "
                 "include a mean pooling layer. Please ensure your usage aligns with the new functionality. "
-                "Support for the previous version without mean pooling is removed.",
+                "Support for the previous version without mean pooling will be removed as of version 0.5.2.",
                 UserWarning,
                 stacklevel=2,
             )
