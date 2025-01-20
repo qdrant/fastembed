@@ -7,7 +7,8 @@ from pathlib import Path
 from typing import Any
 
 import requests
-from huggingface_hub import snapshot_download, hf_hub_url, get_hf_file_metadata
+from huggingface_hub import snapshot_download, model_info, list_repo_tree
+from huggingface_hub.hf_api import RepoFile
 from huggingface_hub.utils import (
     RepositoryNotFoundError,
     disable_progress_bars,
@@ -116,45 +117,59 @@ class ModelManagement:
         Returns:
             Path: The path to the model directory.
         """
-        verified_metadata = False
 
         def _verify_files_from_metadata(
-            model_dir: Path, stored_metadata: dict[str, Any], hf_source_repo: str
+            model_dir: Path, stored_metadata: dict[str, Any], repo_files: list[RepoFile]
         ) -> bool:
-            for rel_path, meta in stored_metadata.items():
-                file_path = model_dir / rel_path
-                file_name = file_path.name
+            try:
+                for rel_path, meta in stored_metadata.items():
+                    file_path = model_dir / rel_path
 
-                try:  # if there's network, check with hf
-                    url = hf_hub_url(hf_source_repo, file_name)
-                    hf_metadata = get_hf_file_metadata(url)
-                    if (
-                        not file_path.exists()
-                        or hf_metadata.size != meta["size"]
-                        or hf_metadata.commit_hash != meta["commit_hash"]
-                    ):
+                    if not file_path.exists():
                         return False
-                except Exception:  # if not, only check local size
-                    if not file_path.exists() or file_path.stat().st_size != meta["size"]:
-                        return False
-            return True
 
-        def _save_file_metadata(model_dir: Path, hf_source_repo: str) -> None:
-            metadata = {}
-            for file_path in model_dir.rglob("*"):
-                if file_path.is_file() and file_path.name != cls.METADATA_FILE:
-                    try:  # there's network at least first time
-                        url = hf_hub_url(hf_source_repo, file_path.name)
-                        hf_metadata = get_hf_file_metadata(url)
-                        metadata[str(file_path.relative_to(model_dir))] = {
-                            "size": hf_metadata.size,
-                            "commit_hash": hf_metadata.commit_hash,
-                        }
-                    except Exception:
-                        continue
+                    if repo_files:  # online verification
+                        file_info = next((f for f in repo_files if f.path == file_path.name), None)
+                        if (
+                            not file_info
+                            or file_info.size != meta["size"]
+                            or file_info.blob_id != meta["blob_id"]
+                        ):
+                            return False
 
-            if metadata:
-                (model_dir / cls.METADATA_FILE).write_text(json.dumps(metadata))
+                    else:  # offline verification
+                        if file_path.stat().st_size != meta["size"]:
+                            return False
+                return True
+            except (OSError, KeyError) as e:
+                logger.error(f"Error verifying files: {str(e)}")
+                return False
+
+        def _save_file_metadata(model_dir: Path, repo_files: list[RepoFile]) -> None:
+            try:
+                metadata = {}
+                file_info_map = {f.path: f for f in repo_files}
+
+                for file_path in model_dir.rglob("*"):
+                    if file_path.is_file() and file_path.name != cls.METADATA_FILE:
+                        repo_file = file_info_map.get(file_path.name)
+                        if repo_file:
+                            file_size = file_path.stat().st_size
+                            if file_size != repo_file.size:
+                                raise ValueError(f"File size mismatch for {file_path.name}")
+
+                            metadata[str(file_path.relative_to(model_dir))] = {
+                                "size": repo_file.size,
+                                "blob_id": repo_file.blob_id,
+                            }
+
+                if not metadata:  # happens when internet connection is down while downloading
+                    raise ValueError("No valid files found to save metadata")
+                else:
+                    (model_dir / cls.METADATA_FILE).write_text(json.dumps(metadata))
+            except (OSError, ValueError) as e:
+                logger.error(f"Error saving metadata: {str(e)}")
+                raise
 
         allow_patterns = [
             "config.json",
@@ -164,16 +179,36 @@ class ModelManagement:
             "preprocessor_config.json",
         ]
 
-        model_file = next((file for file in extra_patterns if file.endswith((".onnx"))), "")
         allow_patterns.extend(extra_patterns)
 
         snapshot_dir = Path(cache_dir) / f"models--{hf_source_repo.replace('/', '--')}"
         metadata_file = snapshot_dir / cls.METADATA_FILE
 
+        try:
+            # at least there's network first time (we should make sure to not fail if no network)
+            repo_revision = model_info(hf_source_repo).sha
+            repo_tree = list(
+                list_repo_tree(hf_source_repo, revision=repo_revision, repo_type="model")
+            )
+        except Exception:
+            repo_tree = None
+
+        allowed_extensions = {".json", ".onnx", ".txt"}
+        repo_files = (
+            [
+                f
+                for f in repo_tree
+                if isinstance(f, RepoFile) and Path(f.path).suffix in allowed_extensions
+            ]
+            if repo_tree
+            else []
+        )
+
+        verified_metadata = False
         if snapshot_dir.exists() and metadata_file.exists():
             stored_metadata = json.loads(metadata_file.read_text())
             verified_metadata = _verify_files_from_metadata(
-                snapshot_dir, stored_metadata, hf_source_repo
+                snapshot_dir, stored_metadata, repo_files
             )
             if verified_metadata or local_files_only:
                 disable_progress_bars()
@@ -186,11 +221,8 @@ class ModelManagement:
             **kwargs,
         )
 
-        if not os.path.exists(os.path.join(result, model_file)):
-            raise FileNotFoundError("Couldn't download model from huggingface")
-
         if not verified_metadata:
-            _save_file_metadata(snapshot_dir, hf_source_repo)
+            _save_file_metadata(snapshot_dir, repo_files)
         return result
 
     @classmethod
