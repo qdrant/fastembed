@@ -19,17 +19,6 @@ supported_pooled_models = [
         "model_file": "onnx/model.onnx",
     },
     {
-        "model": "nomic-ai/nomic-embed-text-v1.5-Q",
-        "dim": 768,
-        "description": "Text embeddings, Multimodal (text, image), English, 8192 input tokens truncation, Prefixes for queries/documents: necessary, 2024 year.",
-        "license": "apache-2.0",
-        "size_in_GB": 0.13,
-        "sources": {
-            "hf": "nomic-ai/nomic-embed-text-v1.5",
-        },
-        "model_file": "onnx/model_quantized.onnx",
-    },
-    {
         "model": "nomic-ai/nomic-embed-text-v1",
         "dim": 768,
         "description": "Text embeddings, Multimodal (text, image), English, 8192 input tokens truncation, Prefixes for queries/documents: necessary, 2024 year.",

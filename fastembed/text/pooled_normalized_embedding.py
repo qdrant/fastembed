@@ -10,6 +10,17 @@ from fastembed.text.pooled_embedding import PooledEmbedding
 
 supported_pooled_normalized_models = [
     {
+        "model": "nomic-ai/nomic-embed-text-v1.5-Q",
+        "dim": 768,
+        "description": "Text embeddings, Multimodal (text, image), English, 8192 input tokens truncation, Prefixes for queries/documents: necessary, 2024 year.",
+        "license": "apache-2.0",
+        "size_in_GB": 0.13,
+        "sources": {
+            "hf": "nomic-ai/nomic-embed-text-v1.5",
+        },
+        "model_file": "onnx/model_quantized.onnx",
+    },
+    {
         "model": "sentence-transformers/all-MiniLM-L6-v2",
         "dim": 384,
         "description": "Text embeddings, Unimodal (text), English, 256 input tokens truncation, Prefixes for queries/documents: not necessary, 2021 year.",

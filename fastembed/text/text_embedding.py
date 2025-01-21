@@ -1,3 +1,4 @@
+import warnings
 from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
@@ -62,6 +63,14 @@ class TextEmbedding(TextEmbeddingBase):
         **kwargs,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
+        if model_name == "nomic-ai/nomic-embed-text-v1.5-Q":
+            warnings.warn(
+                "The model 'nomic-ai/nomic-embed-text-v1.5-Q' has been updated to include a mean pooling layer. "
+                "Please ensure your usage aligns with the new functionality. "
+                "Support for the previous version without mean pooling will be removed as of version 0.5.2.",
+                UserWarning,
+                stacklevel=2,
+            )
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
             supported_models = EMBEDDING_MODEL_TYPE.list_supported_models()
             if any(model_name.lower() == model["model"].lower() for model in supported_models):
