@@ -15,14 +15,13 @@ from fastembed.late_interaction_multimodal.onnx_multimodal_model import (
     ImageEmbeddingWorker,
 )
 
-
 supported_colpali_models = [
     {
         "model": "AndrewOgn/colpali-v1.3-merged-onnx",
         "dim": 128,
         "description": "Text embeddings, Bimodal (text/image), Aligned to image latent space, fp16 quantized, 2024.",
         "license": "mit",
-        "size_in_GB": 10.08,
+        "size_in_GB": 6.5,
         "sources": {
             "hf": "AndrewOgn/colpali-v1.3-merged-onnx",
         },
