@@ -48,10 +48,16 @@ pillow = "^10.2.0"
 cairosvg = "^2.7.1"
 mknotebooks = "^0.8.0"
 
+[tool.poetry.group.types.dependencies]
+pyright = ">=1.1.293"
+mypy = "^1.0.0"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pyright]
+typeCheckingMode = "strict"
 
 [tool.ruff]
 line-length = 99
