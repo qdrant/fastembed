@@ -65,9 +65,8 @@ class TextEmbedding(TextEmbeddingBase):
         super().__init__(model_name, cache_dir, threads, **kwargs)
         if model_name == "nomic-ai/nomic-embed-text-v1.5-Q":
             warnings.warn(
-                "The model 'nomic-ai/nomic-embed-text-v1.5-Q' has been updated to include a mean pooling layer. "
-                "Please ensure your usage aligns with the new functionality. "
-                "Support for the previous version without mean pooling will be removed as of version 0.5.2.",
+                "The model 'nomic-ai/nomic-embed-text-v1.5-Q' has been updated on HuggingFace. "
+                "Please review the latest documentation and release notes to ensure compatibility with your workflow. ",
                 UserWarning,
                 stacklevel=2,
             )

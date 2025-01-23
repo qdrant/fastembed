@@ -45,7 +45,7 @@ CANONICAL_VECTOR_VALUES = {
     "jinaai/jina-embeddings-v2-base-es": np.array([-0.0108, -0.0092, -0.0373, 0.0171, -0.0301]),
     "nomic-ai/nomic-embed-text-v1": np.array([0.3708, 0.2031, -0.3406, -0.2114, -0.3230]),
     "nomic-ai/nomic-embed-text-v1.5": np.array(
-        [-0.15407836, -0.03053198, -3.9138033, 0.1910364, 0.13224715]
+        [0.0802303, 0.3700881, -4.3053818, 0.4431803, -0.271572]
     ),
     "nomic-ai/nomic-embed-text-v1.5-Q": np.array(
         [0.0035279, 0.0162738, -0.1893193, 0.0194878, -0.0119418]
