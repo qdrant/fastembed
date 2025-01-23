@@ -52,6 +52,7 @@ class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
         cuda: bool = False,
         device_ids: Optional[list[int]] = None,
         lazy_load: bool = False,
+        specific_model_path: Optional[str] = None,
         **kwargs,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
@@ -66,6 +67,7 @@ class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
                     cuda=cuda,
                     device_ids=device_ids,
                     lazy_load=lazy_load,
+                    specific_model_path=specific_model_path,
                     **kwargs,
                 )
                 return

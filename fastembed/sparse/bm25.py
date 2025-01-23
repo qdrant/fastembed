@@ -108,6 +108,7 @@ class Bm25(SparseTextEmbeddingBase):
         language: str = "english",
         token_max_length: int = 40,
         disable_stemmer: bool = False,
+        specific_model_path: Optional[str] = None,
         **kwargs,
     ):
         super().__init__(model_name, cache_dir, **kwargs)
@@ -125,7 +126,10 @@ class Bm25(SparseTextEmbeddingBase):
         self.cache_dir = define_cache_dir(cache_dir)
 
         self._model_dir = self.download_model(
-            model_description, self.cache_dir, local_files_only=self._local_files_only
+            model_description,
+            self.cache_dir,
+            local_files_only=self._local_files_only,
+            specific_model_path=specific_model_path,
         )
 
         self.token_max_length = token_max_length
