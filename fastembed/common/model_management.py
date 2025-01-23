@@ -252,7 +252,8 @@ class ModelManagement:
         specific_model_path: Optional[str] = kwargs.get("specific_model_path", None)
         if specific_model_path:
             return Path(specific_model_path)
-
+        else:
+            del kwargs["specific_model_path"]
         retries = 1 if local_files_only else retries
         hf_source = model.get("sources", {}).get("hf")
         url_source = model.get("sources", {}).get("url")
