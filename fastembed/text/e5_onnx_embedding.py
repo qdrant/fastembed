@@ -1,9 +1,11 @@
-from typing import Any, Type
+from typing import Any, Type, Iterable
 
 import numpy as np
 
 from fastembed.text.onnx_embedding import OnnxTextEmbedding, OnnxTextEmbeddingWorker
 from fastembed.text.onnx_text_model import TextEmbeddingWorker
+from fastembed.common.onnx_model import OnnxOutputContext
+from fastembed.common.utils import normalize, average_pool
 
 supported_multilingual_e5_models = [
     {
@@ -55,6 +57,14 @@ class E5OnnxEmbedding(OnnxTextEmbedding):
         """
         onnx_input.pop("token_type_ids", None)
         return onnx_input
+
+    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
+        embeddings, attention_masks = output.model_output, output.attention_mask
+
+        pooled_embeddings = average_pool(embeddings, attention_masks)
+        nomalized_embeddings = normalize(pooled_embeddings).astype(np.float32)
+
+        return nomalized_embeddings
 
 
 class E5OnnxEmbeddingWorker(OnnxTextEmbeddingWorker):
