@@ -1,6 +1,7 @@
 from typing import Any, Type, Iterable
 
 import numpy as np
+from loguru import logger
 
 from fastembed.text.onnx_embedding import OnnxTextEmbedding, OnnxTextEmbeddingWorker
 from fastembed.text.onnx_text_model import TextEmbeddingWorker
@@ -59,6 +60,10 @@ class E5OnnxEmbedding(OnnxTextEmbedding):
         return onnx_input
 
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
+        logger.warning(
+            "E5 models output postprocessing has changed to align with transformers"
+            "Now it is avg_pooled and normalized"
+        )
         embeddings, attention_masks = output.model_output, output.attention_mask
 
         pooled_embeddings = average_pool(embeddings, attention_masks)
