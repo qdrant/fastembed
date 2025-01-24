@@ -84,6 +84,19 @@ supported_pooled_normalized_models = [
         "sources": {"hf": "thenlper/gte-base"},
         "model_file": "onnx/model.onnx",
     },
+    {
+        "model": "intfloat/multilingual-e5-large",
+        "dim": 1024,
+        "description": "Text embeddings, Unimodal (text), Multilingual (~100 languages), 512 input tokens truncation, Prefixes for queries/documents: necessary, 2024 year.",
+        "license": "mit",
+        "size_in_GB": 2.24,
+        "sources": {
+            "url": "https://storage.googleapis.com/qdrant-fastembed/fast-multilingual-e5-large.tar.gz",
+            "hf": "qdrant/multilingual-e5-large-onnx",
+        },
+        "model_file": "model.onnx",
+        "additional_files": ["model.onnx_data"],
+    },
 ]
 
 

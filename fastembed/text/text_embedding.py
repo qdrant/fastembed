@@ -2,10 +2,9 @@ import warnings
 from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
-
+from loguru import logger
 from fastembed.common import OnnxProvider
 from fastembed.text.clip_embedding import CLIPOnnxEmbedding
-from fastembed.text.e5_onnx_embedding import E5OnnxEmbedding
 from fastembed.text.pooled_normalized_embedding import PooledNormalizedEmbedding
 from fastembed.text.pooled_embedding import PooledEmbedding
 from fastembed.text.multitask_embedding import JinaEmbeddingV3
@@ -16,7 +15,6 @@ from fastembed.text.text_embedding_base import TextEmbeddingBase
 class TextEmbedding(TextEmbeddingBase):
     EMBEDDINGS_REGISTRY: list[Type[TextEmbeddingBase]] = [
         OnnxTextEmbedding,
-        E5OnnxEmbedding,
         CLIPOnnxEmbedding,
         PooledNormalizedEmbedding,
         PooledEmbedding,
@@ -80,6 +78,20 @@ class TextEmbedding(TextEmbeddingBase):
                 UserWarning,
                 stacklevel=2,
             )
+        if model_name == "sentence-transformers/paraphrase-multilingual-mpnet-base-v2":
+            logger.warning(
+                """\033[1mWarning:\033[0m The output postprocessing for E5 models has been updated to align with Transformers standards. Outputs are now \033[1maverage pooled\033[0m."
+                "Affected models:
+                    sentence-transformers/paraphrase-multilingual-mpnet-base-v2"""
+            )
+
+        if model_name == "intfloat/multilingual-e5-large":
+            logger.warning(
+                """\033[1mWarning:\033[0m The output postprocessing for E5 models has been updated to align with Transformers standards. Outputs are now \033[1maverage pooled\033[0m and \033[1mnormalized\033[0m."
+                "Affected models:
+                    intfloat/multilingual-e5-large"""
+            )
+
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
             supported_models = EMBEDDING_MODEL_TYPE.list_supported_models()
             if any(model_name.lower() == model["model"].lower() for model in supported_models):
