@@ -29,7 +29,7 @@ class OnnxImageModel(OnnxModel[T]):
         self.processor = None
 
     def _preprocess_onnx_input(
-        self, onnx_input: dict[str, np.ndarray], **kwargs
+        self, onnx_input: dict[str, np.ndarray], **kwargs: Any
     ) -> dict[str, np.ndarray]:
         """
         Preprocess the onnx input.
@@ -84,7 +84,7 @@ class OnnxImageModel(OnnxModel[T]):
         providers: Optional[Sequence[OnnxProvider]] = None,
         cuda: bool = False,
         device_ids: Optional[list[int]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Iterable[T]:
         is_small = False
 

@@ -33,7 +33,7 @@ class OnnxModel(Generic[T]):
         self.tokenizer = None
 
     def _preprocess_onnx_input(
-        self, onnx_input: dict[str, np.ndarray], **kwargs
+        self, onnx_input: dict[str, np.ndarray], **kwargs: Any
     ) -> dict[str, np.ndarray]:
         """
         Preprocess the onnx input.
@@ -112,7 +112,7 @@ class EmbeddingWorker(Worker):
         self,
         model_name: str,
         cache_dir: str,
-        **kwargs,
+        **kwargs: Any,
     ) -> OnnxModel:
         raise NotImplementedError()
 
@@ -120,7 +120,7 @@ class EmbeddingWorker(Worker):
         self,
         model_name: str,
         cache_dir: str,
-        **kwargs,
+        **kwargs: Any,
     ):
         self.model = self.init_embedding(model_name, cache_dir, **kwargs)
 

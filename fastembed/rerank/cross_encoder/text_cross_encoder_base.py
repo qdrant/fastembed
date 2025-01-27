@@ -9,7 +9,7 @@ class TextCrossEncoderBase(ModelManagement):
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         self.model_name = model_name
         self.cache_dir = cache_dir
@@ -21,7 +21,7 @@ class TextCrossEncoderBase(ModelManagement):
         query: str,
         documents: Iterable[str],
         batch_size: int = 64,
-        **kwargs,
+        **kwargs: Any,
     ) -> Iterable[float]:
         """Rerank a list of documents given a query.
 
