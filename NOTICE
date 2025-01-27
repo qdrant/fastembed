@@ -7,6 +7,8 @@ This distribution includes the following Jina AI models, each with its respectiv
     - License: cc-by-nc-4.0
 - jinaai/jina-reranker-v2-base-multilingual
     - License: cc-by-nc-4.0
+- jinaai/jina-embeddings-v3
+    - License: cc-by-nc-4.0
 
 These models are developed by Jina (https://jina.ai/) and are subject to Jina AI's licensing terms.
 

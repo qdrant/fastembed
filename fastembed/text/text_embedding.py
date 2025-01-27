@@ -8,6 +8,7 @@ from fastembed.text.clip_embedding import CLIPOnnxEmbedding
 from fastembed.text.e5_onnx_embedding import E5OnnxEmbedding
 from fastembed.text.pooled_normalized_embedding import PooledNormalizedEmbedding
 from fastembed.text.pooled_embedding import PooledEmbedding
+from fastembed.text.multitask_embedding import JinaEmbeddingV3
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
 from fastembed.text.text_embedding_base import TextEmbeddingBase
 
@@ -19,6 +20,7 @@ class TextEmbedding(TextEmbeddingBase):
         CLIPOnnxEmbedding,
         PooledNormalizedEmbedding,
         PooledEmbedding,
+        JinaEmbeddingV3,
     ]
 
     @classmethod
@@ -113,3 +115,30 @@ class TextEmbedding(TextEmbeddingBase):
             List of embeddings, one per document
         """
         yield from self.model.embed(documents, batch_size, parallel, **kwargs)
+
+    def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> Iterable[np.ndarray]:
+        """
+        Embeds queries
+
+        Args:
+            query (Union[str, Iterable[str]]): The query to embed, or an iterable e.g. list of queries.
+
+        Returns:
+            Iterable[np.ndarray]: The embeddings.
+        """
+        # This is model-specific, so that different models can have specialized implementations
+        yield from self.model.query_embed(query, **kwargs)
+
+    def passage_embed(self, texts: Iterable[str], **kwargs) -> Iterable[np.ndarray]:
+        """
+        Embeds a list of text passages into a list of embeddings.
+
+        Args:
+            texts (Iterable[str]): The list of texts to embed.
+            **kwargs: Additional keyword argument to pass to the embed method.
+
+        Yields:
+            Iterable[SparseEmbedding]: The sparse embeddings.
+        """
+        # This is model-specific, so that different models can have specialized implementations
+        yield from self.model.passage_embed(texts, **kwargs)
