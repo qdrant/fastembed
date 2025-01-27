@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Type, Union
+from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
 
@@ -185,12 +185,12 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
     """Implementation of the Flag Embedding model."""
 
     @classmethod
-    def list_supported_models(cls) -> List[Dict[str, Any]]:
+    def list_supported_models(cls) -> list[dict[str, Any]]:
         """
         Lists the supported models.
 
         Returns:
-            List[Dict[str, Any]]: A list of dictionaries containing the model information.
+            list[dict[str, Any]]: A list of dictionaries containing the model information.
         """
         return supported_onnx_models
 
@@ -201,7 +201,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
         threads: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
         cuda: bool = False,
-        device_ids: Optional[List[int]] = None,
+        device_ids: Optional[list[int]] = None,
         lazy_load: bool = False,
         device_id: Optional[int] = None,
         specific_model_path: Optional[str] = None,
@@ -295,8 +295,8 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
         return OnnxTextEmbeddingWorker
 
     def _preprocess_onnx_input(
-        self, onnx_input: Dict[str, np.ndarray], **kwargs
-    ) -> Dict[str, np.ndarray]:
+        self, onnx_input: dict[str, np.ndarray], **kwargs
+    ) -> dict[str, np.ndarray]:
         """
         Preprocess the onnx input.
         """

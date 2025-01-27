@@ -149,7 +149,7 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
         Lists the supported models.
 
         Returns:
-            list[Dict[str, Any]]: A list of dictionaries containing the model information.
+            list[dict[str, Any]]: A list of dictionaries containing the model information.
         """
         return supported_onnx_models
 
