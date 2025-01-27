@@ -189,13 +189,12 @@ class ModelManagement:
                 if not verified:
                     logger.warning(
                         "Local file sizes do not match the metadata."
-                    )  # do not raise, still make an
-                    # attempt to load the model
+                    )  # do not raise, still make an attempt to load the model
             else:
                 logger.warning(
                     "Metadata file not found. Proceeding without checking local files."
-                )  # if users have
-                # downloaded models from hf manually, or they're updating from previous versions of fastembed
+                )  # if users have downloaded models from hf manually, or they're updating from previous versions of
+                # fastembed
             result = snapshot_download(
                 repo_id=hf_source_repo,
                 allow_patterns=allow_patterns,
