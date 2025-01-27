@@ -218,7 +218,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
                 Mutually exclusive with the `cuda` and `device_ids` arguments. Defaults to None.
             cuda (bool, optional): Whether to use cuda for inference. Mutually exclusive with `providers`
                 Defaults to False.
-            device_ids (Optional[List[int]], optional): The list of device ids to use for data parallel processing in
+            device_ids (Optional[list[int]], optional): The list of device ids to use for data parallel processing in
                 workers. Should be used with `cuda=True`, mutually exclusive with `providers`. Defaults to None.
             lazy_load (bool, optional): Whether to load the model during class initialization or on demand.
                 Should be set to True when using multiple-gpu and parallel encoding. Defaults to False.
