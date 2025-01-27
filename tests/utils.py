@@ -16,7 +16,7 @@ def delete_model_cache(model_dir: Union[str, Path]) -> None:
         model_dir (Union[str, Path]): The path to the model cache directory.
     """
 
-    def on_error(func, path, exc_info):
+    def on_error(func, path, exc_info) -> None:
         print("Failed to remove: ", path)
         print("Exception: ", exc_info)
         traceback.print_exception(*exc_info)

@@ -72,7 +72,7 @@ CANONICAL_VECTOR_VALUES = {
 MULTI_TASK_MODELS = ["jinaai/jina-embeddings-v3"]
 
 
-def test_embedding():
+def test_embedding() -> None:
     is_ci = os.getenv("CI")
     is_mac = platform.system() == "Darwin"
 
@@ -104,7 +104,7 @@ def test_embedding():
     "n_dims,model_name",
     [(384, "BAAI/bge-small-en-v1.5"), (768, "jinaai/jina-embeddings-v2-base-en")],
 )
-def test_batch_embedding(n_dims, model_name):
+def test_batch_embedding(n_dims, model_name) -> None:
     is_ci = os.getenv("CI")
     model = TextEmbedding(model_name=model_name)
 
@@ -121,7 +121,7 @@ def test_batch_embedding(n_dims, model_name):
     "n_dims,model_name",
     [(384, "BAAI/bge-small-en-v1.5"), (768, "jinaai/jina-embeddings-v2-base-en")],
 )
-def test_parallel_processing(n_dims, model_name):
+def test_parallel_processing(n_dims, model_name) -> None:
     is_ci = os.getenv("CI")
     model = TextEmbedding(model_name=model_name)
 
@@ -147,7 +147,7 @@ def test_parallel_processing(n_dims, model_name):
     "model_name",
     ["BAAI/bge-small-en-v1.5"],
 )
-def test_lazy_load(model_name):
+def test_lazy_load(model_name) -> None:
     is_ci = os.getenv("CI")
     model = TextEmbedding(model_name=model_name, lazy_load=True)
     assert not hasattr(model.model, "model")

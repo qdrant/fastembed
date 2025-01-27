@@ -13,7 +13,7 @@ CACHE_DIR = "../model_cache"
 
 @pytest.mark.skip(reason="Requires a multi-gpu server")
 @pytest.mark.parametrize("device_id", [None, 0, 1])
-def test_gpu_via_providers(device_id):
+def test_gpu_via_providers(device_id) -> None:
     docs = ["hello world", "flag embedding"]
 
     device_id = device_id if device_id is not None else 0
@@ -85,7 +85,7 @@ def test_gpu_via_providers(device_id):
 
 @pytest.mark.skip(reason="Requires a multi-gpu server")
 @pytest.mark.parametrize("device_ids", [None, [0], [1], [0, 1]])
-def test_gpu_cuda_device_ids(device_ids):
+def test_gpu_cuda_device_ids(device_ids) -> None:
     docs = ["hello world", "flag embedding"]
     device_id = device_ids[0] if device_ids else 0
     embedding_model = TextEmbedding(
@@ -170,7 +170,7 @@ def test_gpu_cuda_device_ids(device_ids):
 @pytest.mark.parametrize(
     "device_ids,parallel", [(None, None), (None, 2), ([1], None), ([1], 1), ([1], 2), ([0, 1], 2)]
 )
-def test_multi_gpu_parallel_inference(device_ids, parallel):
+def test_multi_gpu_parallel_inference(device_ids, parallel) -> None:
     docs = ["hello world", "flag embedding"] * 100
     batch_size = 5
 

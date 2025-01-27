@@ -96,7 +96,7 @@ class ParallelWorkerPool:
         start_method: Optional[str] = None,
         device_ids: Optional[list[int]] = None,
         cuda: bool = False,
-    ):
+    ) -> None:
         self.worker_class = worker
         self.num_workers = num_workers
         self.input_queue: Optional[Queue] = None

@@ -27,7 +27,7 @@ CANONICAL_VECTOR_VALUES = {
 }
 
 
-def test_embedding():
+def test_embedding() -> None:
     is_ci = os.getenv("CI")
 
     for model_desc in ImageEmbedding.list_supported_models():
@@ -61,7 +61,7 @@ def test_embedding():
 
 
 @pytest.mark.parametrize("n_dims,model_name", [(512, "Qdrant/clip-ViT-B-32-vision")])
-def test_batch_embedding(n_dims, model_name):
+def test_batch_embedding(n_dims, model_name) -> None:
     is_ci = os.getenv("CI")
     model = ImageEmbedding(model_name=model_name)
     n_images = 32
@@ -81,7 +81,7 @@ def test_batch_embedding(n_dims, model_name):
 
 
 @pytest.mark.parametrize("n_dims,model_name", [(512, "Qdrant/clip-ViT-B-32-vision")])
-def test_parallel_processing(n_dims, model_name):
+def test_parallel_processing(n_dims, model_name) -> None:
     is_ci = os.getenv("CI")
     model = ImageEmbedding(model_name=model_name)
 
@@ -109,7 +109,7 @@ def test_parallel_processing(n_dims, model_name):
 
 
 @pytest.mark.parametrize("model_name", ["Qdrant/clip-ViT-B-32-vision"])
-def test_lazy_load(model_name):
+def test_lazy_load(model_name) -> None:
     is_ci = os.getenv("CI")
     model = ImageEmbedding(model_name=model_name, lazy_load=True)
     assert not hasattr(model.model, "model")
