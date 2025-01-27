@@ -80,17 +80,6 @@ supported_onnx_models = [
         "model_file": "model_optimized.onnx",
     },
     {
-        "model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
-        "dim": 384,
-        "description": "Text embeddings, Unimodal (text), Multilingual (~50 languages), 512 input tokens truncation, Prefixes for queries/documents: not necessary, 2019 year.",
-        "license": "apache-2.0",
-        "size_in_GB": 0.22,
-        "sources": {
-            "hf": "qdrant/paraphrase-multilingual-MiniLM-L12-v2-onnx-Q",
-        },
-        "model_file": "model_optimized.onnx",
-    },
-    {
         "model": "thenlper/gte-large",
         "dim": 1024,
         "description": "Text embeddings, Unimodal (text), English, 512 input tokens truncation, Prefixes for queries/documents: not necessary, 2023 year.",
