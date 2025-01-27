@@ -252,8 +252,6 @@ class ModelManagement:
                 )
             _save_file_metadata(snapshot_dir, metadata)
 
-        enable_progress_bars()
-
         return result
 
     @classmethod
