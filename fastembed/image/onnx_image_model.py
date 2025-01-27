@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Iterable, Optional, Sequence, Type
 
 import numpy as np
+from numpy.typing import NDArray
 from PIL import Image
 
 from fastembed.common import ImageInput, OnnxProvider
@@ -29,8 +30,8 @@ class OnnxImageModel(OnnxModel[T]):
         self.processor = None
 
     def _preprocess_onnx_input(
-        self, onnx_input: dict[str, np.ndarray], **kwargs
-    ) -> dict[str, np.ndarray]:
+        self, onnx_input: dict[str, NDArray[np.float32]], **kwargs
+    ) -> dict[str, NDArray[np.float32]]:
         """
         Preprocess the onnx input.
         """
@@ -58,7 +59,7 @@ class OnnxImageModel(OnnxModel[T]):
     def load_onnx_model(self) -> None:
         raise NotImplementedError("Subclasses must implement this method")
 
-    def _build_onnx_input(self, encoded: np.ndarray) -> dict[str, np.ndarray]:
+    def _build_onnx_input(self, encoded: NDArray[np.float32]) -> dict[str, NDArray[np.float32]]:
         return {node.name: encoded for node in self.model.get_inputs()}
 
     def onnx_embed(self, images: list[ImageInput], **kwargs) -> OnnxOutputContext:

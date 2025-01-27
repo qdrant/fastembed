@@ -1,6 +1,7 @@
 from typing import Any, Type
 
 import numpy as np
+from numpy.typing import NDArray
 
 from fastembed.text.onnx_embedding import OnnxTextEmbedding, OnnxTextEmbeddingWorker
 from fastembed.text.onnx_text_model import TextEmbeddingWorker
@@ -48,8 +49,8 @@ class E5OnnxEmbedding(OnnxTextEmbedding):
         return supported_multilingual_e5_models
 
     def _preprocess_onnx_input(
-        self, onnx_input: dict[str, np.ndarray], **kwargs
-    ) -> dict[str, np.ndarray]:
+        self, onnx_input: dict[str, NDArray[np.float32]], **kwargs
+    ) -> dict[str, NDArray[np.float32]]:
         """
         Preprocess the onnx input.
         """

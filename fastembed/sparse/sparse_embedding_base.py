@@ -2,16 +2,17 @@ from dataclasses import dataclass
 from typing import Iterable, Optional, Union
 
 import numpy as np
+from numpy.typing import NDArray
 
 from fastembed.common.model_management import ModelManagement
 
 
 @dataclass
 class SparseEmbedding:
-    values: np.ndarray
-    indices: np.ndarray
+    values: NDArray[np.float32]
+    indices: NDArray[np.float32]
 
-    def as_object(self) -> dict[str, np.ndarray]:
+    def as_object(self) -> dict[str, NDArray[np.float32]]:
         return {
             "values": self.values,
             "indices": self.indices,

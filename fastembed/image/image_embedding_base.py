@@ -1,6 +1,7 @@
 from typing import Iterable, Optional
 
 import numpy as np
+from numpy.typing import NDArray
 
 from fastembed.common.model_management import ModelManagement
 from fastembed.common.types import ImageInput
@@ -25,7 +26,7 @@ class ImageEmbeddingBase(ModelManagement):
         batch_size: int = 16,
         parallel: Optional[int] = None,
         **kwargs,
-    ) -> Iterable[np.ndarray]:
+    ) -> Iterable[NDArray[np.float32]]:
         """
         Embeds a list of images into a list of embeddings.
 
@@ -39,6 +40,6 @@ class ImageEmbeddingBase(ModelManagement):
             **kwargs: Additional keyword argument to pass to the embed method.
 
         Yields:
-            Iterable[np.ndarray]: The embeddings.
+            Iterable[NDArray[np.float32]]: The embeddings.
         """
         raise NotImplementedError()

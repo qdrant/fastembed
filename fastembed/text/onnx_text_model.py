@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
+from numpy.typing import NDArray
 from tokenizers import Encoding
 
 from fastembed.common import OnnxProvider
@@ -29,8 +30,8 @@ class OnnxTextModel(OnnxModel[T]):
         self.special_token_to_id = {}
 
     def _preprocess_onnx_input(
-        self, onnx_input: dict[str, np.ndarray], **kwargs
-    ) -> dict[str, np.ndarray]:
+        self, onnx_input: dict[str, NDArray[np.float32]], **kwargs
+    ) -> dict[str, NDArray[np.float32]]:
         """
         Preprocess the onnx input.
         """

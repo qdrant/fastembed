@@ -2,6 +2,7 @@ import warnings
 from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
+from numpy.typing import NDArray
 
 from fastembed.common import OnnxProvider
 from fastembed.text.clip_embedding import CLIPOnnxEmbedding
@@ -106,7 +107,7 @@ class TextEmbedding(TextEmbeddingBase):
         batch_size: int = 256,
         parallel: Optional[int] = None,
         **kwargs,
-    ) -> Iterable[np.ndarray]:
+    ) -> Iterable[NDArray[np.float32]]:
         """
         Encode a list of documents into list of embeddings.
         We use mean pooling with attention so that the model can handle variable-length inputs.

@@ -8,9 +8,10 @@ from itertools import islice
 from typing import Generator, Iterable, Optional, Union
 
 import numpy as np
+from numpy.typing import NDArray
 
 
-def normalize(input_array, p=2, dim=1, eps=1e-12) -> np.ndarray:
+def normalize(input_array, p=2, dim=1, eps=1e-12) -> NDArray[np.float32]:
     # Calculate the Lp norm along the specified dimension
     norm = np.linalg.norm(input_array, ord=p, axis=dim, keepdims=True)
     norm = np.maximum(norm, eps)  # Avoid division by zero

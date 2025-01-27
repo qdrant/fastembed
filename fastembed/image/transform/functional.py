@@ -1,6 +1,7 @@
 from typing import Sized, Union
 
 import numpy as np
+from numpy.typing import NDArray
 from PIL import Image
 
 
@@ -13,10 +14,10 @@ def convert_to_rgb(image: Image.Image) -> Image.Image:
 
 
 def center_crop(
-    image: Union[Image.Image, np.ndarray],
+    image: Union[Image.Image, NDArray[np.float32]],
     size: tuple[int, int],
-) -> np.ndarray:
-    if isinstance(image, np.ndarray):
+) -> NDArray[np.float32]:
+    if isinstance(image, NDArray[np.float32]):
         _, orig_height, orig_width = image.shape
     else:
         orig_height, orig_width = image.height, image.width
@@ -61,11 +62,11 @@ def center_crop(
 
 
 def normalize(
-    image: np.ndarray,
-    mean: Union[float, np.ndarray],
-    std: Union[float, np.ndarray],
-) -> np.ndarray:
-    if not isinstance(image, np.ndarray):
+    image: NDArray[np.float32],
+    mean: Union[float, NDArray[np.float32]],
+    std: Union[float, NDArray[np.float32]],
+) -> NDArray[np.float32]:
+    if not isinstance(image, NDArray[np.float32]):
         raise ValueError("image must be a numpy array")
 
     num_channels = image.shape[1] if len(image.shape) == 4 else image.shape[0]
@@ -114,11 +115,11 @@ def resize(
     return image.resize(new_size, resample)
 
 
-def rescale(image: np.ndarray, scale: float, dtype=np.float32) -> np.ndarray:
+def rescale(image: NDArray[np.float32], scale: float, dtype=np.float32) -> NDArray[np.float32]:
     return (image * scale).astype(dtype)
 
 
-def pil2ndarray(image: Union[Image.Image, np.ndarray]):
+def pil2ndarray(image: Union[Image.Image, NDArray[np.float32]]):
     if isinstance(image, Image.Image):
         return np.asarray(image).transpose((2, 0, 1))
     return image

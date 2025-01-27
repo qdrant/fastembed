@@ -24,6 +24,9 @@ pip install fastembed
 ## 📖 Usage
 
 ```python
+import numpy as np
+from numpy.typing import NDArray
+
 from fastembed import TextEmbedding
 
 documents: list[str] = [
@@ -33,7 +36,7 @@ documents: list[str] = [
     "fastembed is supported by and maintained by Qdrant."
 ]
 embedding_model = TextEmbedding()
-embeddings: list[np.ndarray] = embedding_model.embed(documents)
+embeddings: list[NDArray[np.float32]] = embedding_model.embed(documents)
 ```
 
 ## Usage with Qdrant

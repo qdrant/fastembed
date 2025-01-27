@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Generic, Iterable, Optional, Sequence, Type, TypeVar
 
 import numpy as np
+from numpy.typing import NDArray
 import onnxruntime as ort
 
 from fastembed.common.types import OnnxProvider
@@ -15,9 +16,9 @@ T = TypeVar("T")
 
 @dataclass
 class OnnxOutputContext:
-    model_output: np.ndarray
-    attention_mask: Optional[np.ndarray] = None
-    input_ids: Optional[np.ndarray] = None
+    model_output: NDArray[np.float32]
+    attention_mask: Optional[NDArray[np.float32]] = None
+    input_ids: Optional[NDArray[np.int64]] = None
 
 
 class OnnxModel(Generic[T]):
@@ -33,8 +34,8 @@ class OnnxModel(Generic[T]):
         self.tokenizer = None
 
     def _preprocess_onnx_input(
-        self, onnx_input: dict[str, np.ndarray], **kwargs
-    ) -> dict[str, np.ndarray]:
+        self, onnx_input: dict[str, NDArray[np.float32]], **kwargs
+    ) -> dict[str, NDArray[np.float32]]:
         """
         Preprocess the onnx input.
         """

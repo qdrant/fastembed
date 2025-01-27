@@ -1,6 +1,7 @@
 from typing import Any, Iterable, Type
 
 import numpy as np
+from numpy.typing import NDArray
 
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.text.onnx_embedding import OnnxTextEmbedding, OnnxTextEmbeddingWorker
@@ -35,7 +36,9 @@ class CLIPOnnxEmbedding(OnnxTextEmbedding):
         """
         return supported_clip_models
 
-    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
+    def _post_process_onnx_output(
+        self, output: OnnxOutputContext
+    ) -> Iterable[NDArray[np.float32]]:
         return output.model_output
 
 

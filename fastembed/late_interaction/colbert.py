@@ -2,6 +2,7 @@ import string
 from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
+from numpy.typing import NDArray
 from tokenizers import Encoding
 
 from fastembed.common import OnnxProvider
@@ -39,7 +40,7 @@ supported_colbert_models = [
 ]
 
 
-class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
+class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NDArray[np.float32]]):
     QUERY_MARKER_TOKEN_ID = 1
     DOCUMENT_MARKER_TOKEN_ID = 2
     MIN_QUERY_LENGTH = 31  # it's 32, we add one additional special token in the beginning
@@ -47,7 +48,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
 
     def _post_process_onnx_output(
         self, output: OnnxOutputContext, is_doc: bool = True
-    ) -> Iterable[np.ndarray]:
+    ) -> Iterable[NDArray[np.float32]]:
         if not is_doc:
             return output.model_output.astype(np.float32)
 
@@ -68,8 +69,8 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         return output.model_output.astype(np.float32)
 
     def _preprocess_onnx_input(
-        self, onnx_input: dict[str, np.ndarray], is_doc: bool = True, **kwargs: Any
-    ) -> dict[str, np.ndarray]:
+        self, onnx_input: dict[str, NDArray[np.float32]], is_doc: bool = True, **kwargs: Any
+    ) -> dict[str, NDArray[np.float32]]:
         marker_token = self.DOCUMENT_MARKER_TOKEN_ID if is_doc else self.QUERY_MARKER_TOKEN_ID
         onnx_input["input_ids"] = np.insert(onnx_input["input_ids"], 1, marker_token, axis=1)
         onnx_input["attention_mask"] = np.insert(onnx_input["attention_mask"], 1, 1, axis=1)
@@ -201,7 +202,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         batch_size: int = 256,
         parallel: Optional[int] = None,
         **kwargs,
-    ) -> Iterable[np.ndarray]:
+    ) -> Iterable[NDArray[np.float32]]:
         """
         Encode a list of documents into list of embeddings.
         We use mean pooling with attention so that the model can handle variable-length inputs.
@@ -229,7 +230,9 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
             **kwargs,
         )
 
-    def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> Iterable[np.ndarray]:
+    def query_embed(
+        self, query: Union[str, Iterable[str]], **kwargs
+    ) -> Iterable[NDArray[np.float32]]:
         if isinstance(query, str):
             query = [query]
 

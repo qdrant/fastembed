@@ -1,6 +1,7 @@
 from typing import Any, Union, Optional
 
 import numpy as np
+from numpy.typing import NDArray
 from PIL import Image
 
 from fastembed.image.transform.functional import (
@@ -15,7 +16,7 @@ from fastembed.image.transform.functional import (
 
 
 class Transform:
-    def __call__(self, images: list) -> Union[list[Image.Image], list[np.ndarray]]:
+    def __call__(self, images: list) -> Union[list[Image.Image], list[NDArray[np.float32]]]:
         raise NotImplementedError("Subclasses must implement this method")
 
 
@@ -28,7 +29,7 @@ class CenterCrop(Transform):
     def __init__(self, size: tuple[int, int]):
         self.size = size
 
-    def __call__(self, images: list[Image.Image]) -> list[np.ndarray]:
+    def __call__(self, images: list[Image.Image]) -> list[NDArray[np.float32]]:
         return [center_crop(image=image, size=self.size) for image in images]
 
 
@@ -37,7 +38,7 @@ class Normalize(Transform):
         self.mean = mean
         self.std = std
 
-    def __call__(self, images: list[np.ndarray]) -> list[np.ndarray]:
+    def __call__(self, images: list[NDArray[np.float32]]) -> list[NDArray[np.float32]]:
         return [normalize(image, mean=self.mean, std=self.std) for image in images]
 
 
@@ -58,12 +59,14 @@ class Rescale(Transform):
     def __init__(self, scale: float = 1 / 255):
         self.scale = scale
 
-    def __call__(self, images: list[np.ndarray]) -> list[np.ndarray]:
+    def __call__(self, images: list[NDArray[np.float32]]) -> list[NDArray[np.float32]]:
         return [rescale(image, scale=self.scale) for image in images]
 
 
 class PILtoNDarray(Transform):
-    def __call__(self, images: list[Union[Image.Image, np.ndarray]]) -> list[np.ndarray]:
+    def __call__(
+        self, images: list[Union[Image.Image, NDArray[np.float32]]]
+    ) -> list[NDArray[np.float32]]:
         return [pil2ndarray(image) for image in images]
 
 
@@ -87,8 +90,8 @@ class Compose:
         self.transforms = transforms
 
     def __call__(
-        self, images: Union[list[Image.Image], list[np.ndarray]]
-    ) -> Union[list[np.ndarray], list[Image.Image]]:
+        self, images: Union[list[Image.Image], list[NDArray[np.float32]]]
+    ) -> Union[list[NDArray[np.float32]], list[Image.Image]]:
         for transform in self.transforms:
             images = transform(images)
         return images

@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Iterable, Optional, Sequence, Type
 
 import numpy as np
+from numpy.typing import NDArray
 from tokenizers import Encoding
 
 from fastembed.common.onnx_model import (
@@ -135,8 +136,8 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         raise NotImplementedError("Subclasses must implement this method")
 
     def _preprocess_onnx_input(
-        self, onnx_input: dict[str, np.ndarray], **kwargs: Any
-    ) -> dict[str, np.ndarray]:
+        self, onnx_input: dict[str, NDArray[np.float32]], **kwargs: Any
+    ) -> dict[str, NDArray[np.float32]]:
         """
         Preprocess the onnx input.
         """

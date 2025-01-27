@@ -1,6 +1,7 @@
 from typing import Any, Iterable, Optional, Sequence, Type
 
 import numpy as np
+from numpy.typing import NDArray
 
 from fastembed.common import ImageInput, OnnxProvider
 from fastembed.common.onnx_model import OnnxOutputContext
@@ -67,7 +68,7 @@ supported_onnx_models = [
 ]
 
 
-class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
+class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[NDArray[np.float32]]):
     def __init__(
         self,
         model_name: str,
@@ -155,7 +156,7 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
         batch_size: int = 16,
         parallel: Optional[int] = None,
         **kwargs,
-    ) -> Iterable[np.ndarray]:
+    ) -> Iterable[NDArray[np.float32]]:
         """
         Encode a list of images into list of embeddings.
         We use mean pooling with attention so that the model can handle variable-length inputs.
@@ -189,15 +190,17 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
         return OnnxImageEmbeddingWorker
 
     def _preprocess_onnx_input(
-        self, onnx_input: dict[str, np.ndarray], **kwargs
-    ) -> dict[str, np.ndarray]:
+        self, onnx_input: dict[str, NDArray[np.float32]], **kwargs
+    ) -> dict[str, NDArray[np.float32]]:
         """
         Preprocess the onnx input.
         """
 
         return onnx_input
 
-    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
+    def _post_process_onnx_output(
+        self, output: OnnxOutputContext
+    ) -> Iterable[NDArray[np.float32]]:
         return normalize(output.model_output).astype(np.float32)
 
 

@@ -1,6 +1,7 @@
 from typing import Iterable, Optional, Union
 
 import numpy as np
+from numpy.typing import NDArray
 
 from fastembed.common.model_management import ModelManagement
 
@@ -24,10 +25,10 @@ class TextEmbeddingBase(ModelManagement):
         batch_size: int = 256,
         parallel: Optional[int] = None,
         **kwargs,
-    ) -> Iterable[np.ndarray]:
+    ) -> Iterable[NDArray[np.float32]]:
         raise NotImplementedError()
 
-    def passage_embed(self, texts: Iterable[str], **kwargs) -> Iterable[np.ndarray]:
+    def passage_embed(self, texts: Iterable[str], **kwargs) -> Iterable[NDArray[np.float32]]:
         """
         Embeds a list of text passages into a list of embeddings.
 
@@ -36,7 +37,7 @@ class TextEmbeddingBase(ModelManagement):
             **kwargs: Additional keyword argument to pass to the embed method.
 
         Yields:
-            Iterable[np.ndarray]: The embeddings.
+            Iterable[NDArray[np.float32]]: The embeddings.
         """
 
         # This is model-specific, so that different models can have specialized implementations
@@ -44,7 +45,7 @@ class TextEmbeddingBase(ModelManagement):
 
     def query_embed(
         self, query: Union[str, Iterable[str]], **kwargs
-    ) -> Iterable[np.ndarray]:
+    ) -> Iterable[NDArray[np.float32]]:
         """
         Embeds queries
 
@@ -52,7 +53,7 @@ class TextEmbeddingBase(ModelManagement):
             query (Union[str, Iterable[str]]): The query to embed, or an iterable e.g. list of queries.
 
         Returns:
-            Iterable[np.ndarray]: The embeddings.
+            Iterable[NDArray[np.float32]]: The embeddings.
         """
 
         # This is model-specific, so that different models can have specialized implementations
