@@ -78,18 +78,12 @@ class TextEmbedding(TextEmbeddingBase):
                 UserWarning,
                 stacklevel=2,
             )
-        if model_name == "sentence-transformers/paraphrase-multilingual-mpnet-base-v2":
+        if model_name in {
+            "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
+            "intfloat/multilingual-e5-large",
+        }:
             logger.warning(
-                """\033[1mWarning:\033[0m The output postprocessing for E5 models has been updated to align with Transformers standards. Outputs are now \033[1maverage pooled\033[0m."
-                "Affected models:
-                    sentence-transformers/paraphrase-multilingual-mpnet-base-v2"""
-            )
-
-        if model_name == "intfloat/multilingual-e5-large":
-            logger.warning(
-                """\033[1mWarning:\033[0m The output postprocessing for E5 models has been updated to align with Transformers standards. Outputs are now \033[1maverage pooled\033[0m and \033[1mnormalized\033[0m."
-                "Affected models:
-                    intfloat/multilingual-e5-large"""
+                f"{model_name} has been updated as of fastembed 0.5.2, outputs are now average pooled."
             )
 
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
