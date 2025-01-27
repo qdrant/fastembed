@@ -103,7 +103,7 @@ class OnnxModel(Generic[T]):
     def load_onnx_model(self) -> None:
         raise NotImplementedError("Subclasses must implement this method")
 
-    def onnx_embed(self, *args, **kwargs) -> OnnxOutputContext:
+    def onnx_embed(self, *args: Any, **kwargs) -> OnnxOutputContext:
         raise NotImplementedError("Subclasses must implement this method")
 
 
