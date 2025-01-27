@@ -145,31 +145,28 @@ class ModelManagement:
                 logger.error(f"Error verifying files: {str(e)}")
                 return False
 
-        def _save_file_metadata(model_dir: Path, repo_files: list[RepoFile]) -> None:
+        def _collect_file_metadata(
+            model_dir: Path, repo_files: list[RepoFile]
+        ) -> dict[str, dict[str, int]]:
+            meta = {}
+            file_info_map = {f.path: f for f in repo_files}
+            for file_path in model_dir.rglob("*"):
+                if file_path.is_file() and file_path.name != cls.METADATA_FILE:
+                    repo_file = file_info_map.get(file_path.name)
+                    if repo_file:
+                        meta[str(file_path.relative_to(model_dir))] = {
+                            "size": repo_file.size,
+                            "blob_id": repo_file.blob_id,
+                        }
+            return meta
+
+        def _save_file_metadata(model_dir: Path, meta: dict[str, dict[str, int]]) -> None:
             try:
-                metadata = {}
-                file_info_map = {f.path: f for f in repo_files}
-
-                for file_path in model_dir.rglob("*"):
-                    if file_path.is_file() and file_path.name != cls.METADATA_FILE:
-                        repo_file = file_info_map.get(file_path.name)
-                        if repo_file:
-                            file_size = file_path.stat().st_size
-                            if file_size != repo_file.size:
-                                raise ValueError(f"File size mismatch for {file_path.name}")
-
-                            metadata[str(file_path.relative_to(model_dir))] = {
-                                "size": repo_file.size,
-                                "blob_id": repo_file.blob_id,
-                            }
-
-                if not metadata:  # happens when internet connection is down while downloading
-                    raise ValueError("No valid files found to save metadata")
-                else:
-                    (model_dir / cls.METADATA_FILE).write_text(json.dumps(metadata))
+                if not model_dir.exists():
+                    model_dir.mkdir(parents=True, exist_ok=True)
+                (model_dir / cls.METADATA_FILE).write_text(json.dumps(meta))
             except (OSError, ValueError) as e:
-                logger.error(f"Error saving metadata: {str(e)}")
-                raise
+                logger.warning(f"Error saving metadata: {str(e)}")
 
         allow_patterns = [
             "config.json",
@@ -184,14 +181,32 @@ class ModelManagement:
         snapshot_dir = Path(cache_dir) / f"models--{hf_source_repo.replace('/', '--')}"
         metadata_file = snapshot_dir / cls.METADATA_FILE
 
-        try:
-            # at least there's network first time (we should make sure to not fail if no network)
-            repo_revision = model_info(hf_source_repo).sha
-            repo_tree = list(
-                list_repo_tree(hf_source_repo, revision=repo_revision, repo_type="model")
+        if local_files_only:
+            disable_progress_bars()
+            if metadata_file.exists():
+                metadata = json.loads(metadata_file.read_text())
+                verified = _verify_files_from_metadata(snapshot_dir, metadata, repo_files=[])
+                if not verified:
+                    logger.warning(
+                        "Local file sizes do not match the metadata."
+                    )  # do not raise, still make an
+                    # attempt to load the model
+            else:
+                logger.warning(
+                    "Metadata file not found. Proceeding without checking local files."
+                )  # if users have
+                # downloaded models from hf manually, or they're updating from previous versions of fastembed
+            result = snapshot_download(
+                repo_id=hf_source_repo,
+                allow_patterns=allow_patterns,
+                cache_dir=cache_dir,
+                local_files_only=local_files_only,
+                **kwargs,
             )
-        except Exception:
-            repo_tree = None
+            return result
+
+        repo_revision = model_info(hf_source_repo).sha
+        repo_tree = list(list_repo_tree(hf_source_repo, revision=repo_revision, repo_type="model"))
 
         allowed_extensions = {".json", ".onnx", ".txt"}
         repo_files = (
@@ -205,13 +220,13 @@ class ModelManagement:
         )
 
         verified_metadata = False
+
         if snapshot_dir.exists() and metadata_file.exists():
-            stored_metadata = json.loads(metadata_file.read_text())
-            verified_metadata = _verify_files_from_metadata(
-                snapshot_dir, stored_metadata, repo_files
-            )
-            if verified_metadata or local_files_only:
-                disable_progress_bars()
+            metadata = json.loads(metadata_file.read_text())
+            verified_metadata = _verify_files_from_metadata(snapshot_dir, metadata, repo_files)
+
+        if verified_metadata:
+            disable_progress_bars()
 
         result = snapshot_download(
             repo_id=hf_source_repo,
@@ -221,8 +236,22 @@ class ModelManagement:
             **kwargs,
         )
 
-        if not verified_metadata:
-            _save_file_metadata(snapshot_dir, repo_files)
+        if (
+            not verified_metadata
+        ):  # metadata is not up-to-date, update it and check whether the files have been
+            # downloaded correctly
+            metadata = _collect_file_metadata(snapshot_dir, repo_files)
+
+            download_successful = _verify_files_from_metadata(
+                snapshot_dir, metadata, repo_files=[]
+            )  # offline verification
+            if not download_successful:
+                raise ValueError(
+                    "Files have been corrupted during downloading process. "
+                    "Please check your internet connection and try again."
+                )
+            _save_file_metadata(snapshot_dir, metadata)
+
         return result
 
     @classmethod
