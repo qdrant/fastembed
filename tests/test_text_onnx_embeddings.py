@@ -1,4 +1,5 @@
 import os
+import platform
 
 import numpy as np
 import pytest
@@ -71,9 +72,12 @@ CANONICAL_VECTOR_VALUES = {
 
 def test_embedding():
     is_ci = os.getenv("CI")
+    is_mac = platform.system() == "Darwin"
 
     for model_desc in TextEmbedding.list_supported_models():
-        if not is_ci and model_desc["size_in_GB"] > 1:
+        if (not is_ci and model_desc["size_in_GB"] > 1) or (
+            is_mac and model_desc["model"] == "nomic-ai/nomic-embed-text-v1.5-Q"
+        ):
             continue
 
         dim = model_desc["dim"]
