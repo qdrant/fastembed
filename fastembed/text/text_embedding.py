@@ -2,7 +2,6 @@ import warnings
 from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
-from loguru import logger
 from fastembed.common import OnnxProvider
 from fastembed.text.clip_embedding import CLIPOnnxEmbedding
 from fastembed.text.pooled_normalized_embedding import PooledNormalizedEmbedding
@@ -82,8 +81,10 @@ class TextEmbedding(TextEmbeddingBase):
             "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
             "intfloat/multilingual-e5-large",
         }:
-            logger.warning(
-                f"{model_name} has been updated as of fastembed 0.5.2, outputs are now average pooled."
+            warnings.warn(
+                f"{model_name} has been updated as of fastembed 0.5.2, outputs are now average pooled.",
+                UserWarning,
+                stacklevel=2,
             )
 
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
