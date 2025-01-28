@@ -61,7 +61,7 @@ class OnnxImageModel(OnnxModel[T]):
     def _build_onnx_input(self, encoded: np.ndarray) -> dict[str, np.ndarray]:
         return {node.name: encoded for node in self.model.get_inputs()}
 
-    def onnx_embed(self, images: list[ImageInput], **kwargs) -> OnnxOutputContext:
+    def onnx_embed(self, images: list[ImageInput], **kwargs: Any) -> OnnxOutputContext:
         with contextlib.ExitStack():
             image_files = [
                 Image.open(image) if not isinstance(image, Image.Image) else image

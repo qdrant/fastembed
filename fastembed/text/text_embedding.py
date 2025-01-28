@@ -124,7 +124,7 @@ class TextEmbedding(TextEmbeddingBase):
         """
         yield from self.model.embed(documents, batch_size, parallel, **kwargs)
 
-    def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> Iterable[np.ndarray]:
+    def query_embed(self, query: Union[str, Iterable[str]], **kwargs: Any) -> Iterable[np.ndarray]:
         """
         Embeds queries
 
@@ -137,7 +137,7 @@ class TextEmbedding(TextEmbeddingBase):
         # This is model-specific, so that different models can have specialized implementations
         yield from self.model.query_embed(query, **kwargs)
 
-    def passage_embed(self, texts: Iterable[str], **kwargs) -> Iterable[np.ndarray]:
+    def passage_embed(self, texts: Iterable[str], **kwargs: Any) -> Iterable[np.ndarray]:
         """
         Embeds a list of text passages into a list of embeddings.
 

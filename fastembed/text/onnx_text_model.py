@@ -65,7 +65,7 @@ class OnnxTextModel(OnnxModel[T]):
     def onnx_embed(
         self,
         documents: list[str],
-        **kwargs,
+        **kwargs: Any,
     ) -> OnnxOutputContext:
         encoded = self.tokenize(documents, **kwargs)
         input_ids = np.array([e.ids for e in encoded])
