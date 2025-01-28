@@ -9,7 +9,7 @@ else:
     from typing_extensions import TypeAlias
 
 
-PathInput: TypeAlias = Union[str, os.PathLike]
+PathInput: TypeAlias = Union[str, os.PathLike[str]]
 PilInput: TypeAlias = Union[Image.Image, Iterable[Image.Image]]
 ImageInput: TypeAlias = Union[PathInput, Iterable[PathInput], PilInput]
 

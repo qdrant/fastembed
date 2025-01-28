@@ -26,7 +26,7 @@ SELECTED_MODELS = {
     "model_name",
     [model_name for model_name in CANONICAL_SCORE_VALUES],
 )
-def test_rerank(model_name) -> None:
+def test_rerank(model_name: str) -> None:
     is_ci = os.getenv("CI")
 
     model = TextCrossEncoder(model_name=model_name)
@@ -53,7 +53,7 @@ def test_rerank(model_name) -> None:
     "model_name",
     [model_name for model_name in SELECTED_MODELS.values()],
 )
-def test_batch_rerank(model_name) -> None:
+def test_batch_rerank(model_name: str) -> None:
     is_ci = os.getenv("CI")
 
     model = TextCrossEncoder(model_name=model_name)
@@ -82,7 +82,7 @@ def test_batch_rerank(model_name) -> None:
     "model_name",
     ["Xenova/ms-marco-MiniLM-L-6-v2"],
 )
-def test_lazy_load(model_name) -> None:
+def test_lazy_load(model_name: str) -> None:
     is_ci = os.getenv("CI")
     model = TextCrossEncoder(model_name=model_name, lazy_load=True)
     assert not hasattr(model.model, "model")
@@ -99,7 +99,7 @@ def test_lazy_load(model_name) -> None:
     "model_name",
     [model_name for model_name in SELECTED_MODELS.values()],
 )
-def test_rerank_pairs_parallel(model_name) -> None:
+def test_rerank_pairs_parallel(model_name: str) -> None:
     is_ci = os.getenv("CI")
 
     model = TextCrossEncoder(model_name=model_name)

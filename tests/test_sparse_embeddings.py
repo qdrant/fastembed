@@ -119,7 +119,7 @@ def bm25_instance() -> None:
         delete_model_cache(model._model_dir)
 
 
-def test_stem_with_stopwords_and_punctuation(bm25_instance) -> None:
+def test_stem_with_stopwords_and_punctuation(bm25_instance: Bm25) -> None:
     # Setup
     bm25_instance.stopwords = {"the", "is", "a"}
     bm25_instance.punctuation = {".", ",", "!"}
@@ -135,7 +135,7 @@ def test_stem_with_stopwords_and_punctuation(bm25_instance) -> None:
     assert result == expected, f"Expected {expected}, but got {result}"
 
 
-def test_stem_case_insensitive_stopwords(bm25_instance) -> None:
+def test_stem_case_insensitive_stopwords(bm25_instance: Bm25) -> None:
     # Setup
     bm25_instance.stopwords = {"the", "is", "a"}
     bm25_instance.punctuation = {".", ",", "!"}
@@ -152,7 +152,7 @@ def test_stem_case_insensitive_stopwords(bm25_instance) -> None:
 
 
 @pytest.mark.parametrize("disable_stemmer", [True, False])
-def test_disable_stemmer_behavior(disable_stemmer) -> None:
+def test_disable_stemmer_behavior(disable_stemmer: bool) -> None:
     # Setup
     model = Bm25("Qdrant/bm25", language="english", disable_stemmer=disable_stemmer)
     model.stopwords = {"the", "is", "a"}
@@ -176,7 +176,7 @@ def test_disable_stemmer_behavior(disable_stemmer) -> None:
     "model_name",
     ["prithivida/Splade_PP_en_v1"],
 )
-def test_lazy_load(model_name) -> None:
+def test_lazy_load(model_name: str) -> None:
     is_ci = os.getenv("CI")
     model = SparseTextEmbedding(model_name=model_name, lazy_load=True)
     assert not hasattr(model.model, "model")

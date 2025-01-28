@@ -114,7 +114,7 @@ def resize(
     return image.resize(new_size, resample)
 
 
-def rescale(image: np.ndarray, scale: float, dtype=np.float32) -> np.ndarray:
+def rescale(image: np.ndarray, scale: float, dtype: type = np.float32) -> np.ndarray:
     return (image * scale).astype(dtype)
 
 
