@@ -48,7 +48,7 @@ class E5OnnxEmbedding(OnnxTextEmbedding):
         return supported_multilingual_e5_models
 
     def _preprocess_onnx_input(
-        self, onnx_input: dict[str, np.ndarray], **kwargs
+        self, onnx_input: dict[str, np.ndarray], **kwargs: Any
     ) -> dict[str, np.ndarray]:
         """
         Preprocess the onnx input.
@@ -62,7 +62,7 @@ class E5OnnxEmbeddingWorker(OnnxTextEmbeddingWorker):
         self,
         model_name: str,
         cache_dir: str,
-        **kwargs,
+        **kwargs: Any,
     ) -> E5OnnxEmbedding:
         return E5OnnxEmbedding(
             model_name=model_name,

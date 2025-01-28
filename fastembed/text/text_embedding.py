@@ -62,7 +62,7 @@ class TextEmbedding(TextEmbeddingBase):
         cuda: bool = False,
         device_ids: Optional[list[int]] = None,
         lazy_load: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
         if model_name == "nomic-ai/nomic-embed-text-v1.5-Q":
@@ -105,7 +105,7 @@ class TextEmbedding(TextEmbeddingBase):
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
         parallel: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Iterable[np.ndarray]:
         """
         Encode a list of documents into list of embeddings.
@@ -124,7 +124,7 @@ class TextEmbedding(TextEmbeddingBase):
         """
         yield from self.model.embed(documents, batch_size, parallel, **kwargs)
 
-    def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> Iterable[np.ndarray]:
+    def query_embed(self, query: Union[str, Iterable[str]], **kwargs: Any) -> Iterable[np.ndarray]:
         """
         Embeds queries
 
@@ -137,7 +137,7 @@ class TextEmbedding(TextEmbeddingBase):
         # This is model-specific, so that different models can have specialized implementations
         yield from self.model.query_embed(query, **kwargs)
 
-    def passage_embed(self, texts: Iterable[str], **kwargs) -> Iterable[np.ndarray]:
+    def passage_embed(self, texts: Iterable[str], **kwargs: Any) -> Iterable[np.ndarray]:
         """
         Embeds a list of text passages into a list of embeddings.
 

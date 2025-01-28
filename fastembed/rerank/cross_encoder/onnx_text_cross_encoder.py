@@ -217,7 +217,7 @@ class TextCrossEncoderWorker(TextRerankerWorker):
         self,
         model_name: str,
         cache_dir: str,
-        **kwargs,
+        **kwargs: Any,
     ) -> OnnxTextCrossEncoder:
         return OnnxTextCrossEncoder(
             model_name=model_name,

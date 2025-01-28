@@ -74,7 +74,7 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         lazy_load: bool = False,
         device_id: Optional[int] = None,
         specific_model_path: Optional[str] = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         """
         Args:
@@ -141,7 +141,7 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
         parallel: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Iterable[SparseEmbedding]:
         """
         Encode a list of documents into list of embeddings.
@@ -176,7 +176,7 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
 
 class SpladePPEmbeddingWorker(TextEmbeddingWorker):
-    def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> SpladePP:
+    def init_embedding(self, model_name: str, cache_dir: str, **kwargs: Any) -> SpladePP:
         return SpladePP(
             model_name=model_name,
             cache_dir=cache_dir,

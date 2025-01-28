@@ -1,4 +1,4 @@
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Any
 
 import numpy as np
 
@@ -12,7 +12,7 @@ class ImageEmbeddingBase(ModelManagement):
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         self.model_name = model_name
         self.cache_dir = cache_dir
@@ -24,7 +24,7 @@ class ImageEmbeddingBase(ModelManagement):
         images: ImageInput,
         batch_size: int = 16,
         parallel: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Iterable[np.ndarray]:
         """
         Embeds a list of images into a list of embeddings.

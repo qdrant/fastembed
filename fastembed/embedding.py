@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Any
 
 from loguru import logger
 
@@ -19,6 +19,6 @@ class JinaEmbedding(TextEmbedding):
         model_name: str = "jinaai/jina-embeddings-v2-base-en",
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)

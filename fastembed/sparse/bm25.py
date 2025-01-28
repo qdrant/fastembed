@@ -109,7 +109,7 @@ class Bm25(SparseTextEmbeddingBase):
         token_max_length: int = 40,
         disable_stemmer: bool = False,
         specific_model_path: Optional[str] = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         super().__init__(model_name, cache_dir, **kwargs)
 
@@ -213,7 +213,7 @@ class Bm25(SparseTextEmbeddingBase):
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
         parallel: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Iterable[SparseEmbedding]:
         """
         Encode a list of documents into list of embeddings.
@@ -305,7 +305,9 @@ class Bm25(SparseTextEmbeddingBase):
     def compute_token_id(cls, token: str) -> int:
         return abs(mmh3.hash(token))
 
-    def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> Iterable[SparseEmbedding]:
+    def query_embed(
+        self, query: Union[str, Iterable[str]], **kwargs: Any
+    ) -> Iterable[SparseEmbedding]:
         """To emulate BM25 behaviour, we don't need to use weights in the query, and
         it's enough to just hash the tokens and assign a weight of 1.0 to them.
         """
@@ -333,7 +335,7 @@ class Bm25Worker(Worker):
         self,
         model_name: str,
         cache_dir: str,
-        **kwargs,
+        **kwargs: Any,
     ):
         self.model = self.init_embedding(model_name, cache_dir, **kwargs)
 
@@ -347,5 +349,5 @@ class Bm25Worker(Worker):
             yield idx, onnx_output
 
     @staticmethod
-    def init_embedding(model_name: str, cache_dir: str, **kwargs) -> Bm25:
+    def init_embedding(model_name: str, cache_dir: str, **kwargs: Any) -> Bm25:
         return Bm25(model_name=model_name, cache_dir=cache_dir, **kwargs)

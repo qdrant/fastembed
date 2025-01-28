@@ -194,7 +194,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
         lazy_load: bool = False,
         device_id: Optional[int] = None,
         specific_model_path: Optional[str] = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         """
         Args:
@@ -250,7 +250,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
         parallel: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Iterable[np.ndarray]:
         """
         Encode a list of documents into list of embeddings.
@@ -284,7 +284,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
         return OnnxTextEmbeddingWorker
 
     def _preprocess_onnx_input(
-        self, onnx_input: dict[str, np.ndarray], **kwargs
+        self, onnx_input: dict[str, np.ndarray], **kwargs: Any
     ) -> dict[str, np.ndarray]:
         """
         Preprocess the onnx input.
@@ -317,7 +317,7 @@ class OnnxTextEmbeddingWorker(TextEmbeddingWorker):
         self,
         model_name: str,
         cache_dir: str,
-        **kwargs,
+        **kwargs: Any,
     ) -> OnnxTextEmbedding:
         return OnnxTextEmbedding(
             model_name=model_name,

@@ -104,7 +104,7 @@ class ModelManagement:
         cache_dir: str,
         extra_patterns: list[str],
         local_files_only: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ) -> str:
         """
         Downloads a model from HuggingFace Hub.
@@ -338,7 +338,7 @@ class ModelManagement:
 
     @classmethod
     def download_model(
-        cls, model: dict[str, Any], cache_dir: Path, retries: int = 3, **kwargs
+        cls, model: dict[str, Any], cache_dir: Path, retries: int = 3, **kwargs: Any
     ) -> Path:
         """
         Downloads a model from HuggingFace Hub or Google Cloud Storage.

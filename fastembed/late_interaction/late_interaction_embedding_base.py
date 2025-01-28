@@ -1,4 +1,4 @@
-from typing import Iterable, Optional, Union
+from typing import Iterable, Optional, Union, Any
 
 import numpy as np
 
@@ -11,7 +11,7 @@ class LateInteractionTextEmbeddingBase(ModelManagement):
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         self.model_name = model_name
         self.cache_dir = cache_dir
@@ -23,11 +23,11 @@ class LateInteractionTextEmbeddingBase(ModelManagement):
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
         parallel: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Iterable[np.ndarray]:
         raise NotImplementedError()
 
-    def passage_embed(self, texts: Iterable[str], **kwargs) -> Iterable[np.ndarray]:
+    def passage_embed(self, texts: Iterable[str], **kwargs: Any) -> Iterable[np.ndarray]:
         """
         Embeds a list of text passages into a list of embeddings.
 
@@ -42,9 +42,7 @@ class LateInteractionTextEmbeddingBase(ModelManagement):
         # This is model-specific, so that different models can have specialized implementations
         yield from self.embed(texts, **kwargs)
 
-    def query_embed(
-        self, query: Union[str, Iterable[str]], **kwargs
-    ) -> Iterable[np.ndarray]:
+    def query_embed(self, query: Union[str, Iterable[str]], **kwargs: Any) -> Iterable[np.ndarray]:
         """
         Embeds queries
 

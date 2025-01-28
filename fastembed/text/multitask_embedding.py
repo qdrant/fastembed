@@ -42,7 +42,7 @@ class JinaEmbeddingV3(PooledNormalizedEmbedding):
     PASSAGE_TASK = Task.RETRIEVAL_PASSAGE
     QUERY_TASK = Task.RETRIEVAL_QUERY
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self._current_task_id = self.PASSAGE_TASK
 

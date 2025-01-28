@@ -93,7 +93,7 @@ class PooledEmbeddingWorker(OnnxTextEmbeddingWorker):
         self,
         model_name: str,
         cache_dir: str,
-        **kwargs,
+        **kwargs: Any,
     ) -> OnnxTextEmbedding:
         return PooledEmbedding(
             model_name=model_name,
