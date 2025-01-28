@@ -2,10 +2,8 @@ import warnings
 from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
-
 from fastembed.common import OnnxProvider
 from fastembed.text.clip_embedding import CLIPOnnxEmbedding
-from fastembed.text.e5_onnx_embedding import E5OnnxEmbedding
 from fastembed.text.pooled_normalized_embedding import PooledNormalizedEmbedding
 from fastembed.text.pooled_embedding import PooledEmbedding
 from fastembed.text.multitask_embedding import JinaEmbeddingV3
@@ -16,7 +14,6 @@ from fastembed.text.text_embedding_base import TextEmbeddingBase
 class TextEmbedding(TextEmbeddingBase):
     EMBEDDINGS_REGISTRY: list[Type[TextEmbeddingBase]] = [
         OnnxTextEmbedding,
-        E5OnnxEmbedding,
         CLIPOnnxEmbedding,
         PooledNormalizedEmbedding,
         PooledEmbedding,
@@ -80,6 +77,16 @@ class TextEmbedding(TextEmbeddingBase):
                 UserWarning,
                 stacklevel=2,
             )
+        if model_name in {
+            "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
+            "intfloat/multilingual-e5-large",
+        }:
+            warnings.warn(
+                f"{model_name} has been updated as of fastembed 0.5.2, outputs are now average pooled.",
+                UserWarning,
+                stacklevel=2,
+            )
+
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
             supported_models = EMBEDDING_MODEL_TYPE.list_supported_models()
             if any(model_name.lower() == model["model"].lower() for model in supported_models):

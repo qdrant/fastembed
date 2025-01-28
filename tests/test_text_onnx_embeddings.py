@@ -34,9 +34,9 @@ CANONICAL_VECTOR_VALUES = {
     "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2": np.array(
         [0.0361, 0.1862, 0.2776, 0.2461, -0.1904]
     ),
-    "intfloat/multilingual-e5-large": np.array([0.0098, 0.0045, 0.0066, -0.0354, 0.0070]),
+    "intfloat/multilingual-e5-large": np.array([0.4544, -0.0968, 0.1054, -1.3753, 0.1500]),
     "sentence-transformers/paraphrase-multilingual-mpnet-base-v2": np.array(
-        [-0.01341097, 0.0416553, -0.00480805, 0.02844842, 0.0505299]
+        [0.0047, 0.1334, -0.0102, 0.0714, 0.1930]
     ),
     "jinaai/jina-embeddings-v2-small-en": np.array([-0.0455, -0.0428, -0.0122, 0.0613, 0.0015]),
     "jinaai/jina-embeddings-v2-base-en": np.array([-0.0332, -0.0509, 0.0287, -0.0043, -0.0077]),
