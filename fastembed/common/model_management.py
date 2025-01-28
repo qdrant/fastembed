@@ -114,6 +114,7 @@ class ModelManagement:
             extra_patterns (list[str]): extra patterns to allow in the snapshot download, typically
                 includes the required model files.
             local_files_only (bool, optional): Whether to only use local files. Defaults to False.
+            specific_model_path (Optional[str], optional): The path to the model dir already pooled from external source
         Returns:
             Path: The path to the model directory.
         """
@@ -364,6 +365,9 @@ class ModelManagement:
             Path: The path to the downloaded model directory.
         """
         local_files_only = kwargs.get("local_files_only", False)
+        specific_model_path: Optional[str] = kwargs.pop("specific_model_path", None)
+        if specific_model_path:
+            return Path(specific_model_path)
         retries = 1 if local_files_only else retries
         hf_source = model.get("sources", {}).get("hf")
         url_source = model.get("sources", {}).get("url")
