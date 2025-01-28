@@ -53,35 +53,3 @@ def get_all_punctuation() -> set[str]:
 
 def remove_non_alphanumeric(text: str) -> str:
     return re.sub(r"[^\w\s]", " ", text, flags=re.UNICODE)
-
-
-def average_pool(embeddings: np.ndarray, attention_masks: np.ndarray) -> np.ndarray:
-    """
-    Perform average pooling on the embeddings, excluding padding tokens based on attention masks.
-
-    Args:
-        embeddings (np.ndarray): The embeddings of shape (batch_size, seq_length, embedding_dim).
-        attention_masks (np.ndarray): The attention masks of shape (batch_size, seq_length),
-                                       where 1 indicates valid tokens and 0 indicates padding.
-
-    Returns:
-        np.ndarray: Pooled embeddings of shape (batch_size, embedding_dim).
-    """
-    # Ensure attention masks are floats to allow broadcasting
-    attention_masks = attention_masks.astype(np.float32)
-
-    # Calculate the sum of embeddings for valid tokens
-    masked_embeddings = (
-        embeddings * attention_masks[..., np.newaxis]
-    )  # Apply mask along seq_length
-    sum_embeddings = np.sum(masked_embeddings, axis=1)
-
-    # Count the number of valid tokens per sequence
-    token_counts = (
-        np.sum(attention_masks, axis=1, keepdims=True) + 1e-9
-    )  # Add small value to prevent division by zero
-
-    # Compute the average for each sequence
-    pooled_embeddings = sum_embeddings / token_counts
-
-    return pooled_embeddings
