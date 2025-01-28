@@ -48,7 +48,7 @@ class TextCrossEncoder(TextCrossEncoderBase):
         device_ids: Optional[list[int]] = None,
         lazy_load: bool = False,
         **kwargs: Any,
-    ) -> None:
+    ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
 
         for CROSS_ENCODER_TYPE in self.CROSS_ENCODER_REGISTRY:

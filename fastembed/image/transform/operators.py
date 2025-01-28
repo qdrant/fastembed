@@ -46,7 +46,7 @@ class Resize(Transform):
         self,
         size: Union[int, tuple[int, int]],
         resample: Image.Resampling = Image.Resampling.BICUBIC,
-    ) -> None:
+    ):
         self.size = size
         self.resample = resample
 
@@ -72,7 +72,7 @@ class PadtoSquare(Transform):
         self,
         size: int,
         fill_color: Optional[Union[str, int, tuple[int, ...]]] = None,
-    ) -> None:
+    ):
         self.size = size
         self.fill_color = fill_color
 
@@ -83,7 +83,7 @@ class PadtoSquare(Transform):
 
 
 class Compose:
-    def __init__(self, transforms: list[Transform]) -> None:
+    def __init__(self, transforms: list[Transform]):
         self.transforms = transforms
 
     def __call__(
