@@ -1,9 +1,10 @@
 import os
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Iterable, Optional, Sequence, Type
+from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
+from numpy.typing import NDArray
 from tokenizers import Encoding
 
 from fastembed.common.onnx_model import (
@@ -46,7 +47,9 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
     def tokenize(self, pairs: list[tuple[str, str]], **_: Any) -> list[Encoding]:
         return self.tokenizer.encode_batch(pairs)
 
-    def _build_onnx_input(self, tokenized_input):
+    def _build_onnx_input(
+        self, tokenized_input
+    ) -> dict[str, NDArray[Union[np.float32, np.int64]]]:
         input_names = {node.name for node in self.model.get_inputs()}
         inputs = {
             "input_ids": np.array([enc.ids for enc in tokenized_input], dtype=np.int64),

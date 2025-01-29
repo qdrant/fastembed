@@ -43,6 +43,7 @@ class TextEmbeddingBase(ModelManagement):
         yield from self.embed(texts, **kwargs)
 
     def query_embed(self, query: Union[str, Iterable[str]], **kwargs: Any) -> Iterable[np.ndarray]:
+
         """
         Embeds queries
 

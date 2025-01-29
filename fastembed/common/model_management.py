@@ -255,7 +255,7 @@ class ModelManagement:
         return result
 
     @classmethod
-    def decompress_to_cache(cls, targz_path: str, cache_dir: str):
+    def decompress_to_cache(cls, targz_path: str, cache_dir: str) -> str:
         """
         Decompresses a .tar.gz file to a cache directory.
 
