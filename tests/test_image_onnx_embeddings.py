@@ -61,7 +61,7 @@ def test_embedding() -> None:
 
 
 @pytest.mark.parametrize("n_dims,model_name", [(512, "Qdrant/clip-ViT-B-32-vision")])
-def test_batch_embedding(n_dims, model_name) -> None:
+def test_batch_embedding(n_dims: int, model_name: str) -> None:
     is_ci = os.getenv("CI")
     model = ImageEmbedding(model_name=model_name)
     n_images = 32
@@ -81,7 +81,7 @@ def test_batch_embedding(n_dims, model_name) -> None:
 
 
 @pytest.mark.parametrize("n_dims,model_name", [(512, "Qdrant/clip-ViT-B-32-vision")])
-def test_parallel_processing(n_dims, model_name) -> None:
+def test_parallel_processing(n_dims: int, model_name: str) -> None:
     is_ci = os.getenv("CI")
     model = ImageEmbedding(model_name=model_name)
 
@@ -109,7 +109,7 @@ def test_parallel_processing(n_dims, model_name) -> None:
 
 
 @pytest.mark.parametrize("model_name", ["Qdrant/clip-ViT-B-32-vision"])
-def test_lazy_load(model_name) -> None:
+def test_lazy_load(model_name: str) -> None:
     is_ci = os.getenv("CI")
     model = ImageEmbedding(model_name=model_name, lazy_load=True)
     assert not hasattr(model.model, "model")

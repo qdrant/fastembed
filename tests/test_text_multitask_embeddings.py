@@ -241,7 +241,7 @@ def test_task_assignment():
     "model_name",
     ["jinaai/jina-embeddings-v3"],
 )
-def test_lazy_load(model_name):
+def test_lazy_load(model_name: str):
     is_ci = os.getenv("CI")
     model = TextEmbedding(model_name=model_name, lazy_load=True)
     assert not hasattr(model.model, "model")

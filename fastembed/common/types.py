@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 import sys
 from PIL import Image
 from typing import Any, Iterable, Union
@@ -9,7 +9,7 @@ else:
     from typing_extensions import TypeAlias
 
 
-PathInput: TypeAlias = Union[str, os.PathLike]
+PathInput: TypeAlias = Union[str, Path]
 PilInput: TypeAlias = Union[Image.Image, Iterable[Image.Image]]
 ImageInput: TypeAlias = Union[PathInput, Iterable[PathInput], PilInput]
 

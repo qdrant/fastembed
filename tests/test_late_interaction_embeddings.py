@@ -226,7 +226,7 @@ def test_parallel_processing():
     "model_name",
     ["colbert-ir/colbertv2.0"],
 )
-def test_lazy_load(model_name):
+def test_lazy_load(model_name: str):
     is_ci = os.getenv("CI")
 
     model = LateInteractionTextEmbedding(model_name=model_name, lazy_load=True)

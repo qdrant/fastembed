@@ -2,7 +2,8 @@ import shutil
 import traceback
 
 from pathlib import Path
-from typing import Union
+from types import TracebackType
+from typing import Union, Callable, Any, Type
 
 
 def delete_model_cache(model_dir: Union[str, Path]) -> None:
@@ -16,7 +17,11 @@ def delete_model_cache(model_dir: Union[str, Path]) -> None:
         model_dir (Union[str, Path]): The path to the model cache directory.
     """
 
-    def on_error(func, path, exc_info) -> None:
+    def on_error(
+        func: Callable[..., Any],
+        path: str,
+        exc_info: tuple[Type[BaseException], BaseException, TracebackType],
+    ) -> None:
         print("Failed to remove: ", path)
         print("Exception: ", exc_info)
         traceback.print_exception(*exc_info)
