@@ -4,7 +4,7 @@ import json
 import shutil
 import tarfile
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import requests
 from huggingface_hub import snapshot_download, model_info, list_repo_tree
