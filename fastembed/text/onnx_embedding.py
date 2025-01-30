@@ -2,6 +2,7 @@ from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
 
+from fastembed.common.types import NdArray
 from fastembed.common import OnnxProvider
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.utils import define_cache_dir, normalize
@@ -170,7 +171,7 @@ supported_onnx_models = [
 ]
 
 
-class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
+class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NdArray]):
     """Implementation of the Flag Embedding model."""
 
     @classmethod
@@ -251,7 +252,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
         batch_size: int = 256,
         parallel: Optional[int] = None,
         **kwargs: Any,
-    ) -> Iterable[np.ndarray]:
+    ) -> Iterable[NdArray]:
         """
         Encode a list of documents into list of embeddings.
         We use mean pooling with attention so that the model can handle variable-length inputs.
@@ -284,14 +285,14 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
         return OnnxTextEmbeddingWorker
 
     def _preprocess_onnx_input(
-        self, onnx_input: dict[str, np.ndarray], **kwargs: Any
-    ) -> dict[str, np.ndarray]:
+        self, onnx_input: dict[str, NdArray], **kwargs: Any
+    ) -> dict[str, NdArray]:
         """
         Preprocess the onnx input.
         """
         return onnx_input
 
-    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
+    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[NdArray]:
         embeddings = output.model_output
         if embeddings.ndim == 3:  # (batch_size, seq_len, embedding_dim)
             processed_embeddings = embeddings[:, 0]

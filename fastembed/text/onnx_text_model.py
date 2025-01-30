@@ -6,6 +6,7 @@ from typing import Any, Iterable, Optional, Sequence, Type, Union
 import numpy as np
 from tokenizers import Encoding
 
+from fastembed.common.types import NdArray
 from fastembed.common import OnnxProvider
 from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
 from fastembed.common.preprocessor_utils import load_tokenizer
@@ -29,8 +30,8 @@ class OnnxTextModel(OnnxModel[T]):
         self.special_token_to_id = {}
 
     def _preprocess_onnx_input(
-        self, onnx_input: dict[str, np.ndarray], **kwargs: Any
-    ) -> dict[str, np.ndarray]:
+        self, onnx_input: dict[str, NdArray], **kwargs: Any
+    ) -> dict[str, NdArray]:
         """
         Preprocess the onnx input.
         """

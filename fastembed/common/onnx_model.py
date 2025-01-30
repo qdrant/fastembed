@@ -3,9 +3,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Generic, Iterable, Optional, Sequence, Type, TypeVar
 
-import numpy as np
 import onnxruntime as ort
 
+from fastembed.common.types import NdArray
 from fastembed.common.types import OnnxProvider
 from fastembed.parallel_processor import Worker
 
@@ -15,9 +15,9 @@ T = TypeVar("T")
 
 @dataclass
 class OnnxOutputContext:
-    model_output: np.ndarray
-    attention_mask: Optional[np.ndarray] = None
-    input_ids: Optional[np.ndarray] = None
+    model_output: NdArray
+    attention_mask: Optional[NdArray] = None
+    input_ids: Optional[NdArray] = None
 
 
 class OnnxModel(Generic[T]):
@@ -33,8 +33,8 @@ class OnnxModel(Generic[T]):
         self.tokenizer = None
 
     def _preprocess_onnx_input(
-        self, onnx_input: dict[str, np.ndarray], **kwargs: Any
-    ) -> dict[str, np.ndarray]:
+        self, onnx_input: dict[str, NdArray], **kwargs: Any
+    ) -> dict[str, NdArray]:
         """
         Preprocess the onnx input.
         """
@@ -70,7 +70,7 @@ class OnnxModel(Generic[T]):
             onnx_providers = ["CPUExecutionProvider"]
 
         available_providers = ort.get_available_providers()
-        requested_provider_names = []
+        requested_provider_names: list[str] = []
         for provider in onnx_providers:
             # check providers available
             provider_name = provider if isinstance(provider, str) else provider[0]
@@ -113,7 +113,7 @@ class EmbeddingWorker(Worker):
         model_name: str,
         cache_dir: str,
         **kwargs: Any,
-    ) -> OnnxModel:
+    ) -> OnnxModel[object]:
         raise NotImplementedError()
 
     def __init__(

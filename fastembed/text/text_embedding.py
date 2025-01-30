@@ -1,7 +1,7 @@
 import warnings
 from typing import Any, Iterable, Optional, Sequence, Type, Union
 
-import numpy as np
+from fastembed.common.types import NdArray
 from fastembed.common import OnnxProvider
 from fastembed.text.clip_embedding import CLIPOnnxEmbedding
 from fastembed.text.pooled_normalized_embedding import PooledNormalizedEmbedding
@@ -45,7 +45,7 @@ class TextEmbedding(TextEmbeddingBase):
                 ]
                 ```
         """
-        result = []
+        result: list[dict[str, Any]] = []
         for embedding in cls.EMBEDDINGS_REGISTRY:
             result.extend(embedding.list_supported_models())
         return result
@@ -113,7 +113,7 @@ class TextEmbedding(TextEmbeddingBase):
         batch_size: int = 256,
         parallel: Optional[int] = None,
         **kwargs: Any,
-    ) -> Iterable[np.ndarray]:
+    ) -> Iterable[NdArray]:
         """
         Encode a list of documents into list of embeddings.
         We use mean pooling with attention so that the model can handle variable-length inputs.
@@ -131,7 +131,7 @@ class TextEmbedding(TextEmbeddingBase):
         """
         yield from self.model.embed(documents, batch_size, parallel, **kwargs)
 
-    def query_embed(self, query: Union[str, Iterable[str]], **kwargs: Any) -> Iterable[np.ndarray]:
+    def query_embed(self, query: Union[str, Iterable[str]], **kwargs: Any) -> Iterable[NdArray]:
         """
         Embeds queries
 
@@ -139,12 +139,12 @@ class TextEmbedding(TextEmbeddingBase):
             query (Union[str, Iterable[str]]): The query to embed, or an iterable e.g. list of queries.
 
         Returns:
-            Iterable[np.ndarray]: The embeddings.
+            Iterable[NdArray]: The embeddings.
         """
         # This is model-specific, so that different models can have specialized implementations
         yield from self.model.query_embed(query, **kwargs)
 
-    def passage_embed(self, texts: Iterable[str], **kwargs: Any) -> Iterable[np.ndarray]:
+    def passage_embed(self, texts: Iterable[str], **kwargs: Any) -> Iterable[NdArray]:
         """
         Embeds a list of text passages into a list of embeddings.
 

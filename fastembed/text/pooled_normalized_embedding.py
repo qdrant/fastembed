@@ -2,6 +2,7 @@ from typing import Any, Iterable, Type
 
 import numpy as np
 
+from fastembed.common.types import NdArray
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.utils import normalize
 from fastembed.text.onnx_embedding import OnnxTextEmbedding, OnnxTextEmbeddingWorker
@@ -101,7 +102,7 @@ class PooledNormalizedEmbedding(PooledEmbedding):
         """
         return supported_pooled_normalized_models
 
-    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
+    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[NdArray]:
         if output.attention_mask is None:
             raise ValueError("attention_mask must be provided for document post-processing")
 

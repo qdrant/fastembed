@@ -4,7 +4,7 @@ import json
 import shutil
 import tarfile
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 import requests
 from huggingface_hub import snapshot_download, model_info, list_repo_tree
@@ -148,8 +148,8 @@ class ModelManagement:
 
         def _collect_file_metadata(
             model_dir: Path, repo_files: list[RepoFile]
-        ) -> dict[str, dict[str, int]]:
-            meta = {}
+        ) -> dict[str, dict[str, Union[int, str]]]:
+            meta: dict[str, dict[str, Union[int, str]]] = {}
             file_info_map = {f.path: f for f in repo_files}
             for file_path in model_dir.rglob("*"):
                 if file_path.is_file() and file_path.name != cls.METADATA_FILE:
@@ -161,7 +161,7 @@ class ModelManagement:
                         }
             return meta
 
-        def _save_file_metadata(model_dir: Path, meta: dict[str, dict[str, int]]) -> None:
+        def _save_file_metadata(model_dir: Path, meta: dict[str, dict[str, Union[int, str]]]) -> None:
             try:
                 if not model_dir.exists():
                     model_dir.mkdir(parents=True, exist_ok=True)
