@@ -28,7 +28,7 @@ requests = "^2.31"
 tokenizers = ">=0.15,<1.0"
 huggingface-hub = ">=0.20,<1.0"
 loguru = "^0.7.2"
-pillow = "^10.3.0"
+pillow = "^11.1.0"
 mmh3 = "^4.1.0"
 py-rust-stemmers = "^0.1.0"
 
@@ -44,7 +44,7 @@ onnx = ">=1.15.0"
 [tool.poetry.group.docs.dependencies]
 mkdocs-material = "^9.5.10"
 mkdocstrings = "^0.24.0"
-pillow = "^10.2.0"
+pillow = "^11.1.0"
 cairosvg = "^2.7.1"
 mknotebooks = "^0.8.0"
 
