@@ -124,7 +124,8 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         device_ids: Optional[list[int]] = None,
         lazy_load: bool = False,
         device_id: Optional[int] = None,
-        **kwargs,
+        specific_model_path: Optional[str] = None,
+        **kwargs: Any,
     ):
         """
         Args:
@@ -142,6 +143,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
             lazy_load (bool, optional): Whether to load the model during class initialization or on demand.
                 Should be set to True when using multiple-gpu and parallel encoding. Defaults to False.
             device_id (Optional[int], optional): The device id to use for loading the model in the worker process.
+            specific_model_path (Optional[str], optional): The specific path to the onnx model dir if it should be imported from somewhere else
 
         Raises:
             ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
@@ -167,7 +169,10 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         self.cache_dir = define_cache_dir(cache_dir)
 
         self._model_dir = self.download_model(
-            self.model_description, self.cache_dir, local_files_only=self._local_files_only
+            self.model_description,
+            self.cache_dir,
+            local_files_only=self._local_files_only,
+            specific_model_path=specific_model_path,
         )
         self.mask_token_id = None
         self.pad_token_id = None
@@ -200,7 +205,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
         parallel: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Iterable[np.ndarray]:
         """
         Encode a list of documents into list of embeddings.
@@ -229,7 +234,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
             **kwargs,
         )
 
-    def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> Iterable[np.ndarray]:
+    def query_embed(self, query: Union[str, Iterable[str]], **kwargs: Any) -> Iterable[np.ndarray]:
         if isinstance(query, str):
             query = [query]
 
@@ -247,7 +252,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
 
 
 class ColbertEmbeddingWorker(TextEmbeddingWorker):
-    def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> Colbert:
+    def init_embedding(self, model_name: str, cache_dir: str, **kwargs: Any) -> Colbert:
         return Colbert(
             model_name=model_name,
             cache_dir=cache_dir,

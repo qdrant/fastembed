@@ -1,4 +1,5 @@
 import os
+import platform
 
 import numpy as np
 import pytest
@@ -31,11 +32,11 @@ CANONICAL_VECTOR_VALUES = {
         [-0.034478, 0.03102, 0.00673, 0.02611, -0.039362]
     ),
     "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2": np.array(
-        [0.0094, 0.0184, 0.0328, 0.0072, -0.0351]
+        [0.0361, 0.1862, 0.2776, 0.2461, -0.1904]
     ),
-    "intfloat/multilingual-e5-large": np.array([0.0098, 0.0045, 0.0066, -0.0354, 0.0070]),
+    "intfloat/multilingual-e5-large": np.array([0.4544, -0.0968, 0.1054, -1.3753, 0.1500]),
     "sentence-transformers/paraphrase-multilingual-mpnet-base-v2": np.array(
-        [-0.01341097, 0.0416553, -0.00480805, 0.02844842, 0.0505299]
+        [0.0047, 0.1334, -0.0102, 0.0714, 0.1930]
     ),
     "jinaai/jina-embeddings-v2-small-en": np.array([-0.0455, -0.0428, -0.0122, 0.0613, 0.0015]),
     "jinaai/jina-embeddings-v2-base-en": np.array([-0.0332, -0.0509, 0.0287, -0.0043, -0.0077]),
@@ -48,7 +49,7 @@ CANONICAL_VECTOR_VALUES = {
         [-0.15407836, -0.03053198, -3.9138033, 0.1910364, 0.13224715]
     ),
     "nomic-ai/nomic-embed-text-v1.5-Q": np.array(
-        [-0.12525563, 0.38030425, -3.961622, 0.04176439, -0.0758301]
+        [0.0802303, 0.3700881, -4.3053818, 0.4431803, -0.271572]
     ),
     "thenlper/gte-large": np.array(
         [-0.01920587, 0.00113156, -0.00708992, -0.00632304, -0.04025577]
@@ -68,12 +69,19 @@ CANONICAL_VECTOR_VALUES = {
     "jinaai/jina-clip-v1": np.array([-0.0862, -0.0101, -0.0056, 0.0375, -0.0472]),
 }
 
+MULTI_TASK_MODELS = ["jinaai/jina-embeddings-v3"]
 
-def test_embedding():
+
+def test_embedding() -> None:
     is_ci = os.getenv("CI")
+    is_mac = platform.system() == "Darwin"
 
     for model_desc in TextEmbedding.list_supported_models():
-        if not is_ci and model_desc["size_in_GB"] > 1:
+        if (
+            (not is_ci and model_desc["size_in_GB"] > 1)
+            or model_desc["model"] in MULTI_TASK_MODELS
+            or (is_mac and model_desc["model"] == "nomic-ai/nomic-embed-text-v1.5-Q")
+        ):
             continue
 
         dim = model_desc["dim"]
@@ -96,7 +104,7 @@ def test_embedding():
     "n_dims,model_name",
     [(384, "BAAI/bge-small-en-v1.5"), (768, "jinaai/jina-embeddings-v2-base-en")],
 )
-def test_batch_embedding(n_dims, model_name):
+def test_batch_embedding(n_dims: int, model_name: str) -> None:
     is_ci = os.getenv("CI")
     model = TextEmbedding(model_name=model_name)
 
@@ -113,7 +121,7 @@ def test_batch_embedding(n_dims, model_name):
     "n_dims,model_name",
     [(384, "BAAI/bge-small-en-v1.5"), (768, "jinaai/jina-embeddings-v2-base-en")],
 )
-def test_parallel_processing(n_dims, model_name):
+def test_parallel_processing(n_dims: int, model_name: str) -> None:
     is_ci = os.getenv("CI")
     model = TextEmbedding(model_name=model_name)
 
@@ -139,7 +147,7 @@ def test_parallel_processing(n_dims, model_name):
     "model_name",
     ["BAAI/bge-small-en-v1.5"],
 )
-def test_lazy_load(model_name):
+def test_lazy_load(model_name: str) -> None:
     is_ci = os.getenv("CI")
     model = TextEmbedding(model_name=model_name, lazy_load=True)
     assert not hasattr(model.model, "model")

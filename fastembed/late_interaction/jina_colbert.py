@@ -53,7 +53,7 @@ class JinaColbert(Colbert):
 
 
 class JinaColbertEmbeddingWorker(TextEmbeddingWorker):
-    def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> JinaColbert:
+    def init_embedding(self, model_name: str, cache_dir: str, **kwargs: Any) -> JinaColbert:
         return JinaColbert(
             model_name=model_name,
             cache_dir=cache_dir,

@@ -49,7 +49,7 @@ class ImageEmbedding(ImageEmbeddingBase):
         cuda: bool = False,
         device_ids: Optional[list[int]] = None,
         lazy_load: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
@@ -77,7 +77,7 @@ class ImageEmbedding(ImageEmbeddingBase):
         images: ImageInput,
         batch_size: int = 16,
         parallel: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Iterable[np.ndarray]:
         """
         Encode a list of documents into list of embeddings.

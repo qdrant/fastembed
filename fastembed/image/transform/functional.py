@@ -114,11 +114,11 @@ def resize(
     return image.resize(new_size, resample)
 
 
-def rescale(image: np.ndarray, scale: float, dtype=np.float32) -> np.ndarray:
+def rescale(image: np.ndarray, scale: float, dtype: type = np.float32) -> np.ndarray:
     return (image * scale).astype(dtype)
 
 
-def pil2ndarray(image: Union[Image.Image, np.ndarray]):
+def pil2ndarray(image: Union[Image.Image, np.ndarray]) -> np.ndarray:
     if isinstance(image, Image.Image):
         return np.asarray(image).transpose((2, 0, 1))
     return image

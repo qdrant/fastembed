@@ -1,12 +1,12 @@
+import warnings
 from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
-
 from fastembed.common import OnnxProvider
 from fastembed.text.clip_embedding import CLIPOnnxEmbedding
-from fastembed.text.e5_onnx_embedding import E5OnnxEmbedding
 from fastembed.text.pooled_normalized_embedding import PooledNormalizedEmbedding
 from fastembed.text.pooled_embedding import PooledEmbedding
+from fastembed.text.multitask_embedding import JinaEmbeddingV3
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
 from fastembed.text.text_embedding_base import TextEmbeddingBase
 
@@ -14,10 +14,10 @@ from fastembed.text.text_embedding_base import TextEmbeddingBase
 class TextEmbedding(TextEmbeddingBase):
     EMBEDDINGS_REGISTRY: list[Type[TextEmbeddingBase]] = [
         OnnxTextEmbedding,
-        E5OnnxEmbedding,
         CLIPOnnxEmbedding,
         PooledNormalizedEmbedding,
         PooledEmbedding,
+        JinaEmbeddingV3,
     ]
 
     @classmethod
@@ -59,9 +59,34 @@ class TextEmbedding(TextEmbeddingBase):
         cuda: bool = False,
         device_ids: Optional[list[int]] = None,
         lazy_load: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
+        if model_name == "nomic-ai/nomic-embed-text-v1.5-Q":
+            warnings.warn(
+                "The model 'nomic-ai/nomic-embed-text-v1.5-Q' has been updated on HuggingFace. "
+                "Please review the latest documentation and release notes to ensure compatibility with your workflow. ",
+                UserWarning,
+                stacklevel=2,
+            )
+        if model_name == "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2":
+            warnings.warn(
+                "The model 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2' has been updated to "
+                "include a mean pooling layer. Please ensure your usage aligns with the new functionality. "
+                "Support for the previous version without mean pooling will be removed as of version 0.5.2.",
+                UserWarning,
+                stacklevel=2,
+            )
+        if model_name in {
+            "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
+            "intfloat/multilingual-e5-large",
+        }:
+            warnings.warn(
+                f"{model_name} has been updated as of fastembed 0.5.2, outputs are now average pooled.",
+                UserWarning,
+                stacklevel=2,
+            )
+
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
             supported_models = EMBEDDING_MODEL_TYPE.list_supported_models()
             if any(model_name.lower() == model["model"].lower() for model in supported_models):
@@ -87,7 +112,7 @@ class TextEmbedding(TextEmbeddingBase):
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
         parallel: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Iterable[np.ndarray]:
         """
         Encode a list of documents into list of embeddings.
@@ -105,3 +130,30 @@ class TextEmbedding(TextEmbeddingBase):
             List of embeddings, one per document
         """
         yield from self.model.embed(documents, batch_size, parallel, **kwargs)
+
+    def query_embed(self, query: Union[str, Iterable[str]], **kwargs: Any) -> Iterable[np.ndarray]:
+        """
+        Embeds queries
+
+        Args:
+            query (Union[str, Iterable[str]]): The query to embed, or an iterable e.g. list of queries.
+
+        Returns:
+            Iterable[np.ndarray]: The embeddings.
+        """
+        # This is model-specific, so that different models can have specialized implementations
+        yield from self.model.query_embed(query, **kwargs)
+
+    def passage_embed(self, texts: Iterable[str], **kwargs: Any) -> Iterable[np.ndarray]:
+        """
+        Embeds a list of text passages into a list of embeddings.
+
+        Args:
+            texts (Iterable[str]): The list of texts to embed.
+            **kwargs: Additional keyword argument to pass to the embed method.
+
+        Yields:
+            Iterable[SparseEmbedding]: The sparse embeddings.
+        """
+        # This is model-specific, so that different models can have specialized implementations
+        yield from self.model.passage_embed(texts, **kwargs)

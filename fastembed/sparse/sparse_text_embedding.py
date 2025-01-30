@@ -52,7 +52,7 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
         cuda: bool = False,
         device_ids: Optional[list[int]] = None,
         lazy_load: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
         if model_name == "prithvida/Splade_PP_en_v1":
@@ -89,7 +89,7 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
         parallel: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Iterable[SparseEmbedding]:
         """
         Encode a list of documents into list of embeddings.
@@ -108,7 +108,9 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
         """
         yield from self.model.embed(documents, batch_size, parallel, **kwargs)
 
-    def query_embed(self, query: Union[str, Iterable[str]], **kwargs) -> Iterable[SparseEmbedding]:
+    def query_embed(
+        self, query: Union[str, Iterable[str]], **kwargs: Any
+    ) -> Iterable[SparseEmbedding]:
         """
         Embeds queries
 

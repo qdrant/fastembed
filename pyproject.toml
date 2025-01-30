@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fastembed"
-version = "0.5.0"
+version = "0.5.1"
 description = "Fast, light, accurate library built for retrieval embedding generation"
 authors = ["Qdrant Team <info@qdrant.tech>", "NirantK <nirant.bits@gmail.com>"]
 license = "Apache License"
@@ -12,7 +12,6 @@ keywords = ["vector", "embedding", "neural", "search", "qdrant", "sentence-trans
 
 [tool.poetry.dependencies]
 python = ">=3.9.0"
-onnx = ">=1.15.0"
 numpy = [
     { version = ">=1.21,<2.1.0", python = "<3.10" },
     { version = ">=1.21", python = ">=3.10,<3.12" },
@@ -33,11 +32,14 @@ pillow = "^10.3.0"
 mmh3 = "^4.1.0"
 py-rust-stemmers = "^0.1.0"
 
-[tool.poetry.group.dev.dependencies]
+[tool.poetry.group.test.dependencies]
 pytest = "^7.4.2"
 ruff = ">=0.3.1,<1.0"
+
+[tool.poetry.group.dev.dependencies]
 notebook = ">=7.0.2"
 pre-commit = "^3.6.2"
+onnx = ">=1.15.0"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs-material = "^9.5.10"
@@ -46,10 +48,16 @@ pillow = "^10.2.0"
 cairosvg = "^2.7.1"
 mknotebooks = "^0.8.0"
 
+[tool.poetry.group.types.dependencies]
+pyright = ">=1.1.293"
+mypy = "^1.0.0"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pyright]
+typeCheckingMode = "strict"
 
 [tool.ruff]
 line-length = 99

@@ -133,11 +133,11 @@ class Compose:
         return cls(transforms=transforms)
 
     @staticmethod
-    def _get_convert_to_rgb(transforms: list[Transform], config: dict[str, Any]):
+    def _get_convert_to_rgb(transforms: list[Transform], config: dict[str, Any]) -> None:
         transforms.append(ConvertToRGB())
 
     @classmethod
-    def _get_resize(cls, transforms: list[Transform], config: dict[str, Any]):
+    def _get_resize(cls, transforms: list[Transform], config: dict[str, Any]) -> None:
         mode = config.get("image_processor_type", "CLIPImageProcessor")
         if mode == "CLIPImageProcessor":
             if config.get("do_resize", False):
@@ -200,7 +200,7 @@ class Compose:
             raise ValueError(f"Preprocessor {mode} is not supported")
 
     @staticmethod
-    def _get_center_crop(transforms: list[Transform], config: dict[str, Any]):
+    def _get_center_crop(transforms: list[Transform], config: dict[str, Any]) -> None:
         mode = config.get("image_processor_type", "CLIPImageProcessor")
         if mode == "CLIPImageProcessor":
             if config.get("do_center_crop", False):
@@ -220,24 +220,24 @@ class Compose:
             raise ValueError(f"Preprocessor {mode} is not supported")
 
     @staticmethod
-    def _get_pil2ndarray(transforms: list[Transform], config: dict[str, Any]):
+    def _get_pil2ndarray(transforms: list[Transform], config: dict[str, Any]) -> None:
         transforms.append(PILtoNDarray())
 
     @staticmethod
-    def _get_rescale(transforms: list[Transform], config: dict[str, Any]):
+    def _get_rescale(transforms: list[Transform], config: dict[str, Any]) -> None:
         if config.get("do_rescale", True):
             rescale_factor = config.get("rescale_factor", 1 / 255)
             transforms.append(Rescale(scale=rescale_factor))
 
     @staticmethod
-    def _get_normalize(transforms: list[Transform], config: dict[str, Any]):
+    def _get_normalize(transforms: list[Transform], config: dict[str, Any]) -> None:
         if config.get("do_normalize", False):
             transforms.append(Normalize(mean=config["image_mean"], std=config["image_std"]))
         elif "mean" in config and "std" in config:
             transforms.append(Normalize(mean=config["mean"], std=config["std"]))
 
     @staticmethod
-    def _get_pad2square(transforms: list[Transform], config: dict[str, Any]):
+    def _get_pad2square(transforms: list[Transform], config: dict[str, Any]) -> None:
         mode = config.get("image_processor_type", "CLIPImageProcessor")
         if mode == "CLIPImageProcessor":
             pass

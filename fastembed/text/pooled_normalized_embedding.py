@@ -115,7 +115,7 @@ class PooledNormalizedEmbeddingWorker(OnnxTextEmbeddingWorker):
         self,
         model_name: str,
         cache_dir: str,
-        **kwargs,
+        **kwargs: Any,
     ) -> OnnxTextEmbedding:
         return PooledNormalizedEmbedding(
             model_name=model_name,

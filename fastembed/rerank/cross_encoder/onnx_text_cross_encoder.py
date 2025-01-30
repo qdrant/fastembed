@@ -95,6 +95,7 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
         device_ids: Optional[list[int]] = None,
         lazy_load: bool = False,
         device_id: Optional[int] = None,
+        specific_model_path: Optional[str] = None,
         **kwargs: Any,
     ):
         """
@@ -113,6 +114,7 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
             lazy_load (bool, optional): Whether to load the model during class initialization or on demand.
                 Should be set to True when using multiple-gpu and parallel encoding. Defaults to False.
             device_id (Optional[int], optional): The device id to use for loading the model in the worker process.
+            specific_model_path (Optional[str], optional): The specific path to the onnx model dir if it should be imported from somewhere else
 
         Raises:
             ValueError: If the model_name is not in the format <org>/<model> e.g. Xenova/ms-marco-MiniLM-L-6-v2.
@@ -145,6 +147,7 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
             self.model_description,
             self.cache_dir,
             local_files_only=self._local_files_only,
+            specific_model_path=specific_model_path,
         )
 
         if not self.lazy_load:
@@ -214,7 +217,7 @@ class TextCrossEncoderWorker(TextRerankerWorker):
         self,
         model_name: str,
         cache_dir: str,
-        **kwargs,
+        **kwargs: Any,
     ) -> OnnxTextCrossEncoder:
         return OnnxTextCrossEncoder(
             model_name=model_name,

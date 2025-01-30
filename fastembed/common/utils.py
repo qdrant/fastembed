@@ -5,12 +5,14 @@ import tempfile
 import unicodedata
 from pathlib import Path
 from itertools import islice
-from typing import Generator, Iterable, Optional, Union
+from typing import Iterable, Optional, TypeVar
 
 import numpy as np
 
+T = TypeVar("T")
 
-def normalize(input_array, p=2, dim=1, eps=1e-12) -> np.ndarray:
+
+def normalize(input_array: np.ndarray, p: int = 2, dim: int = 1, eps: float = 1e-12) -> np.ndarray:
     # Calculate the Lp norm along the specified dimension
     norm = np.linalg.norm(input_array, ord=p, axis=dim, keepdims=True)
     norm = np.maximum(norm, eps)  # Avoid division by zero
@@ -18,7 +20,7 @@ def normalize(input_array, p=2, dim=1, eps=1e-12) -> np.ndarray:
     return normalized_array
 
 
-def iter_batch(iterable: Union[Iterable, Generator], size: int) -> Iterable:
+def iter_batch(iterable: Iterable[T], size: int) -> Iterable[list[T]]:
     """
     >>> list(iter_batch([1,2,3,4,5], 3))
     [[1, 2, 3], [4, 5]]

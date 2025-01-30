@@ -8,7 +8,7 @@ from tests.utils import delete_model_cache
 
 
 @pytest.mark.parametrize("model_name", ["Qdrant/bm42-all-minilm-l6-v2-attentions", "Qdrant/bm25"])
-def test_attention_embeddings(model_name):
+def test_attention_embeddings(model_name: str) -> None:
     is_ci = os.getenv("CI")
     model = SparseTextEmbedding(model_name=model_name)
 
@@ -71,7 +71,7 @@ def test_attention_embeddings(model_name):
 
 
 @pytest.mark.parametrize("model_name", ["Qdrant/bm42-all-minilm-l6-v2-attentions", "Qdrant/bm25"])
-def test_parallel_processing(model_name):
+def test_parallel_processing(model_name: str) -> None:
     is_ci = os.getenv("CI")
 
     model = SparseTextEmbedding(model_name=model_name)
@@ -96,7 +96,7 @@ def test_parallel_processing(model_name):
 
 
 @pytest.mark.parametrize("model_name", ["Qdrant/bm25"])
-def test_multilanguage(model_name):
+def test_multilanguage(model_name: str) -> None:
     is_ci = os.getenv("CI")
 
     docs = ["Mangez-vous vraiment des grenouilles?", "Je suis au lit"]
@@ -122,7 +122,7 @@ def test_multilanguage(model_name):
 
 
 @pytest.mark.parametrize("model_name", ["Qdrant/bm25"])
-def test_special_characters(model_name):
+def test_special_characters(model_name: str) -> None:
     is_ci = os.getenv("CI")
 
     docs = [
@@ -145,7 +145,7 @@ def test_special_characters(model_name):
 
 
 @pytest.mark.parametrize("model_name", ["Qdrant/bm42-all-minilm-l6-v2-attentions"])
-def test_lazy_load(model_name):
+def test_lazy_load(model_name: str) -> None:
     model = SparseTextEmbedding(model_name=model_name, lazy_load=True)
     assert not hasattr(model.model, "model")
     docs = ["hello world", "flag embedding"]

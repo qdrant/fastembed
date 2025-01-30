@@ -23,13 +23,13 @@ class OnnxTextModel(OnnxModel[T]):
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[T]:
         raise NotImplementedError("Subclasses must implement this method")
 
-    def __init__(self) -> None:
+    def __init__(self):
         super().__init__()
         self.tokenizer = None
         self.special_token_to_id = {}
 
     def _preprocess_onnx_input(
-        self, onnx_input: dict[str, np.ndarray], **kwargs
+        self, onnx_input: dict[str, np.ndarray], **kwargs: Any
     ) -> dict[str, np.ndarray]:
         """
         Preprocess the onnx input.
@@ -44,6 +44,7 @@ class OnnxTextModel(OnnxModel[T]):
         providers: Optional[Sequence[OnnxProvider]] = None,
         cuda: bool = False,
         device_id: Optional[int] = None,
+        specific_model_path: Optional[str] = None,
     ) -> None:
         super()._load_onnx_model(
             model_dir=model_dir,
@@ -58,13 +59,13 @@ class OnnxTextModel(OnnxModel[T]):
     def load_onnx_model(self) -> None:
         raise NotImplementedError("Subclasses must implement this method")
 
-    def tokenize(self, documents: list[str], **kwargs) -> list[Encoding]:
+    def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
         return self.tokenizer.encode_batch(documents)
 
     def onnx_embed(
         self,
         documents: list[str],
-        **kwargs,
+        **kwargs: Any,
     ) -> OnnxOutputContext:
         encoded = self.tokenize(documents, **kwargs)
         input_ids = np.array([e.ids for e in encoded])
@@ -98,7 +99,7 @@ class OnnxTextModel(OnnxModel[T]):
         providers: Optional[Sequence[OnnxProvider]] = None,
         cuda: bool = False,
         device_ids: Optional[list[int]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Iterable[T]:
         is_small = False
 
