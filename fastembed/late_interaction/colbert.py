@@ -4,6 +4,7 @@ from typing import Any, Iterable, Optional, Sequence, Type, Union
 import numpy as np
 from tokenizers import Encoding
 
+from fastembed.common.types import NdArray
 from fastembed.common import OnnxProvider
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.utils import define_cache_dir
@@ -39,7 +40,7 @@ supported_colbert_models = [
 ]
 
 
-class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
+class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NdArray]):
     QUERY_MARKER_TOKEN_ID = 1
     DOCUMENT_MARKER_TOKEN_ID = 2
     MIN_QUERY_LENGTH = 31  # it's 32, we add one additional special token in the beginning
@@ -47,7 +48,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
 
     def _post_process_onnx_output(
         self, output: OnnxOutputContext, is_doc: bool = True
-    ) -> Iterable[np.ndarray]:
+    ) -> Iterable[NdArray]:
         if not is_doc:
             return output.model_output.astype(np.float32)
 
@@ -68,11 +69,15 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         return output.model_output.astype(np.float32)
 
     def _preprocess_onnx_input(
-        self, onnx_input: dict[str, np.ndarray], is_doc: bool = True, **kwargs: Any
-    ) -> dict[str, np.ndarray]:
+        self, onnx_input: dict[str, NdArray], is_doc: bool = True, **kwargs: Any
+    ) -> dict[str, NdArray]:
         marker_token = self.DOCUMENT_MARKER_TOKEN_ID if is_doc else self.QUERY_MARKER_TOKEN_ID
-        onnx_input["input_ids"] = np.insert(onnx_input["input_ids"], 1, marker_token, axis=1)
-        onnx_input["attention_mask"] = np.insert(onnx_input["attention_mask"], 1, 1, axis=1)
+        onnx_input["input_ids"] = np.insert(
+            onnx_input["input_ids"].astype(np.int64), 1, marker_token, axis=1
+        )
+        onnx_input["attention_mask"] = np.insert(
+            onnx_input["attention_mask"].astype(np.int64), 1, 1, axis=1
+        )
         return onnx_input
 
     def tokenize(self, documents: list[str], is_doc: bool = True, **kwargs: Any) -> list[Encoding]:
@@ -174,9 +179,9 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
             local_files_only=self._local_files_only,
             specific_model_path=specific_model_path,
         )
-        self.mask_token_id = None
-        self.pad_token_id = None
-        self.skip_list = set()
+        self.mask_token_id: int
+        self.pad_token_id: int
+        self.skip_list: set[str] = set()
 
         if not self.lazy_load:
             self.load_onnx_model()
@@ -206,7 +211,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
         batch_size: int = 256,
         parallel: Optional[int] = None,
         **kwargs: Any,
-    ) -> Iterable[np.ndarray]:
+    ) -> Iterable[NdArray]:
         """
         Encode a list of documents into list of embeddings.
         We use mean pooling with attention so that the model can handle variable-length inputs.
@@ -234,7 +239,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[np.ndarray]):
             **kwargs,
         )
 
-    def query_embed(self, query: Union[str, Iterable[str]], **kwargs: Any) -> Iterable[np.ndarray]:
+    def query_embed(self, query: Union[str, Iterable[str]], **kwargs: Any) -> Iterable[NdArray]:
         if isinstance(query, str):
             query = [query]
 

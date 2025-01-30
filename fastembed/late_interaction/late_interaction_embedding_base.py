@@ -1,7 +1,6 @@
 from typing import Iterable, Optional, Union, Any
 
-import numpy as np
-
+from fastembed.common.types import NdArray
 from fastembed.common.model_management import ModelManagement
 
 
@@ -24,10 +23,10 @@ class LateInteractionTextEmbeddingBase(ModelManagement):
         batch_size: int = 256,
         parallel: Optional[int] = None,
         **kwargs: Any,
-    ) -> Iterable[np.ndarray]:
+    ) -> Iterable[NdArray]:
         raise NotImplementedError()
 
-    def passage_embed(self, texts: Iterable[str], **kwargs: Any) -> Iterable[np.ndarray]:
+    def passage_embed(self, texts: Iterable[str], **kwargs: Any) -> Iterable[NdArray]:
         """
         Embeds a list of text passages into a list of embeddings.
 
@@ -36,13 +35,13 @@ class LateInteractionTextEmbeddingBase(ModelManagement):
             **kwargs: Additional keyword argument to pass to the embed method.
 
         Yields:
-            Iterable[np.ndarray]: The embeddings.
+            Iterable[NdArray]: The embeddings.
         """
 
         # This is model-specific, so that different models can have specialized implementations
         yield from self.embed(texts, **kwargs)
 
-    def query_embed(self, query: Union[str, Iterable[str]], **kwargs: Any) -> Iterable[np.ndarray]:
+    def query_embed(self, query: Union[str, Iterable[str]], **kwargs: Any) -> Iterable[NdArray]:
         """
         Embeds queries
 
@@ -50,11 +49,11 @@ class LateInteractionTextEmbeddingBase(ModelManagement):
             query (Union[str, Iterable[str]]): The query to embed, or an iterable e.g. list of queries.
 
         Returns:
-            Iterable[np.ndarray]: The embeddings.
+            Iterable[NdArray]: The embeddings.
         """
 
         # This is model-specific, so that different models can have specialized implementations
         if isinstance(query, str):
             yield from self.embed([query], **kwargs)
-        if isinstance(query, Iterable):
+        else:
             yield from self.embed(query, **kwargs)
