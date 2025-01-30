@@ -46,6 +46,14 @@ class JinaEmbeddingV3(PooledNormalizedEmbedding):
         super().__init__(*args, **kwargs)
         self.current_task_id: Union[Task, int] = self.PASSAGE_TASK
 
+    @property
+    def current_task_id(self) -> Union[Task, int]:
+        return self._current_task_id
+
+    @current_task_id.setter
+    def current_task_id(self, value: Union[Task, int]) -> None:
+        self._current_task_id = value
+
     @classmethod
     def _get_worker_class(cls) -> Type[OnnxTextEmbeddingWorker]:
         return JinaEmbeddingV3Worker

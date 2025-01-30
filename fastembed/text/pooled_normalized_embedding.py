@@ -2,6 +2,7 @@ from typing import Any, Iterable, Type
 
 import numpy as np
 
+
 from fastembed.common.types import NumpyArray
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.utils import normalize

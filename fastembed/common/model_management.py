@@ -114,7 +114,6 @@ class ModelManagement:
             extra_patterns (list[str]): extra patterns to allow in the snapshot download, typically
                 includes the required model files.
             local_files_only (bool, optional): Whether to only use local files. Defaults to False.
-            specific_model_path (Optional[str], optional): The path to the model dir already pooled from external source
         Returns:
             Path: The path to the model directory.
         """
@@ -161,9 +160,7 @@ class ModelManagement:
                         }
             return meta
 
-        def _save_file_metadata(
-            model_dir: Path, meta: dict[str, dict[str, Union[int, str]]]
-        ) -> None:
+        def _save_file_metadata(model_dir: Path, meta: dict[str, dict[str, Union[int, str]]]) -> None:
             try:
                 if not model_dir.exists():
                     model_dir.mkdir(parents=True, exist_ok=True)
