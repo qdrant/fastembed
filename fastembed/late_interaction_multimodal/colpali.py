@@ -17,7 +17,7 @@ from fastembed.late_interaction_multimodal.onnx_multimodal_model import (
 
 supported_colpali_models = [
     {
-        "model": "AndrewOgn/colpali-v1.3-merged-onnx",
+        "model": "vidore/colpali-v1.3-merged-onnx",
         "dim": 128,
         "description": "Text embeddings, Bimodal (text/image), Aligned to image latent space, fp16 quantized, 2024.",
         "license": "mit",
@@ -56,6 +56,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
         device_ids: Optional[list[int]] = None,
         lazy_load: bool = False,
         device_id: Optional[int] = None,
+        specific_model_path: Optional[str] = None,
         **kwargs,
     ):
         """
@@ -102,6 +103,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
             self.model_description,
             self.cache_dir,
             local_files_only=self._local_files_only,
+            specific_model_path=specific_model_path,
         )
         self.mask_token_id = None
         self.pad_token_id = None
