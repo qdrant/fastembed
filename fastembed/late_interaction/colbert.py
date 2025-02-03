@@ -252,11 +252,11 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NdArray]):
             )
 
     @classmethod
-    def _get_worker_class(cls) -> Type[TextEmbeddingWorker]:
+    def _get_worker_class(cls) -> Type[TextEmbeddingWorker[NdArray]]:
         return ColbertEmbeddingWorker
 
 
-class ColbertEmbeddingWorker(TextEmbeddingWorker):
+class ColbertEmbeddingWorker(TextEmbeddingWorker[NdArray]):
     def init_embedding(self, model_name: str, cache_dir: str, **kwargs: Any) -> Colbert:
         return Colbert(
             model_name=model_name,

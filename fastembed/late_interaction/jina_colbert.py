@@ -1,8 +1,7 @@
 from typing import Any, Type
 
 from fastembed.common.types import NdArray
-from fastembed.late_interaction.colbert import Colbert
-from fastembed.text.onnx_text_model import TextEmbeddingWorker
+from fastembed.late_interaction.colbert import Colbert, ColbertEmbeddingWorker
 
 
 supported_jina_colbert_models = [
@@ -28,7 +27,7 @@ class JinaColbert(Colbert):
     MASK_TOKEN = "<mask>"
 
     @classmethod
-    def _get_worker_class(cls) -> Type[TextEmbeddingWorker]:
+    def _get_worker_class(cls) -> Type[ColbertEmbeddingWorker]:
         return JinaColbertEmbeddingWorker
 
     @classmethod
@@ -51,7 +50,7 @@ class JinaColbert(Colbert):
         return onnx_input
 
 
-class JinaColbertEmbeddingWorker(TextEmbeddingWorker):
+class JinaColbertEmbeddingWorker(ColbertEmbeddingWorker):
     def init_embedding(self, model_name: str, cache_dir: str, **kwargs: Any) -> JinaColbert:
         return JinaColbert(
             model_name=model_name,
