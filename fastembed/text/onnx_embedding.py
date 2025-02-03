@@ -2,7 +2,7 @@ from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
 
-from fastembed.common.types import NdArray
+from fastembed.common.types import NumpyArray
 from fastembed.common import OnnxProvider
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.utils import define_cache_dir, normalize
@@ -171,7 +171,7 @@ supported_onnx_models = [
 ]
 
 
-class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NdArray]):
+class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):
     """Implementation of the Flag Embedding model."""
 
     @classmethod
@@ -227,15 +227,14 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NdArray]):
         self.cuda = cuda
 
         # This device_id will be used if we need to load model in current process
+        self.device_id: Optional[int] = None
         if device_id is not None:
             self.device_id = device_id
         elif self.device_ids is not None:
             self.device_id = self.device_ids[0]
-        else:
-            self.device_id = None
 
         self.model_description = self._get_model_description(model_name)
-        self.cache_dir = define_cache_dir(cache_dir)
+        self.cache_dir = str(define_cache_dir(cache_dir))
         self._model_dir = self.download_model(
             self.model_description,
             self.cache_dir,
@@ -252,7 +251,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NdArray]):
         batch_size: int = 256,
         parallel: Optional[int] = None,
         **kwargs: Any,
-    ) -> Iterable[NdArray]:
+    ) -> Iterable[NumpyArray]:
         """
         Encode a list of documents into list of embeddings.
         We use mean pooling with attention so that the model can handle variable-length inputs.
@@ -281,18 +280,18 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NdArray]):
         )
 
     @classmethod
-    def _get_worker_class(cls) -> Type["TextEmbeddingWorker[NdArray]"]:
+    def _get_worker_class(cls) -> Type["TextEmbeddingWorker[NumpyArray]"]:
         return OnnxTextEmbeddingWorker
 
     def _preprocess_onnx_input(
-        self, onnx_input: dict[str, NdArray], **kwargs: Any
-    ) -> dict[str, NdArray]:
+        self, onnx_input: dict[str, NumpyArray], **kwargs: Any
+    ) -> dict[str, NumpyArray]:
         """
         Preprocess the onnx input.
         """
         return onnx_input
 
-    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[NdArray]:
+    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[NumpyArray]:
         embeddings = output.model_output
         if embeddings.ndim == 3:  # (batch_size, seq_len, embedding_dim)
             processed_embeddings = embeddings[:, 0]
@@ -313,7 +312,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NdArray]):
         )
 
 
-class OnnxTextEmbeddingWorker(TextEmbeddingWorker[NdArray]):
+class OnnxTextEmbeddingWorker(TextEmbeddingWorker[NumpyArray]):
     def init_embedding(
         self,
         model_name: str,

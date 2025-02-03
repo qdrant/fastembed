@@ -5,8 +5,7 @@ from typing import Any, Generic, Iterable, Optional, Sequence, Type, TypeVar
 
 import onnxruntime as ort
 
-from fastembed.common.types import NdArray
-from fastembed.common.types import OnnxProvider
+from fastembed.common.types import OnnxProvider, NumpyArray
 from fastembed.parallel_processor import Worker
 
 # Holds type of the embedding result
@@ -15,9 +14,9 @@ T = TypeVar("T")
 
 @dataclass
 class OnnxOutputContext:
-    model_output: NdArray
-    attention_mask: Optional[NdArray] = None
-    input_ids: Optional[NdArray] = None
+    model_output: NumpyArray
+    attention_mask: Optional[NumpyArray] = None
+    input_ids: Optional[NumpyArray] = None
 
 
 class OnnxModel(Generic[T]):
@@ -33,8 +32,8 @@ class OnnxModel(Generic[T]):
         self.tokenizer = None
 
     def _preprocess_onnx_input(
-        self, onnx_input: dict[str, NdArray], **kwargs: Any
-    ) -> dict[str, NdArray]:
+        self, onnx_input: dict[str, NumpyArray], **kwargs: Any
+    ) -> dict[str, NumpyArray]:
         """
         Preprocess the onnx input.
         """

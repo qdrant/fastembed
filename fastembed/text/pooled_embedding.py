@@ -2,7 +2,7 @@ from typing import Any, Iterable, Type
 
 import numpy as np
 
-from fastembed.common.types import NdArray
+from fastembed.common.types import NumpyArray
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.text.onnx_embedding import OnnxTextEmbedding, OnnxTextEmbeddingWorker
 
@@ -84,11 +84,12 @@ class PooledEmbedding(OnnxTextEmbedding):
         return PooledEmbeddingWorker
 
     @classmethod
-    def mean_pooling(cls, model_output: NdArray, attention_mask: NdArray) -> NdArray:
-        token_embeddings = model_output
+    def mean_pooling(cls, model_output: NumpyArray, attention_mask: NumpyArray) -> NumpyArray:
+        token_embeddings = model_output.astype(np.float32)
+        attention_mask = attention_mask.astype(np.float32)
         input_mask_expanded = np.expand_dims(attention_mask, axis=-1)
         input_mask_expanded = np.tile(input_mask_expanded, (1, 1, token_embeddings.shape[-1]))
-        input_mask_expanded = input_mask_expanded.astype(float)
+        input_mask_expanded = input_mask_expanded.astype(np.float32)
         sum_embeddings = np.sum(token_embeddings * input_mask_expanded, axis=1)
         sum_mask = np.sum(input_mask_expanded, axis=1)
         pooled_embeddings = sum_embeddings / np.maximum(sum_mask, 1e-9)
@@ -103,7 +104,7 @@ class PooledEmbedding(OnnxTextEmbedding):
         """
         return supported_pooled_models
 
-    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[NdArray]:
+    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[NumpyArray]:
         if output.attention_mask is None:
             raise ValueError("attention_mask must be provided for document post-processing")
 

@@ -6,7 +6,7 @@ from typing import Any, Iterable, Optional, Sequence, Type, Union
 import numpy as np
 from tokenizers import Encoding
 
-from fastembed.common.types import NdArray
+from fastembed.common.types import NumpyArray
 from fastembed.common import OnnxProvider
 from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
 from fastembed.common.preprocessor_utils import load_tokenizer
@@ -24,14 +24,14 @@ class OnnxTextModel(OnnxModel[T]):
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[T]:
         raise NotImplementedError("Subclasses must implement this method")
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.tokenizer = None
-        self.special_token_to_id = {}
+        self.special_token_to_id: dict[str, int] = {}
 
     def _preprocess_onnx_input(
-        self, onnx_input: dict[str, NdArray], **kwargs: Any
-    ) -> dict[str, NdArray]:
+        self, onnx_input: dict[str, NumpyArray], **kwargs: Any
+    ) -> dict[str, NumpyArray]:
         """
         Preprocess the onnx input.
         """
@@ -72,7 +72,7 @@ class OnnxTextModel(OnnxModel[T]):
         input_ids = np.array([e.ids for e in encoded])
         attention_mask = np.array([e.attention_mask for e in encoded])
         input_names = {node.name for node in self.model.get_inputs()}
-        onnx_input = {
+        onnx_input: dict[str, NumpyArray] = {
             "input_ids": np.array(input_ids, dtype=np.int64),
         }
         if "attention_mask" in input_names:
@@ -137,7 +137,9 @@ class OnnxTextModel(OnnxModel[T]):
                 start_method=start_method,
             )
             for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
-                yield from self._post_process_onnx_output(batch)
+                yield from self._post_process_onnx_output(
+                    OnnxOutputContext(model_output=np.array(batch, dtype=np.float32))
+                )
 
 
 class TextEmbeddingWorker(EmbeddingWorker[T]):

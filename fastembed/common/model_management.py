@@ -161,7 +161,9 @@ class ModelManagement:
                         }
             return meta
 
-        def _save_file_metadata(model_dir: Path, meta: dict[str, dict[str, Union[int, str]]]) -> None:
+        def _save_file_metadata(
+            model_dir: Path, meta: dict[str, dict[str, Union[int, str]]]
+        ) -> None:
             try:
                 if not model_dir.exists():
                     model_dir.mkdir(parents=True, exist_ok=True)
@@ -338,7 +340,7 @@ class ModelManagement:
 
     @classmethod
     def download_model(
-        cls, model: dict[str, Any], cache_dir: Path, retries: int = 3, **kwargs: Any
+        cls, model: dict[str, Any], cache_dir: str, retries: int = 3, **kwargs: Any
     ) -> Path:
         """
         Downloads a model from HuggingFace Hub or Google Cloud Storage.
