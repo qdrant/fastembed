@@ -3,6 +3,8 @@ from typing import Sized, Union
 import numpy as np
 from PIL import Image
 
+from fastembed.common.types import NdArray
+
 
 def convert_to_rgb(image: Image.Image) -> Image.Image:
     if image.mode == "RGB":
@@ -13,9 +15,9 @@ def convert_to_rgb(image: Image.Image) -> Image.Image:
 
 
 def center_crop(
-    image: Union[Image.Image, np.ndarray],
+    image: Union[Image.Image, NdArray],
     size: tuple[int, int],
-) -> np.ndarray:
+) -> NdArray:
     if isinstance(image, np.ndarray):
         _, orig_height, orig_width = image.shape
     else:
@@ -40,7 +42,7 @@ def center_crop(
     new_height = max(crop_height, orig_height)
     new_width = max(crop_width, orig_width)
     new_shape = image.shape[:-2] + (new_height, new_width)
-    new_image = np.zeros_like(image, shape=new_shape)
+    new_image = np.zeros_like(image, shape=new_shape, dtype=np.float32)
 
     top_pad = (new_height - orig_height) // 2
     bottom_pad = top_pad + orig_height
@@ -61,13 +63,10 @@ def center_crop(
 
 
 def normalize(
-    image: np.ndarray,
-    mean: Union[float, np.ndarray],
-    std: Union[float, np.ndarray],
-) -> np.ndarray:
-    if not isinstance(image, np.ndarray):
-        raise ValueError("image must be a numpy array")
-
+    image: NdArray,
+    mean: Union[float, list[float]],
+    std: Union[float, list[float]],
+) -> NdArray:
     num_channels = image.shape[1] if len(image.shape) == 4 else image.shape[0]
 
     if not np.issubdtype(image.dtype, np.floating):
@@ -114,11 +113,11 @@ def resize(
     return image.resize(new_size, resample)
 
 
-def rescale(image: np.ndarray, scale: float, dtype: type = np.float32) -> np.ndarray:
+def rescale(image: NdArray, scale: float, dtype: type = np.float32) -> NdArray:
     return (image * scale).astype(dtype)
 
 
-def pil2ndarray(image: Union[Image.Image, np.ndarray]) -> np.ndarray:
+def pil2ndarray(image: Union[Image.Image, NdArray]) -> NdArray:
     if isinstance(image, Image.Image):
         return np.asarray(image).transpose((2, 0, 1))
     return image
