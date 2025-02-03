@@ -36,7 +36,7 @@ def _worker(
     worker_class: Type[Worker],
     input_queue: Queue,
     output_queue: Queue,
-    num_active_workers: BaseValue[int],
+    num_active_workers: BaseValue,
     worker_id: int,
     kwargs: Optional[dict[str, Any]] = None,
 ) -> None:
@@ -107,7 +107,7 @@ class ParallelWorkerPool:
         self.emergency_shutdown = False
         self.device_ids = device_ids
         self.cuda = cuda
-        self.num_active_workers: Optional[BaseValue[int]] = None
+        self.num_active_workers: Optional[BaseValue] = None
 
     def start(self, **kwargs: Any) -> None:
         self.input_queue = self.ctx.Queue(self.queue_size)
