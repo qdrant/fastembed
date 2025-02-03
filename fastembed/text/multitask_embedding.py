@@ -56,7 +56,7 @@ class JinaEmbeddingV3(PooledNormalizedEmbedding):
         self._current_task_id = value
 
     @classmethod
-    def _get_worker_class(cls) -> Type["TextEmbeddingWorker"]:
+    def _get_worker_class(cls) -> Type["TextEmbeddingWorker[NdArray]"]:
         return JinaEmbeddingV3Worker
 
     @classmethod

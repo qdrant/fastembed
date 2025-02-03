@@ -22,7 +22,7 @@ supported_clip_models = [
 
 class CLIPOnnxEmbedding(OnnxTextEmbedding):
     @classmethod
-    def _get_worker_class(cls) -> Type[TextEmbeddingWorker]:
+    def _get_worker_class(cls) -> Type[TextEmbeddingWorker[NdArray]]:
         return CLIPEmbeddingWorker
 
     @classmethod

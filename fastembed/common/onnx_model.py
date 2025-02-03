@@ -22,7 +22,7 @@ class OnnxOutputContext:
 
 class OnnxModel(Generic[T]):
     @classmethod
-    def _get_worker_class(cls) -> Type["EmbeddingWorker"]:
+    def _get_worker_class(cls) -> Type["EmbeddingWorker[T]"]:
         raise NotImplementedError("Subclasses must implement this method")
 
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[T]:
@@ -107,13 +107,13 @@ class OnnxModel(Generic[T]):
         raise NotImplementedError("Subclasses must implement this method")
 
 
-class EmbeddingWorker(Worker):
+class EmbeddingWorker(Worker, Generic[T]):
     def init_embedding(
         self,
         model_name: str,
         cache_dir: str,
         **kwargs: Any,
-    ) -> OnnxModel[object]:
+    ) -> OnnxModel[T]:
         raise NotImplementedError()
 
     def __init__(
@@ -125,7 +125,7 @@ class EmbeddingWorker(Worker):
         self.model = self.init_embedding(model_name, cache_dir, **kwargs)
 
     @classmethod
-    def start(cls, model_name: str, cache_dir: str, **kwargs: Any) -> "EmbeddingWorker":
+    def start(cls, model_name: str, cache_dir: str, **kwargs: Any) -> "EmbeddingWorker[T]":
         return cls(model_name=model_name, cache_dir=cache_dir, **kwargs)
 
     def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, Any]]:

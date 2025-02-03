@@ -90,7 +90,7 @@ supported_pooled_normalized_models = [
 
 class PooledNormalizedEmbedding(PooledEmbedding):
     @classmethod
-    def _get_worker_class(cls) -> Type[TextEmbeddingWorker]:
+    def _get_worker_class(cls) -> Type[TextEmbeddingWorker[NdArray]]:
         return PooledNormalizedEmbeddingWorker
 
     @classmethod

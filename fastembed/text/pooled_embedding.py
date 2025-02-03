@@ -81,7 +81,7 @@ supported_pooled_models = [
 
 class PooledEmbedding(OnnxTextEmbedding):
     @classmethod
-    def _get_worker_class(cls) -> Type[TextEmbeddingWorker]:
+    def _get_worker_class(cls) -> Type[TextEmbeddingWorker[NdArray]]:
         return PooledEmbeddingWorker
 
     @classmethod

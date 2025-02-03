@@ -281,7 +281,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NdArray]):
         )
 
     @classmethod
-    def _get_worker_class(cls) -> Type["TextEmbeddingWorker"]:
+    def _get_worker_class(cls) -> Type["TextEmbeddingWorker[NdArray]"]:
         return OnnxTextEmbeddingWorker
 
     def _preprocess_onnx_input(
@@ -313,7 +313,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NdArray]):
         )
 
 
-class OnnxTextEmbeddingWorker(TextEmbeddingWorker):
+class OnnxTextEmbeddingWorker(TextEmbeddingWorker[NdArray]):
     def init_embedding(
         self,
         model_name: str,

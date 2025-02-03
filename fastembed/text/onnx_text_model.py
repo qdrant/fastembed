@@ -18,7 +18,7 @@ class OnnxTextModel(OnnxModel[T]):
     ONNX_OUTPUT_NAMES: Optional[list[str]] = None
 
     @classmethod
-    def _get_worker_class(cls) -> Type["TextEmbeddingWorker"]:
+    def _get_worker_class(cls) -> Type["TextEmbeddingWorker[T]"]:
         raise NotImplementedError("Subclasses must implement this method")
 
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[T]:
@@ -140,7 +140,7 @@ class OnnxTextModel(OnnxModel[T]):
                 yield from self._post_process_onnx_output(batch)
 
 
-class TextEmbeddingWorker(EmbeddingWorker):
+class TextEmbeddingWorker(EmbeddingWorker[T]):
     def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, Any]]:
         for idx, batch in items:
             onnx_output = self.model.onnx_embed(batch)
