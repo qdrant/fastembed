@@ -34,8 +34,8 @@ class Worker:
 
 def _worker(
     worker_class: Type[Worker],
-    input_queue: Queue[Any],
-    output_queue: Queue[Any],
+    input_queue: Queue,
+    output_queue: Queue,
     num_active_workers: BaseValue[int],
     worker_id: int,
     kwargs: Optional[dict[str, Any]] = None,
@@ -99,8 +99,8 @@ class ParallelWorkerPool:
     ):
         self.worker_class = worker
         self.num_workers = num_workers
-        self.input_queue: Optional[Queue[Any]] = None
-        self.output_queue: Optional[Queue[Any]] = None
+        self.input_queue: Optional[Queue] = None
+        self.output_queue: Optional[Queue] = None
         self.ctx: BaseContext = get_context(start_method)
         self.processes: list[BaseProcess] = []
         self.queue_size = self.num_workers * max_internal_batch_size
