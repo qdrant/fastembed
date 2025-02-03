@@ -17,7 +17,7 @@ from fastembed.late_interaction_multimodal.onnx_multimodal_model import (
 
 supported_colpali_models = [
     {
-        "model": "vidore/colpali-v1.3-merged-onnx",
+        "model": "AndrewOgn/colpali-v1.3-merged-onnx",
         "dim": 128,
         "description": "Text embeddings, Bimodal (text/image), Aligned to image latent space, fp16 quantized, 2024.",
         "license": "mit",
