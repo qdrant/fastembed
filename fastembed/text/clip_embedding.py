@@ -3,7 +3,6 @@ from typing import Any, Iterable, Type
 from fastembed.common.types import NdArray
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.text.onnx_embedding import OnnxTextEmbedding, OnnxTextEmbeddingWorker
-from fastembed.text.onnx_text_model import TextEmbeddingWorker
 
 supported_clip_models = [
     {
@@ -22,7 +21,7 @@ supported_clip_models = [
 
 class CLIPOnnxEmbedding(OnnxTextEmbedding):
     @classmethod
-    def _get_worker_class(cls) -> Type[TextEmbeddingWorker[NdArray]]:
+    def _get_worker_class(cls) -> Type[OnnxTextEmbeddingWorker]:
         return CLIPEmbeddingWorker
 
     @classmethod

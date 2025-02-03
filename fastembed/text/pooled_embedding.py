@@ -5,7 +5,6 @@ import numpy as np
 from fastembed.common.types import NdArray
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.text.onnx_embedding import OnnxTextEmbedding, OnnxTextEmbeddingWorker
-from fastembed.text.onnx_text_model import TextEmbeddingWorker
 
 supported_pooled_models = [
     {
@@ -81,7 +80,7 @@ supported_pooled_models = [
 
 class PooledEmbedding(OnnxTextEmbedding):
     @classmethod
-    def _get_worker_class(cls) -> Type[TextEmbeddingWorker[NdArray]]:
+    def _get_worker_class(cls) -> Type[OnnxTextEmbeddingWorker]:
         return PooledEmbeddingWorker
 
     @classmethod

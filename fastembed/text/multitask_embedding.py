@@ -6,7 +6,6 @@ import numpy as np
 from fastembed.common.types import NdArray
 from fastembed.text.pooled_normalized_embedding import PooledNormalizedEmbedding
 from fastembed.text.onnx_embedding import OnnxTextEmbeddingWorker
-from fastembed.text.onnx_text_model import TextEmbeddingWorker
 
 supported_multitask_models = [
     {
@@ -56,7 +55,7 @@ class JinaEmbeddingV3(PooledNormalizedEmbedding):
         self._current_task_id = value
 
     @classmethod
-    def _get_worker_class(cls) -> Type["TextEmbeddingWorker[NdArray]"]:
+    def _get_worker_class(cls) -> Type[OnnxTextEmbeddingWorker]:
         return JinaEmbeddingV3Worker
 
     @classmethod
