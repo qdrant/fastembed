@@ -34,9 +34,9 @@ class Worker:
 
 def _worker(
     worker_class: Type[Worker],
-    input_queue: Queue,
-    output_queue: Queue,
-    num_active_workers: BaseValue,
+    input_queue: Queue[Any],
+    output_queue: Queue[Any],
+    num_active_workers: BaseValue[int],
     worker_id: int,
     kwargs: Optional[dict[str, Any]] = None,
 ) -> None:
@@ -99,15 +99,15 @@ class ParallelWorkerPool:
     ):
         self.worker_class = worker
         self.num_workers = num_workers
-        self.input_queue: Optional[Queue] = None
-        self.output_queue: Optional[Queue] = None
+        self.input_queue: Optional[Queue[Any]] = None
+        self.output_queue: Optional[Queue[Any]] = None
         self.ctx: BaseContext = get_context(start_method)
         self.processes: list[BaseProcess] = []
         self.queue_size = self.num_workers * max_internal_batch_size
         self.emergency_shutdown = False
         self.device_ids = device_ids
         self.cuda = cuda
-        self.num_active_workers: Optional[BaseValue] = None
+        self.num_active_workers: Optional[BaseValue[int]] = None
 
     def start(self, **kwargs: Any) -> None:
         self.input_queue = self.ctx.Queue(self.queue_size)
@@ -140,7 +140,7 @@ class ParallelWorkerPool:
             self.processes.append(process)
 
     def ordered_map(self, stream: Iterable[Any], *args: Any, **kwargs: Any) -> Iterable[Any]:
-        buffer = defaultdict(Any)
+        buffer: defaultdict[int, Any] = defaultdict(Any)
         next_expected = 0
 
         for idx, item in self.semi_ordered_map(stream, *args, **kwargs):
