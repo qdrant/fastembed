@@ -171,11 +171,11 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         )
 
     @classmethod
-    def _get_worker_class(cls) -> Type[TextEmbeddingWorker]:
+    def _get_worker_class(cls) -> Type[TextEmbeddingWorker[SparseEmbedding]]:
         return SpladePPEmbeddingWorker
 
 
-class SpladePPEmbeddingWorker(TextEmbeddingWorker):
+class SpladePPEmbeddingWorker(TextEmbeddingWorker[SparseEmbedding]):
     def init_embedding(self, model_name: str, cache_dir: str, **kwargs: Any) -> SpladePP:
         return SpladePP(
             model_name=model_name,

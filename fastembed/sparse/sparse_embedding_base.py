@@ -3,15 +3,16 @@ from typing import Iterable, Optional, Union, Any
 
 import numpy as np
 
+from fastembed.common.types import NdArray
 from fastembed.common.model_management import ModelManagement
 
 
 @dataclass
 class SparseEmbedding:
-    values: np.ndarray
-    indices: np.ndarray
+    values: NdArray
+    indices: NdArray
 
-    def as_object(self) -> dict[str, np.ndarray]:
+    def as_object(self) -> dict[str, NdArray]:
         return {
             "values": self.values,
             "indices": self.indices,
@@ -81,5 +82,5 @@ class SparseTextEmbeddingBase(ModelManagement):
         # This is model-specific, so that different models can have specialized implementations
         if isinstance(query, str):
             yield from self.embed([query], **kwargs)
-        if isinstance(query, Iterable):
+        else:
             yield from self.embed(query, **kwargs)
