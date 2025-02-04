@@ -6,8 +6,8 @@ from typing import Any, Iterable, Optional, Sequence, Type, Union
 import numpy as np
 from tokenizers import Encoding
 
-from fastembed.common.types import NumpyArray, OnnxOutputContext, T, OnnxProvider
-from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel
+from fastembed.common.types import NumpyArray, OnnxProvider
+from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
 from fastembed.common.preprocessor_utils import load_tokenizer
 from fastembed.common.utils import iter_batch
 from fastembed.parallel_processor import ParallelWorkerPool

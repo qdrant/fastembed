@@ -386,7 +386,7 @@ class ModelManagement:
                     return Path(
                         cls.download_files_from_huggingface(
                             hf_source,
-                            cache_dir=str(cache_dir),
+                            cache_dir=cache_dir,
                             extra_patterns=extra_patterns,
                             **kwargs,
                         )

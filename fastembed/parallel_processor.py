@@ -8,9 +8,9 @@ from multiprocessing.context import BaseContext
 from multiprocessing.process import BaseProcess
 from multiprocessing.sharedctypes import Synchronized as BaseValue
 from queue import Empty
-from typing import Any, Iterable, Optional, Type
+from typing import Any, Iterable, Optional, Type, TypeVar
 
-from fastembed.common.types import T
+T = TypeVar("T")
 
 # Single item should be processed in less than:
 processing_timeout = 10 * 60  # seconds

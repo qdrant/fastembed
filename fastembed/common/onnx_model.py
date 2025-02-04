@@ -1,12 +1,22 @@
 import warnings
-
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Generic, Iterable, Optional, Sequence, Type
+from typing import Any, Generic, Iterable, Optional, Sequence, Type, TypeVar
 
 import onnxruntime as ort
 
-from fastembed.common.types import OnnxProvider, NumpyArray, OnnxOutputContext, T
+from fastembed.common.types import OnnxProvider, NumpyArray
 from fastembed.parallel_processor import Worker
+
+# Holds type of the embedding result
+T = TypeVar("T")
+
+
+@dataclass
+class OnnxOutputContext:
+    model_output: NumpyArray
+    attention_mask: Optional[NumpyArray] = None
+    input_ids: Optional[NumpyArray] = None
 
 
 class OnnxModel(Generic[T]):
