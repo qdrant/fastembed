@@ -22,6 +22,8 @@ supported_clip_models = [
 
 
 class CLIPOnnxEmbedding(OnnxTextEmbedding):
+    supported_models = supported_clip_models
+
     @classmethod
     def _get_worker_class(cls) -> Type[TextEmbeddingWorker]:
         return CLIPEmbeddingWorker
@@ -33,7 +35,11 @@ class CLIPOnnxEmbedding(OnnxTextEmbedding):
         Returns:
             list[dict[str, Any]]: A list of dictionaries containing the model information.
         """
-        return supported_clip_models
+        return cls.supported_models
+
+    @classmethod
+    def add_custom_model(cls, model_info: dict[str, Any]):
+        cls.supported_models.append(model_info)
 
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
         return output.model_output

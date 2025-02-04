@@ -79,6 +79,8 @@ supported_pooled_models = [
 
 
 class PooledEmbedding(OnnxTextEmbedding):
+    supported_models = supported_pooled_models
+
     @classmethod
     def _get_worker_class(cls) -> Type[TextEmbeddingWorker]:
         return PooledEmbeddingWorker
@@ -101,7 +103,11 @@ class PooledEmbedding(OnnxTextEmbedding):
         Returns:
             list[dict[str, Any]]: A list of dictionaries containing the model information.
         """
-        return supported_pooled_models
+        return cls.supported_models
+
+    @classmethod
+    def add_custom_model(cls, model_info: dict[str, Any]):
+        cls.supported_models.append(model_info)
 
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
         if output.attention_mask is None:

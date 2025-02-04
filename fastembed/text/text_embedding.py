@@ -50,6 +50,38 @@ class TextEmbedding(TextEmbeddingBase):
             result.extend(embedding.list_supported_models())
         return result
 
+    @classmethod
+    def add_custom_model(
+        cls, model_info: dict[str, Any], mean_pooling: bool = True, normalization: bool = False
+    ) -> None:
+        """
+        Register a custom model so that TextEmbedding(...) can find it later.
+
+        Args:
+            model_info: Dictionary describing the model, e.g.:
+                {
+                    "model": "alibaba/blablabla",
+                    "dim": 512,
+                    "description": "...",
+                    "license": "apache-2.0",
+                    "size_in_GB": 1.23,
+                    "sources": { ... }  # optional
+                }
+            mean_pooling: apply mean_pooling or not.
+            normalization: apply normalization or not.
+
+        Returns:
+            None
+        """
+        if mean_pooling and not normalization:
+            PooledEmbedding.add_custom_model(model_info)
+        elif mean_pooling and normalization:
+            PooledNormalizedEmbedding.add_custom_model(model_info)
+        elif "clip" in model_info["model"].lower():
+            CLIPOnnxEmbedding.add_custom_model(model_info)
+        else:
+            OnnxTextEmbedding.add_custom_model(model_info)
+
     def __init__(
         self,
         model_name: str = "BAAI/bge-small-en-v1.5",

@@ -173,6 +173,8 @@ supported_onnx_models = [
 class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
     """Implementation of the Flag Embedding model."""
 
+    supported_models = supported_onnx_models
+
     @classmethod
     def list_supported_models(cls) -> list[dict[str, Any]]:
         """
@@ -181,7 +183,11 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[np.ndarray]):
         Returns:
             list[dict[str, Any]]: A list of dictionaries containing the model information.
         """
-        return supported_onnx_models
+        return cls.supported_models
+
+    @classmethod
+    def add_custom_model(cls, model_info: dict[str, Any]):
+        cls.supported_models.append(model_info)
 
     def __init__(
         self,
