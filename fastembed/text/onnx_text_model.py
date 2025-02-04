@@ -6,9 +6,8 @@ from typing import Any, Iterable, Optional, Sequence, Type, Union
 import numpy as np
 from tokenizers import Encoding
 
-from fastembed.common.types import NumpyArray
-from fastembed.common import OnnxProvider
-from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
+from fastembed.common.types import NumpyArray, OnnxOutputContext, T, OnnxProvider
+from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel
 from fastembed.common.preprocessor_utils import load_tokenizer
 from fastembed.common.utils import iter_batch
 from fastembed.parallel_processor import ParallelWorkerPool
@@ -137,13 +136,11 @@ class OnnxTextModel(OnnxModel[T]):
                 start_method=start_method,
             )
             for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
-                yield from self._post_process_onnx_output(
-                    OnnxOutputContext(model_output=np.array(batch, dtype=np.float32))
-                )
+                yield from self._post_process_onnx_output(batch)
 
 
 class TextEmbeddingWorker(EmbeddingWorker[T]):
-    def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, Any]]:
+    def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, OnnxOutputContext]]:
         for idx, batch in items:
             onnx_output = self.model.onnx_embed(batch)
             yield idx, onnx_output

@@ -1,22 +1,12 @@
 import warnings
-from dataclasses import dataclass
+
 from pathlib import Path
-from typing import Any, Generic, Iterable, Optional, Sequence, Type, TypeVar
+from typing import Any, Generic, Iterable, Optional, Sequence, Type
 
 import onnxruntime as ort
 
-from fastembed.common.types import OnnxProvider, NumpyArray
+from fastembed.common.types import OnnxProvider, NumpyArray, OnnxOutputContext, T
 from fastembed.parallel_processor import Worker
-
-# Holds type of the embedding result
-T = TypeVar("T")
-
-
-@dataclass
-class OnnxOutputContext:
-    model_output: NumpyArray
-    attention_mask: Optional[NumpyArray] = None
-    input_ids: Optional[NumpyArray] = None
 
 
 class OnnxModel(Generic[T]):
@@ -127,5 +117,5 @@ class EmbeddingWorker(Worker, Generic[T]):
     def start(cls, model_name: str, cache_dir: str, **kwargs: Any) -> "EmbeddingWorker[T]":
         return cls(model_name=model_name, cache_dir=cache_dir, **kwargs)
 
-    def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, Any]]:
+    def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, OnnxOutputContext]]:
         raise NotImplementedError("Subclasses must implement this method")

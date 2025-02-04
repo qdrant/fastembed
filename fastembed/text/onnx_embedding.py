@@ -2,9 +2,7 @@ from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
 
-from fastembed.common.types import NumpyArray
-from fastembed.common import OnnxProvider
-from fastembed.common.onnx_model import OnnxOutputContext
+from fastembed.common.types import NumpyArray, OnnxOutputContext, OnnxProvider
 from fastembed.common.utils import define_cache_dir, normalize
 from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
 from fastembed.text.text_embedding_base import TextEmbeddingBase
