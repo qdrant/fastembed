@@ -2,7 +2,7 @@ from typing import Any, Union, Optional
 
 from PIL import Image
 
-from fastembed.common.types import NdArray
+from fastembed.common.types import NumpyArray
 from fastembed.image.transform.functional import (
     center_crop,
     convert_to_rgb,
@@ -15,7 +15,7 @@ from fastembed.image.transform.functional import (
 
 
 class Transform:
-    def __call__(self, images: list[Any]) -> Union[list[Image.Image], list[NdArray]]:
+    def __call__(self, images: list[Any]) -> Union[list[Image.Image], list[NumpyArray]]:
         raise NotImplementedError("Subclasses must implement this method")
 
 
@@ -28,7 +28,7 @@ class CenterCrop(Transform):
     def __init__(self, size: tuple[int, int]):
         self.size = size
 
-    def __call__(self, images: list[Image.Image]) -> list[NdArray]:
+    def __call__(self, images: list[Image.Image]) -> list[NumpyArray]:
         return [center_crop(image=image, size=self.size) for image in images]
 
 
@@ -37,7 +37,7 @@ class Normalize(Transform):
         self.mean = mean
         self.std = std
 
-    def __call__(self, images: list[NdArray]) -> list[NdArray]:
+    def __call__(self, images: list[NumpyArray]) -> list[NumpyArray]:
         return [normalize(image, mean=self.mean, std=self.std) for image in images]
 
 
@@ -58,12 +58,12 @@ class Rescale(Transform):
     def __init__(self, scale: float = 1 / 255):
         self.scale = scale
 
-    def __call__(self, images: list[NdArray]) -> list[NdArray]:
+    def __call__(self, images: list[NumpyArray]) -> list[NumpyArray]:
         return [rescale(image, scale=self.scale) for image in images]
 
 
 class PILtoNDarray(Transform):
-    def __call__(self, images: list[Union[Image.Image, NdArray]]) -> list[NdArray]:
+    def __call__(self, images: list[Union[Image.Image, NumpyArray]]) -> list[NumpyArray]:
         return [pil2ndarray(image) for image in images]
 
 
@@ -87,8 +87,8 @@ class Compose:
         self.transforms = transforms
 
     def __call__(
-        self, images: Union[list[Image.Image], list[NdArray]]
-    ) -> Union[list[NdArray], list[Image.Image]]:
+        self, images: Union[list[Image.Image], list[NumpyArray]]
+    ) -> Union[list[NumpyArray], list[Image.Image]]:
         for transform in self.transforms:
             images = transform(images)
         return images

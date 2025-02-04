@@ -3,7 +3,7 @@ from typing import Sized, Union
 import numpy as np
 from PIL import Image
 
-from fastembed.common.types import NdArray
+from fastembed.common.types import NumpyArray
 
 
 def convert_to_rgb(image: Image.Image) -> Image.Image:
@@ -15,9 +15,9 @@ def convert_to_rgb(image: Image.Image) -> Image.Image:
 
 
 def center_crop(
-    image: Union[Image.Image, NdArray],
+    image: Union[Image.Image, NumpyArray],
     size: tuple[int, int],
-) -> NdArray:
+) -> NumpyArray:
     if isinstance(image, np.ndarray):
         _, orig_height, orig_width = image.shape
     else:
@@ -63,10 +63,10 @@ def center_crop(
 
 
 def normalize(
-    image: NdArray,
+    image: NumpyArray,
     mean: Union[float, list[float]],
     std: Union[float, list[float]],
-) -> NdArray:
+) -> NumpyArray:
     num_channels = image.shape[1] if len(image.shape) == 4 else image.shape[0]
 
     if not np.issubdtype(image.dtype, np.floating):
@@ -113,11 +113,11 @@ def resize(
     return image.resize(new_size, resample)
 
 
-def rescale(image: NdArray, scale: float, dtype: type = np.float32) -> NdArray:
+def rescale(image: NumpyArray, scale: float, dtype: type = np.float32) -> NumpyArray:
     return (image * scale).astype(dtype)
 
 
-def pil2ndarray(image: Union[Image.Image, NdArray]) -> NdArray:
+def pil2ndarray(image: Union[Image.Image, NumpyArray]) -> NumpyArray:
     if isinstance(image, Image.Image):
         return np.asarray(image).transpose((2, 0, 1))
     return image

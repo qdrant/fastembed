@@ -1,6 +1,6 @@
 from typing import Any, Iterable, Optional, Sequence, Type
 
-from fastembed.common.types import NdArray
+from fastembed.common.types import NumpyArray
 from fastembed.common import ImageInput, OnnxProvider
 from fastembed.image.image_embedding_base import ImageEmbeddingBase
 from fastembed.image.onnx_embedding import OnnxImageEmbedding
@@ -77,7 +77,7 @@ class ImageEmbedding(ImageEmbeddingBase):
         batch_size: int = 16,
         parallel: Optional[int] = None,
         **kwargs: Any,
-    ) -> Iterable[NdArray]:
+    ) -> Iterable[NumpyArray]:
         """
         Encode a list of documents into list of embeddings.
         We use mean pooling with attention so that the model can handle variable-length inputs.

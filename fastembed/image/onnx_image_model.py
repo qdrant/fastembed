@@ -6,7 +6,7 @@ from typing import Any, Iterable, Optional, Sequence, Type
 
 from PIL import Image
 
-from fastembed.common.types import NdArray, ImageOnnxInput
+from fastembed.common.types import NumpyArray, ImageOnnxInput
 from fastembed.common import ImageInput, OnnxProvider
 from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
 from fastembed.common.preprocessor_utils import load_preprocessor
@@ -29,8 +29,8 @@ class OnnxImageModel(OnnxModel[T]):
         self.processor = None
 
     def _preprocess_onnx_input(
-        self, onnx_input: dict[str, NdArray], **kwargs: Any
-    ) -> dict[str, NdArray]:
+        self, onnx_input: dict[str, NumpyArray], **kwargs: Any
+    ) -> dict[str, NumpyArray]:
         """
         Preprocess the onnx input.
         """
@@ -58,7 +58,7 @@ class OnnxImageModel(OnnxModel[T]):
     def load_onnx_model(self) -> None:
         raise NotImplementedError("Subclasses must implement this method")
 
-    def _build_onnx_input(self, encoded: NdArray) -> dict[str, NdArray]:
+    def _build_onnx_input(self, encoded: NumpyArray) -> dict[str, NumpyArray]:
         return {node.name: encoded for node in self.model.get_inputs()}
 
     def onnx_embed(self, images: ImageOnnxInput, **kwargs: Any) -> OnnxOutputContext:
@@ -124,7 +124,7 @@ class OnnxImageModel(OnnxModel[T]):
                 yield from self._post_process_onnx_output(batch)
 
 
-class ImageEmbeddingWorker(EmbeddingWorker[NdArray]):
+class ImageEmbeddingWorker(EmbeddingWorker[NumpyArray]):
     def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, Any]]:
         for idx, batch in items:
             embeddings = self.model.onnx_embed(batch)
