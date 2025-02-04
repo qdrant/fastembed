@@ -123,7 +123,7 @@ class Bm25(SparseTextEmbeddingBase):
         self.avg_len = avg_len
 
         model_description = self._get_model_description(model_name)
-        self.cache_dir = define_cache_dir(cache_dir)
+        self.cache_dir = str(define_cache_dir(cache_dir))
 
         self._model_dir = self.download_model(
             model_description,
@@ -137,7 +137,7 @@ class Bm25(SparseTextEmbeddingBase):
         self.disable_stemmer = disable_stemmer
 
         if disable_stemmer:
-            self.stopwords = set()
+            self.stopwords: set[str] = set()
             self.stemmer = None
         else:
             self.stopwords = set(self._load_stopwords(self._model_dir, self.language))
@@ -239,7 +239,7 @@ class Bm25(SparseTextEmbeddingBase):
         )
 
     def _stem(self, tokens: list[str]) -> list[str]:
-        stemmed_tokens = []
+        stemmed_tokens: list[str] = []
         for token in tokens:
             lower_token = token.lower()
 
@@ -262,7 +262,7 @@ class Bm25(SparseTextEmbeddingBase):
         self,
         documents: list[str],
     ) -> list[SparseEmbedding]:
-        embeddings = []
+        embeddings: list[SparseEmbedding] = []
         for document in documents:
             document = remove_non_alphanumeric(document)
             tokens = self.tokenizer.tokenize(document)
@@ -286,8 +286,8 @@ class Bm25(SparseTextEmbeddingBase):
         Returns:
             dict[int, float]: The token_id to term frequency mapping.
         """
-        tf_map = {}
-        counter = defaultdict(int)
+        tf_map: dict[int, float] = {}
+        counter: defaultdict[str, int] = defaultdict(int)
         for stemmed_token in tokens:
             counter[stemmed_token] += 1
 

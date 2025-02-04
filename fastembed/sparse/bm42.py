@@ -110,7 +110,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             self.device_id = None
 
         self.model_description = self._get_model_description(model_name)
-        self.cache_dir = define_cache_dir(cache_dir)
+        self.cache_dir = str(define_cache_dir(cache_dir))
 
         self._model_dir = self.download_model(
             self.model_description,
@@ -119,10 +119,10 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             specific_model_path=specific_model_path,
         )
 
-        self.invert_vocab = {}
+        self.invert_vocab: dict[int, str] = {}
 
-        self.special_tokens = set()
-        self.special_tokens_ids = set()
+        self.special_tokens: set[str] = set()
+        self.special_tokens_ids: set[int] = set()
         self.punctuation = set(string.punctuation)
         self.stopwords = set(self._load_stopwords(self._model_dir))
         self.stemmer = SnowballStemmer(MODEL_TO_LANGUAGE[model_name])
@@ -147,7 +147,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         self.stopwords = set(self._load_stopwords(self._model_dir))
 
     def _filter_pair_tokens(self, tokens: list[tuple[str, Any]]) -> list[tuple[str, Any]]:
-        result = []
+        result: list[tuple[str, Any]] = []
         for token, value in tokens:
             if token in self.stopwords or token in self.punctuation:
                 continue
@@ -155,7 +155,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         return result
 
     def _stem_pair_tokens(self, tokens: list[tuple[str, Any]]) -> list[tuple[str, Any]]:
-        result = []
+        result: list[tuple[str, Any]] = []
         for token, value in tokens:
             processed_token = self.stemmer.stem_word(token)
             result.append((processed_token, value))
@@ -165,7 +165,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
     def _aggregate_weights(
         cls, tokens: list[tuple[str, list[int]]], weights: list[float]
     ) -> list[tuple[str, float]]:
-        result = []
+        result: list[tuple[str, float]] = []
         for token, idxs in tokens:
             sum_weight = sum(weights[idx] for idx in idxs)
             result.append((token, sum_weight))
@@ -174,9 +174,9 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
     def _reconstruct_bpe(
         self, bpe_tokens: Iterable[tuple[int, str]]
     ) -> list[tuple[str, list[int]]]:
-        result = []
-        acc = ""
-        acc_idx = []
+        result: list[tuple[str, list[int]]] = []
+        acc: str = ""
+        acc_idx: list[int] = []
 
         continuing_subword_prefix = self.tokenizer.model.continuing_subword_prefix
         continuing_subword_prefix_len = len(continuing_subword_prefix)
@@ -206,7 +206,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         So that the scoring doesn't depend on absolute values assigned by the model, but on the relative importance.
         """
 
-        new_vector = {}
+        new_vector: dict[int, float] = {}
 
         for token, value in vector.items():
             token_id = abs(mmh3.hash(token))
@@ -241,7 +241,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
             weighted = self._aggregate_weights(stemmed, attention_value)
 
-            max_token_weight = {}
+            max_token_weight: dict[str, float] = {}
 
             for token, weight in weighted:
                 max_token_weight[token] = max(max_token_weight.get(token, 0), weight)
@@ -304,7 +304,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
     @classmethod
     def _query_rehash(cls, tokens: Iterable[str]) -> dict[int, float]:
-        result = {}
+        result: dict[int, float] = {}
         for token in tokens:
             token_id = abs(mmh3.hash(token))
             result[token_id] = 1.0
@@ -334,11 +334,11 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             yield SparseEmbedding.from_dict(self._query_rehash(token for token, _ in stemmed))
 
     @classmethod
-    def _get_worker_class(cls) -> Type[TextEmbeddingWorker]:
+    def _get_worker_class(cls) -> Type[TextEmbeddingWorker[SparseEmbedding]]:
         return Bm42TextEmbeddingWorker
 
 
-class Bm42TextEmbeddingWorker(TextEmbeddingWorker):
+class Bm42TextEmbeddingWorker(TextEmbeddingWorker[SparseEmbedding]):
     def init_embedding(self, model_name: str, cache_dir: str, **kwargs: Any) -> Bm42:
         return Bm42(
             model_name=model_name,
