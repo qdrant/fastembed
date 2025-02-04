@@ -48,7 +48,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         return self.tokenizer.encode_batch(pairs)
 
     def _build_onnx_input(self, tokenized_input: list[Encoding]) -> dict[str, NumpyArray]:
-        input_names = {node.name for node in self.model.get_inputs()}
+        input_names: set[str] = {node.name for node in self.model.get_inputs()}
         inputs: dict[str, NumpyArray] = {
             "input_ids": np.array([enc.ids for enc in tokenized_input], dtype=np.int64),
         }
@@ -98,7 +98,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         is_small = False
 
         if isinstance(pairs, tuple):
-            pairs = list(pairs)
+            pairs = [pairs]  # type: ignore
             is_small = True
 
         if isinstance(pairs, list):
@@ -130,9 +130,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
                 start_method=start_method,
             )
             for batch in pool.ordered_map(iter_batch(pairs, batch_size), **params):
-                yield from self._post_process_onnx_output(
-                    OnnxOutputContext(model_output=np.array(batch, dtype=np.float32))
-                )
+                yield from self._post_process_onnx_output(batch)
 
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[float]:
         raise NotImplementedError("Subclasses must implement this method")
@@ -147,7 +145,22 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
 
 
 class TextRerankerWorker(EmbeddingWorker[float]):
-    model: OnnxCrossEncoderModel
+    def __init__(
+        self,
+        model_name: str,
+        cache_dir: str,
+        **kwargs: Any,
+    ):
+        self.model: OnnxCrossEncoderModel
+        super().__init__(model_name, cache_dir, **kwargs)
+
+    def init_embedding(
+        self,
+        model_name: str,
+        cache_dir: str,
+        **kwargs: Any,
+    ) -> OnnxCrossEncoderModel:
+        raise NotImplementedError()
 
     def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, Any]]:
         for idx, batch in items:
