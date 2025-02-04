@@ -113,12 +113,11 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[NumpyArray]):
         self.cuda = cuda
 
         # This device_id will be used if we need to load model in current process
+        self.device_id: Optional[int] = None
         if device_id is not None:
             self.device_id = device_id
         elif self.device_ids is not None:
             self.device_id = self.device_ids[0]
-        else:
-            self.device_id = None
 
         self.model_description = self._get_model_description(model_name)
         self.cache_dir = str(define_cache_dir(cache_dir))
@@ -191,7 +190,7 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[NumpyArray]):
         )
 
     @classmethod
-    def _get_worker_class(cls) -> Type["ImageEmbeddingWorker"]:
+    def _get_worker_class(cls) -> Type["ImageEmbeddingWorker[NumpyArray]"]:
         return OnnxImageEmbeddingWorker
 
     def _preprocess_onnx_input(
@@ -207,7 +206,7 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[NumpyArray]):
         return normalize(output.model_output).astype(np.float32)
 
 
-class OnnxImageEmbeddingWorker(ImageEmbeddingWorker):
+class OnnxImageEmbeddingWorker(ImageEmbeddingWorker[NumpyArray]):
     def init_embedding(self, model_name: str, cache_dir: str, **kwargs: Any) -> OnnxImageEmbedding:
         return OnnxImageEmbedding(
             model_name=model_name,
