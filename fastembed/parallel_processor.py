@@ -8,9 +8,8 @@ from multiprocessing.context import BaseContext
 from multiprocessing.process import BaseProcess
 from multiprocessing.sharedctypes import Synchronized as BaseValue
 from queue import Empty
-from typing import Any, Iterable, Optional, Type, TypeVar
+from typing import Any, Iterable, Optional, Type
 
-T = TypeVar("T")
 
 # Single item should be processed in less than:
 processing_timeout = 10 * 60  # seconds
@@ -140,7 +139,7 @@ class ParallelWorkerPool:
             process.start()
             self.processes.append(process)
 
-    def ordered_map(self, stream: Iterable[T], *args: Any, **kwargs: Any) -> Iterable[Any]:
+    def ordered_map(self, stream: Iterable[Any], *args: Any, **kwargs: Any) -> Iterable[Any]:
         buffer: defaultdict[int, Any] = defaultdict(Any)
         next_expected = 0
 
@@ -151,7 +150,7 @@ class ParallelWorkerPool:
                 next_expected += 1
 
     def semi_ordered_map(
-        self, stream: Iterable[T], *args: Any, **kwargs: Any
+        self, stream: Iterable[Any], *args: Any, **kwargs: Any
     ) -> Iterable[tuple[int, Any]]:
         try:
             self.start(**kwargs)
