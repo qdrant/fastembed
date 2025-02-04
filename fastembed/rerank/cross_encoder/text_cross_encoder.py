@@ -33,7 +33,7 @@ class TextCrossEncoder(TextCrossEncoderBase):
                 ]
                 ```
         """
-        result = []
+        result: list[dict[str, Any]] = []
         for encoder in cls.CROSS_ENCODER_REGISTRY:
             result.extend(encoder.list_supported_models())
         return result

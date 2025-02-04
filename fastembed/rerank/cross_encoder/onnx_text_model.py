@@ -1,10 +1,9 @@
 import os
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Iterable, Optional, Sequence, Type, Union
+from typing import Any, Iterable, Optional, Sequence, Type
 
 import numpy as np
-from numpy.typing import NDArray
 from tokenizers import Encoding
 
 from fastembed.common.onnx_model import (
@@ -13,6 +12,7 @@ from fastembed.common.onnx_model import (
     OnnxOutputContext,
     OnnxProvider,
 )
+from fastembed.common.types import NumpyArray
 from fastembed.common.preprocessor_utils import load_tokenizer
 from fastembed.common.utils import iter_batch
 from fastembed.parallel_processor import ParallelWorkerPool
@@ -47,11 +47,9 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
     def tokenize(self, pairs: list[tuple[str, str]], **_: Any) -> list[Encoding]:
         return self.tokenizer.encode_batch(pairs)
 
-    def _build_onnx_input(
-        self, tokenized_input
-    ) -> dict[str, NDArray[Union[np.float32, np.int64]]]:
+    def _build_onnx_input(self, tokenized_input: list[Encoding]) -> dict[str, NumpyArray]:
         input_names = {node.name for node in self.model.get_inputs()}
-        inputs = {
+        inputs: dict[str, NumpyArray] = {
             "input_ids": np.array([enc.ids for enc in tokenized_input], dtype=np.int64),
         }
         if "token_type_ids" in input_names:
@@ -74,7 +72,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         onnx_input = self._preprocess_onnx_input(inputs, **kwargs)
         outputs = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)
         relevant_output = outputs[0]
-        scores = relevant_output[:, 0]
+        scores: NumpyArray = relevant_output[:, 0]
         return OnnxOutputContext(model_output=scores)
 
     def _rerank_documents(
@@ -100,7 +98,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         is_small = False
 
         if isinstance(pairs, tuple):
-            pairs = [pairs]
+            pairs = list(pairs)
             is_small = True
 
         if isinstance(pairs, list):
@@ -132,21 +130,25 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
                 start_method=start_method,
             )
             for batch in pool.ordered_map(iter_batch(pairs, batch_size), **params):
-                yield from self._post_process_onnx_output(batch)
+                yield from self._post_process_onnx_output(
+                    OnnxOutputContext(model_output=np.array(batch, dtype=np.float32))
+                )
 
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[float]:
         raise NotImplementedError("Subclasses must implement this method")
 
     def _preprocess_onnx_input(
-        self, onnx_input: dict[str, np.ndarray], **kwargs: Any
-    ) -> dict[str, np.ndarray]:
+        self, onnx_input: dict[str, NumpyArray], **kwargs: Any
+    ) -> dict[str, NumpyArray]:
         """
         Preprocess the onnx input.
         """
         return onnx_input
 
 
-class TextRerankerWorker(EmbeddingWorker):
+class TextRerankerWorker(EmbeddingWorker[float]):
+    model: OnnxCrossEncoderModel
+
     def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, Any]]:
         for idx, batch in items:
             onnx_output = self.model.onnx_embed_pairs(batch)
