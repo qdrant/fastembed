@@ -1,9 +1,7 @@
 from typing import Any, Type
 
-import numpy as np
-
-from fastembed.late_interaction.colbert import Colbert
-from fastembed.text.onnx_text_model import TextEmbeddingWorker
+from fastembed.common.types import NumpyArray
+from fastembed.late_interaction.colbert import Colbert, ColbertEmbeddingWorker
 
 
 supported_jina_colbert_models = [
@@ -29,7 +27,7 @@ class JinaColbert(Colbert):
     MASK_TOKEN = "<mask>"
 
     @classmethod
-    def _get_worker_class(cls) -> Type[TextEmbeddingWorker]:
+    def _get_worker_class(cls) -> Type[ColbertEmbeddingWorker]:
         return JinaColbertEmbeddingWorker
 
     @classmethod
@@ -42,8 +40,8 @@ class JinaColbert(Colbert):
         return supported_jina_colbert_models
 
     def _preprocess_onnx_input(
-        self, onnx_input: dict[str, np.ndarray], is_doc: bool = True, **kwargs: Any
-    ) -> dict[str, np.ndarray]:
+        self, onnx_input: dict[str, NumpyArray], is_doc: bool = True, **kwargs: Any
+    ) -> dict[str, NumpyArray]:
         onnx_input = super()._preprocess_onnx_input(onnx_input, is_doc)
 
         # the attention mask for jina-colbert-v2 is always 1 in queries
@@ -52,7 +50,7 @@ class JinaColbert(Colbert):
         return onnx_input
 
 
-class JinaColbertEmbeddingWorker(TextEmbeddingWorker):
+class JinaColbertEmbeddingWorker(ColbertEmbeddingWorker):
     def init_embedding(self, model_name: str, cache_dir: str, **kwargs: Any) -> JinaColbert:
         return JinaColbert(
             model_name=model_name,
