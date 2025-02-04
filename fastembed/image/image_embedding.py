@@ -1,4 +1,4 @@
-from typing import Any, Iterable, Optional, Sequence, Type
+from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 from fastembed.common.types import NumpyArray
 from fastembed.common import ImageInput, OnnxProvider
@@ -73,7 +73,7 @@ class ImageEmbedding(ImageEmbeddingBase):
 
     def embed(
         self,
-        images: ImageInput,
+        images: Union[ImageInput, Iterable[ImageInput]],
         batch_size: int = 16,
         parallel: Optional[int] = None,
         **kwargs: Any,

@@ -2,11 +2,11 @@ import contextlib
 import os
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Iterable, Optional, Sequence, Type
+from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 from PIL import Image
 
-from fastembed.common.types import NumpyArray, ImageOnnxInput
+from fastembed.common.types import NumpyArray
 from fastembed.common import ImageInput, OnnxProvider
 from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
 from fastembed.common.preprocessor_utils import load_preprocessor
@@ -61,7 +61,7 @@ class OnnxImageModel(OnnxModel[T]):
     def _build_onnx_input(self, encoded: NumpyArray) -> dict[str, NumpyArray]:
         return {node.name: encoded for node in self.model.get_inputs()}
 
-    def onnx_embed(self, images: ImageOnnxInput, **kwargs: Any) -> OnnxOutputContext:
+    def onnx_embed(self, images: list[ImageInput], **kwargs: Any) -> OnnxOutputContext:
         with contextlib.ExitStack():
             image_files = [
                 Image.open(image) if not isinstance(image, Image.Image) else image
@@ -78,7 +78,7 @@ class OnnxImageModel(OnnxModel[T]):
         self,
         model_name: str,
         cache_dir: str,
-        images: ImageInput,
+        images: Union[ImageInput, Iterable[ImageInput]],
         batch_size: int = 256,
         parallel: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,

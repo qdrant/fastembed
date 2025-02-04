@@ -1,4 +1,4 @@
-from typing import Iterable, Optional, Any
+from typing import Iterable, Optional, Any, Union
 
 from fastembed.common.types import NumpyArray
 from fastembed.common.model_management import ModelManagement
@@ -20,7 +20,7 @@ class ImageEmbeddingBase(ModelManagement):
 
     def embed(
         self,
-        images: ImageInput,
+        images: Union[ImageInput, Iterable[ImageInput]],
         batch_size: int = 16,
         parallel: Optional[int] = None,
         **kwargs: Any,
