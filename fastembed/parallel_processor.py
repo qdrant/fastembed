@@ -10,7 +10,7 @@ from multiprocessing.sharedctypes import Synchronized as BaseValue
 from queue import Empty
 from typing import Any, Iterable, Optional, Type
 
-from fastembed.common.types import OnnxOutputContext, T
+from fastembed.common.types import T
 
 # Single item should be processed in less than:
 processing_timeout = 10 * 60  # seconds
@@ -29,7 +29,7 @@ class Worker:
     def start(cls, *args: Any, **kwargs: Any) -> "Worker":
         raise NotImplementedError()
 
-    def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, OnnxOutputContext]]:
+    def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, Any]]:
         raise NotImplementedError()
 
 
@@ -140,9 +140,7 @@ class ParallelWorkerPool:
             process.start()
             self.processes.append(process)
 
-    def ordered_map(
-        self, stream: Iterable[T], *args: Any, **kwargs: Any
-    ) -> Iterable[OnnxOutputContext]:
+    def ordered_map(self, stream: Iterable[T], *args: Any, **kwargs: Any) -> Iterable[Any]:
         buffer: defaultdict[int, Any] = defaultdict(Any)
         next_expected = 0
 
@@ -154,7 +152,7 @@ class ParallelWorkerPool:
 
     def semi_ordered_map(
         self, stream: Iterable[T], *args: Any, **kwargs: Any
-    ) -> Iterable[tuple[int, OnnxOutputContext]]:
+    ) -> Iterable[tuple[int, Any]]:
         try:
             self.start(**kwargs)
 
