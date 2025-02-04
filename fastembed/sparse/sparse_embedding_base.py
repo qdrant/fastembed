@@ -3,16 +3,16 @@ from typing import Iterable, Optional, Union, Any
 
 import numpy as np
 
-from fastembed.common.types import NdArray
+from fastembed.common.types import NumpyArray
 from fastembed.common.model_management import ModelManagement
 
 
 @dataclass
 class SparseEmbedding:
-    values: NdArray
-    indices: NdArray
+    values: NumpyArray
+    indices: NumpyArray
 
-    def as_object(self) -> dict[str, NdArray]:
+    def as_object(self) -> dict[str, NumpyArray]:
         return {
             "values": self.values,
             "indices": self.indices,
