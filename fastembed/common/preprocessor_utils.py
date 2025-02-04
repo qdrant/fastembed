@@ -1,4 +1,5 @@
 import json
+from typing import Any
 from pathlib import Path
 
 from tokenizers import AddedToken, Tokenizer
@@ -6,7 +7,7 @@ from tokenizers import AddedToken, Tokenizer
 from fastembed.image.transform.operators import Compose
 
 
-def load_special_tokens(model_dir: Path) -> dict:
+def load_special_tokens(model_dir: Path) -> dict[str, Any]:
     tokens_map_path = model_dir / "special_tokens_map.json"
     if not tokens_map_path.exists():
         raise ValueError(f"Could not find special_tokens_map.json in {model_dir}")
@@ -17,7 +18,7 @@ def load_special_tokens(model_dir: Path) -> dict:
     return tokens_map
 
 
-def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict]:
+def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
     config_path = model_dir / "config.json"
     if not config_path.exists():
         raise ValueError(f"Could not find config.json in {model_dir}")
@@ -59,7 +60,7 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict]:
         elif isinstance(token, dict):
             tokenizer.add_special_tokens([AddedToken(**token)])
 
-    special_token_to_id = {}
+    special_token_to_id: dict[str, int] = {}
 
     for token in tokens_map.values():
         if isinstance(token, str):

@@ -231,7 +231,7 @@ def test_task_assignment():
 
         for i, task_id in enumerate(Task):
             _ = list(model.embed(documents=docs, batch_size=1, task_id=i))
-            assert model.model._current_task_id == task_id
+            assert model.model.current_task_id == task_id
 
         if is_ci:
             delete_model_cache(model.model._model_dir)

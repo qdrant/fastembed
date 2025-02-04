@@ -6,7 +6,7 @@ from typing import Any, Iterable, Optional, Sequence, Type, Union
 import numpy as np
 from tokenizers import Encoding
 
-from fastembed.common import OnnxProvider
+from fastembed.common.types import NumpyArray, OnnxProvider
 from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
 from fastembed.common.preprocessor_utils import load_tokenizer
 from fastembed.common.utils import iter_batch
@@ -17,7 +17,7 @@ class OnnxTextModel(OnnxModel[T]):
     ONNX_OUTPUT_NAMES: Optional[list[str]] = None
 
     @classmethod
-    def _get_worker_class(cls) -> Type["TextEmbeddingWorker"]:
+    def _get_worker_class(cls) -> Type["TextEmbeddingWorker[T]"]:
         raise NotImplementedError("Subclasses must implement this method")
 
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[T]:
@@ -26,11 +26,11 @@ class OnnxTextModel(OnnxModel[T]):
     def __init__(self):
         super().__init__()
         self.tokenizer = None
-        self.special_token_to_id = {}
+        self.special_token_to_id: dict[str, int] = {}
 
     def _preprocess_onnx_input(
-        self, onnx_input: dict[str, np.ndarray], **kwargs: Any
-    ) -> dict[str, np.ndarray]:
+        self, onnx_input: dict[str, NumpyArray], **kwargs: Any
+    ) -> dict[str, NumpyArray]:
         """
         Preprocess the onnx input.
         """
@@ -71,7 +71,7 @@ class OnnxTextModel(OnnxModel[T]):
         input_ids = np.array([e.ids for e in encoded])
         attention_mask = np.array([e.attention_mask for e in encoded])
         input_names = {node.name for node in self.model.get_inputs()}
-        onnx_input = {
+        onnx_input: dict[str, NumpyArray] = {
             "input_ids": np.array(input_ids, dtype=np.int64),
         }
         if "attention_mask" in input_names:
@@ -139,8 +139,8 @@ class OnnxTextModel(OnnxModel[T]):
                 yield from self._post_process_onnx_output(batch)
 
 
-class TextEmbeddingWorker(EmbeddingWorker):
-    def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, Any]]:
+class TextEmbeddingWorker(EmbeddingWorker[T]):
+    def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, OnnxOutputContext]]:
         for idx, batch in items:
             onnx_output = self.model.onnx_embed(batch)
             yield idx, onnx_output

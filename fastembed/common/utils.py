@@ -9,10 +9,12 @@ from typing import Iterable, Optional, TypeVar
 
 import numpy as np
 
+from fastembed.common.types import NumpyArray
+
 T = TypeVar("T")
 
 
-def normalize(input_array: np.ndarray, p: int = 2, dim: int = 1, eps: float = 1e-12) -> np.ndarray:
+def normalize(input_array: NumpyArray, p: int = 2, dim: int = 1, eps: float = 1e-12) -> NumpyArray:
     # Calculate the Lp norm along the specified dimension
     norm = np.linalg.norm(input_array, ord=p, axis=dim, keepdims=True)
     norm = np.maximum(norm, eps)  # Avoid division by zero

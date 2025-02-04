@@ -3,10 +3,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Generic, Iterable, Optional, Sequence, Type, TypeVar
 
-import numpy as np
 import onnxruntime as ort
 
-from fastembed.common.types import OnnxProvider
+from fastembed.common.types import OnnxProvider, NumpyArray
 from fastembed.parallel_processor import Worker
 
 # Holds type of the embedding result
@@ -15,14 +14,14 @@ T = TypeVar("T")
 
 @dataclass
 class OnnxOutputContext:
-    model_output: np.ndarray
-    attention_mask: Optional[np.ndarray] = None
-    input_ids: Optional[np.ndarray] = None
+    model_output: NumpyArray
+    attention_mask: Optional[NumpyArray] = None
+    input_ids: Optional[NumpyArray] = None
 
 
 class OnnxModel(Generic[T]):
     @classmethod
-    def _get_worker_class(cls) -> Type["EmbeddingWorker"]:
+    def _get_worker_class(cls) -> Type["EmbeddingWorker[T]"]:
         raise NotImplementedError("Subclasses must implement this method")
 
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[T]:
@@ -33,8 +32,8 @@ class OnnxModel(Generic[T]):
         self.tokenizer = None
 
     def _preprocess_onnx_input(
-        self, onnx_input: dict[str, np.ndarray], **kwargs: Any
-    ) -> dict[str, np.ndarray]:
+        self, onnx_input: dict[str, NumpyArray], **kwargs: Any
+    ) -> dict[str, NumpyArray]:
         """
         Preprocess the onnx input.
         """
@@ -70,7 +69,7 @@ class OnnxModel(Generic[T]):
             onnx_providers = ["CPUExecutionProvider"]
 
         available_providers = ort.get_available_providers()
-        requested_provider_names = []
+        requested_provider_names: list[str] = []
         for provider in onnx_providers:
             # check providers available
             provider_name = provider if isinstance(provider, str) else provider[0]
@@ -107,13 +106,13 @@ class OnnxModel(Generic[T]):
         raise NotImplementedError("Subclasses must implement this method")
 
 
-class EmbeddingWorker(Worker):
+class EmbeddingWorker(Worker, Generic[T]):
     def init_embedding(
         self,
         model_name: str,
         cache_dir: str,
         **kwargs: Any,
-    ) -> OnnxModel:
+    ) -> OnnxModel[T]:
         raise NotImplementedError()
 
     def __init__(
@@ -125,7 +124,7 @@ class EmbeddingWorker(Worker):
         self.model = self.init_embedding(model_name, cache_dir, **kwargs)
 
     @classmethod
-    def start(cls, model_name: str, cache_dir: str, **kwargs: Any) -> "EmbeddingWorker":
+    def start(cls, model_name: str, cache_dir: str, **kwargs: Any) -> "EmbeddingWorker[T]":
         return cls(model_name=model_name, cache_dir=cache_dir, **kwargs)
 
     def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, Any]]:
