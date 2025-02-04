@@ -1,6 +1,6 @@
 from typing import Iterable, Optional, Union, Any
 
-from fastembed.common.types import NdArray
+from fastembed.common.types import NumpyArray
 from fastembed.common.model_management import ModelManagement
 
 
@@ -23,10 +23,10 @@ class LateInteractionTextEmbeddingBase(ModelManagement):
         batch_size: int = 256,
         parallel: Optional[int] = None,
         **kwargs: Any,
-    ) -> Iterable[NdArray]:
+    ) -> Iterable[NumpyArray]:
         raise NotImplementedError()
 
-    def passage_embed(self, texts: Iterable[str], **kwargs: Any) -> Iterable[NdArray]:
+    def passage_embed(self, texts: Iterable[str], **kwargs: Any) -> Iterable[NumpyArray]:
         """
         Embeds a list of text passages into a list of embeddings.
 
@@ -41,7 +41,7 @@ class LateInteractionTextEmbeddingBase(ModelManagement):
         # This is model-specific, so that different models can have specialized implementations
         yield from self.embed(texts, **kwargs)
 
-    def query_embed(self, query: Union[str, Iterable[str]], **kwargs: Any) -> Iterable[NdArray]:
+    def query_embed(self, query: Union[str, Iterable[str]], **kwargs: Any) -> Iterable[NumpyArray]:
         """
         Embeds queries
 

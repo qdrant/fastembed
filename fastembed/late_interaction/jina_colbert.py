@@ -1,6 +1,6 @@
 from typing import Any, Type
 
-from fastembed.common.types import NdArray
+from fastembed.common.types import NumpyArray
 from fastembed.late_interaction.colbert import Colbert, ColbertEmbeddingWorker
 
 
@@ -40,8 +40,8 @@ class JinaColbert(Colbert):
         return supported_jina_colbert_models
 
     def _preprocess_onnx_input(
-        self, onnx_input: dict[str, NdArray], is_doc: bool = True, **kwargs: Any
-    ) -> dict[str, NdArray]:
+        self, onnx_input: dict[str, NumpyArray], is_doc: bool = True, **kwargs: Any
+    ) -> dict[str, NumpyArray]:
         onnx_input = super()._preprocess_onnx_input(onnx_input, is_doc)
 
         # the attention mask for jina-colbert-v2 is always 1 in queries

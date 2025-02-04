@@ -1,6 +1,6 @@
 from typing import Any, Iterable, Optional, Sequence, Type, Union
 
-from fastembed.common.types import NdArray
+from fastembed.common.types import NumpyArray
 from fastembed.common import OnnxProvider
 from fastembed.late_interaction.colbert import Colbert
 from fastembed.late_interaction.jina_colbert import JinaColbert
@@ -80,7 +80,7 @@ class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
         batch_size: int = 256,
         parallel: Optional[int] = None,
         **kwargs: Any,
-    ) -> Iterable[NdArray]:
+    ) -> Iterable[NumpyArray]:
         """
         Encode a list of documents into list of embeddings.
         We use mean pooling with attention so that the model can handle variable-length inputs.
@@ -98,7 +98,7 @@ class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
         """
         yield from self.model.embed(documents, batch_size, parallel, **kwargs)
 
-    def query_embed(self, query: Union[str, Iterable[str]], **kwargs: Any) -> Iterable[NdArray]:
+    def query_embed(self, query: Union[str, Iterable[str]], **kwargs: Any) -> Iterable[NumpyArray]:
         """
         Embeds queries
 
