@@ -1,7 +1,6 @@
 import warnings
 from typing import Any, Iterable, Optional, Sequence, Type, Union
 
-
 from fastembed.common.types import NumpyArray, OnnxProvider
 from fastembed.text.clip_embedding import CLIPOnnxEmbedding
 from fastembed.text.pooled_normalized_embedding import PooledNormalizedEmbedding
