@@ -23,7 +23,7 @@ class OnnxTextModel(OnnxModel[T]):
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[T]:
         raise NotImplementedError("Subclasses must implement this method")
 
-    def __init__(self) -> None:
+    def __init__(self):
         super().__init__()
         self.tokenizer = None
         self.special_token_to_id: dict[str, int] = {}

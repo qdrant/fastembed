@@ -163,11 +163,12 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
         self.cuda = cuda
 
         # This device_id will be used if we need to load model in current process
-        self.device_id: Optional[int] = None
         if device_id is not None:
             self.device_id = device_id
         elif self.device_ids is not None:
             self.device_id = self.device_ids[0]
+        else:
+            self.device_id = None
 
         self.model_description = self._get_model_description(model_name)
         self.cache_dir = str(define_cache_dir(cache_dir))
