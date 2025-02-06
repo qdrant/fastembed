@@ -29,7 +29,10 @@ jobs:
 
       - name: mypy
         run: |
-            poetry run mypy fastembed --disallow-incomplete-defs --disallow-untyped-defs --ignore-missing-imports --disable-error-code=import-untyped --disable-error-code=attr-defined --exclude=tokenizer
+            poetry run mypy fastembed \
+          --disallow-incomplete-defs \
+          --disallow-untyped-defs \
+          --disable-error-code=import-untyped
 
       - name: pyright
         run: |
