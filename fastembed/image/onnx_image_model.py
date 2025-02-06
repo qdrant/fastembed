@@ -61,7 +61,7 @@ class OnnxImageModel(OnnxModel[T]):
         raise NotImplementedError("Subclasses must implement this method")
 
     def _build_onnx_input(self, encoded: NumpyArray) -> dict[str, NumpyArray]:
-        input_name = self.model.get_inputs()[0].name
+        input_name = self.model.get_inputs()[0].name  # type: ignore
         return {input_name: encoded}
 
     def onnx_embed(self, images: list[ImageInput], **kwargs: Any) -> OnnxOutputContext:
@@ -74,7 +74,7 @@ class OnnxImageModel(OnnxModel[T]):
             encoded = np.array(self.processor(image_files))
         onnx_input = self._build_onnx_input(encoded)
         onnx_input = self._preprocess_onnx_input(onnx_input)
-        model_output = self.model.run(None, onnx_input)
+        model_output = self.model.run(None, onnx_input)  # type: ignore
         embeddings = model_output[0].reshape(len(images), -1)
         return OnnxOutputContext(model_output=embeddings)
 
@@ -125,7 +125,7 @@ class OnnxImageModel(OnnxModel[T]):
                 start_method=start_method,
             )
             for batch in pool.ordered_map(iter_batch(images, batch_size), **params):
-                yield from self._post_process_onnx_output(batch)
+                yield from self._post_process_onnx_output(batch)  # type: ignore
 
 
 class ImageEmbeddingWorker(EmbeddingWorker[T]):

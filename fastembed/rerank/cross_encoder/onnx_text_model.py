@@ -43,12 +43,13 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
             device_id=device_id,
         )
         self.tokenizer, _ = load_tokenizer(model_dir=model_dir)
+        assert self.tokenizer is not None
 
     def tokenize(self, pairs: list[tuple[str, str]], **_: Any) -> list[Encoding]:
-        return self.tokenizer.encode_batch(pairs)
+        return self.tokenizer.encode_batch(pairs)  # type: ignore
 
     def _build_onnx_input(self, tokenized_input: list[Encoding]) -> dict[str, NumpyArray]:
-        input_names: set[str] = {node.name for node in self.model.get_inputs()}
+        input_names: set[str] = {node.name for node in self.model.get_inputs()}  # type: ignore
         inputs: dict[str, NumpyArray] = {
             "input_ids": np.array([enc.ids for enc in tokenized_input], dtype=np.int64),
         }
@@ -70,7 +71,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         tokenized_input = self.tokenize(pairs, **kwargs)
         inputs = self._build_onnx_input(tokenized_input)
         onnx_input = self._preprocess_onnx_input(inputs, **kwargs)
-        outputs = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)
+        outputs = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)  # type: ignore
         relevant_output = outputs[0]
         scores: NumpyArray = relevant_output[:, 0]
         return OnnxOutputContext(model_output=scores)
@@ -98,7 +99,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         is_small = False
 
         if isinstance(pairs, tuple):
-            pairs = [pairs]  # type: ignore
+            pairs = [pairs]
             is_small = True
 
         if isinstance(pairs, list):
@@ -130,7 +131,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
                 start_method=start_method,
             )
             for batch in pool.ordered_map(iter_batch(pairs, batch_size), **params):
-                yield from self._post_process_onnx_output(batch)
+                yield from self._post_process_onnx_output(batch)  # type: ignore
 
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[float]:
         raise NotImplementedError("Subclasses must implement this method")

@@ -3,7 +3,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Generic, Iterable, Optional, Sequence, Type, TypeVar
 
+import numpy as np
 import onnxruntime as ort
+
+from numpy.typing import NDArray
 
 from fastembed.common.types import OnnxProvider, NumpyArray
 from fastembed.parallel_processor import Worker
@@ -15,8 +18,8 @@ T = TypeVar("T")
 @dataclass
 class OnnxOutputContext:
     model_output: NumpyArray
-    attention_mask: Optional[NumpyArray] = None
-    input_ids: Optional[NumpyArray] = None
+    attention_mask: Optional[NDArray[np.int64]] = None
+    input_ids: Optional[NDArray[np.int64]] = None
 
 
 class OnnxModel(Generic[T]):
@@ -90,6 +93,7 @@ class OnnxModel(Generic[T]):
             str(model_path), providers=onnx_providers, sess_options=so
         )
         if "CUDAExecutionProvider" in requested_provider_names:
+            assert self.model is not None
             current_providers = self.model.get_providers()
             if "CUDAExecutionProvider" not in current_providers:
                 warnings.warn(

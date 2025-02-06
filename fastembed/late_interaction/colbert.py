@@ -58,7 +58,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
             )
 
         for i, token_sequence in enumerate(output.input_ids):
-            for j, token_id in enumerate(token_sequence):
+            for j, token_id in enumerate(token_sequence):  # type: ignore
                 if token_id in self.skip_list or token_id == self.pad_token_id:
                     output.attention_mask[i, j] = 0
 
@@ -88,6 +88,8 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
         )
 
     def _tokenize_query(self, query: str) -> list[Encoding]:
+        assert self.tokenizer is not None
+
         encoded = self.tokenizer.encode_batch([query])
         # colbert authors recommend to pad queries with [MASK] tokens for query augmentation to improve performance
         if len(encoded[0].ids) < self.MIN_QUERY_LENGTH:
@@ -107,6 +109,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
         return encoded
 
     def _tokenize_documents(self, documents: list[str]) -> list[Encoding]:
+        assert self.tokenizer is not None
         encoded = self.tokenizer.encode_batch(documents)
         return encoded
 
@@ -163,12 +166,11 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
         self.cuda = cuda
 
         # This device_id will be used if we need to load model in current process
+        self.device_id: Optional[int] = None
         if device_id is not None:
             self.device_id = device_id
         elif self.device_ids is not None:
             self.device_id = self.device_ids[0]
-        else:
-            self.device_id = None
 
         self.model_description = self._get_model_description(model_name)
         self.cache_dir = str(define_cache_dir(cache_dir))
@@ -181,7 +183,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
         )
         self.mask_token_id: Optional[int] = None
         self.pad_token_id: Optional[int] = None
-        self.skip_list: set[str] = set()
+        self.skip_list: set[int] = set()
 
         if not self.lazy_load:
             self.load_onnx_model()
@@ -195,6 +197,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
             cuda=self.cuda,
             device_id=self.device_id,
         )
+        assert self.tokenizer is not None
         self.mask_token_id = self.special_token_to_id[self.MASK_TOKEN]
         self.pad_token_id = self.tokenizer.padding["pad_id"]
         self.skip_list = {

@@ -140,7 +140,7 @@ class ParallelWorkerPool:
             self.processes.append(process)
 
     def ordered_map(self, stream: Iterable[Any], *args: Any, **kwargs: Any) -> Iterable[Any]:
-        buffer: defaultdict[int, Any] = defaultdict(Any)
+        buffer: defaultdict[int, Any] = defaultdict(Any)  # type: ignore
         next_expected = 0
 
         for idx, item in self.semi_ordered_map(stream, *args, **kwargs):

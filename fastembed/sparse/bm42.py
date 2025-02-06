@@ -102,12 +102,11 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         self.cuda = cuda
 
         # This device_id will be used if we need to load model in current process
+        self.device_id: Optional[int] = None
         if device_id is not None:
             self.device_id = device_id
         elif self.device_ids is not None:
             self.device_id = self.device_ids[0]
-        else:
-            self.device_id = None
 
         self.model_description = self._get_model_description(model_name)
         self.cache_dir = str(define_cache_dir(cache_dir))
@@ -140,6 +139,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             cuda=self.cuda,
             device_id=self.device_id,
         )
+        assert self.tokenizer is not None
         for token, idx in self.tokenizer.get_vocab().items():
             self.invert_vocab[idx] = token
         self.special_tokens = set(self.special_token_to_id.keys())
@@ -178,7 +178,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         acc: str = ""
         acc_idx: list[int] = []
 
-        continuing_subword_prefix = self.tokenizer.model.continuing_subword_prefix
+        continuing_subword_prefix = self.tokenizer.model.continuing_subword_prefix  # type: ignore
         continuing_subword_prefix_len = len(continuing_subword_prefix)
 
         for idx, token in bpe_tokens:
@@ -222,7 +222,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         if output.input_ids is None:
             raise ValueError("input_ids must be provided for document post-processing")
 
-        token_ids_batch = output.input_ids
+        token_ids_batch = output.input_ids.astype(int)
 
         # attention_value shape: (batch_size, num_heads, num_tokens, num_tokens)
         pooled_attention = np.mean(output.model_output[:, :, 0], axis=1) * output.attention_mask
@@ -325,7 +325,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             self.load_onnx_model()
 
         for text in query:
-            encoded = self.tokenizer.encode(text)
+            encoded = self.tokenizer.encode(text)  # type: ignore
             document_tokens_with_ids = enumerate(encoded.tokens)
             reconstructed = self._reconstruct_bpe(document_tokens_with_ids)
             filtered = self._filter_pair_tokens(reconstructed)
