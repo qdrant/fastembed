@@ -79,8 +79,7 @@ class ImageEmbedding(ImageEmbeddingBase):
         **kwargs: Any,
     ) -> Iterable[NumpyArray]:
         """
-        Encode a list of documents into list of embeddings.
-        We use mean pooling with attention so that the model can handle variable-length inputs.
+        Encode a list of images into list of embeddings.
 
         Args:
             images: Iterator of image paths or single image path to embed
