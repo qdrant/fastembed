@@ -41,8 +41,8 @@ CANONICAL_QUERY_VALUES = {
 queries = ["hello world", "flag embedding"]
 images = [
     TEST_MISC_DIR / "image.jpeg",
-    str(TEST_MISC_DIR / "small_image.jpeg"),
-    Image.open((TEST_MISC_DIR / "small_image.jpeg")),
+    str(TEST_MISC_DIR / "image.jpeg"),
+    Image.open((TEST_MISC_DIR / "image.jpeg")),
 ]
 
 
