@@ -34,7 +34,6 @@ supported_colpali_models = [
 
 
 class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.ndarray]):
-    DOCUMENT_MARKER_TOKEN_ID = 2
     QUERY_PREFIX = "Query: "
     BOS_TOKEN = "<s>"
     PAD_TOKEN = "<pad>"
@@ -42,7 +41,8 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
     IMAGE_PLACEHOLDER_SIZE = (3, 448, 448)
     EMPTY_TEXT_PLACEHOLDER = np.array(
         [257152] * 1024 + [2, 50721, 573, 2416, 235265, 108]
-    )  # This is a tokenization of '<image>' * 1024 + '<bos>Describe the image.\n' line which is used as placeholder while processing just image
+    )  # This is a tokenization of '<image>' * 1024 + '<bos>Describe the image.\n' line which is used as placeholder
+    # while processing an image
     EVEN_ATTENTION_MASK = np.array([1] * 1030)
 
     def __init__(
