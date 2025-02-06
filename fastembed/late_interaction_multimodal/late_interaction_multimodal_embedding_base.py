@@ -1,9 +1,9 @@
 from typing import Iterable, Optional, Union
 
-import numpy as np
 
 from fastembed.common import ImageInput
 from fastembed.common.model_management import ModelManagement
+from fastembed.common.types import NumpyArray
 
 
 class LateInteractionMultimodalEmbeddingBase(ModelManagement):
@@ -25,7 +25,7 @@ class LateInteractionMultimodalEmbeddingBase(ModelManagement):
         batch_size: int = 256,
         parallel: Optional[int] = None,
         **kwargs,
-    ) -> Iterable[np.ndarray]:
+    ) -> Iterable[NumpyArray]:
         """
         Embeds a list of documents into a list of embeddings.
 
@@ -39,7 +39,7 @@ class LateInteractionMultimodalEmbeddingBase(ModelManagement):
             **kwargs: Additional keyword argument to pass to the embed method.
 
         Yields:
-            Iterable[np.ndarray]: The embeddings.
+            Iterable[NumpyArray]: The embeddings.
         """
         raise NotImplementedError()
 
@@ -49,7 +49,7 @@ class LateInteractionMultimodalEmbeddingBase(ModelManagement):
         batch_size: int = 16,
         parallel: Optional[int] = None,
         **kwargs,
-    ) -> Iterable[np.ndarray]:
+    ) -> Iterable[NumpyArray]:
         """
         Encode a list of images into list of embeddings.
         Args:

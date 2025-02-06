@@ -5,6 +5,7 @@ from tokenizers import Encoding
 
 from fastembed.common import OnnxProvider, ImageInput
 from fastembed.common.onnx_model import OnnxOutputContext
+from fastembed.common.types import NumpyArray
 from fastembed.common.utils import define_cache_dir
 from fastembed.late_interaction_multimodal.late_interaction_multimodal_embedding_base import (
     LateInteractionMultimodalEmbeddingBase,
@@ -96,7 +97,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
             self.device_id = None
 
         self.model_description = self._get_model_description(model_name)
-        self.cache_dir = define_cache_dir(cache_dir)
+        self.cache_dir = str(define_cache_dir(cache_dir))
 
         self._model_dir = self.download_model(
             self.model_description,
@@ -132,7 +133,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
     def _post_process_onnx_image_output(
         self,
         output: OnnxOutputContext,
-    ) -> Iterable[np.ndarray]:
+    ) -> Iterable[NumpyArray]:
         """
         Post-process the ONNX model output to convert it into a usable format.
 
@@ -140,7 +141,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
             output (OnnxOutputContext): The raw output from the ONNX model.
 
         Returns:
-            Iterable[np.ndarray]: Post-processed output as NumPy arrays.
+            Iterable[NumpyArray]: Post-processed output as NumPy arrays.
         """
         return output.model_output.reshape(
             output.model_output.shape[0], -1, self.model_description["dim"]
@@ -149,7 +150,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
     def _post_process_onnx_text_output(
         self,
         output: OnnxOutputContext,
-    ) -> Iterable[np.ndarray]:
+    ) -> Iterable[NumpyArray]:
         """
         Post-process the ONNX model output to convert it into a usable format.
 
@@ -157,7 +158,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
             output (OnnxOutputContext): The raw output from the ONNX model.
 
         Returns:
-            Iterable[np.ndarray]: Post-processed output as NumPy arrays.
+            Iterable[NumpyArray]: Post-processed output as NumPy arrays.
         """
         return output.model_output.astype(np.float32)
 
@@ -172,30 +173,32 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
         return encoded
 
     def _preprocess_onnx_text_input(
-        self, onnx_input: dict[str, np.ndarray], **kwargs
-    ) -> dict[str, np.ndarray]:
+        self, onnx_input: dict[str, NumpyArray], **kwargs
+    ) -> dict[str, NumpyArray]:
         onnx_input["input_ids"] = np.array(
             [
                 self.QUERY_MARKER_TOKEN_ID + input_ids[2:].tolist()
                 for input_ids in onnx_input["input_ids"]
             ]
         )
-        empty_image_placeholder = np.zeros(self.IMAGE_PLACEHOLDER_SIZE, dtype=np.float32)
+        empty_image_placeholder: NumpyArray = np.zeros(
+            self.IMAGE_PLACEHOLDER_SIZE, dtype=np.float32
+        )
         onnx_input["pixel_values"] = np.array(
-            [empty_image_placeholder for _ in onnx_input["input_ids"]]
+            [empty_image_placeholder for _ in onnx_input["input_ids"]],
         )
         return onnx_input
 
     def _preprocess_onnx_image_input(
         self, onnx_input: dict[str, np.ndarray], **kwargs
-    ) -> dict[str, np.ndarray]:
+    ) -> dict[str, NumpyArray]:
         """
         Add placeholders for text input when processing image data for ONNX.
         Args:
-            onnx_input (Dict[str, np.ndarray]): Preprocessed image inputs.
+            onnx_input (Dict[str, NumpyArray]): Preprocessed image inputs.
             **kwargs: Additional arguments.
         Returns:
-            Dict[str, np.ndarray]: ONNX input with text placeholders.
+            Dict[str, NumpyArray]: ONNX input with text placeholders.
         """
 
         onnx_input["input_ids"] = np.array(
@@ -212,7 +215,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
         batch_size: int = 256,
         parallel: Optional[int] = None,
         **kwargs,
-    ) -> Iterable[np.ndarray]:
+    ) -> Iterable[NumpyArray]:
         """
         Encode a list of documents into list of embeddings.
 
@@ -241,11 +244,11 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
 
     def embed_image(
         self,
-        images: ImageInput,
+        images: Union[ImageInput, Iterable[ImageInput]],
         batch_size: int = 16,
         parallel: Optional[int] = None,
         **kwargs,
-    ) -> Iterable[np.ndarray]:
+    ) -> Iterable[NumpyArray]:
         """
         Encode a list of images into list of embeddings.
 
