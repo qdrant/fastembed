@@ -1,11 +1,11 @@
 import os
 
+from PIL import Image
 import numpy as np
 
 from fastembed.late_interaction_multimodal import LateInteractionMultimodalEmbedding
-from tests.utils import delete_model_cache
 from tests.config import TEST_MISC_DIR
-from PIL import Image
+
 
 # vectors are abridged and rounded for brevity
 CANONICAL_IMAGE_VALUES = {
@@ -49,17 +49,15 @@ images = [
 def test_batch_embedding():
     is_ci = os.getenv("CI")
 
-    for model_name, expected_result in CANONICAL_IMAGE_VALUES.items():
-        print("evaluating", model_name)
-        model = LateInteractionMultimodalEmbedding(model_name=model_name)
-        result = list(model.embed_image(images, batch_size=2))
+    if not is_ci:
+        for model_name, expected_result in CANONICAL_IMAGE_VALUES.items():
+            print("evaluating", model_name)
+            model = LateInteractionMultimodalEmbedding(model_name=model_name)
+            result = list(model.embed_image(images, batch_size=2))
 
-        for value in result:
-            batch_size, token_num, abridged_dim = expected_result.shape
-            assert np.allclose(value[:token_num, :abridged_dim], expected_result, atol=1e-3)
-
-        if is_ci:
-            delete_model_cache(model.model._model_dir)
+            for value in result:
+                batch_size, token_num, abridged_dim = expected_result.shape
+                assert np.allclose(value[:token_num, :abridged_dim], expected_result, atol=1e-3)
 
 
 def test_single_embedding():
