@@ -9,7 +9,7 @@ from PIL import Image
 
 # vectors are abridged and rounded for brevity
 CANONICAL_IMAGE_VALUES = {
-    "AndrewOgn/colpali-v1.3-merged-onnx": np.array(
+    "Qdrant/colpali-v1.3-fp16": np.array(
         [
             [
                 [-0.0345, -0.022, 0.0567, -0.0518, -0.0782, 0.1714, -0.1738],
@@ -25,7 +25,7 @@ CANONICAL_IMAGE_VALUES = {
 }
 
 CANONICAL_QUERY_VALUES = {
-    "AndrewOgn/colpali-v1.3-merged-onnx": np.array(
+    "Qdrant/colpali-v1.3-fp16": np.array(
         [
             [-0.0023, 0.1477, 0.1594, 0.046, -0.0196, 0.0554, 0.1567],
             [-0.0139, -0.0057, 0.0932, 0.0052, -0.0678, 0.0131, 0.0537],
@@ -48,12 +48,11 @@ images = [
 
 def test_batch_embedding():
     is_ci = os.getenv("CI")
-    docs_to_embed = images
 
     for model_name, expected_result in CANONICAL_IMAGE_VALUES.items():
         print("evaluating", model_name)
         model = LateInteractionMultimodalEmbedding(model_name=model_name)
-        result = list(model.embed_image(docs_to_embed, batch_size=2))
+        result = list(model.embed_image(images, batch_size=2))
 
         for value in result:
             batch_size, token_num, abridged_dim = expected_result.shape
@@ -66,12 +65,10 @@ def test_batch_embedding():
 def test_single_embedding():
     is_ci = os.getenv("CI")
     if not is_ci:
-        docs_to_embed = images
-
         for model_name, expected_result in CANONICAL_IMAGE_VALUES.items():
             print("evaluating", model_name)
             model = LateInteractionMultimodalEmbedding(model_name=model_name)
-            result = next(iter(model.embed_images(docs_to_embed, batch_size=6)))
+            result = next(iter(model.embed_image(images, batch_size=6)))
             batch_size, token_num, abridged_dim = expected_result.shape
             assert np.allclose(result[:token_num, :abridged_dim], expected_result, atol=2e-3)
 

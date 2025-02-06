@@ -17,13 +17,13 @@ from fastembed.late_interaction_multimodal.onnx_multimodal_model import (
 
 supported_colpali_models = [
     {
-        "model": "AndrewOgn/colpali-v1.3-merged-onnx",
+        "model": "Qdrant/colpali-v1.3-fp16",
         "dim": 128,
-        "description": "Text embeddings, Bimodal (text/image), Aligned to image latent space, fp16 quantized, 2024.",
+        "description": "Text embeddings, Multimodal (text&image), English, 50 tokens query length truncation, 2024.",
         "license": "mit",
         "size_in_GB": 6.5,
         "sources": {
-            "hf": "AndrewOgn/colpali-v1.3-merged-onnx",
+            "hf": "Qdrant/colpali-v1.3-fp16",
         },
         "additional_files": [
             "model.onnx_data",

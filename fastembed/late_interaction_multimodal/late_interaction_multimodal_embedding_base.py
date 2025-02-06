@@ -45,7 +45,7 @@ class LateInteractionMultimodalEmbeddingBase(ModelManagement):
 
     def embed_image(
         self,
-        images: ImageInput,
+        images: Union[ImageInput, Iterable[ImageInput]],
         batch_size: int = 16,
         parallel: Optional[int] = None,
         **kwargs,
