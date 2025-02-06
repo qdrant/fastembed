@@ -139,8 +139,8 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             cuda=self.cuda,
             device_id=self.device_id,
         )
-        assert self.tokenizer is not None
-        for token, idx in self.tokenizer.get_vocab().items():
+
+        for token, idx in self.tokenizer.get_vocab().items():  # type: ignore[union-attr]
             self.invert_vocab[idx] = token
         self.special_tokens = set(self.special_token_to_id.keys())
         self.special_tokens_ids = set(self.special_token_to_id.values())
@@ -178,7 +178,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         acc: str = ""
         acc_idx: list[int] = []
 
-        continuing_subword_prefix = self.tokenizer.model.continuing_subword_prefix  # type: ignore
+        continuing_subword_prefix = self.tokenizer.model.continuing_subword_prefix  # type: ignore[union-attr]
         continuing_subword_prefix_len = len(continuing_subword_prefix)
 
         for idx, token in bpe_tokens:
@@ -325,7 +325,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             self.load_onnx_model()
 
         for text in query:
-            encoded = self.tokenizer.encode(text)  # type: ignore
+            encoded = self.tokenizer.encode(text)  # type: ignore[union-attr]
             document_tokens_with_ids = enumerate(encoded.tokens)
             reconstructed = self._reconstruct_bpe(document_tokens_with_ids)
             filtered = self._filter_pair_tokens(reconstructed)

@@ -1,8 +1,7 @@
 from typing import Any, Iterable, Optional, Sequence, Type, Union
 
-import numpy as np
-
 from fastembed.common import OnnxProvider, ImageInput
+from fastembed.common.types import NumpyArray
 from fastembed.late_interaction_multimodal.colpali import ColPali
 
 from fastembed.late_interaction_multimodal.late_interaction_multimodal_embedding_base import (
@@ -41,7 +40,7 @@ class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase)
                 ]
                 ```
         """
-        result = []
+        result: list[dict[str, Any]] = []
         for embedding in cls.EMBEDDINGS_REGISTRY:
             result.extend(embedding.list_supported_models())
         return result
@@ -55,7 +54,7 @@ class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase)
         cuda: bool = False,
         device_ids: Optional[list[int]] = None,
         lazy_load: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
@@ -83,8 +82,8 @@ class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase)
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
         parallel: Optional[int] = None,
-        **kwargs,
-    ) -> Iterable[np.ndarray]:
+        **kwargs: Any,
+    ) -> Iterable[NumpyArray]:
         """
         Encode a list of documents into list of embeddings.
 
@@ -106,8 +105,8 @@ class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase)
         images: Union[ImageInput, Iterable[ImageInput]],
         batch_size: int = 16,
         parallel: Optional[int] = None,
-        **kwargs,
-    ) -> Iterable[np.ndarray]:
+        **kwargs: Any,
+    ) -> Iterable[NumpyArray]:
         """
         Encode a list of images into list of embeddings.
 
