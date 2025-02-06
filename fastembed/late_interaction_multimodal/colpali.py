@@ -168,7 +168,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
             query += "\n"
 
             texts_query.append(query)
-        encoded = self.tokenizer.encode_batch(texts_query)
+        encoded = self.tokenizer.encode_batch(texts_query)  # type: ignore[union-attr]
         return encoded
 
     def _preprocess_onnx_text_input(

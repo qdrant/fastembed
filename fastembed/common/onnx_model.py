@@ -7,6 +7,7 @@ import numpy as np
 import onnxruntime as ort
 
 from numpy.typing import NDArray
+from tokenizers import Tokenizer
 
 from fastembed.common.types import OnnxProvider, NumpyArray
 from fastembed.parallel_processor import Worker
@@ -31,8 +32,8 @@ class OnnxModel(Generic[T]):
         raise NotImplementedError("Subclasses must implement this method")
 
     def __init__(self) -> None:
-        self.model = None
-        self.tokenizer = None
+        self.model: Optional[ort.InferenceSession] = None
+        self.tokenizer: Optional[Tokenizer] = None
 
     def _preprocess_onnx_input(
         self, onnx_input: dict[str, NumpyArray], **kwargs: Any

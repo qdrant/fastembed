@@ -6,13 +6,14 @@ from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
 from PIL import Image
-from tokenizers import Encoding
+from tokenizers import Encoding, Tokenizer
 
 from fastembed.common import OnnxProvider, ImageInput
 from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
 from fastembed.common.preprocessor_utils import load_tokenizer, load_preprocessor
 from fastembed.common.types import NumpyArray
 from fastembed.common.utils import iter_batch
+from fastembed.image.transform.operators import Compose
 from fastembed.parallel_processor import ParallelWorkerPool
 
 
@@ -21,8 +22,8 @@ class OnnxMultimodalModel(OnnxModel[T]):
 
     def __init__(self) -> None:
         super().__init__()
-        self.tokenizer = None
-        self.processor = None
+        self.tokenizer: Optional[Tokenizer] = None
+        self.processor: Optional[Compose] = None
         self.special_token_to_id: dict[str, int] = {}
 
     def _preprocess_onnx_text_input(
@@ -80,7 +81,7 @@ class OnnxMultimodalModel(OnnxModel[T]):
         raise NotImplementedError("Subclasses must implement this method")
 
     def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
-        return self.tokenizer.encode_batch(documents)
+        return self.tokenizer.encode_batch(documents)  # type: ignore[union-attr]
 
     def onnx_embed_text(
         self,
@@ -89,8 +90,8 @@ class OnnxMultimodalModel(OnnxModel[T]):
     ) -> OnnxOutputContext:
         encoded = self.tokenize(documents, **kwargs)
         input_ids = np.array([e.ids for e in encoded])
-        attention_mask = np.array([e.attention_mask for e in encoded])
-        input_names = {node.name for node in self.model.get_inputs()}
+        attention_mask = np.array([e.attention_mask for e in encoded])  # type: ignore[union-attr]
+        input_names = {node.name for node in self.model.get_inputs()}  # type: ignore[union-attr]
         onnx_input: dict[str, NumpyArray] = {
             "input_ids": np.array(input_ids, dtype=np.int64),
         }
@@ -102,7 +103,7 @@ class OnnxMultimodalModel(OnnxModel[T]):
             )
 
         onnx_input = self._preprocess_onnx_text_input(onnx_input, **kwargs)
-        model_output = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)
+        model_output = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)  # type: ignore[union-attr]
         return OnnxOutputContext(
             model_output=model_output[0],
             attention_mask=onnx_input.get("attention_mask", attention_mask),
@@ -159,7 +160,7 @@ class OnnxMultimodalModel(OnnxModel[T]):
                 yield from self._post_process_onnx_text_output(batch)  # type: ignore
 
     def _build_onnx_image_input(self, encoded: NumpyArray) -> dict[str, NumpyArray]:
-        input_name = self.model.get_inputs()[0].name
+        input_name = self.model.get_inputs()[0].name  # type: ignore[union-attr]
         return {input_name: encoded}
 
     def onnx_embed_image(self, images: list[ImageInput], **kwargs: Any) -> OnnxOutputContext:
@@ -172,7 +173,7 @@ class OnnxMultimodalModel(OnnxModel[T]):
             encoded = np.array(self.processor(image_files))
         onnx_input = self._build_onnx_image_input(encoded)
         onnx_input = self._preprocess_onnx_image_input(onnx_input, **kwargs)
-        model_output = self.model.run(None, onnx_input)
+        model_output = self.model.run(None, onnx_input)  # type: ignore[union-attr]
         embeddings = model_output[0].reshape(len(images), -1)
         return OnnxOutputContext(model_output=embeddings)
 
@@ -227,6 +228,23 @@ class OnnxMultimodalModel(OnnxModel[T]):
 
 
 class TextEmbeddingWorker(EmbeddingWorker[T]):
+    def __init__(
+        self,
+        model_name: str,
+        cache_dir: str,
+        **kwargs: Any,
+    ):
+        self.model: OnnxMultimodalModel
+        super().__init__(model_name, cache_dir, **kwargs)
+
+    def init_embedding(
+        self,
+        model_name: str,
+        cache_dir: str,
+        **kwargs: Any,
+    ) -> OnnxMultimodalModel:
+        raise NotImplementedError()
+
     def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, Any]]:
         for idx, batch in items:
             onnx_output = self.model.onnx_embed_text(batch)
@@ -234,6 +252,23 @@ class TextEmbeddingWorker(EmbeddingWorker[T]):
 
 
 class ImageEmbeddingWorker(EmbeddingWorker[T]):
+    def __init__(
+        self,
+        model_name: str,
+        cache_dir: str,
+        **kwargs: Any,
+    ):
+        self.model: OnnxMultimodalModel
+        super().__init__(model_name, cache_dir, **kwargs)
+
+    def init_embedding(
+        self,
+        model_name: str,
+        cache_dir: str,
+        **kwargs: Any,
+    ) -> OnnxMultimodalModel:
+        raise NotImplementedError()
+
     def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, Any]]:
         for idx, batch in items:
             embeddings = self.model.onnx_embed_image(batch)
