@@ -125,7 +125,7 @@ class OnnxImageModel(OnnxModel[T]):
                 start_method=start_method,
             )
             for batch in pool.ordered_map(iter_batch(images, batch_size), **params):
-                yield from self._post_process_onnx_output(batch)
+                yield from self._post_process_onnx_output(batch)  # type: ignore
 
 
 class ImageEmbeddingWorker(EmbeddingWorker[T]):
