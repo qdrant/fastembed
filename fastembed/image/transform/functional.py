@@ -1,4 +1,4 @@
-from typing import Sized, Union
+from typing import Union
 
 import numpy as np
 from PIL import Image
@@ -72,25 +72,23 @@ def normalize(
     if not np.issubdtype(image.dtype, np.floating):
         image = image.astype(np.float32)
 
-    if isinstance(mean, Sized):
-        mean_list: list[float] = [float(m) for m in mean]
-        if len(mean_list) != num_channels:
-            raise ValueError(
-                f"mean must have {num_channels} elements if it is an iterable, got {len(mean)}"
-            )
-    else:
-        mean_list = [float(mean)] * num_channels
-    mean_arr = np.array(mean_list, dtype=np.float32)
+    mean = mean if isinstance(mean, list) else [mean] * num_channels
 
-    if isinstance(std, Sized):
-        std_list: list[float] = [float(s) for s in std]
-        if len(std_list) != num_channels:
-            raise ValueError(
-                f"std must have {num_channels} elements if it is an iterable, got {len(std)}"
-            )
-    else:
-        std_list = [float(std)] * num_channels
-    std_arr = np.array(std_list, dtype=np.float32)
+    if len(mean) != num_channels:
+        raise ValueError(
+            f"mean must have the same number of channels as the image, image has {num_channels} channels, got "
+            f"{len(mean)}"
+        )
+
+    mean_arr = np.array(mean, dtype=np.float32)
+
+    std = std if isinstance(std, list) else [std] * num_channels
+    if len(std) != num_channels:
+        raise ValueError(
+            f"std must have the same number of channels as the image, image has {num_channels} channels, got {len(std)}"
+        )
+
+    std_arr = np.array(std, dtype=np.float32)
 
     image = ((image.T - mean_arr) / std_arr).T
     return image

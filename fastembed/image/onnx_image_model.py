@@ -2,8 +2,9 @@ import contextlib
 import os
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Iterable, Optional, Sequence, Type, Union, cast
+from typing import Any, Iterable, Optional, Sequence, Type, Union
 
+import numpy as np
 from PIL import Image
 
 from fastembed.image.transform.operators import Compose
@@ -60,7 +61,8 @@ class OnnxImageModel(OnnxModel[T]):
         raise NotImplementedError("Subclasses must implement this method")
 
     def _build_onnx_input(self, encoded: NumpyArray) -> dict[str, NumpyArray]:
-        return {node.name: encoded for node in self.model.get_inputs()}  # type: ignore
+        input_name = self.model.get_inputs()[0].name
+        return {input_name: encoded}
 
     def onnx_embed(self, images: list[ImageInput], **kwargs: Any) -> OnnxOutputContext:
         with contextlib.ExitStack():
@@ -69,10 +71,10 @@ class OnnxImageModel(OnnxModel[T]):
                 for image in images
             ]
             assert self.processor is not None, "Processor is not initialized"
-            encoded = self.processor(image_files)
-        onnx_input = self._build_onnx_input(cast(NumpyArray, encoded))
+            encoded = np.array(self.processor(image_files))
+        onnx_input = self._build_onnx_input(encoded)
         onnx_input = self._preprocess_onnx_input(onnx_input)
-        model_output = self.model.run(None, onnx_input)  # type: ignore
+        model_output = self.model.run(None, onnx_input)
         embeddings = model_output[0].reshape(len(images), -1)
         return OnnxOutputContext(model_output=embeddings)
 
