@@ -1,8 +1,8 @@
 from typing import Any, Union, Optional
 
-import numpy as np
 from PIL import Image
 
+from fastembed.common.types import NumpyArray
 from fastembed.image.transform.functional import (
     center_crop,
     convert_to_rgb,
@@ -15,7 +15,7 @@ from fastembed.image.transform.functional import (
 
 
 class Transform:
-    def __call__(self, images: list) -> Union[list[Image.Image], list[np.ndarray]]:
+    def __call__(self, images: list[Any]) -> Union[list[Image.Image], list[NumpyArray]]:
         raise NotImplementedError("Subclasses must implement this method")
 
 
@@ -28,7 +28,7 @@ class CenterCrop(Transform):
     def __init__(self, size: tuple[int, int]):
         self.size = size
 
-    def __call__(self, images: list[Image.Image]) -> list[np.ndarray]:
+    def __call__(self, images: list[Image.Image]) -> list[NumpyArray]:
         return [center_crop(image=image, size=self.size) for image in images]
 
 
@@ -37,7 +37,7 @@ class Normalize(Transform):
         self.mean = mean
         self.std = std
 
-    def __call__(self, images: list[np.ndarray]) -> list[np.ndarray]:
+    def __call__(self, images: list[NumpyArray]) -> list[NumpyArray]:
         return [normalize(image, mean=self.mean, std=self.std) for image in images]
 
 
@@ -58,12 +58,12 @@ class Rescale(Transform):
     def __init__(self, scale: float = 1 / 255):
         self.scale = scale
 
-    def __call__(self, images: list[np.ndarray]) -> list[np.ndarray]:
+    def __call__(self, images: list[NumpyArray]) -> list[NumpyArray]:
         return [rescale(image, scale=self.scale) for image in images]
 
 
 class PILtoNDarray(Transform):
-    def __call__(self, images: list[Union[Image.Image, np.ndarray]]) -> list[np.ndarray]:
+    def __call__(self, images: list[Union[Image.Image, NumpyArray]]) -> list[NumpyArray]:
         return [pil2ndarray(image) for image in images]
 
 
@@ -71,7 +71,7 @@ class PadtoSquare(Transform):
     def __init__(
         self,
         size: int,
-        fill_color: Optional[Union[str, int, tuple[int, ...]]] = None,
+        fill_color: Union[str, int, tuple[int, ...]],
     ):
         self.size = size
         self.fill_color = fill_color
@@ -87,8 +87,8 @@ class Compose:
         self.transforms = transforms
 
     def __call__(
-        self, images: Union[list[Image.Image], list[np.ndarray]]
-    ) -> Union[list[np.ndarray], list[Image.Image]]:
+        self, images: Union[list[Image.Image], list[NumpyArray]]
+    ) -> Union[list[NumpyArray], list[Image.Image]]:
         for transform in self.transforms:
             images = transform(images)
         return images
@@ -122,7 +122,7 @@ class Compose:
         Returns:
             Compose: Image processor.
         """
-        transforms = []
+        transforms: list[Transform] = []
         cls._get_convert_to_rgb(transforms, config)
         cls._get_resize(transforms, config)
         cls._get_pad2square(transforms, config)
@@ -204,13 +204,14 @@ class Compose:
         mode = config.get("image_processor_type", "CLIPImageProcessor")
         if mode == "CLIPImageProcessor":
             if config.get("do_center_crop", False):
-                crop_size = config["crop_size"]
-                if isinstance(crop_size, int):
-                    crop_size = (crop_size, crop_size)
-                elif isinstance(crop_size, dict):
-                    crop_size = (crop_size["height"], crop_size["width"])
+                crop_size_raw = config["crop_size"]
+                crop_size: tuple[int, int]
+                if isinstance(crop_size_raw, int):
+                    crop_size = (crop_size_raw, crop_size_raw)
+                elif isinstance(crop_size_raw, dict):
+                    crop_size = (crop_size_raw["height"], crop_size_raw["width"])
                 else:
-                    raise ValueError(f"Invalid crop size: {crop_size}")
+                    raise ValueError(f"Invalid crop size: {crop_size_raw}")
                 transforms.append(CenterCrop(size=crop_size))
         elif mode == "ConvNextFeatureExtractor":
             pass

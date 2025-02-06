@@ -1,6 +1,8 @@
-from typing import Any, Iterable, Optional, Sequence, Type
+from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
+
+from fastembed.common.types import NumpyArray
 from fastembed.common import ImageInput, OnnxProvider
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.utils import define_cache_dir, normalize
@@ -66,7 +68,7 @@ supported_onnx_models = [
 ]
 
 
-class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
+class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[NumpyArray]):
     def __init__(
         self,
         model_name: str,
@@ -111,15 +113,14 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
         self.cuda = cuda
 
         # This device_id will be used if we need to load model in current process
+        self.device_id: Optional[int] = None
         if device_id is not None:
             self.device_id = device_id
         elif self.device_ids is not None:
             self.device_id = self.device_ids[0]
-        else:
-            self.device_id = None
 
         self.model_description = self._get_model_description(model_name)
-        self.cache_dir = define_cache_dir(cache_dir)
+        self.cache_dir = str(define_cache_dir(cache_dir))
         self._model_dir = self.download_model(
             self.model_description,
             self.cache_dir,
@@ -155,11 +156,11 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
 
     def embed(
         self,
-        images: ImageInput,
+        images: Union[ImageInput, Iterable[ImageInput]],
         batch_size: int = 16,
         parallel: Optional[int] = None,
         **kwargs: Any,
-    ) -> Iterable[np.ndarray]:
+    ) -> Iterable[NumpyArray]:
         """
         Encode a list of images into list of embeddings.
         We use mean pooling with attention so that the model can handle variable-length inputs.
@@ -189,23 +190,23 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[np.ndarray]):
         )
 
     @classmethod
-    def _get_worker_class(cls) -> Type["ImageEmbeddingWorker"]:
+    def _get_worker_class(cls) -> Type["ImageEmbeddingWorker[NumpyArray]"]:
         return OnnxImageEmbeddingWorker
 
     def _preprocess_onnx_input(
-        self, onnx_input: dict[str, np.ndarray], **kwargs: Any
-    ) -> dict[str, np.ndarray]:
+        self, onnx_input: dict[str, NumpyArray], **kwargs: Any
+    ) -> dict[str, NumpyArray]:
         """
         Preprocess the onnx input.
         """
 
         return onnx_input
 
-    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
+    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[NumpyArray]:
         return normalize(output.model_output).astype(np.float32)
 
 
-class OnnxImageEmbeddingWorker(ImageEmbeddingWorker):
+class OnnxImageEmbeddingWorker(ImageEmbeddingWorker[NumpyArray]):
     def init_embedding(self, model_name: str, cache_dir: str, **kwargs: Any) -> OnnxImageEmbedding:
         return OnnxImageEmbedding(
             model_name=model_name,

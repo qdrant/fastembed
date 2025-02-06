@@ -2,11 +2,13 @@ import contextlib
 import os
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Iterable, Optional, Sequence, Type
+from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
 from PIL import Image
 
+from fastembed.image.transform.operators import Compose
+from fastembed.common.types import NumpyArray
 from fastembed.common import ImageInput, OnnxProvider
 from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
 from fastembed.common.preprocessor_utils import load_preprocessor
@@ -18,19 +20,19 @@ from fastembed.parallel_processor import ParallelWorkerPool
 
 class OnnxImageModel(OnnxModel[T]):
     @classmethod
-    def _get_worker_class(cls) -> Type["ImageEmbeddingWorker"]:
+    def _get_worker_class(cls) -> Type["ImageEmbeddingWorker[T]"]:
         raise NotImplementedError("Subclasses must implement this method")
 
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[T]:
         raise NotImplementedError("Subclasses must implement this method")
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
-        self.processor = None
+        self.processor: Optional[Compose] = None
 
     def _preprocess_onnx_input(
-        self, onnx_input: dict[str, np.ndarray], **kwargs: Any
-    ) -> dict[str, np.ndarray]:
+        self, onnx_input: dict[str, NumpyArray], **kwargs: Any
+    ) -> dict[str, NumpyArray]:
         """
         Preprocess the onnx input.
         """
@@ -58,8 +60,9 @@ class OnnxImageModel(OnnxModel[T]):
     def load_onnx_model(self) -> None:
         raise NotImplementedError("Subclasses must implement this method")
 
-    def _build_onnx_input(self, encoded: np.ndarray) -> dict[str, np.ndarray]:
-        return {node.name: encoded for node in self.model.get_inputs()}
+    def _build_onnx_input(self, encoded: NumpyArray) -> dict[str, NumpyArray]:
+        input_name = self.model.get_inputs()[0].name
+        return {input_name: encoded}
 
     def onnx_embed(self, images: list[ImageInput], **kwargs: Any) -> OnnxOutputContext:
         with contextlib.ExitStack():
@@ -67,7 +70,8 @@ class OnnxImageModel(OnnxModel[T]):
                 Image.open(image) if not isinstance(image, Image.Image) else image
                 for image in images
             ]
-            encoded = self.processor(image_files)
+            assert self.processor is not None, "Processor is not initialized"
+            encoded = np.array(self.processor(image_files))
         onnx_input = self._build_onnx_input(encoded)
         onnx_input = self._preprocess_onnx_input(onnx_input)
         model_output = self.model.run(None, onnx_input)
@@ -78,7 +82,7 @@ class OnnxImageModel(OnnxModel[T]):
         self,
         model_name: str,
         cache_dir: str,
-        images: ImageInput,
+        images: Union[ImageInput, Iterable[ImageInput]],
         batch_size: int = 256,
         parallel: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
@@ -124,7 +128,7 @@ class OnnxImageModel(OnnxModel[T]):
                 yield from self._post_process_onnx_output(batch)
 
 
-class ImageEmbeddingWorker(EmbeddingWorker):
+class ImageEmbeddingWorker(EmbeddingWorker[T]):
     def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, Any]]:
         for idx, batch in items:
             embeddings = self.model.onnx_embed(batch)

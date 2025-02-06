@@ -1,7 +1,9 @@
-from typing import Sized, Union
+from typing import Union
 
 import numpy as np
 from PIL import Image
+
+from fastembed.common.types import NumpyArray
 
 
 def convert_to_rgb(image: Image.Image) -> Image.Image:
@@ -13,9 +15,9 @@ def convert_to_rgb(image: Image.Image) -> Image.Image:
 
 
 def center_crop(
-    image: Union[Image.Image, np.ndarray],
+    image: Union[Image.Image, NumpyArray],
     size: tuple[int, int],
-) -> np.ndarray:
+) -> NumpyArray:
     if isinstance(image, np.ndarray):
         _, orig_height, orig_width = image.shape
     else:
@@ -40,7 +42,7 @@ def center_crop(
     new_height = max(crop_height, orig_height)
     new_width = max(crop_width, orig_width)
     new_shape = image.shape[:-2] + (new_height, new_width)
-    new_image = np.zeros_like(image, shape=new_shape)
+    new_image = np.zeros_like(image, shape=new_shape, dtype=np.float32)
 
     top_pad = (new_height - orig_height) // 2
     bottom_pad = top_pad + orig_height
@@ -61,37 +63,34 @@ def center_crop(
 
 
 def normalize(
-    image: np.ndarray,
-    mean: Union[float, np.ndarray],
-    std: Union[float, np.ndarray],
-) -> np.ndarray:
-    if not isinstance(image, np.ndarray):
-        raise ValueError("image must be a numpy array")
-
+    image: NumpyArray,
+    mean: Union[float, list[float]],
+    std: Union[float, list[float]],
+) -> NumpyArray:
     num_channels = image.shape[1] if len(image.shape) == 4 else image.shape[0]
 
     if not np.issubdtype(image.dtype, np.floating):
         image = image.astype(np.float32)
 
-    if isinstance(mean, Sized):
-        if len(mean) != num_channels:
-            raise ValueError(
-                f"mean must have {num_channels} elements if it is an iterable, got {len(mean)}"
-            )
-    else:
-        mean = [mean] * num_channels
-    mean = np.array(mean, dtype=image.dtype)
+    mean = mean if isinstance(mean, list) else [mean] * num_channels
 
-    if isinstance(std, Sized):
-        if len(std) != num_channels:
-            raise ValueError(
-                f"std must have {num_channels} elements if it is an iterable, got {len(std)}"
-            )
-    else:
-        std = [std] * num_channels
-    std = np.array(std, dtype=image.dtype)
+    if len(mean) != num_channels:
+        raise ValueError(
+            f"mean must have the same number of channels as the image, image has {num_channels} channels, got "
+            f"{len(mean)}"
+        )
 
-    image = ((image.T - mean) / std).T
+    mean_arr = np.array(mean, dtype=np.float32)
+
+    std = std if isinstance(std, list) else [std] * num_channels
+    if len(std) != num_channels:
+        raise ValueError(
+            f"std must have the same number of channels as the image, image has {num_channels} channels, got {len(std)}"
+        )
+
+    std_arr = np.array(std, dtype=np.float32)
+
+    image = ((image.T - mean_arr) / std_arr).T
     return image
 
 
@@ -114,11 +113,11 @@ def resize(
     return image.resize(new_size, resample)
 
 
-def rescale(image: np.ndarray, scale: float, dtype: type = np.float32) -> np.ndarray:
+def rescale(image: NumpyArray, scale: float, dtype: type = np.float32) -> NumpyArray:
     return (image * scale).astype(dtype)
 
 
-def pil2ndarray(image: Union[Image.Image, np.ndarray]) -> np.ndarray:
+def pil2ndarray(image: Union[Image.Image, NumpyArray]) -> NumpyArray:
     if isinstance(image, Image.Image):
         return np.asarray(image).transpose((2, 0, 1))
     return image

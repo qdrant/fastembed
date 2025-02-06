@@ -1,8 +1,7 @@
 from pathlib import Path
 import sys
 from PIL import Image
-from typing import Any, Iterable, Union
-
+from typing import Any, Union
 import numpy as np
 from numpy.typing import NDArray
 
@@ -13,11 +12,9 @@ else:
 
 
 PathInput: TypeAlias = Union[str, Path]
-PilInput: TypeAlias = Union[Image.Image, Iterable[Image.Image]]
-ImageInput: TypeAlias = Union[PathInput, Iterable[PathInput], PilInput]
+ImageInput: TypeAlias = Union[PathInput, Image.Image]
 
 OnnxProvider: TypeAlias = Union[str, tuple[str, dict[Any, Any]]]
-
 NumpyArray = Union[
     NDArray[np.float32],
     NDArray[np.float16],
