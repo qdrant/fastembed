@@ -19,7 +19,9 @@ class SparseEmbedding:
         }
 
     def as_dict(self) -> dict[int, float]:
-        return {i: v for i, v in zip(self.indices, self.values)}
+        indices = self.indices.astype(int)
+        values = self.values.astype(float)
+        return dict(zip(indices, values))
 
     @classmethod
     def from_dict(cls, data: dict[int, float]) -> "SparseEmbedding":

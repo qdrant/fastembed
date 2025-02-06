@@ -57,7 +57,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
                 "input_ids and attention_mask must be provided for document post-processing"
             )
 
-        for i, token_sequence in enumerate(output.input_ids):
+        for i, token_sequence in enumerate(output.input_ids.astype(int)):
             for j, token_id in enumerate(token_sequence):
                 if token_id in self.skip_list or token_id == self.pad_token_id:
                     output.attention_mask[i, j] = 0
@@ -88,26 +88,26 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
         )
 
     def _tokenize_query(self, query: str) -> list[Encoding]:
-        encoded = self.tokenizer.encode_batch([query])
+        encoded = self.tokenizer.encode_batch([query])  # type: ignore
         # colbert authors recommend to pad queries with [MASK] tokens for query augmentation to improve performance
         if len(encoded[0].ids) < self.MIN_QUERY_LENGTH:
             prev_padding = None
-            if self.tokenizer.padding:
-                prev_padding = self.tokenizer.padding
-            self.tokenizer.enable_padding(
+            if self.tokenizer.padding:  # type: ignore
+                prev_padding = self.tokenizer.padding  # type: ignore
+            self.tokenizer.enable_padding(  # type: ignore
                 pad_token=self.MASK_TOKEN,
                 pad_id=self.mask_token_id,
                 length=self.MIN_QUERY_LENGTH,
             )
-            encoded = self.tokenizer.encode_batch([query])
+            encoded = self.tokenizer.encode_batch([query])  # type: ignore
             if prev_padding is None:
-                self.tokenizer.no_padding()
+                self.tokenizer.no_padding()  # type: ignore
             else:
-                self.tokenizer.enable_padding(**prev_padding)
+                self.tokenizer.enable_padding(**prev_padding)  # type: ignore
         return encoded
 
     def _tokenize_documents(self, documents: list[str]) -> list[Encoding]:
-        encoded = self.tokenizer.encode_batch(documents)
+        encoded = self.tokenizer.encode_batch(documents)  # type: ignore
         return encoded
 
     @classmethod
@@ -163,12 +163,11 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
         self.cuda = cuda
 
         # This device_id will be used if we need to load model in current process
+        self.device_id: Optional[int] = None
         if device_id is not None:
             self.device_id = device_id
         elif self.device_ids is not None:
             self.device_id = self.device_ids[0]
-        else:
-            self.device_id = None
 
         self.model_description = self._get_model_description(model_name)
         self.cache_dir = str(define_cache_dir(cache_dir))
@@ -196,14 +195,14 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
             device_id=self.device_id,
         )
         self.mask_token_id = self.special_token_to_id[self.MASK_TOKEN]
-        self.pad_token_id = self.tokenizer.padding["pad_id"]
+        self.pad_token_id = self.tokenizer.padding["pad_id"]  # type: ignore
         self.skip_list = {
-            self.tokenizer.encode(symbol, add_special_tokens=False).ids[0]
+            self.tokenizer.encode(symbol, add_special_tokens=False).ids[0]  # type: ignore
             for symbol in string.punctuation
         }
-        current_max_length = self.tokenizer.truncation["max_length"]
+        current_max_length = self.tokenizer.truncation["max_length"]  # type: ignore
         # ensure not to overflow after adding document-marker
-        self.tokenizer.enable_truncation(max_length=current_max_length - 1)
+        self.tokenizer.enable_truncation(max_length=current_max_length - 1)  # type: ignore
 
     def embed(
         self,

@@ -23,7 +23,7 @@ class OnnxTextModel(OnnxModel[T]):
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[T]:
         raise NotImplementedError("Subclasses must implement this method")
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.tokenizer = None
         self.special_token_to_id: dict[str, int] = {}
@@ -60,7 +60,7 @@ class OnnxTextModel(OnnxModel[T]):
         raise NotImplementedError("Subclasses must implement this method")
 
     def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
-        return self.tokenizer.encode_batch(documents)
+        return self.tokenizer.encode_batch(documents)  # type: ignore
 
     def onnx_embed(
         self,
@@ -68,9 +68,9 @@ class OnnxTextModel(OnnxModel[T]):
         **kwargs: Any,
     ) -> OnnxOutputContext:
         encoded = self.tokenize(documents, **kwargs)
-        input_ids = np.array([e.ids for e in encoded])
-        attention_mask = np.array([e.attention_mask for e in encoded])
-        input_names = {node.name for node in self.model.get_inputs()}
+        input_ids = np.array([e.ids for e in encoded])  # type: ignore
+        attention_mask = np.array([e.attention_mask for e in encoded])  # type: ignore
+        input_names = {node.name for node in self.model.get_inputs()}  # type: ignore
         onnx_input: dict[str, NumpyArray] = {
             "input_ids": np.array(input_ids, dtype=np.int64),
         }
@@ -82,7 +82,7 @@ class OnnxTextModel(OnnxModel[T]):
             )
         onnx_input = self._preprocess_onnx_input(onnx_input, **kwargs)
 
-        model_output = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)
+        model_output = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)  # type: ignore
         return OnnxOutputContext(
             model_output=model_output[0],
             attention_mask=onnx_input.get("attention_mask", attention_mask),

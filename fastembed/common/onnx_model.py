@@ -90,7 +90,7 @@ class OnnxModel(Generic[T]):
             str(model_path), providers=onnx_providers, sess_options=so
         )
         if "CUDAExecutionProvider" in requested_provider_names:
-            current_providers = self.model.get_providers()
+            current_providers = self.model.get_providers()  # type: ignore
             if "CUDAExecutionProvider" not in current_providers:
                 warnings.warn(
                     f"Attempt to set CUDAExecutionProvider failed. Current providers: {current_providers}."
