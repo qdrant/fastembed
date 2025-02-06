@@ -102,7 +102,7 @@ class OnnxMultimodalModel(OnnxModel[T]):
             )
 
         onnx_input = self._preprocess_onnx_text_input(onnx_input, **kwargs)
-        model_output = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)  # type: ignore
+        model_output = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)
         return OnnxOutputContext(
             model_output=model_output[0],
             attention_mask=onnx_input.get("attention_mask", attention_mask),
@@ -159,7 +159,7 @@ class OnnxMultimodalModel(OnnxModel[T]):
                 yield from self._post_process_onnx_text_output(batch)  # type: ignore
 
     def _build_onnx_image_input(self, encoded: NumpyArray) -> dict[str, NumpyArray]:
-        input_name = self.model.get_inputs()[0].name  # type: ignore
+        input_name = self.model.get_inputs()[0].name
         return {input_name: encoded}
 
     def onnx_embed_image(self, images: list[ImageInput], **kwargs: Any) -> OnnxOutputContext:

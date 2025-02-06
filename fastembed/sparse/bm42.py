@@ -178,7 +178,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         acc: str = ""
         acc_idx: list[int] = []
 
-        continuing_subword_prefix = self.tokenizer.model.continuing_subword_prefix  # type: ignore
+        continuing_subword_prefix = self.tokenizer.model.continuing_subword_prefix
         continuing_subword_prefix_len = len(continuing_subword_prefix)
 
         for idx, token in bpe_tokens:
@@ -325,7 +325,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             self.load_onnx_model()
 
         for text in query:
-            encoded = self.tokenizer.encode(text)  # type: ignore
+            encoded = self.tokenizer.encode(text)
             document_tokens_with_ids = enumerate(encoded.tokens)
             reconstructed = self._reconstruct_bpe(document_tokens_with_ids)
             filtered = self._filter_pair_tokens(reconstructed)

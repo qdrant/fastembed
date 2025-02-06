@@ -46,10 +46,10 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         assert self.tokenizer is not None
 
     def tokenize(self, pairs: list[tuple[str, str]], **_: Any) -> list[Encoding]:
-        return self.tokenizer.encode_batch(pairs)  # type: ignore
+        return self.tokenizer.encode_batch(pairs)
 
     def _build_onnx_input(self, tokenized_input: list[Encoding]) -> dict[str, NumpyArray]:
-        input_names: set[str] = {node.name for node in self.model.get_inputs()}  # type: ignore
+        input_names: set[str] = {node.name for node in self.model.get_inputs()}
         inputs: dict[str, NumpyArray] = {
             "input_ids": np.array([enc.ids for enc in tokenized_input], dtype=np.int64),
         }
@@ -71,7 +71,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         tokenized_input = self.tokenize(pairs, **kwargs)
         inputs = self._build_onnx_input(tokenized_input)
         onnx_input = self._preprocess_onnx_input(inputs, **kwargs)
-        outputs = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)  # type: ignore
+        outputs = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)
         relevant_output = outputs[0]
         scores: NumpyArray = relevant_output[:, 0]
         return OnnxOutputContext(model_output=scores)
