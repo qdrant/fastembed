@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Iterable, Optional, Union, Any
 
 import numpy as np
+from numpy.typing import NDArray
 
 from fastembed.common.types import NumpyArray
 from fastembed.common.model_management import ModelManagement
@@ -10,7 +11,7 @@ from fastembed.common.model_management import ModelManagement
 @dataclass
 class SparseEmbedding:
     values: NumpyArray
-    indices: NumpyArray
+    indices: Union[NDArray[np.int64], NDArray[np.int32]]
 
     def as_object(self) -> dict[str, NumpyArray]:
         return {
@@ -19,9 +20,7 @@ class SparseEmbedding:
         }
 
     def as_dict(self) -> dict[int, float]:
-        indices = self.indices.astype(int)
-        values = self.values.astype(float)
-        return dict(zip(indices, values))
+        return {int(i): float(v) for i, v in zip(self.indices, self.values)}  # type: ignore[arg-type]
 
     @classmethod
     def from_dict(cls, data: dict[int, float]) -> "SparseEmbedding":
