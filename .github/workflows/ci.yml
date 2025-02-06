@@ -20,5 +20,5 @@ jobs:
           path: .cache
           restore-keys: |
             mkdocs-material-
-      - run: pip install mkdocs-material mkdocstrings==0.27.0 pillow cairosvg mknotebooks
+      - run: pip install mkdocs-material mkdocstrings-python pillow cairosvg mknotebooks
       - run: mkdocs gh-deploy --force
