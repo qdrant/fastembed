@@ -30,9 +30,9 @@ jobs:
       - name: mypy
         run: |
             poetry run mypy fastembed \
-          --disallow-incomplete-defs \
-          --disallow-untyped-defs \
-          --disable-error-code=import-untyped
+              --disallow-incomplete-defs \
+              --disallow-untyped-defs \
+              --disable-error-code=import-untyped
 
       - name: pyright
         run: |
