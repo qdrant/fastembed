@@ -2,7 +2,7 @@ import contextlib
 import os
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Iterable, Optional, Sequence, Type, Union, get_args
+from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
 from PIL import Image
@@ -92,7 +92,7 @@ class OnnxImageModel(OnnxModel[T]):
     ) -> Iterable[T]:
         is_small = False
 
-        if isinstance(images, get_args(ImageInput)):
+        if isinstance(images, (str, Path, Image.Image)):
             images = [images]
             is_small = True
 

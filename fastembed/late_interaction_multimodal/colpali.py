@@ -34,7 +34,7 @@ supported_colpali_models = [
 ]
 
 
-class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.ndarray]):
+class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyArray]):
     QUERY_PREFIX = "Query: "
     BOS_TOKEN = "<s>"
     PAD_TOKEN = "<pad>"
@@ -57,7 +57,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
         lazy_load: bool = False,
         device_id: Optional[int] = None,
         specific_model_path: Optional[str] = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         """
         Args:
@@ -89,12 +89,11 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
         self.cuda = cuda
 
         # This device_id will be used if we need to load model in current process
+        self.device_id: Optional[int] = None
         if device_id is not None:
             self.device_id = device_id
         elif self.device_ids is not None:
             self.device_id = self.device_ids[0]
-        else:
-            self.device_id = None
 
         self.model_description = self._get_model_description(model_name)
         self.cache_dir = str(define_cache_dir(cache_dir))
@@ -162,7 +161,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
         """
         return output.model_output.astype(np.float32)
 
-    def tokenize(self, documents: list[str], **_) -> list[Encoding]:
+    def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
         texts_query: list[str] = []
         for query in documents:
             query = self.BOS_TOKEN + self.QUERY_PREFIX + query + self.PAD_TOKEN * 10
@@ -173,7 +172,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
         return encoded
 
     def _preprocess_onnx_text_input(
-        self, onnx_input: dict[str, NumpyArray], **kwargs
+        self, onnx_input: dict[str, NumpyArray], **kwargs: Any
     ) -> dict[str, NumpyArray]:
         onnx_input["input_ids"] = np.array(
             [
@@ -190,7 +189,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
         return onnx_input
 
     def _preprocess_onnx_image_input(
-        self, onnx_input: dict[str, np.ndarray], **kwargs
+        self, onnx_input: dict[str, np.ndarray], **kwargs: Any
     ) -> dict[str, NumpyArray]:
         """
         Add placeholders for text input when processing image data for ONNX.
@@ -214,7 +213,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
         parallel: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Iterable[NumpyArray]:
         """
         Encode a list of documents into list of embeddings.
@@ -247,7 +246,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
         images: Union[ImageInput, Iterable[ImageInput]],
         batch_size: int = 16,
         parallel: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Iterable[NumpyArray]:
         """
         Encode a list of images into list of embeddings.
@@ -276,16 +275,16 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[np.nda
         )
 
     @classmethod
-    def _get_text_worker_class(cls) -> Type[TextEmbeddingWorker]:
+    def _get_text_worker_class(cls) -> Type[TextEmbeddingWorker[NumpyArray]]:
         return ColPaliTextEmbeddingWorker
 
     @classmethod
-    def _get_image_worker_class(cls) -> Type[ImageEmbeddingWorker]:
+    def _get_image_worker_class(cls) -> Type[ImageEmbeddingWorker[NumpyArray]]:
         return ColPaliImageEmbeddingWorker
 
 
-class ColPaliTextEmbeddingWorker(TextEmbeddingWorker):
-    def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> ColPali:
+class ColPaliTextEmbeddingWorker(TextEmbeddingWorker[NumpyArray]):
+    def init_embedding(self, model_name: str, cache_dir: str, **kwargs: Any) -> ColPali:
         return ColPali(
             model_name=model_name,
             cache_dir=cache_dir,
@@ -294,8 +293,8 @@ class ColPaliTextEmbeddingWorker(TextEmbeddingWorker):
         )
 
 
-class ColPaliImageEmbeddingWorker(ImageEmbeddingWorker):
-    def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> ColPali:
+class ColPaliImageEmbeddingWorker(ImageEmbeddingWorker[NumpyArray]):
+    def init_embedding(self, model_name: str, cache_dir: str, **kwargs: Any) -> ColPali:
         return ColPali(
             model_name=model_name,
             cache_dir=cache_dir,

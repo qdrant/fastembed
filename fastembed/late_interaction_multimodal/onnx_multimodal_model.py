@@ -2,7 +2,7 @@ import contextlib
 import os
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Iterable, Optional, Sequence, Type, Union, get_args
+from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
 from PIL import Image
@@ -23,7 +23,7 @@ class OnnxMultimodalModel(OnnxModel[T]):
         super().__init__()
         self.tokenizer = None
         self.processor = None
-        self.special_token_to_id = {}
+        self.special_token_to_id: dict[str, int] = {}
 
     def _preprocess_onnx_text_input(
         self, onnx_input: dict[str, NumpyArray], **kwargs: Any
@@ -42,11 +42,11 @@ class OnnxMultimodalModel(OnnxModel[T]):
         return onnx_input
 
     @classmethod
-    def _get_text_worker_class(cls) -> Type["TextEmbeddingWorker"]:
+    def _get_text_worker_class(cls) -> Type["TextEmbeddingWorker[T]"]:
         raise NotImplementedError("Subclasses must implement this method")
 
     @classmethod
-    def _get_image_worker_class(cls) -> Type["ImageEmbeddingWorker"]:
+    def _get_image_worker_class(cls) -> Type["ImageEmbeddingWorker[T]"]:
         raise NotImplementedError("Subclasses must implement this method")
 
     def _post_process_onnx_image_output(self, output: OnnxOutputContext) -> Iterable[T]:
@@ -91,7 +91,7 @@ class OnnxMultimodalModel(OnnxModel[T]):
         input_ids = np.array([e.ids for e in encoded])
         attention_mask = np.array([e.attention_mask for e in encoded])
         input_names = {node.name for node in self.model.get_inputs()}
-        onnx_input = {
+        onnx_input: dict[str, NumpyArray] = {
             "input_ids": np.array(input_ids, dtype=np.int64),
         }
         if "attention_mask" in input_names:
@@ -156,7 +156,7 @@ class OnnxMultimodalModel(OnnxModel[T]):
                 start_method=start_method,
             )
             for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
-                yield from self._post_process_onnx_text_output(batch)
+                yield from self._post_process_onnx_text_output(batch)  # type: ignore
 
     def _build_onnx_image_input(self, encoded: NumpyArray) -> dict[str, NumpyArray]:
         input_name = self.model.get_inputs()[0].name  # type: ignore
@@ -168,7 +168,8 @@ class OnnxMultimodalModel(OnnxModel[T]):
                 Image.open(image) if not isinstance(image, Image.Image) else image
                 for image in images
             ]
-            encoded = self.processor(image_files)
+            assert self.processor is not None, "Processor is not initialized"
+            encoded = np.array(self.processor(image_files))
         onnx_input = self._build_onnx_image_input(encoded)
         onnx_input = self._preprocess_onnx_image_input(onnx_input, **kwargs)
         model_output = self.model.run(None, onnx_input)
@@ -189,7 +190,7 @@ class OnnxMultimodalModel(OnnxModel[T]):
     ) -> Iterable[T]:
         is_small = False
 
-        if isinstance(images, get_args(ImageInput)):
+        if isinstance(images, (str, Path, Image.Image)):
             images = [images]
             is_small = True
 
@@ -222,17 +223,17 @@ class OnnxMultimodalModel(OnnxModel[T]):
                 start_method=start_method,
             )
             for batch in pool.ordered_map(iter_batch(images, batch_size), **params):
-                yield from self._post_process_onnx_image_output(batch)
+                yield from self._post_process_onnx_image_output(batch)  # type: ignore
 
 
-class TextEmbeddingWorker(EmbeddingWorker):
+class TextEmbeddingWorker(EmbeddingWorker[T]):
     def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, Any]]:
         for idx, batch in items:
             onnx_output = self.model.onnx_embed_text(batch)
             yield idx, onnx_output
 
 
-class ImageEmbeddingWorker(EmbeddingWorker):
+class ImageEmbeddingWorker(EmbeddingWorker[T]):
     def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, Any]]:
         for idx, batch in items:
             embeddings = self.model.onnx_embed_image(batch)

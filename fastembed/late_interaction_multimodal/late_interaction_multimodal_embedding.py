@@ -40,7 +40,7 @@ class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase)
                 ]
                 ```
         """
-        result = []
+        result: list[dict[str, Any]] = []
         for embedding in cls.EMBEDDINGS_REGISTRY:
             result.extend(embedding.list_supported_models())
         return result
