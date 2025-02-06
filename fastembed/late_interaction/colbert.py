@@ -88,6 +88,8 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
         )
 
     def _tokenize_query(self, query: str) -> list[Encoding]:
+        assert self.tokenizer is not None
+
         encoded = self.tokenizer.encode_batch([query])
         # colbert authors recommend to pad queries with [MASK] tokens for query augmentation to improve performance
         if len(encoded[0].ids) < self.MIN_QUERY_LENGTH:
@@ -107,6 +109,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
         return encoded
 
     def _tokenize_documents(self, documents: list[str]) -> list[Encoding]:
+        assert self.tokenizer is not None
         encoded = self.tokenizer.encode_batch(documents)
         return encoded
 
@@ -194,6 +197,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
             cuda=self.cuda,
             device_id=self.device_id,
         )
+        assert self.tokenizer is not None
         self.mask_token_id = self.special_token_to_id[self.MASK_TOKEN]
         self.pad_token_id = self.tokenizer.padding["pad_id"]
         self.skip_list = {

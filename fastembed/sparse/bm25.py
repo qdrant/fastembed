@@ -206,7 +206,7 @@ class Bm25(SparseTextEmbeddingBase):
             )
             for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
                 for record in batch:
-                    yield record
+                    yield record  # type: ignore
 
     def embed(
         self,
@@ -343,7 +343,9 @@ class Bm25Worker(Worker):
     def start(cls, model_name: str, cache_dir: str, **kwargs: Any) -> "Bm25Worker":
         return cls(model_name=model_name, cache_dir=cache_dir, **kwargs)
 
-    def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, Any]]:
+    def process(
+        self, items: Iterable[tuple[int, Any]]
+    ) -> Iterable[tuple[int, list[SparseEmbedding]]]:
         for idx, batch in items:
             onnx_output = self.model.raw_embed(batch)
             yield idx, onnx_output

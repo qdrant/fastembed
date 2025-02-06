@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
+from numpy.typing import NDArray
 from tokenizers import Encoding
 
 from fastembed.common.types import NumpyArray, OnnxProvider
@@ -30,7 +31,7 @@ class OnnxTextModel(OnnxModel[T]):
 
     def _preprocess_onnx_input(
         self, onnx_input: dict[str, NumpyArray], **kwargs: Any
-    ) -> dict[str, NumpyArray]:
+    ) -> dict[str, Union[NumpyArray, NDArray[np.int64]]]:
         """
         Preprocess the onnx input.
         """
@@ -60,7 +61,7 @@ class OnnxTextModel(OnnxModel[T]):
         raise NotImplementedError("Subclasses must implement this method")
 
     def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
-        return self.tokenizer.encode_batch(documents)
+        return self.tokenizer.encode_batch(documents)  # type: ignore
 
     def onnx_embed(
         self,
@@ -70,7 +71,7 @@ class OnnxTextModel(OnnxModel[T]):
         encoded = self.tokenize(documents, **kwargs)
         input_ids = np.array([e.ids for e in encoded])
         attention_mask = np.array([e.attention_mask for e in encoded])
-        input_names = {node.name for node in self.model.get_inputs()}
+        input_names = {node.name for node in self.model.get_inputs()}  # type: ignore
         onnx_input: dict[str, NumpyArray] = {
             "input_ids": np.array(input_ids, dtype=np.int64),
         }
@@ -82,7 +83,7 @@ class OnnxTextModel(OnnxModel[T]):
             )
         onnx_input = self._preprocess_onnx_input(onnx_input, **kwargs)
 
-        model_output = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)
+        model_output = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)  # type: ignore
         return OnnxOutputContext(
             model_output=model_output[0],
             attention_mask=onnx_input.get("attention_mask", attention_mask),
@@ -136,7 +137,7 @@ class OnnxTextModel(OnnxModel[T]):
                 start_method=start_method,
             )
             for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
-                yield from self._post_process_onnx_output(batch)
+                yield from self._post_process_onnx_output(batch)  # type: ignore
 
 
 class TextEmbeddingWorker(EmbeddingWorker[T]):
