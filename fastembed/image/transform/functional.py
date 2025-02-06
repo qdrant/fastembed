@@ -73,24 +73,26 @@ def normalize(
         image = image.astype(np.float32)
 
     if isinstance(mean, Sized):
-        if len(mean) != num_channels:
+        mean_list: list[float] = [float(m) for m in mean]
+        if len(mean_list) != num_channels:
             raise ValueError(
                 f"mean must have {num_channels} elements if it is an iterable, got {len(mean)}"
             )
     else:
-        mean = [mean] * num_channels
-    mean = np.array(mean, dtype=image.dtype)
+        mean_list = [float(mean)] * num_channels
+    mean_arr = np.array(mean_list, dtype=np.float32)
 
     if isinstance(std, Sized):
-        if len(std) != num_channels:
+        std_list: list[float] = [float(s) for s in std]
+        if len(std_list) != num_channels:
             raise ValueError(
                 f"std must have {num_channels} elements if it is an iterable, got {len(std)}"
             )
     else:
-        std = [std] * num_channels
-    std = np.array(std, dtype=image.dtype)
+        std_list = [float(std)] * num_channels
+    std_arr = np.array(std_list, dtype=np.float32)
 
-    image = ((image.T - mean) / std).T
+    image = ((image.T - mean_arr) / std_arr).T
     return image
 
 

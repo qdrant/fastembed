@@ -60,7 +60,7 @@ class OnnxImageModel(OnnxModel[T]):
         raise NotImplementedError("Subclasses must implement this method")
 
     def _build_onnx_input(self, encoded: NumpyArray) -> dict[str, NumpyArray]:
-        return {node.name: encoded for node in self.model.get_inputs()}
+        return {node.name: encoded for node in self.model.get_inputs()}  # type: ignore
 
     def onnx_embed(self, images: list[ImageInput], **kwargs: Any) -> OnnxOutputContext:
         with contextlib.ExitStack():
@@ -72,7 +72,7 @@ class OnnxImageModel(OnnxModel[T]):
             encoded = self.processor(image_files)
         onnx_input = self._build_onnx_input(cast(NumpyArray, encoded))
         onnx_input = self._preprocess_onnx_input(onnx_input)
-        model_output = self.model.run(None, onnx_input)
+        model_output = self.model.run(None, onnx_input)  # type: ignore
         embeddings = model_output[0].reshape(len(images), -1)
         return OnnxOutputContext(model_output=embeddings)
 
