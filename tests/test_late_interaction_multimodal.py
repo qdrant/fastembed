@@ -3,7 +3,7 @@ import os
 from PIL import Image
 import numpy as np
 
-from fastembed.late_interaction_multimodal import LateInteractionMultimodalEmbedding
+from fastembed import LateInteractionMultimodalEmbedding
 from tests.config import TEST_MISC_DIR
 
 
