@@ -45,18 +45,16 @@ SOURCES = {
 
 @pytest.mark.parametrize("scenario", canonical_vectors)
 def test_add_custom_model_variations(scenario):
-    """
-    Tests add_custom_model for different base models and different
-    (mean_pooling, normalization) configs. Checks the first 5 dims
-    of "hello world" match the scenario's canonical vector.
-    """
-
     is_ci = bool(os.getenv("CI", False))
 
     base_model_name = scenario["model"]
     mean_pooling = scenario["mean_pooling"]
     normalization = scenario["normalization"]
     cv = np.array(scenario["canonical_vector"], dtype=np.float32)
+
+    backup_supported_models = {}
+    for embedding_cls in TextEmbedding.EMBEDDINGS_REGISTRY:
+        backup_supported_models[embedding_cls] = embedding_cls.list_supported_models().copy()
 
     suffixes = []
     suffixes.append("mean" if mean_pooling else "no-mean")
@@ -81,32 +79,37 @@ def test_add_custom_model_variations(scenario):
         "additional_files": [],
     }
 
-    if is_ci and model_info["size_in_GB"] > 1:
+    if is_ci and model_info["size_in_GB"] > 1.0:
         pytest.skip(
             f"Skipping {custom_model_name} on CI due to size_in_GB={model_info['size_in_GB']}"
         )
 
-    TextEmbedding.add_custom_model(
-        model_info=model_info, mean_pooling=mean_pooling, normalization=normalization
-    )
+    try:
+        TextEmbedding.add_custom_model(
+            model_info=model_info, mean_pooling=mean_pooling, normalization=normalization
+        )
 
-    model = TextEmbedding(model_name=custom_model_name)
+        model = TextEmbedding(model_name=custom_model_name)
 
-    docs = ["hello world", "flag embedding"]
-    embeddings = list(model.embed(docs))
-    embeddings = np.stack(embeddings, axis=0)
+        docs = ["hello world", "flag embedding"]
+        embeddings = list(model.embed(docs))
+        embeddings = np.stack(embeddings, axis=0)
 
-    assert embeddings.shape == (
-        2,
-        dim,
-    ), f"Expected shape (2, {dim}) for {custom_model_name}, but got {embeddings.shape}"
+        assert embeddings.shape == (
+            2,
+            dim,
+        ), f"Expected shape (2, {dim}) for {custom_model_name}, but got {embeddings.shape}"
 
-    num_compare_dims = cv.shape[0]
-    assert np.allclose(
-        embeddings[0, :num_compare_dims], cv, atol=1e-3
-    ), f"Embedding mismatch for {custom_model_name} (first {num_compare_dims} dims)."
+        num_compare_dims = cv.shape[0]
+        assert np.allclose(
+            embeddings[0, :num_compare_dims], cv, atol=1e-3
+        ), f"Embedding mismatch for {custom_model_name} (first {num_compare_dims} dims)."
 
-    assert not np.allclose(embeddings[0, :], 0.0), "Embedding should not be all zeros."
+        assert not np.allclose(embeddings[0, :], 0.0), "Embedding should not be all zeros."
 
-    if is_ci:
-        delete_model_cache(model.model._model_dir)
+        if is_ci:
+            delete_model_cache(model.model._model_dir)
+
+    finally:
+        for embedding_cls, old_list in backup_supported_models.items():
+            embedding_cls.supported_models = old_list
