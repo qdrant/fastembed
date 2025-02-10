@@ -1,4 +1,5 @@
 import warnings
+from collections import defaultdict
 from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
@@ -19,6 +20,9 @@ class TextEmbedding(TextEmbeddingBase):
         PooledEmbedding,
         JinaEmbeddingV3,
     ]
+    CUSTOM_EMBEDDINGS_REGISTRY: dict[Type[TextEmbeddingBase], list[dict[str, Any]]] = defaultdict(
+        list
+    )
 
     @classmethod
     def list_supported_models(cls) -> list[dict[str, Any]]:
@@ -48,6 +52,9 @@ class TextEmbedding(TextEmbeddingBase):
         result = []
         for embedding in cls.EMBEDDINGS_REGISTRY:
             result.extend(embedding.list_supported_models())
+        for embedding, models in cls.CUSTOM_EMBEDDINGS_REGISTRY.items():
+            for model in models:
+                result.append(model)
         return result
 
     @classmethod
@@ -74,13 +81,13 @@ class TextEmbedding(TextEmbeddingBase):
             None
         """
         if mean_pooling and not normalization:
-            PooledEmbedding.add_custom_model(model_info)
+            cls.CUSTOM_EMBEDDINGS_REGISTRY[PooledEmbedding].append(model_info)
         elif mean_pooling and normalization:
-            PooledNormalizedEmbedding.add_custom_model(model_info)
-        elif "clip" in model_info["model"].lower():
-            CLIPOnnxEmbedding.add_custom_model(model_info)
+            cls.CUSTOM_EMBEDDINGS_REGISTRY[PooledNormalizedEmbedding].append(model_info)
+        elif not mean_pooling and not normalization:
+            cls.CUSTOM_EMBEDDINGS_REGISTRY[OnnxTextEmbedding].append(model_info)
         else:
-            OnnxTextEmbedding.add_custom_model(model_info)
+            cls.CUSTOM_EMBEDDINGS_REGISTRY[PooledNormalizedEmbedding].append(model_info)
 
     def __init__(
         self,
