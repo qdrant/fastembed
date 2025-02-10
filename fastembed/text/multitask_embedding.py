@@ -53,7 +53,7 @@ class JinaEmbeddingV3(PooledNormalizedEmbedding):
 
     @classmethod
     def list_supported_models(cls) -> list[dict[str, Any]]:
-        return cls.supported_models
+        return supported_multitask_models
 
     def _preprocess_onnx_input(
         self, onnx_input: dict[str, np.ndarray], **kwargs

@@ -101,7 +101,7 @@ class PooledEmbedding(OnnxTextEmbedding):
         Returns:
             list[dict[str, Any]]: A list of dictionaries containing the model information.
         """
-        return cls.supported_models
+        return supported_pooled_models
 
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
         if output.attention_mask is None:
