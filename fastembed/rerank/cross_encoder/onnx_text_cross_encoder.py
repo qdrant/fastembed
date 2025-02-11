@@ -76,7 +76,7 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
         """Lists the supported models.
 
         Returns:
-            list[dict[str, Any]]: A list of dictionaries containing the model information.
+            list[ModelDescription]: A list of dictionaries containing the model information.
         """
         return supported_onnx_models
 

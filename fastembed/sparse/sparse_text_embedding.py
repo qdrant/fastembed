@@ -21,7 +21,7 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
         Lists the supported models.
 
         Returns:
-            list[dict[str, Any]]: A list of dictionaries containing the model information.
+            list[SparseModelDescription]: A list of dictionaries containing the model information.
 
             Example:
                 ```
@@ -39,7 +39,7 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
                 ]
                 ```
         """
-        result: list[dict[str, Any]] = []
+        result: list[SparseModelDescription] = []
         for embedding in cls.EMBEDDINGS_REGISTRY:
             result.extend(embedding.list_supported_models())
         return result
