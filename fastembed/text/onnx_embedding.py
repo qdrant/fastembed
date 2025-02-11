@@ -196,7 +196,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):
     """Implementation of the Flag Embedding model."""
 
     @classmethod
-    def list_supported_models(cls) -> list[dict[str, Any]]:
+    def list_supported_models(cls) -> list[ModelDescription]:
         """
         Lists the supported models.
 

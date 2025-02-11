@@ -108,7 +108,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
         return encoded
 
     @classmethod
-    def list_supported_models(cls) -> list[dict[str, Any]]:
+    def list_supported_models(cls) -> list[ModelDescription]:
         """Lists the supported models.
 
         Returns:

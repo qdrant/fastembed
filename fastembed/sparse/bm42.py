@@ -251,7 +251,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             yield SparseEmbedding.from_dict(rescored)
 
     @classmethod
-    def list_supported_models(cls) -> list[dict[str, Any]]:
+    def list_supported_models(cls) -> list[SparseModelDescription]:
         """Lists the supported models.
 
         Returns:

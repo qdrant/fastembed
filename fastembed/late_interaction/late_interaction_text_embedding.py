@@ -7,13 +7,14 @@ from fastembed.late_interaction.jina_colbert import JinaColbert
 from fastembed.late_interaction.late_interaction_embedding_base import (
     LateInteractionTextEmbeddingBase,
 )
+from fastembed.common.model_description import ModelDescription
 
 
 class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
     EMBEDDINGS_REGISTRY: list[Type[LateInteractionTextEmbeddingBase]] = [Colbert, JinaColbert]
 
     @classmethod
-    def list_supported_models(cls) -> list[dict[str, Any]]:
+    def list_supported_models(cls) -> list[ModelDescription]:
         """
         Lists the supported models.
 
@@ -37,7 +38,7 @@ class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
                 ]
                 ```
         """
-        result: list[dict[str, Any]] = []
+        result: list[ModelDescription] = []
         for embedding in cls.EMBEDDINGS_REGISTRY:
             result.extend(embedding.list_supported_models())
         return result

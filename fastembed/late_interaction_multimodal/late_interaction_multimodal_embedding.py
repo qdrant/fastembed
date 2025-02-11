@@ -7,13 +7,14 @@ from fastembed.late_interaction_multimodal.colpali import ColPali
 from fastembed.late_interaction_multimodal.late_interaction_multimodal_embedding_base import (
     LateInteractionMultimodalEmbeddingBase,
 )
+from fastembed.common.model_description import ModelDescription
 
 
 class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase):
     EMBEDDINGS_REGISTRY: list[Type[LateInteractionMultimodalEmbeddingBase]] = [ColPali]
 
     @classmethod
-    def list_supported_models(cls) -> list[dict[str, Any]]:
+    def list_supported_models(cls) -> list[ModelDescription]:
         """
         Lists the supported models.
 

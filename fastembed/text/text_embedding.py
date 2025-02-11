@@ -8,6 +8,7 @@ from fastembed.text.pooled_embedding import PooledEmbedding
 from fastembed.text.multitask_embedding import JinaEmbeddingV3
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
 from fastembed.text.text_embedding_base import TextEmbeddingBase
+from fastembed.common.model_description import ModelDescription
 
 
 class TextEmbedding(TextEmbeddingBase):
@@ -20,7 +21,7 @@ class TextEmbedding(TextEmbeddingBase):
     ]
 
     @classmethod
-    def list_supported_models(cls) -> list[dict[str, Any]]:
+    def list_supported_models(cls) -> list[ModelDescription]:
         """
         Lists the supported models.
 
