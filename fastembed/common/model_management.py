@@ -4,7 +4,7 @@ import json
 import shutil
 import tarfile
 from pathlib import Path
-from typing import Any, Optional, Union, Sequence
+from typing import Any, Optional, Union, Sequence, TypeVar, Generic
 
 import requests
 from huggingface_hub import snapshot_download, model_info, list_repo_tree
@@ -18,21 +18,23 @@ from loguru import logger
 from tqdm import tqdm
 from fastembed.common.model_description import ModelDescription
 
+T = TypeVar("T", bound=ModelDescription)
 
-class ModelManagement:
+
+class ModelManagement(Generic[T]):
     METADATA_FILE = "files_metadata.json"
 
     @classmethod
-    def list_supported_models(cls) -> Sequence[ModelDescription]:
+    def list_supported_models(cls) -> Sequence[T]:
         """Lists the supported models.
 
         Returns:
-            list[ModelDescription]: A list of dictionaries containing the model information.
+            list[T]: A list of dictionaries containing the model information.
         """
         raise NotImplementedError()
 
     @classmethod
-    def _get_model_description(cls, model_name: str) -> ModelDescription:
+    def _get_model_description(cls, model_name: str) -> T:
         """
         Gets the model description from the model_name.
 
@@ -43,7 +45,7 @@ class ModelManagement:
             ValueError: If the model_name is not supported.
 
         Returns:
-            ModelDescription: The model description.
+            T: The model description.
         """
         for model in cls.list_supported_models():
             if model_name.lower() == model.model.lower():
@@ -343,14 +345,12 @@ class ModelManagement:
         return model_dir
 
     @classmethod
-    def download_model(
-        cls, model: ModelDescription, cache_dir: str, retries: int = 3, **kwargs: Any
-    ) -> Path:
+    def download_model(cls, model: T, cache_dir: str, retries: int = 3, **kwargs: Any) -> Path:
         """
         Downloads a model from HuggingFace Hub or Google Cloud Storage.
 
         Args:
-            model (ModelDescription): The model description.
+            model (T): The model description.
                 Example:
                 ```
                 {
