@@ -16,13 +16,14 @@ from huggingface_hub.utils import (
 )
 from loguru import logger
 from tqdm import tqdm
+from fastembed.common.model_description import ModelDescription
 
 
 class ModelManagement:
     METADATA_FILE = "files_metadata.json"
 
     @classmethod
-    def list_supported_models(cls) -> list[dict[str, Any]]:
+    def list_supported_models(cls) -> list[ModelDescription]:
         """Lists the supported models.
 
         Returns:
@@ -31,7 +32,7 @@ class ModelManagement:
         raise NotImplementedError()
 
     @classmethod
-    def _get_model_description(cls, model_name: str) -> dict[str, Any]:
+    def _get_model_description(cls, model_name: str) -> ModelDescription:
         """
         Gets the model description from the model_name.
 
