@@ -15,22 +15,19 @@ from fastembed.late_interaction_multimodal.onnx_multimodal_model import (
     TextEmbeddingWorker,
     ImageEmbeddingWorker,
 )
+from fastembed.common.model_description import ModelDescription, ModelSource
 
-supported_colpali_models = [
-    {
-        "model": "Qdrant/colpali-v1.3-fp16",
-        "dim": 128,
-        "description": "Text embeddings, Multimodal (text&image), English, 50 tokens query length truncation, 2024.",
-        "license": "mit",
-        "size_in_GB": 6.5,
-        "sources": {
-            "hf": "Qdrant/colpali-v1.3-fp16",
-        },
-        "additional_files": [
-            "model.onnx_data",
-        ],
-        "model_file": "model.onnx",
-    },
+supported_colpali_models: list[ModelDescription] = [
+    ModelDescription(
+        model="Qdrant/colpali-v1.3-fp16",
+        dim=128,
+        description="Text embeddings, Multimodal (text&image), English, 50 tokens query length truncation, 2024.",
+        license="mit",
+        size_in_GB=6.5,
+        sources=ModelSource(hf="Qdrant/colpali-v1.3-fp16"),
+        additional_files=["model.onnx_data"],
+        model_file="model.onnx",
+    ),
 ]
 
 

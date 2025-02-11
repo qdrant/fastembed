@@ -9,30 +9,27 @@ from fastembed.sparse.sparse_embedding_base import (
     SparseTextEmbeddingBase,
 )
 from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
+from fastembed.common.model_description import SparseModelDescription, ModelSource
 
-supported_splade_models = [
-    {
-        "model": "prithivida/Splade_PP_en_v1",
-        "vocab_size": 30522,
-        "description": "Independent Implementation of SPLADE++ Model for English.",
-        "license": "apache-2.0",
-        "size_in_GB": 0.532,
-        "sources": {
-            "hf": "Qdrant/SPLADE_PP_en_v1",
-        },
-        "model_file": "model.onnx",
-    },
-    {
-        "model": "prithvida/Splade_PP_en_v1",
-        "vocab_size": 30522,
-        "description": "Independent Implementation of SPLADE++ Model for English.",
-        "license": "apache-2.0",
-        "size_in_GB": 0.532,
-        "sources": {
-            "hf": "Qdrant/SPLADE_PP_en_v1",
-        },
-        "model_file": "model.onnx",
-    },
+supported_splade_models: list[SparseModelDescription] = [
+    SparseModelDescription(
+        model="prithivida/Splade_PP_en_v1",
+        vocab_size=30522,
+        description="Independent Implementation of SPLADE++ Model for English.",
+        license="apache-2.0",
+        size_in_GB=0.532,
+        sources=ModelSource(hf="Qdrant/SPLADE_PP_en_v1"),
+        model_file="model.onnx",
+    ),
+    SparseModelDescription(
+        model="prithvida/Splade_PP_en_v1",
+        vocab_size=30522,
+        description="Independent Implementation of SPLADE++ Model for English.",
+        license="apache-2.0",
+        size_in_GB=0.532,
+        sources=ModelSource(hf="Qdrant/SPLADE_PP_en_v1"),
+        model_file="model.onnx",
+    ),
 ]
 
 
