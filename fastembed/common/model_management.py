@@ -407,7 +407,7 @@ class ModelManagement:
                 try:
                     return cls.retrieve_model_gcs(
                         model.model,
-                        url_source,
+                        str(url_source),
                         str(cache_dir),
                         local_files_only=local_files_only,
                     )
