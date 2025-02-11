@@ -59,7 +59,7 @@ class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase)
         super().__init__(model_name, cache_dir, threads, **kwargs)
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
             supported_models = EMBEDDING_MODEL_TYPE.list_supported_models()
-            if any(model_name.lower() == model["model"].lower() for model in supported_models):
+            if any(model_name.lower() == model.model.lower() for model in supported_models):
                 self.model = EMBEDDING_MODEL_TYPE(
                     model_name,
                     cache_dir,

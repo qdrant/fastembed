@@ -64,7 +64,7 @@ supported_bm25_models: list[SparseModelDescription] = [
         sources=ModelSource(hf="Qdrant/bm25"),
         additional_files=[f"{lang}.txt" for lang in supported_languages],
         requires_idf=True,
-        model_file=None,
+        model_file="mock.file",
     ),
 ]
 
