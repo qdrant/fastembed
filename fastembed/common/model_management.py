@@ -297,7 +297,7 @@ class ModelManagement:
     def retrieve_model_gcs(
         cls,
         model_name: str,
-        source_url: Optional[str],
+        source_url: str,
         cache_dir: str,
         local_files_only: bool = False,
     ) -> Path:
