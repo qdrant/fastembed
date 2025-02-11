@@ -1,4 +1,4 @@
-from typing import Any, Iterable, Optional, Sequence, Type, Union
+from typing import Any, Iterable, Optional, Sequence, Type, Union, cast
 
 from fastembed.common import OnnxProvider, ImageInput
 from fastembed.common.types import NumpyArray
@@ -7,14 +7,14 @@ from fastembed.late_interaction_multimodal.colpali import ColPali
 from fastembed.late_interaction_multimodal.late_interaction_multimodal_embedding_base import (
     LateInteractionMultimodalEmbeddingBase,
 )
-from fastembed.common.model_description import ModelDescription
+from fastembed.common.model_description import MultimodalModelDescription
 
 
 class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase):
     EMBEDDINGS_REGISTRY: list[Type[LateInteractionMultimodalEmbeddingBase]] = [ColPali]
 
     @classmethod
-    def list_supported_models(cls) -> list[ModelDescription]:
+    def list_supported_models(cls) -> list[MultimodalModelDescription]:
         """
         Lists the supported models.
 
@@ -41,9 +41,9 @@ class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase)
                 ]
                 ```
         """
-        result: list[ModelDescription] = []
+        result: list[MultimodalModelDescription] = []
         for embedding in cls.EMBEDDINGS_REGISTRY:
-            result.extend(embedding.list_supported_models())
+            result.extend(cast(MultimodalModelDescription, embedding.list_supported_models()))
         return result
 
     def __init__(
