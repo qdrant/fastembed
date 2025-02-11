@@ -185,7 +185,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
     def load_onnx_model(self) -> None:
         self._load_onnx_model(
             model_dir=self._model_dir,
-            model_file=self.model_description["model_file"],
+            model_file=self.model_description.model_file,
             threads=self.threads,
             providers=self.providers,
             cuda=self.cuda,

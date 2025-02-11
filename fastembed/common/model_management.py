@@ -295,7 +295,11 @@ class ModelManagement:
 
     @classmethod
     def retrieve_model_gcs(
-        cls, model_name: str, source_url: str, cache_dir: str, local_files_only: bool = False
+        cls,
+        model_name: str,
+        source_url: Optional[str],
+        cache_dir: str,
+        local_files_only: bool = False,
     ) -> Path:
         fast_model_name = f"fast-{model_name.split('/')[-1]}"
         cache_tmp_dir = Path(cache_dir) / "tmp"

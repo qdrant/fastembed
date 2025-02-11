@@ -119,7 +119,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
     def load_onnx_model(self) -> None:
         self._load_onnx_model(
             model_dir=self._model_dir,
-            model_file=self.model_description["model_file"],
+            model_file=self.model_description.model_file,
             threads=self.threads,
             providers=self.providers,
             cuda=self.cuda,
@@ -140,7 +140,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
             Iterable[NumpyArray]: Post-processed output as NumPy arrays.
         """
         return output.model_output.reshape(
-            output.model_output.shape[0], -1, self.model_description["dim"]
+            output.model_output.shape[0], -1, self.model_description.dim
         ).astype(np.float32)
 
     def _post_process_onnx_text_output(
