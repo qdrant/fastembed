@@ -27,7 +27,7 @@ class ModelManagement:
         """Lists the supported models.
 
         Returns:
-            list[dict[str, Any]]: A list of dictionaries containing the model information.
+            list[ModelDescription]: A list of dictionaries containing the model information.
         """
         raise NotImplementedError()
 
@@ -43,7 +43,7 @@ class ModelManagement:
             ValueError: If the model_name is not supported.
 
         Returns:
-            dict[str, Any]: The model description.
+            ModelDescription: The model description.
         """
         for model in cls.list_supported_models():
             if model_name.lower() == model.model.lower():
@@ -340,13 +340,13 @@ class ModelManagement:
 
     @classmethod
     def download_model(
-        cls, model: dict[str, Any], cache_dir: str, retries: int = 3, **kwargs: Any
+        cls, model: ModelDescription, cache_dir: str, retries: int = 3, **kwargs: Any
     ) -> Path:
         """
         Downloads a model from HuggingFace Hub or Google Cloud Storage.
 
         Args:
-            model (dict[str, Any]): The model description.
+            model (ModelDescription): The model description.
                 Example:
                 ```
                 {

@@ -255,7 +255,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         """Lists the supported models.
 
         Returns:
-            list[dict[str, Any]]: A list of dictionaries containing the model information.
+            list[SparseModelDescription]: A list of dictionaries containing the model information.
         """
         return supported_bm42_models
 

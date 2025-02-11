@@ -151,7 +151,7 @@ class Bm25(SparseTextEmbeddingBase):
         """Lists the supported models.
 
         Returns:
-            list[dict[str, Any]]: A list of dictionaries containing the model information.
+            list[SparseModelDescription]: A list of dictionaries containing the model information.
         """
         return supported_bm25_models
 

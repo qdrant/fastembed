@@ -16,7 +16,7 @@ class TextCrossEncoder(TextCrossEncoderBase):
         """Lists the supported models.
 
         Returns:
-            list[dict[str, Any]]: A list of dictionaries containing the model information.
+            list[ModelDescription]: A list of dictionaries containing the model information.
 
             Example:
                 ```
@@ -34,7 +34,7 @@ class TextCrossEncoder(TextCrossEncoderBase):
                 ]
                 ```
         """
-        result: list[dict[str, Any]] = []
+        result: list[ModelDescription] = []
         for encoder in cls.CROSS_ENCODER_REGISTRY:
             result.extend(encoder.list_supported_models())
         return result
