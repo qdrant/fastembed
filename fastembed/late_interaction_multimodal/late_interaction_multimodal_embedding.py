@@ -43,7 +43,9 @@ class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase)
         """
         result: list[MultimodalModelDescription] = []
         for embedding in cls.EMBEDDINGS_REGISTRY:
-            result.extend(cast(MultimodalModelDescription, embedding.list_supported_models()))
+            result.extend(
+                cast(list[MultimodalModelDescription], embedding.list_supported_models())
+            )
         return result
 
     def __init__(
