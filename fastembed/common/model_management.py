@@ -4,7 +4,7 @@ import json
 import shutil
 import tarfile
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, Sequence
 
 import requests
 from huggingface_hub import snapshot_download, model_info, list_repo_tree
@@ -23,7 +23,7 @@ class ModelManagement:
     METADATA_FILE = "files_metadata.json"
 
     @classmethod
-    def list_supported_models(cls) -> list[ModelDescription]:
+    def list_supported_models(cls) -> Sequence[ModelDescription]:
         """Lists the supported models.
 
         Returns:
