@@ -66,11 +66,11 @@ def test_batch_embedding():
     default_task = Task.RETRIEVAL_PASSAGE
 
     for model_desc in TextEmbedding.list_supported_models():
-        if not is_ci and model_desc["size_in_GB"] > 1:
+        if not is_ci and model_desc.size_in_GB > 1:
             continue
 
-        model_name = model_desc["model"]
-        dim = model_desc["dim"]
+        model_name = model_desc.model
+        dim = model_desc.dim
 
         if model_name not in CANONICAL_VECTOR_VALUES.keys():
             continue
@@ -87,7 +87,7 @@ def test_batch_embedding():
         canonical_vector = CANONICAL_VECTOR_VALUES[model_name][default_task]["vectors"]
         assert np.allclose(
             embeddings[: len(docs), : canonical_vector.shape[1]], canonical_vector, atol=1e-4
-        ), model_desc["model"]
+        ), model_desc.model
 
         if is_ci:
             delete_model_cache(model.model._model_dir)
@@ -97,11 +97,11 @@ def test_single_embedding():
     is_ci = os.getenv("CI")
 
     for model_desc in TextEmbedding.list_supported_models():
-        if not is_ci and model_desc["size_in_GB"] > 1:
+        if not is_ci and model_desc.size_in_GB > 1:
             continue
 
-        model_name = model_desc["model"]
-        dim = model_desc["dim"]
+        model_name = model_desc.model
+        dim = model_desc.dim
 
         if model_name not in CANONICAL_VECTOR_VALUES.keys():
             continue
@@ -119,7 +119,7 @@ def test_single_embedding():
             canonical_vector = task["vectors"]
             assert np.allclose(
                 embeddings[: len(docs), : canonical_vector.shape[1]], canonical_vector, atol=1e-4
-            ), model_desc["model"]
+            ), model_desc.model
 
         if is_ci:
             delete_model_cache(model.model._model_dir)
@@ -130,11 +130,11 @@ def test_single_embedding_query():
     task_id = Task.RETRIEVAL_QUERY
 
     for model_desc in TextEmbedding.list_supported_models():
-        if not is_ci and model_desc["size_in_GB"] > 1:
+        if not is_ci and model_desc.size_in_GB > 1:
             continue
 
-        model_name = model_desc["model"]
-        dim = model_desc["dim"]
+        model_name = model_desc.model
+        dim = model_desc.dim
 
         if model_name not in CANONICAL_VECTOR_VALUES.keys():
             continue
@@ -151,7 +151,7 @@ def test_single_embedding_query():
         canonical_vector = CANONICAL_VECTOR_VALUES[model_name][task_id]["vectors"]
         assert np.allclose(
             embeddings[: len(docs), : canonical_vector.shape[1]], canonical_vector, atol=1e-4
-        ), model_desc["model"]
+        ), model_desc.model
 
         if is_ci:
             delete_model_cache(model.model._model_dir)
@@ -162,11 +162,11 @@ def test_single_embedding_passage():
     task_id = Task.RETRIEVAL_PASSAGE
 
     for model_desc in TextEmbedding.list_supported_models():
-        if not is_ci and model_desc["size_in_GB"] > 1:
+        if not is_ci and model_desc.size_in_GB > 1:
             continue
 
-        model_name = model_desc["model"]
-        dim = model_desc["dim"]
+        model_name = model_desc.model
+        dim = model_desc.dim
 
         if model_name not in CANONICAL_VECTOR_VALUES.keys():
             continue
@@ -183,7 +183,7 @@ def test_single_embedding_passage():
         canonical_vector = CANONICAL_VECTOR_VALUES[model_name][task_id]["vectors"]
         assert np.allclose(
             embeddings[: len(docs), : canonical_vector.shape[1]], canonical_vector, atol=1e-4
-        ), model_desc["model"]
+        ), model_desc.model
 
         if is_ci:
             delete_model_cache(model.model._model_dir)
@@ -220,10 +220,10 @@ def test_task_assignment():
     is_ci = os.getenv("CI")
 
     for model_desc in TextEmbedding.list_supported_models():
-        if not is_ci and model_desc["size_in_GB"] > 1:
+        if not is_ci and model_desc.size_in_GB > 1:
             continue
 
-        model_name = model_desc["model"]
+        model_name = model_desc.model
         if model_name not in CANONICAL_VECTOR_VALUES.keys():
             continue
 
