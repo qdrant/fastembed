@@ -52,7 +52,7 @@ class SparseModelDescription(ModelDescription):
         sources: ModelSource,
         model_file: str,
         description: str,
-        dim: int,
+        dim: Optional[int],
         license: str,
         size_in_GB: float,
         additional_files: Optional[List[str]] = None,
