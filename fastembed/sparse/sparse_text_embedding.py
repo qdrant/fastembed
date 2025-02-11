@@ -1,4 +1,4 @@
-from typing import Any, Iterable, Optional, Sequence, Type, Union
+from typing import Any, Iterable, Optional, Sequence, Type, Union, cast
 
 from fastembed.common import OnnxProvider
 from fastembed.sparse.bm25 import Bm25
@@ -9,14 +9,14 @@ from fastembed.sparse.sparse_embedding_base import (
 )
 from fastembed.sparse.splade_pp import SpladePP
 import warnings
-from fastembed.common.model_description import ModelDescription
+from fastembed.common.model_description import SparseModelDescription
 
 
 class SparseTextEmbedding(SparseTextEmbeddingBase):
     EMBEDDINGS_REGISTRY: list[Type[SparseTextEmbeddingBase]] = [SpladePP, Bm42, Bm25]
 
     @classmethod
-    def list_supported_models(cls) -> list[ModelDescription]:
+    def list_supported_models(cls) -> list[SparseModelDescription]:
         """
         Lists the supported models.
 
@@ -39,9 +39,9 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
                 ]
                 ```
         """
-        result: list[ModelDescription] = []
+        result: list[SparseModelDescription] = []
         for embedding in cls.EMBEDDINGS_REGISTRY:
-            result.extend(embedding.list_supported_models())
+            result.extend(cast(list[SparseModelDescription], embedding.list_supported_models()))
         return result
 
     def __init__(
