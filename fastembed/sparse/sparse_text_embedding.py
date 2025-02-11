@@ -9,14 +9,14 @@ from fastembed.sparse.sparse_embedding_base import (
 )
 from fastembed.sparse.splade_pp import SpladePP
 import warnings
-from fastembed.common.model_description import SparseModelDescription
+from fastembed.common.model_description import ModelDescription
 
 
 class SparseTextEmbedding(SparseTextEmbeddingBase):
     EMBEDDINGS_REGISTRY: list[Type[SparseTextEmbeddingBase]] = [SpladePP, Bm42, Bm25]
 
     @classmethod
-    def list_supported_models(cls) -> list[SparseModelDescription]:
+    def list_supported_models(cls) -> list[ModelDescription]:
         """
         Lists the supported models.
 
@@ -39,7 +39,7 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
                 ]
                 ```
         """
-        result: list[SparseModelDescription] = []
+        result: list[ModelDescription] = []
         for embedding in cls.EMBEDDINGS_REGISTRY:
             result.extend(embedding.list_supported_models())
         return result

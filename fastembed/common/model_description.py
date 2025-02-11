@@ -7,7 +7,7 @@ class ModelSource:
     hf: Optional[str] = None
     url: Optional[str] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.hf is None and self.url is None:
             raise ValueError(
                 f"At least one source should be set, current sources: hf={self.hf}, url={self.url}"
@@ -23,17 +23,9 @@ class ModelDescription:
 
     description: str
     license: str
-    size_in_GB: float
+    size_in_GB: Optional[float]
     additional_files: List[str] = field(default_factory=list)
     tasks: Dict[str, int] = field(default_factory=dict)
-
-
-# @dataclass(frozen=True, kw_only=True)
-# class SparseModelDescription(ModelDescription):
-#     vocab_size: int
-#     requires_idf: Optional[bool] = None
-#     # For sparse models, override dim to always be None.
-#     dim: Optional[int] = None
 
 
 @dataclass(frozen=True)
@@ -53,7 +45,7 @@ class SparseModelDescription(ModelDescription):
         model_file: str,
         description: str,
         license: str,
-        size_in_GB: float,
+        size_in_GB: Optional[float],
         dim: Optional[int] = None,
         additional_files: Optional[List[str]] = None,
         tasks: Optional[Dict[str, int]] = None,
