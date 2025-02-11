@@ -19,7 +19,7 @@ class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase)
         Lists the supported models.
 
         Returns:
-            list[ModelDescription]: A list of dictionaries containing the model information.
+            list[MultimodalModelDescription]: A list of dictionaries containing the model information.
 
             Example:
                 ```
