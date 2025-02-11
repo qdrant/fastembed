@@ -137,7 +137,7 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[NumpyArray]):
         )
 
     @classmethod
-    def list_supported_models(cls) -> list[dict[str, Any]]:
+    def list_supported_models(cls) -> list[ModelDescription]:
         """
         Lists the supported models.
 

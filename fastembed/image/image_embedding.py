@@ -4,13 +4,14 @@ from fastembed.common.types import NumpyArray
 from fastembed.common import ImageInput, OnnxProvider
 from fastembed.image.image_embedding_base import ImageEmbeddingBase
 from fastembed.image.onnx_embedding import OnnxImageEmbedding
+from fastembed.common.model_description import ModelDescription
 
 
 class ImageEmbedding(ImageEmbeddingBase):
     EMBEDDINGS_REGISTRY: list[Type[ImageEmbeddingBase]] = [OnnxImageEmbedding]
 
     @classmethod
-    def list_supported_models(cls) -> list[dict[str, Any]]:
+    def list_supported_models(cls) -> list[ModelDescription]:
         """
         Lists the supported models.
 

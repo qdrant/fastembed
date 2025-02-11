@@ -52,7 +52,7 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             yield SparseEmbedding(values=scores, indices=indices)
 
     @classmethod
-    def list_supported_models(cls) -> list[dict[str, Any]]:
+    def list_supported_models(cls) -> list[SparseModelDescription]:
         """Lists the supported models.
 
         Returns:

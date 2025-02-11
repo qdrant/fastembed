@@ -72,7 +72,7 @@ supported_onnx_models: list[ModelDescription] = [
 
 class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
     @classmethod
-    def list_supported_models(cls) -> list[dict[str, Any]]:
+    def list_supported_models(cls) -> list[ModelDescription]:
         """Lists the supported models.
 
         Returns:
