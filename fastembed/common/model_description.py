@@ -29,6 +29,11 @@ class ModelDescription:
 
 
 @dataclass(frozen=True)
+class MultimodalModelDescription(ModelDescription):
+    dim: int
+
+
+@dataclass(frozen=True)
 class SparseModelDescription(ModelDescription):
     _vocab_size: InitVar[Optional[int]] = None
     _requires_idf: InitVar[Optional[bool]] = None

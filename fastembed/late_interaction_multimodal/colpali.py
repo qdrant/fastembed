@@ -15,10 +15,10 @@ from fastembed.late_interaction_multimodal.onnx_multimodal_model import (
     TextEmbeddingWorker,
     ImageEmbeddingWorker,
 )
-from fastembed.common.model_description import ModelDescription, ModelSource
+from fastembed.common.model_description import MultimodalModelDescription, ModelSource
 
-supported_colpali_models: list[ModelDescription] = [
-    ModelDescription(
+supported_colpali_models: list[MultimodalModelDescription] = [
+    MultimodalModelDescription(
         model="Qdrant/colpali-v1.3-fp16",
         dim=128,
         description="Text embeddings, Multimodal (text&image), English, 50 tokens query length truncation, 2024.",
@@ -108,7 +108,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
             self.load_onnx_model()
 
     @classmethod
-    def list_supported_models(cls) -> list[ModelDescription]:
+    def list_supported_models(cls) -> list[MultimodalModelDescription]:
         """Lists the supported models.
 
         Returns:
