@@ -1,172 +1,194 @@
 from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
-
 from fastembed.common.types import NumpyArray, OnnxProvider
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.utils import define_cache_dir, normalize
 from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
 from fastembed.text.text_embedding_base import TextEmbeddingBase
+from fastembed.common.model_description import ModelDescription, ModelSource
 
-supported_onnx_models = [
-    {
-        "model": "BAAI/bge-base-en",
-        "dim": 768,
-        "description": "Text embeddings, Unimodal (text), English, 512 input tokens truncation, Prefixes for queries/documents: necessary, 2023 year.",
-        "license": "mit",
-        "size_in_GB": 0.42,
-        "sources": {
-            "hf": "Qdrant/fast-bge-base-en",
-            "url": "https://storage.googleapis.com/qdrant-fastembed/fast-bge-base-en.tar.gz",
-        },
-        "model_file": "model_optimized.onnx",
-    },
-    {
-        "model": "BAAI/bge-base-en-v1.5",
-        "dim": 768,
-        "description": "Text embeddings, Unimodal (text), English, 512 input tokens truncation, Prefixes for queries/documents: not so necessary, 2023 year.",
-        "license": "mit",
-        "size_in_GB": 0.21,
-        "sources": {
-            "url": "https://storage.googleapis.com/qdrant-fastembed/fast-bge-base-en-v1.5.tar.gz",
-            "hf": "qdrant/bge-base-en-v1.5-onnx-q",
-        },
-        "model_file": "model_optimized.onnx",
-    },
-    {
-        "model": "BAAI/bge-large-en-v1.5",
-        "dim": 1024,
-        "description": "Text embeddings, Unimodal (text), English, 512 input tokens truncation, Prefixes for queries/documents: not so necessary, 2023 year.",
-        "license": "mit",
-        "size_in_GB": 1.20,
-        "sources": {
-            "hf": "qdrant/bge-large-en-v1.5-onnx",
-        },
-        "model_file": "model.onnx",
-    },
-    {
-        "model": "BAAI/bge-small-en",
-        "dim": 384,
-        "description": "Text embeddings, Unimodal (text), English, 512 input tokens truncation, Prefixes for queries/documents: necessary, 2023 year.",
-        "license": "mit",
-        "size_in_GB": 0.13,
-        "sources": {
-            "hf": "Qdrant/bge-small-en",
-            "url": "https://storage.googleapis.com/qdrant-fastembed/BAAI-bge-small-en.tar.gz",
-        },
-        "model_file": "model_optimized.onnx",
-    },
-    {
-        "model": "BAAI/bge-small-en-v1.5",
-        "dim": 384,
-        "description": "Text embeddings, Unimodal (text), English, 512 input tokens truncation, Prefixes for queries/documents: not so necessary, 2023 year.",
-        "license": "mit",
-        "size_in_GB": 0.067,
-        "sources": {
-            "hf": "qdrant/bge-small-en-v1.5-onnx-q",
-        },
-        "model_file": "model_optimized.onnx",
-    },
-    {
-        "model": "BAAI/bge-small-zh-v1.5",
-        "dim": 512,
-        "description": "Text embeddings, Unimodal (text), Chinese, 512 input tokens truncation, Prefixes for queries/documents: not so necessary, 2023 year.",
-        "license": "mit",
-        "size_in_GB": 0.09,
-        "sources": {
-            "hf": "Qdrant/bge-small-zh-v1.5",
-            "url": "https://storage.googleapis.com/qdrant-fastembed/fast-bge-small-zh-v1.5.tar.gz",
-        },
-        "model_file": "model_optimized.onnx",
-    },
-    {
-        "model": "thenlper/gte-large",
-        "dim": 1024,
-        "description": "Text embeddings, Unimodal (text), English, 512 input tokens truncation, Prefixes for queries/documents: not necessary, 2023 year.",
-        "license": "mit",
-        "size_in_GB": 1.20,
-        "sources": {
-            "hf": "qdrant/gte-large-onnx",
-        },
-        "model_file": "model.onnx",
-    },
-    {
-        "model": "mixedbread-ai/mxbai-embed-large-v1",
-        "dim": 1024,
-        "description": "Text embeddings, Unimodal (text), English, 512 input tokens truncation, Prefixes for queries/documents: necessary, 2024 year.",
-        "license": "apache-2.0",
-        "size_in_GB": 0.64,
-        "sources": {
-            "hf": "mixedbread-ai/mxbai-embed-large-v1",
-        },
-        "model_file": "onnx/model.onnx",
-    },
-    {
-        "model": "snowflake/snowflake-arctic-embed-xs",
-        "dim": 384,
-        "description": "Text embeddings, Unimodal (text), English, 512 input tokens truncation, Prefixes for queries/documents: necessary, 2024 year.",
-        "license": "apache-2.0",
-        "size_in_GB": 0.09,
-        "sources": {
-            "hf": "snowflake/snowflake-arctic-embed-xs",
-        },
-        "model_file": "onnx/model.onnx",
-    },
-    {
-        "model": "snowflake/snowflake-arctic-embed-s",
-        "dim": 384,
-        "description": "Text embeddings, Unimodal (text), English, 512 input tokens truncation, Prefixes for queries/documents: necessary, 2024 year.",
-        "license": "apache-2.0",
-        "size_in_GB": 0.13,
-        "sources": {
-            "hf": "snowflake/snowflake-arctic-embed-s",
-        },
-        "model_file": "onnx/model.onnx",
-    },
-    {
-        "model": "snowflake/snowflake-arctic-embed-m",
-        "dim": 768,
-        "description": "Text embeddings, Unimodal (text), English, 512 input tokens truncation, Prefixes for queries/documents: necessary, 2024 year.",
-        "license": "apache-2.0",
-        "size_in_GB": 0.43,
-        "sources": {
-            "hf": "Snowflake/snowflake-arctic-embed-m",
-        },
-        "model_file": "onnx/model.onnx",
-    },
-    {
-        "model": "snowflake/snowflake-arctic-embed-m-long",
-        "dim": 768,
-        "description": "Text embeddings, Unimodal (text), English, 2048 input tokens truncation, Prefixes for queries/documents: necessary, 2024 year.",
-        "license": "apache-2.0",
-        "size_in_GB": 0.54,
-        "sources": {
-            "hf": "snowflake/snowflake-arctic-embed-m-long",
-        },
-        "model_file": "onnx/model.onnx",
-    },
-    {
-        "model": "snowflake/snowflake-arctic-embed-l",
-        "dim": 1024,
-        "description": "Text embeddings, Unimodal (text), English, 512 input tokens truncation, Prefixes for queries/documents: necessary, 2024 year.",
-        "license": "apache-2.0",
-        "size_in_GB": 1.02,
-        "sources": {
-            "hf": "snowflake/snowflake-arctic-embed-l",
-        },
-        "model_file": "onnx/model.onnx",
-    },
-    {
-        "model": "jinaai/jina-clip-v1",
-        "dim": 768,
-        "description": "Text embeddings, Multimodal (text&image), English, Prefixes for queries/documents: not necessary, 2024 year",
-        "license": "apache-2.0",
-        "size_in_GB": 0.55,
-        "sources": {
-            "hf": "jinaai/jina-clip-v1",
-        },
-        "model_file": "onnx/text_model.onnx",
-    },
+supported_onnx_models: list[ModelDescription] = [
+    ModelDescription(
+        model="BAAI/bge-base-en",
+        dim=768,
+        description=(
+            "Text embeddings, Unimodal (text), English, 512 input tokens truncation, "
+            "Prefixes for queries/documents: necessary, 2023 year."
+        ),
+        license="mit",
+        size_in_GB=0.42,
+        sources=ModelSource(
+            hf="Qdrant/fast-bge-base-en",
+            url="https://storage.googleapis.com/qdrant-fastembed/fast-bge-base-en.tar.gz",
+        ),
+        model_file="model_optimized.onnx",
+    ),
+    ModelDescription(
+        model="BAAI/bge-base-en-v1.5",
+        dim=768,
+        description=(
+            "Text embeddings, Unimodal (text), English, 512 input tokens truncation, "
+            "Prefixes for queries/documents: not so necessary, 2023 year."
+        ),
+        license="mit",
+        size_in_GB=0.21,
+        sources=ModelSource(
+            hf="qdrant/bge-base-en-v1.5-onnx-q",
+            url="https://storage.googleapis.com/qdrant-fastembed/fast-bge-base-en-v1.5.tar.gz",
+        ),
+        model_file="model_optimized.onnx",
+    ),
+    ModelDescription(
+        model="BAAI/bge-large-en-v1.5",
+        dim=1024,
+        description=(
+            "Text embeddings, Unimodal (text), English, 512 input tokens truncation, "
+            "Prefixes for queries/documents: not so necessary, 2023 year."
+        ),
+        license="mit",
+        size_in_GB=1.20,
+        sources=ModelSource(hf="qdrant/bge-large-en-v1.5-onnx"),
+        model_file="model.onnx",
+    ),
+    ModelDescription(
+        model="BAAI/bge-small-en",
+        dim=384,
+        description=(
+            "Text embeddings, Unimodal (text), English, 512 input tokens truncation, "
+            "Prefixes for queries/documents: necessary, 2023 year."
+        ),
+        license="mit",
+        size_in_GB=0.13,
+        sources=ModelSource(
+            hf="Qdrant/bge-small-en",
+            url="https://storage.googleapis.com/qdrant-fastembed/BAAI-bge-small-en.tar.gz",
+        ),
+        model_file="model_optimized.onnx",
+    ),
+    ModelDescription(
+        model="BAAI/bge-small-en-v1.5",
+        dim=384,
+        description=(
+            "Text embeddings, Unimodal (text), English, 512 input tokens truncation, "
+            "Prefixes for queries/documents: not so necessary, 2023 year."
+        ),
+        license="mit",
+        size_in_GB=0.067,
+        sources=ModelSource(hf="qdrant/bge-small-en-v1.5-onnx-q"),
+        model_file="model_optimized.onnx",
+    ),
+    ModelDescription(
+        model="BAAI/bge-small-zh-v1.5",
+        dim=512,
+        description=(
+            "Text embeddings, Unimodal (text), Chinese, 512 input tokens truncation, "
+            "Prefixes for queries/documents: not so necessary, 2023 year."
+        ),
+        license="mit",
+        size_in_GB=0.09,
+        sources=ModelSource(
+            hf="Qdrant/bge-small-zh-v1.5",
+            url="https://storage.googleapis.com/qdrant-fastembed/fast-bge-small-zh-v1.5.tar.gz",
+        ),
+        model_file="model_optimized.onnx",
+    ),
+    ModelDescription(
+        model="thenlper/gte-large",
+        dim=1024,
+        description=(
+            "Text embeddings, Unimodal (text), English, 512 input tokens truncation, "
+            "Prefixes for queries/documents: not necessary, 2023 year."
+        ),
+        license="mit",
+        size_in_GB=1.20,
+        sources=ModelSource(hf="qdrant/gte-large-onnx"),
+        model_file="model.onnx",
+    ),
+    ModelDescription(
+        model="mixedbread-ai/mxbai-embed-large-v1",
+        dim=1024,
+        description=(
+            "Text embeddings, Unimodal (text), English, 512 input tokens truncation, "
+            "Prefixes for queries/documents: necessary, 2024 year."
+        ),
+        license="apache-2.0",
+        size_in_GB=0.64,
+        sources=ModelSource(hf="mixedbread-ai/mxbai-embed-large-v1"),
+        model_file="onnx/model.onnx",
+    ),
+    ModelDescription(
+        model="snowflake/snowflake-arctic-embed-xs",
+        dim=384,
+        description=(
+            "Text embeddings, Unimodal (text), English, 512 input tokens truncation, "
+            "Prefixes for queries/documents: necessary, 2024 year."
+        ),
+        license="apache-2.0",
+        size_in_GB=0.09,
+        sources=ModelSource(hf="snowflake/snowflake-arctic-embed-xs"),
+        model_file="onnx/model.onnx",
+    ),
+    ModelDescription(
+        model="snowflake/snowflake-arctic-embed-s",
+        dim=384,
+        description=(
+            "Text embeddings, Unimodal (text), English, 512 input tokens truncation, "
+            "Prefixes for queries/documents: necessary, 2024 year."
+        ),
+        license="apache-2.0",
+        size_in_GB=0.13,
+        sources=ModelSource(hf="snowflake/snowflake-arctic-embed-s"),
+        model_file="onnx/model.onnx",
+    ),
+    ModelDescription(
+        model="snowflake/snowflake-arctic-embed-m",
+        dim=768,
+        description=(
+            "Text embeddings, Unimodal (text), English, 512 input tokens truncation, "
+            "Prefixes for queries/documents: necessary, 2024 year."
+        ),
+        license="apache-2.0",
+        size_in_GB=0.43,
+        sources=ModelSource(hf="Snowflake/snowflake-arctic-embed-m"),
+        model_file="onnx/model.onnx",
+    ),
+    ModelDescription(
+        model="snowflake/snowflake-arctic-embed-m-long",
+        dim=768,
+        description=(
+            "Text embeddings, Unimodal (text), English, 2048 input tokens truncation, "
+            "Prefixes for queries/documents: necessary, 2024 year."
+        ),
+        license="apache-2.0",
+        size_in_GB=0.54,
+        sources=ModelSource(hf="snowflake/snowflake-arctic-embed-m-long"),
+        model_file="onnx/model.onnx",
+    ),
+    ModelDescription(
+        model="snowflake/snowflake-arctic-embed-l",
+        dim=1024,
+        description=(
+            "Text embeddings, Unimodal (text), English, 512 input tokens truncation, "
+            "Prefixes for queries/documents: necessary, 2024 year."
+        ),
+        license="apache-2.0",
+        size_in_GB=1.02,
+        sources=ModelSource(hf="snowflake/snowflake-arctic-embed-l"),
+        model_file="onnx/model.onnx",
+    ),
+    ModelDescription(
+        model="jinaai/jina-clip-v1",
+        dim=768,
+        description=(
+            "Text embeddings, Multimodal (text&image), English, Prefixes for queries/documents: "
+            "not necessary, 2024 year"
+        ),
+        license="apache-2.0",
+        size_in_GB=0.55,
+        sources=ModelSource(hf="jinaai/jina-clip-v1"),
+        model_file="onnx/text_model.onnx",
+    ),
 ]
 
 
@@ -303,7 +325,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):
     def load_onnx_model(self) -> None:
         self._load_onnx_model(
             model_dir=self._model_dir,
-            model_file=self.model_description["model_file"],
+            model_file=self.model_description.model_file,
             threads=self.threads,
             providers=self.providers,
             cuda=self.cuda,

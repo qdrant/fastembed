@@ -3,19 +3,21 @@ from typing import Any, Iterable, Type
 from fastembed.common.types import NumpyArray
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.text.onnx_embedding import OnnxTextEmbedding, OnnxTextEmbeddingWorker
+from fastembed.common.model_description import ModelDescription, ModelSource
 
-supported_clip_models = [
-    {
-        "model": "Qdrant/clip-ViT-B-32-text",
-        "dim": 512,
-        "description": "Text embeddings, Multimodal (text&image), English, 77 input tokens truncation, Prefixes for queries/documents: not necessary, 2021 year",
-        "license": "mit",
-        "size_in_GB": 0.25,
-        "sources": {
-            "hf": "Qdrant/clip-ViT-B-32-text",
-        },
-        "model_file": "model.onnx",
-    },
+supported_clip_models: list[ModelDescription] = [
+    ModelDescription(
+        model="Qdrant/clip-ViT-B-32-text",
+        dim=512,
+        description=(
+            "Text embeddings, Multimodal (text&image), English, 77 input tokens truncation, "
+            "Prefixes for queries/documents: not necessary, 2021 year"
+        ),
+        license="mit",
+        size_in_GB=0.25,
+        sources=ModelSource(hf="Qdrant/clip-ViT-B-32-text"),
+        model_file="model.onnx",
+    ),
 ]
 
 

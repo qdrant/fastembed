@@ -6,27 +6,29 @@ import numpy as np
 from fastembed.common.types import NumpyArray
 from fastembed.text.pooled_normalized_embedding import PooledNormalizedEmbedding
 from fastembed.text.onnx_embedding import OnnxTextEmbeddingWorker
+from fastembed.common.model_description import ModelDescription, ModelSource
 
-supported_multitask_models = [
-    {
-        "model": "jinaai/jina-embeddings-v3",
-        "dim": 1024,
-        "tasks": {
+supported_multitask_models: list[ModelDescription] = [
+    ModelDescription(
+        model="jinaai/jina-embeddings-v3",
+        dim=1024,
+        tasks={
             "retrieval.query": 0,
             "retrieval.passage": 1,
             "separation": 2,
             "classification": 3,
             "text-matching": 4,
         },
-        "description": "Multi-task unimodal (text) embedding model, multi-lingual (~100), 1024 tokens truncation, and 8192 sequence length. Prefixes for queries/documents: not necessary, 2024 year.",
-        "license": "cc-by-nc-4.0",
-        "size_in_GB": 2.29,
-        "sources": {
-            "hf": "jinaai/jina-embeddings-v3",
-        },
-        "model_file": "onnx/model.onnx",
-        "additional_files": ["onnx/model.onnx_data"],
-    },
+        description=(
+            "Multi-task unimodal (text) embedding model, multi-lingual (~100), "
+            "1024 tokens truncation, and 8192 sequence length. Prefixes for queries/documents: not necessary, 2024 year."
+        ),
+        license="cc-by-nc-4.0",
+        size_in_GB=2.29,
+        sources=ModelSource(hf="jinaai/jina-embeddings-v3"),
+        model_file="onnx/model.onnx",
+        additional_files=["onnx/model.onnx_data"],
+    ),
 ]
 
 

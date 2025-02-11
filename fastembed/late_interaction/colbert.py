@@ -12,31 +12,27 @@ from fastembed.late_interaction.late_interaction_embedding_base import (
     LateInteractionTextEmbeddingBase,
 )
 from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
+from fastembed.common.model_description import ModelDescription, ModelSource
 
-
-supported_colbert_models = [
-    {
-        "model": "colbert-ir/colbertv2.0",
-        "dim": 128,
-        "description": "Late interaction model",
-        "license": "mit",
-        "size_in_GB": 0.44,
-        "sources": {
-            "hf": "colbert-ir/colbertv2.0",
-        },
-        "model_file": "model.onnx",
-    },
-    {
-        "model": "answerdotai/answerai-colbert-small-v1",
-        "dim": 96,
-        "description": "Text embeddings, Unimodal (text), Multilingual (~100 languages), 512 input tokens truncation, 2024 year",
-        "license": "apache-2.0",
-        "size_in_GB": 0.13,
-        "sources": {
-            "hf": "answerdotai/answerai-colbert-small-v1",
-        },
-        "model_file": "vespa_colbert.onnx",
-    },
+supported_colbert_models: list[ModelDescription] = [
+    ModelDescription(
+        model="colbert-ir/colbertv2.0",
+        dim=128,
+        description="Late interaction model",
+        license="mit",
+        size_in_GB=0.44,
+        sources=ModelSource(hf="colbert-ir/colbertv2.0"),
+        model_file="model.onnx",
+    ),
+    ModelDescription(
+        model="answerdotai/answerai-colbert-small-v1",
+        dim=96,
+        description="Text embeddings, Unimodal (text), Multilingual (~100 languages), 512 input tokens truncation, 2024 year",
+        license="apache-2.0",
+        size_in_GB=0.13,
+        sources=ModelSource(hf="answerdotai/answerai-colbert-small-v1"),
+        model_file="vespa_colbert.onnx",
+    ),
 ]
 
 

@@ -45,7 +45,7 @@ class ModelManagement:
             dict[str, Any]: The model description.
         """
         for model in cls.list_supported_models():
-            if model_name.lower() == model["model"].lower():
+            if model_name.lower() == model.model.lower():
                 return model
 
         raise ValueError(f"Model {model_name} is not supported in {cls.__name__}.")
@@ -160,7 +160,9 @@ class ModelManagement:
                         }
             return meta
 
-        def _save_file_metadata(model_dir: Path, meta: dict[str, dict[str, Union[int, str]]]) -> None:
+        def _save_file_metadata(
+            model_dir: Path, meta: dict[str, dict[str, Union[int, str]]]
+        ) -> None:
             try:
                 if not model_dir.exists():
                     model_dir.mkdir(parents=True, exist_ok=True)
@@ -368,16 +370,16 @@ class ModelManagement:
         if specific_model_path:
             return Path(specific_model_path)
         retries = 1 if local_files_only else retries
-        hf_source = model.get("sources", {}).get("hf")
-        url_source = model.get("sources", {}).get("url")
+        hf_source = model.sources.hf
+        url_source = model.sources.url
 
         sleep = 3.0
         while retries > 0:
             retries -= 1
 
             if hf_source:
-                extra_patterns = [model["model_file"]]
-                extra_patterns.extend(model.get("additional_files", []))
+                extra_patterns = [model.model_file]
+                extra_patterns.extend(model.additional_files)
 
                 try:
                     return Path(
@@ -399,7 +401,7 @@ class ModelManagement:
             if url_source or local_files_only:
                 try:
                     return cls.retrieve_model_gcs(
-                        model["model"],
+                        model.model,
                         url_source,
                         str(cache_dir),
                         local_files_only=local_files_only,
@@ -417,4 +419,4 @@ class ModelManagement:
             time.sleep(sleep)
             sleep *= 3
 
-        raise ValueError(f"Could not load model {model['model']} from any source.")
+        raise ValueError(f"Could not load model {model.model} from any source.")

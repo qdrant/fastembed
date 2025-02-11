@@ -5,76 +5,85 @@ import numpy as np
 from fastembed.common.types import NumpyArray
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.text.onnx_embedding import OnnxTextEmbedding, OnnxTextEmbeddingWorker
+from fastembed.common.model_description import ModelDescription, ModelSource
 
-supported_pooled_models = [
-    {
-        "model": "nomic-ai/nomic-embed-text-v1.5",
-        "dim": 768,
-        "description": "Text embeddings, Multimodal (text, image), English, 8192 input tokens truncation, Prefixes for queries/documents: necessary, 2024 year.",
-        "license": "apache-2.0",
-        "size_in_GB": 0.52,
-        "sources": {
-            "hf": "nomic-ai/nomic-embed-text-v1.5",
-        },
-        "model_file": "onnx/model.onnx",
-    },
-    {
-        "model": "nomic-ai/nomic-embed-text-v1.5-Q",
-        "dim": 768,
-        "description": "Text embeddings, Multimodal (text, image), English, 8192 input tokens truncation, Prefixes for queries/documents: necessary, 2024 year.",
-        "license": "apache-2.0",
-        "size_in_GB": 0.13,
-        "sources": {
-            "hf": "nomic-ai/nomic-embed-text-v1.5",
-        },
-        "model_file": "onnx/model_quantized.onnx",
-    },
-    {
-        "model": "nomic-ai/nomic-embed-text-v1",
-        "dim": 768,
-        "description": "Text embeddings, Multimodal (text, image), English, 8192 input tokens truncation, Prefixes for queries/documents: necessary, 2024 year.",
-        "license": "apache-2.0",
-        "size_in_GB": 0.52,
-        "sources": {
-            "hf": "nomic-ai/nomic-embed-text-v1",
-        },
-        "model_file": "onnx/model.onnx",
-    },
-    {
-        "model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
-        "dim": 384,
-        "description": "Text embeddings, Unimodal (text), Multilingual (~50 languages), 512 input tokens truncation, Prefixes for queries/documents: not necessary, 2019 year.",
-        "license": "apache-2.0",
-        "size_in_GB": 0.22,
-        "sources": {
-            "hf": "qdrant/paraphrase-multilingual-MiniLM-L12-v2-onnx-Q",
-        },
-        "model_file": "model_optimized.onnx",
-    },
-    {
-        "model": "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
-        "dim": 768,
-        "description": "Text embeddings, Unimodal (text), Multilingual (~50 languages), 384 input tokens truncation, Prefixes for queries/documents: not necessary, 2021 year.",
-        "license": "apache-2.0",
-        "size_in_GB": 1.00,
-        "sources": {
-            "hf": "xenova/paraphrase-multilingual-mpnet-base-v2",
-        },
-        "model_file": "onnx/model.onnx",
-    },
-    {
-        "model": "intfloat/multilingual-e5-large",
-        "dim": 1024,
-        "description": "Text embeddings, Unimodal (text), Multilingual (~100 languages), 512 input tokens truncation, Prefixes for queries/documents: necessary, 2024 year.",
-        "license": "mit",
-        "size_in_GB": 2.24,
-        "sources": {
-            "url": "https://storage.googleapis.com/qdrant-fastembed/fast-multilingual-e5-large.tar.gz",
-            "hf": "qdrant/multilingual-e5-large-onnx",
-        },
-        "model_file": "model.onnx",
-        "additional_files": ["model.onnx_data"],
-    },
+supported_pooled_models: list[ModelDescription] = [
+    ModelDescription(
+        model="nomic-ai/nomic-embed-text-v1.5",
+        dim=768,
+        description=(
+            "Text embeddings, Multimodal (text, image), English, 8192 input tokens truncation, "
+            "Prefixes for queries/documents: necessary, 2024 year."
+        ),
+        license="apache-2.0",
+        size_in_GB=0.52,
+        sources=ModelSource(hf="nomic-ai/nomic-embed-text-v1.5"),
+        model_file="onnx/model.onnx",
+    ),
+    ModelDescription(
+        model="nomic-ai/nomic-embed-text-v1.5-Q",
+        dim=768,
+        description=(
+            "Text embeddings, Multimodal (text, image), English, 8192 input tokens truncation, "
+            "Prefixes for queries/documents: necessary, 2024 year."
+        ),
+        license="apache-2.0",
+        size_in_GB=0.13,
+        sources=ModelSource(hf="nomic-ai/nomic-embed-text-v1.5"),
+        model_file="onnx/model_quantized.onnx",
+    ),
+    ModelDescription(
+        model="nomic-ai/nomic-embed-text-v1",
+        dim=768,
+        description=(
+            "Text embeddings, Multimodal (text, image), English, 8192 input tokens truncation, "
+            "Prefixes for queries/documents: necessary, 2024 year."
+        ),
+        license="apache-2.0",
+        size_in_GB=0.52,
+        sources=ModelSource(hf="nomic-ai/nomic-embed-text-v1"),
+        model_file="onnx/model.onnx",
+    ),
+    ModelDescription(
+        model="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        dim=384,
+        description=(
+            "Text embeddings, Unimodal (text), Multilingual (~50 languages), 512 input tokens truncation, "
+            "Prefixes for queries/documents: not necessary, 2019 year."
+        ),
+        license="apache-2.0",
+        size_in_GB=0.22,
+        sources=ModelSource(hf="qdrant/paraphrase-multilingual-MiniLM-L12-v2-onnx-Q"),
+        model_file="model_optimized.onnx",
+    ),
+    ModelDescription(
+        model="sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
+        dim=768,
+        description=(
+            "Text embeddings, Unimodal (text), Multilingual (~50 languages), 384 input tokens truncation, "
+            "Prefixes for queries/documents: not necessary, 2021 year."
+        ),
+        license="apache-2.0",
+        size_in_GB=1.00,
+        sources=ModelSource(hf="xenova/paraphrase-multilingual-mpnet-base-v2"),
+        model_file="onnx/model.onnx",
+    ),
+    ModelDescription(
+        model="intfloat/multilingual-e5-large",
+        dim=1024,
+        description=(
+            "Text embeddings, Unimodal (text), Multilingual (~100 languages), 512 input tokens truncation, "
+            "Prefixes for queries/documents: necessary, 2024 year."
+        ),
+        license="mit",
+        size_in_GB=2.24,
+        sources=ModelSource(
+            hf="qdrant/multilingual-e5-large-onnx",
+            url="https://storage.googleapis.com/qdrant-fastembed/fast-multilingual-e5-large.tar.gz",
+        ),
+        model_file="model.onnx",
+        additional_files=["model.onnx_data"],
+    ),
 ]
 
 

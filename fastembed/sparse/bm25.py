@@ -19,6 +19,7 @@ from fastembed.sparse.sparse_embedding_base import (
     SparseTextEmbeddingBase,
 )
 from fastembed.sparse.utils.tokenizer import SimpleTokenizer
+from fastembed.common.model_description import SparseModelDescription, ModelSource
 
 supported_languages = [
     "arabic",
@@ -52,19 +53,19 @@ supported_languages = [
     "turkish",
 ]
 
-supported_bm25_models = [
-    {
-        "model": "Qdrant/bm25",
-        "description": "BM25 as sparse embeddings meant to be used with Qdrant",
-        "license": "apache-2.0",
-        "size_in_GB": 0.01,
-        "sources": {
-            "hf": "Qdrant/bm25",
-        },
-        "model_file": "mock.file",  # bm25 does not require a model, so we just use a mock
-        "additional_files": [f"{lang}.txt" for lang in supported_languages],
-        "requires_idf": True,
-    },
+supported_bm25_models: list[SparseModelDescription] = [
+    SparseModelDescription(
+        model="Qdrant/bm25",
+        vocab_size=0,
+        dim=None,
+        description="BM25 as sparse embeddings meant to be used with Qdrant",
+        license="apache-2.0",
+        size_in_GB=0.01,
+        sources=ModelSource(hf="Qdrant/bm25"),
+        additional_files=[f"{lang}.txt" for lang in supported_languages],
+        requires_idf=True,
+        model_file=None,
+    ),
 ]
 
 
