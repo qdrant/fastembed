@@ -43,7 +43,7 @@ class SparseModelDescription(ModelDescription):
 
     vocab_size: int = field(init=False)
     requires_idf: Optional[bool] = field(init=False, default=None)
-    dim: Optional[int] = field(default=None, init=False)  # Always None for sparse models.
+    dim: Optional[int] = field(default=None, init=False)
 
     def __init__(
         self,
@@ -52,6 +52,7 @@ class SparseModelDescription(ModelDescription):
         sources: ModelSource,
         model_file: str,
         description: str,
+        dim: int,
         license: str,
         size_in_GB: float,
         additional_files: Optional[List[str]] = None,
@@ -63,7 +64,7 @@ class SparseModelDescription(ModelDescription):
         object.__setattr__(self, "model", model)
         object.__setattr__(self, "sources", sources)
         object.__setattr__(self, "model_file", model_file)
-        object.__setattr__(self, "dim", None)
+        object.__setattr__(self, "dim", dim if dim else None)
         object.__setattr__(self, "description", description)
         object.__setattr__(self, "license", license)
         object.__setattr__(self, "size_in_GB", size_in_GB)
