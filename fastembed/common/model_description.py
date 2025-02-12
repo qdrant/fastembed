@@ -26,13 +26,13 @@ class BaseModelDescription:
 
     def validate_info(self) -> None:
         if self.license == "":
-            raise ValueError("license is required for dense model description")
+            raise ValueError("license is required in builtin model description")
 
         if self.description == "":
-            raise ValueError("description is required for dense model description")
+            raise ValueError("description is required in builtin model description")
 
         if self.size_in_GB is None:
-            raise ValueError("size_in_GB is required for dense model description")
+            raise ValueError("size_in_GB is required in builtin model description")
 
     def __post_init__(self) -> None:
         self.validate_info()
