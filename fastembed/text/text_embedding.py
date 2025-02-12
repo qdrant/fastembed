@@ -8,7 +8,7 @@ from fastembed.text.pooled_embedding import PooledEmbedding
 from fastembed.text.multitask_embedding import JinaEmbeddingV3
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
 from fastembed.text.text_embedding_base import TextEmbeddingBase
-from fastembed.common.model_description import ModelDescription
+from fastembed.common.model_description import DenseModelDescription
 
 
 class TextEmbedding(TextEmbeddingBase):
@@ -21,12 +21,12 @@ class TextEmbedding(TextEmbeddingBase):
     ]
 
     @classmethod
-    def list_supported_models(cls) -> list[ModelDescription]:
+    def list_supported_models(cls) -> list[DenseModelDescription]:
         """
         Lists the supported models.
 
         Returns:
-            list[ModelDescription]: A list of dictionaries containing the model information.
+            list[DenseModelDescription]: A list of dictionaries containing the model information.
 
             Example:
                 ```
@@ -45,7 +45,7 @@ class TextEmbedding(TextEmbeddingBase):
                 ]
                 ```
         """
-        result: list[ModelDescription] = []
+        result: list[DenseModelDescription] = []
         for embedding in cls.EMBEDDINGS_REGISTRY:
             result.extend(embedding.list_supported_models())
         return result

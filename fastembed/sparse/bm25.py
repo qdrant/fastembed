@@ -57,7 +57,6 @@ supported_bm25_models: list[SparseModelDescription] = [
     SparseModelDescription(
         model="Qdrant/bm25",
         vocab_size=0,
-        dim=None,
         description="BM25 as sparse embeddings meant to be used with Qdrant",
         license="apache-2.0",
         size_in_GB=0.01,

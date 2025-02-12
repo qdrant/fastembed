@@ -28,7 +28,6 @@ supported_bm42_models: list[SparseModelDescription] = [
         model_file="model.onnx",
         additional_files=["stopwords.txt"],
         requires_idf=True,
-        dim=None,
     ),
 ]
 

@@ -2,11 +2,12 @@ from typing import Iterable, Optional, Union, Any
 
 
 from fastembed.common import ImageInput
+from fastembed.common.model_description import DenseModelDescription
 from fastembed.common.model_management import ModelManagement
 from fastembed.common.types import NumpyArray
 
 
-class LateInteractionMultimodalEmbeddingBase(ModelManagement):
+class LateInteractionMultimodalEmbeddingBase(ModelManagement[DenseModelDescription]):
     def __init__(
         self,
         model_name: str,

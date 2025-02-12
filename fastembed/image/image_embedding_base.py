@@ -1,11 +1,12 @@
 from typing import Iterable, Optional, Any, Union
 
+from fastembed.common.model_description import DenseModelDescription
 from fastembed.common.types import NumpyArray
 from fastembed.common.model_management import ModelManagement
 from fastembed.common.types import ImageInput
 
 
-class ImageEmbeddingBase(ModelManagement):
+class ImageEmbeddingBase(ModelManagement[DenseModelDescription]):
     def __init__(
         self,
         model_name: str,

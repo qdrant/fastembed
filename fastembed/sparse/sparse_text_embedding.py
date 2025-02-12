@@ -1,4 +1,4 @@
-from typing import Any, Iterable, Optional, Sequence, Type, Union, cast
+from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 from fastembed.common import OnnxProvider
 from fastembed.sparse.bm25 import Bm25
@@ -41,7 +41,7 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
         """
         result: list[SparseModelDescription] = []
         for embedding in cls.EMBEDDINGS_REGISTRY:
-            result.extend(cast(list[SparseModelDescription], embedding.list_supported_models()))
+            result.extend(embedding.list_supported_models())
         return result
 
     def __init__(

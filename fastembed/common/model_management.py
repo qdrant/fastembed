@@ -4,7 +4,7 @@ import json
 import shutil
 import tarfile
 from pathlib import Path
-from typing import Any, Optional, Union, Sequence, TypeVar, Generic
+from typing import Any, Optional, Union, TypeVar, Generic
 
 import requests
 from huggingface_hub import snapshot_download, model_info, list_repo_tree
@@ -16,16 +16,16 @@ from huggingface_hub.utils import (
 )
 from loguru import logger
 from tqdm import tqdm
-from fastembed.common.model_description import ModelDescription
+from fastembed.common.model_description import BaseModelDescription
 
-T = TypeVar("T", bound=ModelDescription)
+T = TypeVar("T", bound=BaseModelDescription)
 
 
 class ModelManagement(Generic[T]):
     METADATA_FILE = "files_metadata.json"
 
     @classmethod
-    def list_supported_models(cls) -> Sequence[T]:
+    def list_supported_models(cls) -> list[T]:
         """Lists the supported models.
 
         Returns:

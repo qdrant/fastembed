@@ -1,9 +1,10 @@
 from typing import Any, Iterable, Optional
 
+from fastembed.common.model_description import BaseModelDescription
 from fastembed.common.model_management import ModelManagement
 
 
-class TextCrossEncoderBase(ModelManagement):
+class TextCrossEncoderBase(ModelManagement[BaseModelDescription]):
     def __init__(
         self,
         model_name: str,

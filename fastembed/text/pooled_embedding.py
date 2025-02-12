@@ -5,10 +5,10 @@ import numpy as np
 from fastembed.common.types import NumpyArray
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.text.onnx_embedding import OnnxTextEmbedding, OnnxTextEmbeddingWorker
-from fastembed.common.model_description import ModelDescription, ModelSource
+from fastembed.common.model_description import DenseModelDescription, ModelSource
 
-supported_pooled_models: list[ModelDescription] = [
-    ModelDescription(
+supported_pooled_models: list[DenseModelDescription] = [
+    DenseModelDescription(
         model="nomic-ai/nomic-embed-text-v1.5",
         dim=768,
         description=(
@@ -20,7 +20,7 @@ supported_pooled_models: list[ModelDescription] = [
         sources=ModelSource(hf="nomic-ai/nomic-embed-text-v1.5"),
         model_file="onnx/model.onnx",
     ),
-    ModelDescription(
+    DenseModelDescription(
         model="nomic-ai/nomic-embed-text-v1.5-Q",
         dim=768,
         description=(
@@ -32,7 +32,7 @@ supported_pooled_models: list[ModelDescription] = [
         sources=ModelSource(hf="nomic-ai/nomic-embed-text-v1.5"),
         model_file="onnx/model_quantized.onnx",
     ),
-    ModelDescription(
+    DenseModelDescription(
         model="nomic-ai/nomic-embed-text-v1",
         dim=768,
         description=(
@@ -44,7 +44,7 @@ supported_pooled_models: list[ModelDescription] = [
         sources=ModelSource(hf="nomic-ai/nomic-embed-text-v1"),
         model_file="onnx/model.onnx",
     ),
-    ModelDescription(
+    DenseModelDescription(
         model="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
         dim=384,
         description=(
@@ -56,7 +56,7 @@ supported_pooled_models: list[ModelDescription] = [
         sources=ModelSource(hf="qdrant/paraphrase-multilingual-MiniLM-L12-v2-onnx-Q"),
         model_file="model_optimized.onnx",
     ),
-    ModelDescription(
+    DenseModelDescription(
         model="sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
         dim=768,
         description=(
@@ -68,7 +68,7 @@ supported_pooled_models: list[ModelDescription] = [
         sources=ModelSource(hf="xenova/paraphrase-multilingual-mpnet-base-v2"),
         model_file="onnx/model.onnx",
     ),
-    ModelDescription(
+    DenseModelDescription(
         model="intfloat/multilingual-e5-large",
         dim=1024,
         description=(
@@ -105,7 +105,7 @@ class PooledEmbedding(OnnxTextEmbedding):
         return pooled_embeddings
 
     @classmethod
-    def list_supported_models(cls) -> list[ModelDescription]:
+    def list_supported_models(cls) -> list[DenseModelDescription]:
         """Lists the supported models.
 
         Returns:

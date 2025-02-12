@@ -9,10 +9,10 @@ from fastembed.common.utils import define_cache_dir, normalize
 from fastembed.image.image_embedding_base import ImageEmbeddingBase
 from fastembed.image.onnx_image_model import ImageEmbeddingWorker, OnnxImageModel
 
-from fastembed.common.model_description import ModelDescription, ModelSource
+from fastembed.common.model_description import DenseModelDescription, ModelSource
 
-supported_onnx_models: list[ModelDescription] = [
-    ModelDescription(
+supported_onnx_models: list[DenseModelDescription] = [
+    DenseModelDescription(
         model="Qdrant/clip-ViT-B-32-vision",
         dim=512,
         description="Image embeddings, Multimodal (text&image), 2021 year",
@@ -21,7 +21,7 @@ supported_onnx_models: list[ModelDescription] = [
         sources=ModelSource(hf="Qdrant/clip-ViT-B-32-vision"),
         model_file="model.onnx",
     ),
-    ModelDescription(
+    DenseModelDescription(
         model="Qdrant/resnet50-onnx",
         dim=2048,
         description="Image embeddings, Unimodal (image), 2016 year",
@@ -30,7 +30,7 @@ supported_onnx_models: list[ModelDescription] = [
         sources=ModelSource(hf="Qdrant/resnet50-onnx"),
         model_file="model.onnx",
     ),
-    ModelDescription(
+    DenseModelDescription(
         model="Qdrant/Unicom-ViT-B-16",
         dim=768,
         description="Image embeddings (more detailed than Unicom-ViT-B-32), Multimodal (text&image), 2023 year",
@@ -39,7 +39,7 @@ supported_onnx_models: list[ModelDescription] = [
         sources=ModelSource(hf="Qdrant/Unicom-ViT-B-16"),
         model_file="model.onnx",
     ),
-    ModelDescription(
+    DenseModelDescription(
         model="Qdrant/Unicom-ViT-B-32",
         dim=512,
         description="Image embeddings, Multimodal (text&image), 2023 year",
@@ -48,7 +48,7 @@ supported_onnx_models: list[ModelDescription] = [
         sources=ModelSource(hf="Qdrant/Unicom-ViT-B-32"),
         model_file="model.onnx",
     ),
-    ModelDescription(
+    DenseModelDescription(
         model="jinaai/jina-clip-v1",
         dim=768,
         description="Image embeddings, Multimodal (text&image), 2024 year",
@@ -137,7 +137,7 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[NumpyArray]):
         )
 
     @classmethod
-    def list_supported_models(cls) -> list[ModelDescription]:
+    def list_supported_models(cls) -> list[DenseModelDescription]:
         """
         Lists the supported models.
 

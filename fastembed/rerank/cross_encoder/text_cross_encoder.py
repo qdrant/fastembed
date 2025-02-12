@@ -3,7 +3,7 @@ from typing import Any, Iterable, Optional, Sequence, Type
 from fastembed.common import OnnxProvider
 from fastembed.rerank.cross_encoder.onnx_text_cross_encoder import OnnxTextCrossEncoder
 from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
-from fastembed.common.model_description import ModelDescription
+from fastembed.common.model_description import BaseModelDescription
 
 
 class TextCrossEncoder(TextCrossEncoderBase):
@@ -12,11 +12,11 @@ class TextCrossEncoder(TextCrossEncoderBase):
     ]
 
     @classmethod
-    def list_supported_models(cls) -> list[ModelDescription]:
+    def list_supported_models(cls) -> list[BaseModelDescription]:
         """Lists the supported models.
 
         Returns:
-            list[ModelDescription]: A list of dictionaries containing the model information.
+            list[BaseModelDescription]: A list of dictionaries containing the model information.
 
             Example:
                 ```
@@ -34,7 +34,7 @@ class TextCrossEncoder(TextCrossEncoderBase):
                 ]
                 ```
         """
-        result: list[ModelDescription] = []
+        result: list[BaseModelDescription] = []
         for encoder in cls.CROSS_ENCODER_REGISTRY:
             result.extend(encoder.list_supported_models())
         return result

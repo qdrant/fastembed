@@ -7,10 +7,10 @@ from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.utils import normalize
 from fastembed.text.onnx_embedding import OnnxTextEmbedding, OnnxTextEmbeddingWorker
 from fastembed.text.pooled_embedding import PooledEmbedding
-from fastembed.common.model_description import ModelDescription, ModelSource
+from fastembed.common.model_description import DenseModelDescription, ModelSource
 
-supported_pooled_normalized_models: list[ModelDescription] = [
-    ModelDescription(
+supported_pooled_normalized_models: list[DenseModelDescription] = [
+    DenseModelDescription(
         model="sentence-transformers/all-MiniLM-L6-v2",
         dim=384,
         description=(
@@ -25,7 +25,7 @@ supported_pooled_normalized_models: list[ModelDescription] = [
         ),
         model_file="model.onnx",
     ),
-    ModelDescription(
+    DenseModelDescription(
         model="jinaai/jina-embeddings-v2-base-en",
         dim=768,
         description=(
@@ -37,7 +37,7 @@ supported_pooled_normalized_models: list[ModelDescription] = [
         sources=ModelSource(hf="xenova/jina-embeddings-v2-base-en"),
         model_file="onnx/model.onnx",
     ),
-    ModelDescription(
+    DenseModelDescription(
         model="jinaai/jina-embeddings-v2-small-en",
         dim=512,
         description=(
@@ -49,7 +49,7 @@ supported_pooled_normalized_models: list[ModelDescription] = [
         sources=ModelSource(hf="xenova/jina-embeddings-v2-small-en"),
         model_file="onnx/model.onnx",
     ),
-    ModelDescription(
+    DenseModelDescription(
         model="jinaai/jina-embeddings-v2-base-de",
         dim=768,
         description=(
@@ -61,7 +61,7 @@ supported_pooled_normalized_models: list[ModelDescription] = [
         sources=ModelSource(hf="jinaai/jina-embeddings-v2-base-de"),
         model_file="onnx/model_fp16.onnx",
     ),
-    ModelDescription(
+    DenseModelDescription(
         model="jinaai/jina-embeddings-v2-base-code",
         dim=768,
         description=(
@@ -73,7 +73,7 @@ supported_pooled_normalized_models: list[ModelDescription] = [
         sources=ModelSource(hf="jinaai/jina-embeddings-v2-base-code"),
         model_file="onnx/model.onnx",
     ),
-    ModelDescription(
+    DenseModelDescription(
         model="jinaai/jina-embeddings-v2-base-zh",
         dim=768,
         description=(
@@ -85,7 +85,7 @@ supported_pooled_normalized_models: list[ModelDescription] = [
         sources=ModelSource(hf="jinaai/jina-embeddings-v2-base-zh"),
         model_file="onnx/model.onnx",
     ),
-    ModelDescription(
+    DenseModelDescription(
         model="jinaai/jina-embeddings-v2-base-es",
         dim=768,
         description=(
@@ -97,7 +97,7 @@ supported_pooled_normalized_models: list[ModelDescription] = [
         sources=ModelSource(hf="jinaai/jina-embeddings-v2-base-es"),
         model_file="onnx/model.onnx",
     ),
-    ModelDescription(
+    DenseModelDescription(
         model="thenlper/gte-base",
         dim=768,
         description=(
@@ -118,7 +118,7 @@ class PooledNormalizedEmbedding(PooledEmbedding):
         return PooledNormalizedEmbeddingWorker
 
     @classmethod
-    def list_supported_models(cls) -> list[ModelDescription]:
+    def list_supported_models(cls) -> list[DenseModelDescription]:
         """Lists the supported models.
 
         Returns:
