@@ -2,10 +2,10 @@ from typing import Any, Type
 
 from fastembed.common.types import NumpyArray
 from fastembed.late_interaction.colbert import Colbert, ColbertEmbeddingWorker
-from fastembed.common.model_description import ModelDescription, ModelSource
+from fastembed.common.model_description import DenseModelDescription, ModelSource
 
-supported_jina_colbert_models: list[ModelDescription] = [
-    ModelDescription(
+supported_jina_colbert_models: list[DenseModelDescription] = [
+    DenseModelDescription(
         model="jinaai/jina-colbert-v2",
         dim=128,
         description="New model that expands capabilities of colbert-v1 with multilingual and context length of 8192, 2024 year",
@@ -29,7 +29,7 @@ class JinaColbert(Colbert):
         return JinaColbertEmbeddingWorker
 
     @classmethod
-    def list_supported_models(cls) -> list[ModelDescription]:
+    def list_supported_models(cls) -> list[DenseModelDescription]:
         """Lists the supported models.
 
         Returns:

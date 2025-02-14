@@ -1,5 +1,5 @@
-from dataclasses import dataclass, field, InitVar
-from typing import Optional, List, Dict
+from dataclasses import dataclass, field
+from typing import Optional, Any
 
 
 @dataclass(frozen=True)
@@ -15,67 +15,54 @@ class ModelSource:
 
 
 @dataclass(frozen=True)
-class ModelDescription:
+class BaseModelDescription:
     model: str
     sources: ModelSource
     model_file: str
-    dim: Optional[int]
-
-    description: str
-    license: str
-    size_in_GB: Optional[float]
-    additional_files: List[str] = field(default_factory=list)
-    tasks: Dict[str, int] = field(default_factory=dict)
-
-
-@dataclass(frozen=True)
-class MultimodalModelDescription(ModelDescription):
-    dim: int
-
-
-@dataclass(frozen=True)
-class SparseModelDescription(ModelDescription):
-    _vocab_size: InitVar[Optional[int]] = None
-    _requires_idf: InitVar[Optional[bool]] = None
-
-    vocab_size: int = field(init=False)
-    requires_idf: Optional[bool] = field(init=False, default=None)
-    dim: Optional[int] = field(default=None, init=False)
-
-    def __init__(
-        self,
-        *,
-        model: str,
-        sources: ModelSource,
-        model_file: str,
-        description: str,
-        license: str,
-        size_in_GB: Optional[float],
-        dim: Optional[int] = None,
-        additional_files: Optional[List[str]] = None,
-        tasks: Optional[Dict[str, int]] = None,
-        vocab_size: int,
-        requires_idf: Optional[bool] = None,
-    ):
-        # Call the parent initializer with the fields it needs.
-        object.__setattr__(self, "model", model)
-        object.__setattr__(self, "sources", sources)
-        object.__setattr__(self, "model_file", model_file)
-        object.__setattr__(self, "dim", dim if dim else None)
-        object.__setattr__(self, "description", description)
-        object.__setattr__(self, "license", license)
-        object.__setattr__(self, "size_in_GB", size_in_GB)
-        object.__setattr__(
-            self, "additional_files", additional_files if additional_files is not None else []
-        )
-        object.__setattr__(self, "tasks", tasks if tasks is not None else {})
-        # Set new fields.
-        object.__setattr__(self, "vocab_size", vocab_size)
-        object.__setattr__(self, "requires_idf", requires_idf)
-
-
-@dataclass(frozen=True)
-class CustomModelDescription(ModelDescription):
     description: str = ""
     license: str = ""
     size_in_GB: Optional[float] = None
+    additional_files: list[str] = field(default_factory=list)
+
+    def validate_info(self) -> None:
+        if self.license == "":
+            raise ValueError("license is required in builtin model description")
+
+        if self.description == "":
+            raise ValueError("description is required in builtin model description")
+
+        if self.size_in_GB is None:
+            raise ValueError("size_in_GB is required in builtin model description")
+
+    def __post_init__(self) -> None:
+        self.validate_info()
+
+
+@dataclass(frozen=True)
+class DenseModelDescription(BaseModelDescription):
+    dim: Optional[int] = None
+    tasks: Optional[dict[str, Any]] = None
+
+    def __post_init__(self) -> None:
+        assert self.dim is not None, "dim is required for dense model description"
+        self.validate_info()
+
+
+@dataclass(frozen=True)
+class SparseModelDescription(BaseModelDescription):
+    requires_idf: Optional[bool] = None
+    vocab_size: Optional[int] = None
+
+
+@dataclass(frozen=True)
+class CustomDenseModelDescription(DenseModelDescription):
+    def __post_init__(self) -> None:
+        if self.dim is None:
+            raise ValueError("dim is required for custom dense model description")
+        # disable self.validate_info
+
+
+@dataclass(frozen=True)
+class CustomSparseModelDescription(SparseModelDescription):
+    def __post_init__(self) -> None:
+        pass  # disable self.validate_info

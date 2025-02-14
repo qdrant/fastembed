@@ -6,10 +6,10 @@ from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.utils import define_cache_dir, normalize
 from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
 from fastembed.text.text_embedding_base import TextEmbeddingBase
-from fastembed.common.model_description import ModelDescription, ModelSource
+from fastembed.common.model_description import DenseModelDescription, ModelSource
 
-supported_onnx_models: list[ModelDescription] = [
-    ModelDescription(
+supported_onnx_models: list[DenseModelDescription] = [
+    DenseModelDescription(
         model="BAAI/bge-base-en",
         dim=768,
         description=(
@@ -24,7 +24,7 @@ supported_onnx_models: list[ModelDescription] = [
         ),
         model_file="model_optimized.onnx",
     ),
-    ModelDescription(
+    DenseModelDescription(
         model="BAAI/bge-base-en-v1.5",
         dim=768,
         description=(
@@ -39,7 +39,7 @@ supported_onnx_models: list[ModelDescription] = [
         ),
         model_file="model_optimized.onnx",
     ),
-    ModelDescription(
+    DenseModelDescription(
         model="BAAI/bge-large-en-v1.5",
         dim=1024,
         description=(
@@ -51,7 +51,7 @@ supported_onnx_models: list[ModelDescription] = [
         sources=ModelSource(hf="qdrant/bge-large-en-v1.5-onnx"),
         model_file="model.onnx",
     ),
-    ModelDescription(
+    DenseModelDescription(
         model="BAAI/bge-small-en",
         dim=384,
         description=(
@@ -66,7 +66,7 @@ supported_onnx_models: list[ModelDescription] = [
         ),
         model_file="model_optimized.onnx",
     ),
-    ModelDescription(
+    DenseModelDescription(
         model="BAAI/bge-small-en-v1.5",
         dim=384,
         description=(
@@ -78,7 +78,7 @@ supported_onnx_models: list[ModelDescription] = [
         sources=ModelSource(hf="qdrant/bge-small-en-v1.5-onnx-q"),
         model_file="model_optimized.onnx",
     ),
-    ModelDescription(
+    DenseModelDescription(
         model="BAAI/bge-small-zh-v1.5",
         dim=512,
         description=(
@@ -93,7 +93,7 @@ supported_onnx_models: list[ModelDescription] = [
         ),
         model_file="model_optimized.onnx",
     ),
-    ModelDescription(
+    DenseModelDescription(
         model="thenlper/gte-large",
         dim=1024,
         description=(
@@ -105,7 +105,7 @@ supported_onnx_models: list[ModelDescription] = [
         sources=ModelSource(hf="qdrant/gte-large-onnx"),
         model_file="model.onnx",
     ),
-    ModelDescription(
+    DenseModelDescription(
         model="mixedbread-ai/mxbai-embed-large-v1",
         dim=1024,
         description=(
@@ -117,7 +117,7 @@ supported_onnx_models: list[ModelDescription] = [
         sources=ModelSource(hf="mixedbread-ai/mxbai-embed-large-v1"),
         model_file="onnx/model.onnx",
     ),
-    ModelDescription(
+    DenseModelDescription(
         model="snowflake/snowflake-arctic-embed-xs",
         dim=384,
         description=(
@@ -129,7 +129,7 @@ supported_onnx_models: list[ModelDescription] = [
         sources=ModelSource(hf="snowflake/snowflake-arctic-embed-xs"),
         model_file="onnx/model.onnx",
     ),
-    ModelDescription(
+    DenseModelDescription(
         model="snowflake/snowflake-arctic-embed-s",
         dim=384,
         description=(
@@ -141,7 +141,7 @@ supported_onnx_models: list[ModelDescription] = [
         sources=ModelSource(hf="snowflake/snowflake-arctic-embed-s"),
         model_file="onnx/model.onnx",
     ),
-    ModelDescription(
+    DenseModelDescription(
         model="snowflake/snowflake-arctic-embed-m",
         dim=768,
         description=(
@@ -153,7 +153,7 @@ supported_onnx_models: list[ModelDescription] = [
         sources=ModelSource(hf="Snowflake/snowflake-arctic-embed-m"),
         model_file="onnx/model.onnx",
     ),
-    ModelDescription(
+    DenseModelDescription(
         model="snowflake/snowflake-arctic-embed-m-long",
         dim=768,
         description=(
@@ -165,7 +165,7 @@ supported_onnx_models: list[ModelDescription] = [
         sources=ModelSource(hf="snowflake/snowflake-arctic-embed-m-long"),
         model_file="onnx/model.onnx",
     ),
-    ModelDescription(
+    DenseModelDescription(
         model="snowflake/snowflake-arctic-embed-l",
         dim=1024,
         description=(
@@ -177,7 +177,7 @@ supported_onnx_models: list[ModelDescription] = [
         sources=ModelSource(hf="snowflake/snowflake-arctic-embed-l"),
         model_file="onnx/model.onnx",
     ),
-    ModelDescription(
+    DenseModelDescription(
         model="jinaai/jina-clip-v1",
         dim=768,
         description=(
@@ -196,7 +196,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):
     """Implementation of the Flag Embedding model."""
 
     @classmethod
-    def list_supported_models(cls) -> list[ModelDescription]:
+    def list_supported_models(cls) -> list[DenseModelDescription]:
         """
         Lists the supported models.
 

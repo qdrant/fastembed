@@ -6,10 +6,10 @@ import numpy as np
 from fastembed.common.types import NumpyArray
 from fastembed.text.pooled_normalized_embedding import PooledNormalizedEmbedding
 from fastembed.text.onnx_embedding import OnnxTextEmbeddingWorker
-from fastembed.common.model_description import ModelDescription, ModelSource
+from fastembed.common.model_description import DenseModelDescription, ModelSource
 
-supported_multitask_models: list[ModelDescription] = [
-    ModelDescription(
+supported_multitask_models: list[DenseModelDescription] = [
+    DenseModelDescription(
         model="jinaai/jina-embeddings-v3",
         dim=1024,
         tasks={
@@ -53,7 +53,7 @@ class JinaEmbeddingV3(PooledNormalizedEmbedding):
         return JinaEmbeddingV3Worker
 
     @classmethod
-    def list_supported_models(cls) -> list[ModelDescription]:
+    def list_supported_models(cls) -> list[DenseModelDescription]:
         return supported_multitask_models
 
     def _preprocess_onnx_input(

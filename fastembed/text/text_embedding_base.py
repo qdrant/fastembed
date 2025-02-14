@@ -1,10 +1,11 @@
 from typing import Iterable, Optional, Union, Any
 
+from fastembed.common.model_description import DenseModelDescription
 from fastembed.common.types import NumpyArray
 from fastembed.common.model_management import ModelManagement
 
 
-class TextEmbeddingBase(ModelManagement):
+class TextEmbeddingBase(ModelManagement[DenseModelDescription]):
     def __init__(
         self,
         model_name: str,

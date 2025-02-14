@@ -12,10 +12,10 @@ from fastembed.late_interaction.late_interaction_embedding_base import (
     LateInteractionTextEmbeddingBase,
 )
 from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
-from fastembed.common.model_description import ModelDescription, ModelSource
+from fastembed.common.model_description import DenseModelDescription, ModelSource
 
-supported_colbert_models: list[ModelDescription] = [
-    ModelDescription(
+supported_colbert_models: list[DenseModelDescription] = [
+    DenseModelDescription(
         model="colbert-ir/colbertv2.0",
         dim=128,
         description="Late interaction model",
@@ -24,7 +24,7 @@ supported_colbert_models: list[ModelDescription] = [
         sources=ModelSource(hf="colbert-ir/colbertv2.0"),
         model_file="model.onnx",
     ),
-    ModelDescription(
+    DenseModelDescription(
         model="answerdotai/answerai-colbert-small-v1",
         dim=96,
         description="Text embeddings, Unimodal (text), Multilingual (~100 languages), 512 input tokens truncation, 2024 year",
@@ -108,7 +108,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
         return encoded
 
     @classmethod
-    def list_supported_models(cls) -> list[ModelDescription]:
+    def list_supported_models(cls) -> list[DenseModelDescription]:
         """Lists the supported models.
 
         Returns:

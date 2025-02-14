@@ -3,10 +3,10 @@ from typing import Any, Iterable, Type
 from fastembed.common.types import NumpyArray
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.text.onnx_embedding import OnnxTextEmbedding, OnnxTextEmbeddingWorker
-from fastembed.common.model_description import ModelDescription, ModelSource
+from fastembed.common.model_description import DenseModelDescription, ModelSource
 
-supported_clip_models: list[ModelDescription] = [
-    ModelDescription(
+supported_clip_models: list[DenseModelDescription] = [
+    DenseModelDescription(
         model="Qdrant/clip-ViT-B-32-text",
         dim=512,
         description=(
@@ -27,7 +27,7 @@ class CLIPOnnxEmbedding(OnnxTextEmbedding):
         return CLIPEmbeddingWorker
 
     @classmethod
-    def list_supported_models(cls) -> list[ModelDescription]:
+    def list_supported_models(cls) -> list[DenseModelDescription]:
         """Lists the supported models.
 
         Returns:

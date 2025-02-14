@@ -10,57 +10,51 @@ from fastembed.rerank.cross_encoder.onnx_text_model import (
     TextRerankerWorker,
 )
 from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
-from fastembed.common.model_description import ModelDescription, ModelSource
+from fastembed.common.model_description import BaseModelDescription, ModelSource
 
-supported_onnx_models: list[ModelDescription] = [
-    ModelDescription(
+supported_onnx_models: list[BaseModelDescription] = [
+    BaseModelDescription(
         model="Xenova/ms-marco-MiniLM-L-6-v2",
-        dim=None,  # Not applicable for these models
         description="MiniLM-L-6-v2 model optimized for re-ranking tasks.",
         license="apache-2.0",
         size_in_GB=0.08,
         sources=ModelSource(hf="Xenova/ms-marco-MiniLM-L-6-v2"),
         model_file="onnx/model.onnx",
     ),
-    ModelDescription(
+    BaseModelDescription(
         model="Xenova/ms-marco-MiniLM-L-12-v2",
-        dim=None,
         description="MiniLM-L-12-v2 model optimized for re-ranking tasks.",
         license="apache-2.0",
         size_in_GB=0.12,
         sources=ModelSource(hf="Xenova/ms-marco-MiniLM-L-12-v2"),
         model_file="onnx/model.onnx",
     ),
-    ModelDescription(
+    BaseModelDescription(
         model="BAAI/bge-reranker-base",
-        dim=None,
         description="BGE reranker base model for cross-encoder re-ranking.",
         license="mit",
         size_in_GB=1.04,
         sources=ModelSource(hf="BAAI/bge-reranker-base"),
         model_file="onnx/model.onnx",
     ),
-    ModelDescription(
+    BaseModelDescription(
         model="jinaai/jina-reranker-v1-tiny-en",
-        dim=None,
         description="Designed for blazing-fast re-ranking with 8K context length and fewer parameters than jina-reranker-v1-turbo-en.",
         license="apache-2.0",
         size_in_GB=0.13,
         sources=ModelSource(hf="jinaai/jina-reranker-v1-tiny-en"),
         model_file="onnx/model.onnx",
     ),
-    ModelDescription(
+    BaseModelDescription(
         model="jinaai/jina-reranker-v1-turbo-en",
-        dim=None,
         description="Designed for blazing-fast re-ranking with 8K context length.",
         license="apache-2.0",
         size_in_GB=0.15,
         sources=ModelSource(hf="jinaai/jina-reranker-v1-turbo-en"),
         model_file="onnx/model.onnx",
     ),
-    ModelDescription(
+    BaseModelDescription(
         model="jinaai/jina-reranker-v2-base-multilingual",
-        dim=None,
         description="A multi-lingual reranker model for cross-encoder re-ranking with 1K context length and sliding window",
         license="cc-by-nc-4.0",
         size_in_GB=1.11,
@@ -72,11 +66,11 @@ supported_onnx_models: list[ModelDescription] = [
 
 class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
     @classmethod
-    def list_supported_models(cls) -> list[ModelDescription]:
+    def list_supported_models(cls) -> list[BaseModelDescription]:
         """Lists the supported models.
 
         Returns:
-            list[ModelDescription]: A list of dictionaries containing the model information.
+            list[BaseModelDescription]: A list of dictionaries containing the model information.
         """
         return supported_onnx_models
 
