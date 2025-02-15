@@ -30,7 +30,7 @@ CANONICAL_VECTOR_VALUES = {
 def test_embedding() -> None:
     is_ci = os.getenv("CI")
 
-    for model_desc in ImageEmbedding.list_supported_models():
+    for model_desc in ImageEmbedding._list_supported_models():
         if not is_ci and model_desc.size_in_GB > 1:
             continue
 

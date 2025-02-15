@@ -76,7 +76,7 @@ def test_embedding() -> None:
     is_ci = os.getenv("CI")
     is_mac = platform.system() == "Darwin"
 
-    for model_desc in TextEmbedding.list_supported_models():
+    for model_desc in TextEmbedding._list_supported_models():
         if (
             (not is_ci and model_desc.size_in_GB > 1)
             or model_desc.model in MULTI_TASK_MODELS

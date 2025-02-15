@@ -65,7 +65,7 @@ def test_batch_embedding():
     docs_to_embed = docs * 10
     default_task = Task.RETRIEVAL_PASSAGE
 
-    for model_desc in TextEmbedding.list_supported_models():
+    for model_desc in TextEmbedding._list_supported_models():
         if not is_ci and model_desc.size_in_GB > 1:
             continue
 
@@ -96,7 +96,7 @@ def test_batch_embedding():
 def test_single_embedding():
     is_ci = os.getenv("CI")
 
-    for model_desc in TextEmbedding.list_supported_models():
+    for model_desc in TextEmbedding._list_supported_models():
         if not is_ci and model_desc.size_in_GB > 1:
             continue
 
@@ -129,7 +129,7 @@ def test_single_embedding_query():
     is_ci = os.getenv("CI")
     task_id = Task.RETRIEVAL_QUERY
 
-    for model_desc in TextEmbedding.list_supported_models():
+    for model_desc in TextEmbedding._list_supported_models():
         if not is_ci and model_desc.size_in_GB > 1:
             continue
 
@@ -161,7 +161,7 @@ def test_single_embedding_passage():
     is_ci = os.getenv("CI")
     task_id = Task.RETRIEVAL_PASSAGE
 
-    for model_desc in TextEmbedding.list_supported_models():
+    for model_desc in TextEmbedding._list_supported_models():
         if not is_ci and model_desc.size_in_GB > 1:
             continue
 
@@ -219,7 +219,7 @@ def test_parallel_processing():
 def test_task_assignment():
     is_ci = os.getenv("CI")
 
-    for model_desc in TextEmbedding.list_supported_models():
+    for model_desc in TextEmbedding._list_supported_models():
         if not is_ci and model_desc.size_in_GB > 1:
             continue
 
