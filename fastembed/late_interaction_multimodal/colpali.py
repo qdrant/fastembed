@@ -108,11 +108,11 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
             self.load_onnx_model()
 
     @classmethod
-    def list_supported_models(cls) -> list[DenseModelDescription]:
+    def _list_supported_models(cls) -> list[DenseModelDescription]:
         """Lists the supported models.
 
         Returns:
-            list[ModelDescription]: A list of dictionaries containing the model information.
+            list[DenseModelDescription]: A list of DenseModelDescription objects containing the model information.
         """
         return supported_colpali_models
 

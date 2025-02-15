@@ -1,5 +1,7 @@
 from typing import Any, Iterable, Optional, Sequence, Type, Union
+from dataclasses import asdict
 
+from fastembed.common.model_description import DenseModelDescription
 from fastembed.common.types import NumpyArray
 from fastembed.common import OnnxProvider
 from fastembed.late_interaction.colbert import Colbert
@@ -7,19 +9,18 @@ from fastembed.late_interaction.jina_colbert import JinaColbert
 from fastembed.late_interaction.late_interaction_embedding_base import (
     LateInteractionTextEmbeddingBase,
 )
-from fastembed.common.model_description import DenseModelDescription
 
 
 class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
     EMBEDDINGS_REGISTRY: list[Type[LateInteractionTextEmbeddingBase]] = [Colbert, JinaColbert]
 
     @classmethod
-    def list_supported_models(cls) -> list[DenseModelDescription]:
+    def list_supported_models(cls) -> list[dict[str, Any]]:
         """
         Lists the supported models.
 
         Returns:
-            list[DenseModelDescription]: A list of dictionaries containing the model information.
+            list[dict[str, Any]]: A list of dictionaries containing the model information.
 
             Example:
                 ```
@@ -38,9 +39,13 @@ class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
                 ]
                 ```
         """
+        return [asdict(model) for model in cls._list_supported_models()]
+
+    @classmethod
+    def _list_supported_models(cls) -> list[DenseModelDescription]:
         result: list[DenseModelDescription] = []
         for embedding in cls.EMBEDDINGS_REGISTRY:
-            result.extend(embedding.list_supported_models())
+            result.extend(embedding._list_supported_models())
         return result
 
     def __init__(
@@ -56,7 +61,7 @@ class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
-            supported_models = EMBEDDING_MODEL_TYPE.list_supported_models()
+            supported_models = EMBEDDING_MODEL_TYPE._list_supported_models()
             if any(model_name.lower() == model.model.lower() for model in supported_models):
                 self.model = EMBEDDING_MODEL_TYPE(
                     model_name,

@@ -1,5 +1,6 @@
 import warnings
 from typing import Any, Iterable, Optional, Sequence, Type, Union
+from dataclasses import asdict
 
 from fastembed.common.types import NumpyArray, OnnxProvider
 from fastembed.text.clip_embedding import CLIPOnnxEmbedding
@@ -21,33 +22,19 @@ class TextEmbedding(TextEmbeddingBase):
     ]
 
     @classmethod
-    def list_supported_models(cls) -> list[DenseModelDescription]:
-        """
-        Lists the supported models.
+    def list_supported_models(cls) -> list[dict[str, Any]]:
+        """Lists the supported models.
 
         Returns:
-            list[DenseModelDescription]: A list of dictionaries containing the model information.
-
-            Example:
-                ```
-                [
-                    {
-                        "model": "intfloat/multilingual-e5-large",
-                        "dim": 1024,
-                        "description": "Multilingual model, e5-large. Recommend using this model for non-English languages",
-                        "license": "mit",
-                        "size_in_GB": 2.24,
-                        "sources": {
-                            "gcp": "https://storage.googleapis.com/qdrant-fastembed/fast-multilingual-e5-large.tar.gz",
-                            "hf": "qdrant/multilingual-e5-large-onnx",
-                        }
-                    }
-                ]
-                ```
+            list[dict[str, Any]]: A list of dictionaries containing the model information.
         """
+        return [asdict(model) for model in cls._list_supported_models()]
+
+    @classmethod
+    def _list_supported_models(cls) -> list[DenseModelDescription]:
         result: list[DenseModelDescription] = []
         for embedding in cls.EMBEDDINGS_REGISTRY:
-            result.extend(embedding.list_supported_models())
+            result.extend(embedding._list_supported_models())
         return result
 
     def __init__(
@@ -88,7 +75,7 @@ class TextEmbedding(TextEmbeddingBase):
             )
 
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
-            supported_models = EMBEDDING_MODEL_TYPE.list_supported_models()
+            supported_models = EMBEDDING_MODEL_TYPE._list_supported_models()
             if any(model_name.lower() == model.model.lower() for model in supported_models):
                 self.model = EMBEDDING_MODEL_TYPE(
                     model_name=model_name,

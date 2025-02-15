@@ -118,11 +118,11 @@ class PooledNormalizedEmbedding(PooledEmbedding):
         return PooledNormalizedEmbeddingWorker
 
     @classmethod
-    def list_supported_models(cls) -> list[DenseModelDescription]:
+    def _list_supported_models(cls) -> list[DenseModelDescription]:
         """Lists the supported models.
 
         Returns:
-            list[dict[str, Any]]: A list of dictionaries containing the model information.
+            list[DenseModelDescription]: A list of DenseModelDescription objects containing the model information.
         """
         return supported_pooled_normalized_models
 

@@ -53,7 +53,7 @@ class JinaEmbeddingV3(PooledNormalizedEmbedding):
         return JinaEmbeddingV3Worker
 
     @classmethod
-    def list_supported_models(cls) -> list[DenseModelDescription]:
+    def _list_supported_models(cls) -> list[DenseModelDescription]:
         return supported_multitask_models
 
     def _preprocess_onnx_input(

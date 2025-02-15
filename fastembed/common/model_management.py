@@ -25,12 +25,16 @@ class ModelManagement(Generic[T]):
     METADATA_FILE = "files_metadata.json"
 
     @classmethod
-    def list_supported_models(cls) -> list[T]:
+    def list_supported_models(cls) -> list[dict[str, Any]]:
         """Lists the supported models.
 
         Returns:
             list[T]: A list of dictionaries containing the model information.
         """
+        raise NotImplementedError()
+
+    @classmethod
+    def _list_supported_models(cls) -> list[T]:
         raise NotImplementedError()
 
     @classmethod
@@ -47,7 +51,7 @@ class ModelManagement(Generic[T]):
         Returns:
             T: The model description.
         """
-        for model in cls.list_supported_models():
+        for model in cls._list_supported_models():
             if model_name.lower() == model.model.lower():
                 return model
 

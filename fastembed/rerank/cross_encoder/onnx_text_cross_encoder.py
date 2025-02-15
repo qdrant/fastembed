@@ -66,11 +66,11 @@ supported_onnx_models: list[BaseModelDescription] = [
 
 class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
     @classmethod
-    def list_supported_models(cls) -> list[BaseModelDescription]:
+    def _list_supported_models(cls) -> list[BaseModelDescription]:
         """Lists the supported models.
 
         Returns:
-            list[BaseModelDescription]: A list of dictionaries containing the model information.
+            list[BaseModelDescription]: A list of BaseModelDescription objects containing the model information.
         """
         return supported_onnx_models
 
