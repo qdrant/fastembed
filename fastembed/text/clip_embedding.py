@@ -3,19 +3,21 @@ from typing import Any, Iterable, Type
 from fastembed.common.types import NumpyArray
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.text.onnx_embedding import OnnxTextEmbedding, OnnxTextEmbeddingWorker
+from fastembed.common.model_description import DenseModelDescription, ModelSource
 
-supported_clip_models = [
-    {
-        "model": "Qdrant/clip-ViT-B-32-text",
-        "dim": 512,
-        "description": "Text embeddings, Multimodal (text&image), English, 77 input tokens truncation, Prefixes for queries/documents: not necessary, 2021 year",
-        "license": "mit",
-        "size_in_GB": 0.25,
-        "sources": {
-            "hf": "Qdrant/clip-ViT-B-32-text",
-        },
-        "model_file": "model.onnx",
-    },
+supported_clip_models: list[DenseModelDescription] = [
+    DenseModelDescription(
+        model="Qdrant/clip-ViT-B-32-text",
+        dim=512,
+        description=(
+            "Text embeddings, Multimodal (text&image), English, 77 input tokens truncation, "
+            "Prefixes for queries/documents: not necessary, 2021 year"
+        ),
+        license="mit",
+        size_in_GB=0.25,
+        sources=ModelSource(hf="Qdrant/clip-ViT-B-32-text"),
+        model_file="model.onnx",
+    ),
 ]
 
 
@@ -25,11 +27,11 @@ class CLIPOnnxEmbedding(OnnxTextEmbedding):
         return CLIPEmbeddingWorker
 
     @classmethod
-    def list_supported_models(cls) -> list[dict[str, Any]]:
+    def _list_supported_models(cls) -> list[DenseModelDescription]:
         """Lists the supported models.
 
         Returns:
-            list[dict[str, Any]]: A list of dictionaries containing the model information.
+            list[DenseModelDescription]: A list of DenseModelDescription objects containing the model information.
         """
         return supported_clip_models
 

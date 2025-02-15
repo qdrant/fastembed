@@ -2,21 +2,19 @@ from typing import Any, Type
 
 from fastembed.common.types import NumpyArray
 from fastembed.late_interaction.colbert import Colbert, ColbertEmbeddingWorker
+from fastembed.common.model_description import DenseModelDescription, ModelSource
 
-
-supported_jina_colbert_models = [
-    {
-        "model": "jinaai/jina-colbert-v2",
-        "dim": 128,
-        "description": "New model that expands capabilities of colbert-v1 with multilingual and context length of 8192, 2024 year",
-        "license": "cc-by-nc-4.0",
-        "size_in_GB": 2.24,
-        "sources": {
-            "hf": "jinaai/jina-colbert-v2",
-        },
-        "model_file": "onnx/model.onnx",
-        "additional_files": ["onnx/model.onnx_data"],
-    },
+supported_jina_colbert_models: list[DenseModelDescription] = [
+    DenseModelDescription(
+        model="jinaai/jina-colbert-v2",
+        dim=128,
+        description="New model that expands capabilities of colbert-v1 with multilingual and context length of 8192, 2024 year",
+        license="cc-by-nc-4.0",
+        size_in_GB=2.24,
+        sources=ModelSource(hf="jinaai/jina-colbert-v2"),
+        model_file="onnx/model.onnx",
+        additional_files=["onnx/model.onnx_data"],
+    )
 ]
 
 
@@ -31,11 +29,11 @@ class JinaColbert(Colbert):
         return JinaColbertEmbeddingWorker
 
     @classmethod
-    def list_supported_models(cls) -> list[dict[str, Any]]:
+    def _list_supported_models(cls) -> list[DenseModelDescription]:
         """Lists the supported models.
 
         Returns:
-            list[dict[str, Any]]: A list of dictionaries containing the model information.
+            list[DenseModelDescription]: A list of DenseModelDescription objects containing the model information.
         """
         return supported_jina_colbert_models
 

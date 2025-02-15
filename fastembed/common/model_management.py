@@ -4,7 +4,7 @@ import json
 import shutil
 import tarfile
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, TypeVar, Generic
 
 import requests
 from huggingface_hub import snapshot_download, model_info, list_repo_tree
@@ -16,9 +16,12 @@ from huggingface_hub.utils import (
 )
 from loguru import logger
 from tqdm import tqdm
+from fastembed.common.model_description import BaseModelDescription
+
+T = TypeVar("T", bound=BaseModelDescription)
 
 
-class ModelManagement:
+class ModelManagement(Generic[T]):
     METADATA_FILE = "files_metadata.json"
 
     @classmethod
@@ -26,12 +29,16 @@ class ModelManagement:
         """Lists the supported models.
 
         Returns:
-            list[dict[str, Any]]: A list of dictionaries containing the model information.
+            list[T]: A list of dictionaries containing the model information.
         """
         raise NotImplementedError()
 
     @classmethod
-    def _get_model_description(cls, model_name: str) -> dict[str, Any]:
+    def _list_supported_models(cls) -> list[T]:
+        raise NotImplementedError()
+
+    @classmethod
+    def _get_model_description(cls, model_name: str) -> T:
         """
         Gets the model description from the model_name.
 
@@ -42,10 +49,10 @@ class ModelManagement:
             ValueError: If the model_name is not supported.
 
         Returns:
-            dict[str, Any]: The model description.
+            T: The model description.
         """
-        for model in cls.list_supported_models():
-            if model_name.lower() == model["model"].lower():
+        for model in cls._list_supported_models():
+            if model_name.lower() == model.model.lower():
                 return model
 
         raise ValueError(f"Model {model_name} is not supported in {cls.__name__}.")
@@ -160,7 +167,9 @@ class ModelManagement:
                         }
             return meta
 
-        def _save_file_metadata(model_dir: Path, meta: dict[str, dict[str, Union[int, str]]]) -> None:
+        def _save_file_metadata(
+            model_dir: Path, meta: dict[str, dict[str, Union[int, str]]]
+        ) -> None:
             try:
                 if not model_dir.exists():
                     model_dir.mkdir(parents=True, exist_ok=True)
@@ -292,7 +301,11 @@ class ModelManagement:
 
     @classmethod
     def retrieve_model_gcs(
-        cls, model_name: str, source_url: str, cache_dir: str, local_files_only: bool = False
+        cls,
+        model_name: str,
+        source_url: str,
+        cache_dir: str,
+        local_files_only: bool = False,
     ) -> Path:
         fast_model_name = f"fast-{model_name.split('/')[-1]}"
         cache_tmp_dir = Path(cache_dir) / "tmp"
@@ -336,14 +349,12 @@ class ModelManagement:
         return model_dir
 
     @classmethod
-    def download_model(
-        cls, model: dict[str, Any], cache_dir: str, retries: int = 3, **kwargs: Any
-    ) -> Path:
+    def download_model(cls, model: T, cache_dir: str, retries: int = 3, **kwargs: Any) -> Path:
         """
         Downloads a model from HuggingFace Hub or Google Cloud Storage.
 
         Args:
-            model (dict[str, Any]): The model description.
+            model (T): The model description.
                 Example:
                 ```
                 {
@@ -368,16 +379,16 @@ class ModelManagement:
         if specific_model_path:
             return Path(specific_model_path)
         retries = 1 if local_files_only else retries
-        hf_source = model.get("sources", {}).get("hf")
-        url_source = model.get("sources", {}).get("url")
+        hf_source = model.sources.hf
+        url_source = model.sources.url
 
         sleep = 3.0
         while retries > 0:
             retries -= 1
 
             if hf_source:
-                extra_patterns = [model["model_file"]]
-                extra_patterns.extend(model.get("additional_files", []))
+                extra_patterns = [model.model_file]
+                extra_patterns.extend(model.additional_files)
 
                 try:
                     return Path(
@@ -399,8 +410,8 @@ class ModelManagement:
             if url_source or local_files_only:
                 try:
                     return cls.retrieve_model_gcs(
-                        model["model"],
-                        url_source,
+                        model.model,
+                        str(url_source),
                         str(cache_dir),
                         local_files_only=local_files_only,
                     )
@@ -417,4 +428,4 @@ class ModelManagement:
             time.sleep(sleep)
             sleep *= 3
 
-        raise ValueError(f"Could not load model {model['model']} from any source.")
+        raise ValueError(f"Could not load model {model.model} from any source.")

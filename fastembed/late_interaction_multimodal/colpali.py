@@ -15,22 +15,19 @@ from fastembed.late_interaction_multimodal.onnx_multimodal_model import (
     TextEmbeddingWorker,
     ImageEmbeddingWorker,
 )
+from fastembed.common.model_description import DenseModelDescription, ModelSource
 
-supported_colpali_models = [
-    {
-        "model": "Qdrant/colpali-v1.3-fp16",
-        "dim": 128,
-        "description": "Text embeddings, Multimodal (text&image), English, 50 tokens query length truncation, 2024.",
-        "license": "mit",
-        "size_in_GB": 6.5,
-        "sources": {
-            "hf": "Qdrant/colpali-v1.3-fp16",
-        },
-        "additional_files": [
-            "model.onnx_data",
-        ],
-        "model_file": "model.onnx",
-    },
+supported_colpali_models: list[DenseModelDescription] = [
+    DenseModelDescription(
+        model="Qdrant/colpali-v1.3-fp16",
+        dim=128,
+        description="Text embeddings, Multimodal (text&image), English, 50 tokens query length truncation, 2024.",
+        license="mit",
+        size_in_GB=6.5,
+        sources=ModelSource(hf="Qdrant/colpali-v1.3-fp16"),
+        additional_files=["model.onnx_data"],
+        model_file="model.onnx",
+    ),
 ]
 
 
@@ -111,18 +108,18 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
             self.load_onnx_model()
 
     @classmethod
-    def list_supported_models(cls) -> list[dict[str, Any]]:
+    def _list_supported_models(cls) -> list[DenseModelDescription]:
         """Lists the supported models.
 
         Returns:
-            list[dict[str, Any]]: A list of dictionaries containing the model information.
+            list[DenseModelDescription]: A list of DenseModelDescription objects containing the model information.
         """
         return supported_colpali_models
 
     def load_onnx_model(self) -> None:
         self._load_onnx_model(
             model_dir=self._model_dir,
-            model_file=self.model_description["model_file"],
+            model_file=self.model_description.model_file,
             threads=self.threads,
             providers=self.providers,
             cuda=self.cuda,
@@ -142,8 +139,9 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
         Returns:
             Iterable[NumpyArray]: Post-processed output as NumPy arrays.
         """
+        assert self.model_description.dim is not None, "Model dim is not defined"
         return output.model_output.reshape(
-            output.model_output.shape[0], -1, self.model_description["dim"]
+            output.model_output.shape[0], -1, self.model_description.dim
         ).astype(np.float32)
 
     def _post_process_onnx_text_output(

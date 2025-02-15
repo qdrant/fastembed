@@ -30,13 +30,13 @@ CANONICAL_VECTOR_VALUES = {
 def test_embedding() -> None:
     is_ci = os.getenv("CI")
 
-    for model_desc in ImageEmbedding.list_supported_models():
-        if not is_ci and model_desc["size_in_GB"] > 1:
+    for model_desc in ImageEmbedding._list_supported_models():
+        if not is_ci and model_desc.size_in_GB > 1:
             continue
 
-        dim = model_desc["dim"]
+        dim = model_desc.dim
 
-        model = ImageEmbedding(model_name=model_desc["model"])
+        model = ImageEmbedding(model_name=model_desc.model)
 
         images = [
             TEST_MISC_DIR / "image.jpeg",
@@ -48,13 +48,13 @@ def test_embedding() -> None:
         embeddings = np.stack(embeddings, axis=0)
         assert embeddings.shape == (len(images), dim)
 
-        canonical_vector = CANONICAL_VECTOR_VALUES[model_desc["model"]]
+        canonical_vector = CANONICAL_VECTOR_VALUES[model_desc.model]
 
         assert np.allclose(
             embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3
-        ), model_desc["model"]
+        ), model_desc.model
 
-        assert np.allclose(embeddings[1], embeddings[2]), model_desc["model"]
+        assert np.allclose(embeddings[1], embeddings[2]), model_desc.model
 
         if is_ci:
             delete_model_cache(model.model._model_dir)

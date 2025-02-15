@@ -12,31 +12,27 @@ from fastembed.late_interaction.late_interaction_embedding_base import (
     LateInteractionTextEmbeddingBase,
 )
 from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
+from fastembed.common.model_description import DenseModelDescription, ModelSource
 
-
-supported_colbert_models = [
-    {
-        "model": "colbert-ir/colbertv2.0",
-        "dim": 128,
-        "description": "Late interaction model",
-        "license": "mit",
-        "size_in_GB": 0.44,
-        "sources": {
-            "hf": "colbert-ir/colbertv2.0",
-        },
-        "model_file": "model.onnx",
-    },
-    {
-        "model": "answerdotai/answerai-colbert-small-v1",
-        "dim": 96,
-        "description": "Text embeddings, Unimodal (text), Multilingual (~100 languages), 512 input tokens truncation, 2024 year",
-        "license": "apache-2.0",
-        "size_in_GB": 0.13,
-        "sources": {
-            "hf": "answerdotai/answerai-colbert-small-v1",
-        },
-        "model_file": "vespa_colbert.onnx",
-    },
+supported_colbert_models: list[DenseModelDescription] = [
+    DenseModelDescription(
+        model="colbert-ir/colbertv2.0",
+        dim=128,
+        description="Late interaction model",
+        license="mit",
+        size_in_GB=0.44,
+        sources=ModelSource(hf="colbert-ir/colbertv2.0"),
+        model_file="model.onnx",
+    ),
+    DenseModelDescription(
+        model="answerdotai/answerai-colbert-small-v1",
+        dim=96,
+        description="Text embeddings, Unimodal (text), Multilingual (~100 languages), 512 input tokens truncation, 2024 year",
+        license="apache-2.0",
+        size_in_GB=0.13,
+        sources=ModelSource(hf="answerdotai/answerai-colbert-small-v1"),
+        model_file="vespa_colbert.onnx",
+    ),
 ]
 
 
@@ -112,11 +108,11 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
         return encoded
 
     @classmethod
-    def list_supported_models(cls) -> list[dict[str, Any]]:
+    def _list_supported_models(cls) -> list[DenseModelDescription]:
         """Lists the supported models.
 
         Returns:
-            list[dict[str, Any]]: A list of dictionaries containing the model information.
+            list[DenseModelDescription]: A list of DenseModelDescription objects containing the model information.
         """
         return supported_colbert_models
 
@@ -189,7 +185,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
     def load_onnx_model(self) -> None:
         self._load_onnx_model(
             model_dir=self._model_dir,
-            model_file=self.model_description["model_file"],
+            model_file=self.model_description.model_file,
             threads=self.threads,
             providers=self.providers,
             cuda=self.cuda,

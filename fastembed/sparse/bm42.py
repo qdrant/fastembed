@@ -15,21 +15,20 @@ from fastembed.sparse.sparse_embedding_base import (
     SparseTextEmbeddingBase,
 )
 from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
+from fastembed.common.model_description import SparseModelDescription, ModelSource
 
-supported_bm42_models = [
-    {
-        "model": "Qdrant/bm42-all-minilm-l6-v2-attentions",
-        "vocab_size": 30522,
-        "description": "Light sparse embedding model, which assigns an importance score to each token in the text",
-        "license": "apache-2.0",
-        "size_in_GB": 0.09,
-        "sources": {
-            "hf": "Qdrant/all_miniLM_L6_v2_with_attentions",
-        },
-        "model_file": "model.onnx",
-        "additional_files": ["stopwords.txt"],
-        "requires_idf": True,
-    },
+supported_bm42_models: list[SparseModelDescription] = [
+    SparseModelDescription(
+        model="Qdrant/bm42-all-minilm-l6-v2-attentions",
+        vocab_size=30522,
+        description="Light sparse embedding model, which assigns an importance score to each token in the text",
+        license="apache-2.0",
+        size_in_GB=0.09,
+        sources=ModelSource(hf="Qdrant/all_miniLM_L6_v2_with_attentions"),
+        model_file="model.onnx",
+        additional_files=["stopwords.txt"],
+        requires_idf=True,
+    ),
 ]
 
 MODEL_TO_LANGUAGE = {
@@ -133,7 +132,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
     def load_onnx_model(self) -> None:
         self._load_onnx_model(
             model_dir=self._model_dir,
-            model_file=self.model_description["model_file"],
+            model_file=self.model_description.model_file,
             threads=self.threads,
             providers=self.providers,
             cuda=self.cuda,
@@ -251,11 +250,11 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             yield SparseEmbedding.from_dict(rescored)
 
     @classmethod
-    def list_supported_models(cls) -> list[dict[str, Any]]:
+    def _list_supported_models(cls) -> list[SparseModelDescription]:
         """Lists the supported models.
 
         Returns:
-            list[dict[str, Any]]: A list of dictionaries containing the model information.
+            list[SparseModelDescription]: A list of SparseModelDescription objects containing the model information.
         """
         return supported_bm42_models
 

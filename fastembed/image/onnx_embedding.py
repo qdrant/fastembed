@@ -9,62 +9,54 @@ from fastembed.common.utils import define_cache_dir, normalize
 from fastembed.image.image_embedding_base import ImageEmbeddingBase
 from fastembed.image.onnx_image_model import ImageEmbeddingWorker, OnnxImageModel
 
-supported_onnx_models = [
-    {
-        "model": "Qdrant/clip-ViT-B-32-vision",
-        "dim": 512,
-        "description": "Image embeddings, Multimodal (text&image), 2021 year",
-        "license": "mit",
-        "size_in_GB": 0.34,
-        "sources": {
-            "hf": "Qdrant/clip-ViT-B-32-vision",
-        },
-        "model_file": "model.onnx",
-    },
-    {
-        "model": "Qdrant/resnet50-onnx",
-        "dim": 2048,
-        "description": "Image embeddings, Unimodal (image), 2016 year",
-        "license": "apache-2.0",
-        "size_in_GB": 0.1,
-        "sources": {
-            "hf": "Qdrant/resnet50-onnx",
-        },
-        "model_file": "model.onnx",
-    },
-    {
-        "model": "Qdrant/Unicom-ViT-B-16",
-        "dim": 768,
-        "description": "Image embeddings (more detailed than Unicom-ViT-B-32), Multimodal (text&image), 2023 year",
-        "license": "apache-2.0",
-        "size_in_GB": 0.82,
-        "sources": {
-            "hf": "Qdrant/Unicom-ViT-B-16",
-        },
-        "model_file": "model.onnx",
-    },
-    {
-        "model": "Qdrant/Unicom-ViT-B-32",
-        "dim": 512,
-        "description": "Image embeddings, Multimodal (text&image), 2023 year",
-        "license": "apache-2.0",
-        "size_in_GB": 0.48,
-        "sources": {
-            "hf": "Qdrant/Unicom-ViT-B-32",
-        },
-        "model_file": "model.onnx",
-    },
-    {
-        "model": "jinaai/jina-clip-v1",
-        "dim": 768,
-        "description": "Image embeddings, Multimodal (text&image), 2024 year",
-        "license": "apache-2.0",
-        "size_in_GB": 0.34,
-        "sources": {
-            "hf": "jinaai/jina-clip-v1",
-        },
-        "model_file": "onnx/vision_model.onnx",
-    },
+from fastembed.common.model_description import DenseModelDescription, ModelSource
+
+supported_onnx_models: list[DenseModelDescription] = [
+    DenseModelDescription(
+        model="Qdrant/clip-ViT-B-32-vision",
+        dim=512,
+        description="Image embeddings, Multimodal (text&image), 2021 year",
+        license="mit",
+        size_in_GB=0.34,
+        sources=ModelSource(hf="Qdrant/clip-ViT-B-32-vision"),
+        model_file="model.onnx",
+    ),
+    DenseModelDescription(
+        model="Qdrant/resnet50-onnx",
+        dim=2048,
+        description="Image embeddings, Unimodal (image), 2016 year",
+        license="apache-2.0",
+        size_in_GB=0.1,
+        sources=ModelSource(hf="Qdrant/resnet50-onnx"),
+        model_file="model.onnx",
+    ),
+    DenseModelDescription(
+        model="Qdrant/Unicom-ViT-B-16",
+        dim=768,
+        description="Image embeddings (more detailed than Unicom-ViT-B-32), Multimodal (text&image), 2023 year",
+        license="apache-2.0",
+        size_in_GB=0.82,
+        sources=ModelSource(hf="Qdrant/Unicom-ViT-B-16"),
+        model_file="model.onnx",
+    ),
+    DenseModelDescription(
+        model="Qdrant/Unicom-ViT-B-32",
+        dim=512,
+        description="Image embeddings, Multimodal (text&image), 2023 year",
+        license="apache-2.0",
+        size_in_GB=0.48,
+        sources=ModelSource(hf="Qdrant/Unicom-ViT-B-32"),
+        model_file="model.onnx",
+    ),
+    DenseModelDescription(
+        model="jinaai/jina-clip-v1",
+        dim=768,
+        description="Image embeddings, Multimodal (text&image), 2024 year",
+        license="apache-2.0",
+        size_in_GB=0.34,
+        sources=ModelSource(hf="jinaai/jina-clip-v1"),
+        model_file="onnx/vision_model.onnx",
+    ),
 ]
 
 
@@ -137,7 +129,7 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[NumpyArray]):
         """
         self._load_onnx_model(
             model_dir=self._model_dir,
-            model_file=self.model_description["model_file"],
+            model_file=self.model_description.model_file,
             threads=self.threads,
             providers=self.providers,
             cuda=self.cuda,
@@ -145,12 +137,12 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[NumpyArray]):
         )
 
     @classmethod
-    def list_supported_models(cls) -> list[dict[str, Any]]:
+    def _list_supported_models(cls) -> list[DenseModelDescription]:
         """
         Lists the supported models.
 
         Returns:
-            list[dict[str, Any]]: A list of dictionaries containing the model information.
+            list[DenseModelDescription]: A list of DenseModelDescription objects containing the model information.
         """
         return supported_onnx_models
 

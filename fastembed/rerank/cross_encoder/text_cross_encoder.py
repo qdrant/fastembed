@@ -1,8 +1,10 @@
 from typing import Any, Iterable, Optional, Sequence, Type
+from dataclasses import asdict
 
 from fastembed.common import OnnxProvider
 from fastembed.rerank.cross_encoder.onnx_text_cross_encoder import OnnxTextCrossEncoder
 from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
+from fastembed.common.model_description import BaseModelDescription
 
 
 class TextCrossEncoder(TextCrossEncoderBase):
@@ -15,7 +17,7 @@ class TextCrossEncoder(TextCrossEncoderBase):
         """Lists the supported models.
 
         Returns:
-            list[dict[str, Any]]: A list of dictionaries containing the model information.
+            list[BaseModelDescription]: A list of dictionaries containing the model information.
 
             Example:
                 ```
@@ -33,9 +35,13 @@ class TextCrossEncoder(TextCrossEncoderBase):
                 ]
                 ```
         """
-        result: list[dict[str, Any]] = []
+        return [asdict(model) for model in cls._list_supported_models()]
+
+    @classmethod
+    def _list_supported_models(cls) -> list[BaseModelDescription]:
+        result: list[BaseModelDescription] = []
         for encoder in cls.CROSS_ENCODER_REGISTRY:
-            result.extend(encoder.list_supported_models())
+            result.extend(encoder._list_supported_models())
         return result
 
     def __init__(
@@ -52,8 +58,8 @@ class TextCrossEncoder(TextCrossEncoderBase):
         super().__init__(model_name, cache_dir, threads, **kwargs)
 
         for CROSS_ENCODER_TYPE in self.CROSS_ENCODER_REGISTRY:
-            supported_models = CROSS_ENCODER_TYPE.list_supported_models()
-            if any(model_name.lower() == model["model"].lower() for model in supported_models):
+            supported_models = CROSS_ENCODER_TYPE._list_supported_models()
+            if any(model_name.lower() == model.model.lower() for model in supported_models):
                 self.model = CROSS_ENCODER_TYPE(
                     model_name=model_name,
                     cache_dir=cache_dir,

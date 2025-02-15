@@ -1,4 +1,5 @@
 from typing import Any, Iterable, Optional, Sequence, Type, Union
+from dataclasses import asdict
 
 from fastembed.common import OnnxProvider
 from fastembed.sparse.bm25 import Bm25
@@ -9,6 +10,7 @@ from fastembed.sparse.sparse_embedding_base import (
 )
 from fastembed.sparse.splade_pp import SpladePP
 import warnings
+from fastembed.common.model_description import SparseModelDescription
 
 
 class SparseTextEmbedding(SparseTextEmbeddingBase):
@@ -38,9 +40,13 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
                 ]
                 ```
         """
-        result: list[dict[str, Any]] = []
+        return [asdict(model) for model in cls._list_supported_models()]
+
+    @classmethod
+    def _list_supported_models(cls) -> list[SparseModelDescription]:
+        result: list[SparseModelDescription] = []
         for embedding in cls.EMBEDDINGS_REGISTRY:
-            result.extend(embedding.list_supported_models())
+            result.extend(embedding._list_supported_models())
         return result
 
     def __init__(
@@ -65,8 +71,8 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
             model_name = "prithivida/Splade_PP_en_v1"
 
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
-            supported_models = EMBEDDING_MODEL_TYPE.list_supported_models()
-            if any(model_name.lower() == model["model"].lower() for model in supported_models):
+            supported_models = EMBEDDING_MODEL_TYPE._list_supported_models()
+            if any(model_name.lower() == model.model.lower() for model in supported_models):
                 self.model = EMBEDDING_MODEL_TYPE(
                     model_name,
                     cache_dir,

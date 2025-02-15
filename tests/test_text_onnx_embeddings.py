@@ -76,23 +76,23 @@ def test_embedding() -> None:
     is_ci = os.getenv("CI")
     is_mac = platform.system() == "Darwin"
 
-    for model_desc in TextEmbedding.list_supported_models():
+    for model_desc in TextEmbedding._list_supported_models():
         if (
-            (not is_ci and model_desc["size_in_GB"] > 1)
-            or model_desc["model"] in MULTI_TASK_MODELS
-            or (is_mac and model_desc["model"] == "nomic-ai/nomic-embed-text-v1.5-Q")
+            (not is_ci and model_desc.size_in_GB > 1)
+            or model_desc.model in MULTI_TASK_MODELS
+            or (is_mac and model_desc.model == "nomic-ai/nomic-embed-text-v1.5-Q")
         ):
             continue
 
-        dim = model_desc["dim"]
+        dim = model_desc.dim
 
-        model = TextEmbedding(model_name=model_desc["model"])
+        model = TextEmbedding(model_name=model_desc.model)
         docs = ["hello world", "flag embedding"]
         embeddings = list(model.embed(docs))
         embeddings = np.stack(embeddings, axis=0)
         assert embeddings.shape == (2, dim)
 
-        canonical_vector = CANONICAL_VECTOR_VALUES[model_desc["model"]]
+        canonical_vector = CANONICAL_VECTOR_VALUES[model_desc.model]
         assert np.allclose(
             embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3
         ), model_desc["model"]

@@ -9,30 +9,27 @@ from fastembed.sparse.sparse_embedding_base import (
     SparseTextEmbeddingBase,
 )
 from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
+from fastembed.common.model_description import SparseModelDescription, ModelSource
 
-supported_splade_models = [
-    {
-        "model": "prithivida/Splade_PP_en_v1",
-        "vocab_size": 30522,
-        "description": "Independent Implementation of SPLADE++ Model for English.",
-        "license": "apache-2.0",
-        "size_in_GB": 0.532,
-        "sources": {
-            "hf": "Qdrant/SPLADE_PP_en_v1",
-        },
-        "model_file": "model.onnx",
-    },
-    {
-        "model": "prithvida/Splade_PP_en_v1",
-        "vocab_size": 30522,
-        "description": "Independent Implementation of SPLADE++ Model for English.",
-        "license": "apache-2.0",
-        "size_in_GB": 0.532,
-        "sources": {
-            "hf": "Qdrant/SPLADE_PP_en_v1",
-        },
-        "model_file": "model.onnx",
-    },
+supported_splade_models: list[SparseModelDescription] = [
+    SparseModelDescription(
+        model="prithivida/Splade_PP_en_v1",
+        vocab_size=30522,
+        description="Independent Implementation of SPLADE++ Model for English.",
+        license="apache-2.0",
+        size_in_GB=0.532,
+        sources=ModelSource(hf="Qdrant/SPLADE_PP_en_v1"),
+        model_file="model.onnx",
+    ),
+    SparseModelDescription(
+        model="prithvida/Splade_PP_en_v1",
+        vocab_size=30522,
+        description="Independent Implementation of SPLADE++ Model for English.",
+        license="apache-2.0",
+        size_in_GB=0.532,
+        sources=ModelSource(hf="Qdrant/SPLADE_PP_en_v1"),
+        model_file="model.onnx",
+    ),
 ]
 
 
@@ -55,11 +52,11 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             yield SparseEmbedding(values=scores, indices=indices)
 
     @classmethod
-    def list_supported_models(cls) -> list[dict[str, Any]]:
+    def _list_supported_models(cls) -> list[SparseModelDescription]:
         """Lists the supported models.
 
         Returns:
-            list[dict[str, Any]]: A list of dictionaries containing the model information.
+            list[SparseModelDescription]: A list of SparseModelDescription objects containing the model information.
         """
         return supported_splade_models
 
@@ -128,7 +125,7 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
     def load_onnx_model(self) -> None:
         self._load_onnx_model(
             model_dir=self._model_dir,
-            model_file=self.model_description["model_file"],
+            model_file=self.model_description.model_file,
             threads=self.threads,
             providers=self.providers,
             cuda=self.cuda,

@@ -4,6 +4,7 @@ from typing import Iterable, Optional, Union, Any
 import numpy as np
 from numpy.typing import NDArray
 
+from fastembed.common.model_description import SparseModelDescription
 from fastembed.common.types import NumpyArray
 from fastembed.common.model_management import ModelManagement
 
@@ -30,7 +31,7 @@ class SparseEmbedding:
         return cls(values=np.array(values), indices=np.array(indices))
 
 
-class SparseTextEmbeddingBase(ModelManagement):
+class SparseTextEmbeddingBase(ModelManagement[SparseModelDescription]):
     def __init__(
         self,
         model_name: str,
