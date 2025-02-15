@@ -19,23 +19,10 @@ class BaseModelDescription:
     model: str
     sources: ModelSource
     model_file: str
-    description: str = ""
-    license: str = ""
-    size_in_GB: Optional[float] = None
+    description: str
+    license: str
+    size_in_GB: float
     additional_files: list[str] = field(default_factory=list)
-
-    def validate_info(self) -> None:
-        if self.license == "":
-            raise ValueError("license is required in builtin model description")
-
-        if self.description == "":
-            raise ValueError("description is required in builtin model description")
-
-        if self.size_in_GB is None:
-            raise ValueError("size_in_GB is required in builtin model description")
-
-    def __post_init__(self) -> None:
-        self.validate_info()
 
 
 @dataclass(frozen=True)
@@ -45,7 +32,6 @@ class DenseModelDescription(BaseModelDescription):
 
     def __post_init__(self) -> None:
         assert self.dim is not None, "dim is required for dense model description"
-        self.validate_info()
 
 
 @dataclass(frozen=True)
