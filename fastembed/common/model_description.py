@@ -52,17 +52,3 @@ class DenseModelDescription(BaseModelDescription):
 class SparseModelDescription(BaseModelDescription):
     requires_idf: Optional[bool] = None
     vocab_size: Optional[int] = None
-
-
-@dataclass(frozen=True)
-class CustomDenseModelDescription(DenseModelDescription):
-    def __post_init__(self) -> None:
-        if self.dim is None:
-            raise ValueError("dim is required for custom dense model description")
-        # disable self.validate_info
-
-
-@dataclass(frozen=True)
-class CustomSparseModelDescription(SparseModelDescription):
-    def __post_init__(self) -> None:
-        pass  # disable self.validate_info
