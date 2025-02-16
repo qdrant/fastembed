@@ -88,6 +88,8 @@ supported_pooled_models: list[DenseModelDescription] = [
 
 
 class PooledEmbedding(OnnxTextEmbedding):
+    CUSTOM_MODELS: list[DenseModelDescription] = []
+
     @classmethod
     def _get_worker_class(cls) -> Type[OnnxTextEmbeddingWorker]:
         return PooledEmbeddingWorker
@@ -111,7 +113,7 @@ class PooledEmbedding(OnnxTextEmbedding):
         Returns:
             list[DenseModelDescription]: A list of DenseModelDescription objects containing the model information.
         """
-        return supported_pooled_models
+        return supported_pooled_models + cls.CUSTOM_MODELS
 
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[NumpyArray]:
         if output.attention_mask is None:

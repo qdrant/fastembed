@@ -9,7 +9,7 @@ from fastembed.text.pooled_embedding import PooledEmbedding
 from fastembed.text.multitask_embedding import JinaEmbeddingV3
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
 from fastembed.text.text_embedding_base import TextEmbeddingBase
-from fastembed.common.model_description import DenseModelDescription
+from fastembed.common.model_description import DenseModelDescription, ModelSource, PoolingType
 
 
 class TextEmbedding(TextEmbeddingBase):
@@ -36,6 +36,80 @@ class TextEmbedding(TextEmbeddingBase):
         for embedding in cls.EMBEDDINGS_REGISTRY:
             result.extend(embedding._list_supported_models())
         return result
+
+    @classmethod
+    def add_custom_model(
+        cls,
+        model: str,
+        pooling: PoolingType,
+        normalization: bool,
+        sources: ModelSource,
+        dim: int,
+        model_file: str = "onnx/model.onnx",
+        description: str = "",
+        license: str = "",
+        size_in_gb: float = 0.0,
+        additional_files: Optional[list[str]] = None,
+        tasks: Optional[dict[str, Any]] = None,
+    ) -> None:
+        registered_models = cls._list_supported_models()
+        for registered_model in registered_models:
+            if model == registered_model.model:
+                raise ValueError(
+                    f"Model {model} is already registered in TextEmbedding, if you still want to add this model, "
+                    f"please use another model name"
+                )
+
+        if tasks:
+            if pooling == PoolingType.MEAN and normalization:
+                JinaEmbeddingV3.add_custom_model(
+                    model=model,
+                    sources=sources,
+                    dim=dim,
+                    model_file=model_file,
+                    description=description,
+                    license=license,
+                    size_in_gb=size_in_gb,
+                    additional_files=additional_files,
+                    tasks=tasks,
+                )
+                return None
+            else:
+                raise ValueError(
+                    "Multitask models supported only with pooling=Pooling.MEAN and normalization=True, current values:"
+                    f"pooling={pooling}, normalization={normalization}, tasks: {tasks}"
+                )
+
+        embedding_cls: Type[OnnxTextEmbedding]
+        if pooling == PoolingType.MEAN and normalization:
+            embedding_cls = PooledNormalizedEmbedding
+        elif pooling == PoolingType.MEAN and not normalization:
+            embedding_cls = PooledEmbedding
+        elif (pooling == PoolingType.CLS or PoolingType.DISABLED) and normalization:
+            embedding_cls = OnnxTextEmbedding
+        elif pooling == PoolingType.DISABLED and not normalization:
+            embedding_cls = CLIPOnnxEmbedding
+        else:
+            raise ValueError(
+                "Only the following combinations of pooling and normalization are currently supported:"
+                "pooling=Pooling.MEAN + normalization=True;\n"
+                "pooling=Pooling.MEAN + normalization=False;\n"
+                "pooling=Pooling.CLS + normalization=True;\n"
+                "pooling=Pooling.DISABLED + normalization=False;\n"
+            )
+
+        embedding_cls.add_custom_model(
+            model=model,
+            sources=sources,
+            dim=dim,
+            model_file=model_file,
+            description=description,
+            license=license,
+            size_in_gb=size_in_gb,
+            additional_files=additional_files,
+            tasks=tasks,
+        )
+        return None
 
     def __init__(
         self,
