@@ -18,14 +18,14 @@ def restore_custom_models():
         embedding_cls.CUSTOM_MODELS = []
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def restore_custom_models_fixture():
     restore_custom_models()
     yield
     restore_custom_models()
 
 
-def test_text_custom_model(restore_custom_models_fixture):
+def test_text_custom_model():
     is_ci = os.getenv("CI")
     custom_model_name = "intfloat/multilingual-e5-small"
     canonical_vector = np.array(
@@ -69,7 +69,7 @@ def test_text_custom_model(restore_custom_models_fixture):
         delete_model_cache(model.model._model_dir)
 
 
-def test_mock_add_custom_models(restore_custom_models_fixture):
+def test_mock_add_custom_models():
     def check_custom_models_number(cls_to_num_map):
         for embed_cls, num_models in cls_to_num_map.items():
             assert len(embed_cls.CUSTOM_MODELS) == num_models
