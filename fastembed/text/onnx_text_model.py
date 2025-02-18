@@ -45,7 +45,6 @@ class OnnxTextModel(OnnxModel[T]):
         providers: Optional[Sequence[OnnxProvider]] = None,
         cuda: bool = False,
         device_id: Optional[int] = None,
-        specific_model_path: Optional[str] = None,
     ) -> None:
         super()._load_onnx_model(
             model_dir=model_dir,
