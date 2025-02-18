@@ -1,0 +1,16 @@
+{
+  "models": [
+    {
+      "model": "BAAI/bge-base-en",
+      "dim": 768,
+      "description": "Text embeddings, Unimodal (text), English...",
+      "license": "mit",
+      "size_in_GB": 0.42,
+      "sources": {
+        "hf": "Qdrant/fast-bge-base-en",
+        "url": "https://storage.googleapis.com/qdrant-fastembed/fast-bge-base-en.tar.gz"
+      },
+      "model_file": "model_optimized.onnx"
+    }
+  ]
+}
