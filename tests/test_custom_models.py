@@ -1,28 +1,21 @@
+import itertools
 import os
 import numpy as np
 import pytest
-from dataclasses import replace
 
 from fastembed.common.model_description import PoolingType, ModelSource, DenseModelDescription
-from fastembed.text.clip_embedding import CLIPOnnxEmbedding
-from fastembed.text.multitask_embedding import JinaEmbeddingV3
-from fastembed.text.onnx_embedding import OnnxTextEmbedding
-from fastembed.text.pooled_embedding import PooledEmbedding
-from fastembed.text.text_embedding import TextEmbedding, PooledNormalizedEmbedding
+from fastembed.common.onnx_model import OnnxOutputContext
+from fastembed.common.utils import normalize, mean_pooling
+from fastembed.text.custom_text_embedding import CustomTextEmbedding, PostprocessingConfig
+from fastembed.text.text_embedding import TextEmbedding
 from tests.utils import delete_model_cache
-
-
-def restore_custom_models():
-    for embedding_cls in TextEmbedding.EMBEDDINGS_REGISTRY:
-        assert hasattr(embedding_cls, "CUSTOM_MODELS")
-        embedding_cls.CUSTOM_MODELS = []
 
 
 @pytest.fixture(autouse=True)
 def restore_custom_models_fixture():
-    restore_custom_models()
+    CustomTextEmbedding.SUPPORTED_MODELS = []
     yield
-    restore_custom_models()
+    CustomTextEmbedding.SUPPORTED_MODELS = []
 
 
 def test_text_custom_model():
@@ -46,7 +39,7 @@ def test_text_custom_model():
         size_in_gb=size_in_gb,
     )
 
-    assert PooledNormalizedEmbedding.CUSTOM_MODELS[0] == DenseModelDescription(
+    assert CustomTextEmbedding.SUPPORTED_MODELS[0] == DenseModelDescription(
         model=custom_model_name,
         sources=source,
         model_file="onnx/model.onnx",
@@ -56,6 +49,9 @@ def test_text_custom_model():
         additional_files=[],
         dim=dim,
         tasks={},
+    )
+    assert CustomTextEmbedding.POSTPROCESSING_MAPPING[custom_model_name] == PostprocessingConfig(
+        pooling=pooling, normalization=normalization
     )
 
     model = TextEmbedding(custom_model_name)
@@ -70,134 +66,66 @@ def test_text_custom_model():
 
 
 def test_mock_add_custom_models():
-    def check_custom_models_number(cls_to_num_map):
-        for embed_cls, num_models in cls_to_num_map.items():
-            assert len(embed_cls.CUSTOM_MODELS) == num_models
+    dim = 5
+    size_in_gb = 0.1
+    source = ModelSource(hf="artificial")
 
-    custom_model_name = "intfloat/multilingual-e5-small"
-    dim = 384
-    size_in_gb = 0.47
-    source = ModelSource(hf=custom_model_name)
-    role_model_description = DenseModelDescription(
-        model=custom_model_name,
-        sources=source,
-        model_file="onnx/model.onnx",
-        description="",
-        license="",
-        size_in_GB=size_in_gb,
-        additional_files=[],
-        dim=dim,
-        tasks={},
+    num_tokens = 10
+    dummy_pooled_embedding = np.random.random((1, dim)).astype(np.float32)
+    dummy_token_embedding = np.random.random((1, num_tokens, dim)).astype(np.float32)
+    dummy_attention_mask = np.ones((1, num_tokens)).astype(np.int64)
+
+    dummy_token_output = OnnxOutputContext(
+        model_output=dummy_token_embedding, attention_mask=dummy_attention_mask
     )
-    current_supported_models_number = len(TextEmbedding._list_supported_models())
-
-    class_num_models_map = {
-        PooledNormalizedEmbedding: 0,
-        OnnxTextEmbedding: 0,
-        PooledEmbedding: 0,
-        CLIPOnnxEmbedding: 0,
-        JinaEmbeddingV3: 0,
+    dummy_pooled_output = OnnxOutputContext(model_output=dummy_pooled_embedding)
+    input_data = {
+        f"{PoolingType.MEAN.lower()}-normalized": dummy_token_output,
+        f"{PoolingType.MEAN.lower()}": dummy_token_output,
+        f"{PoolingType.CLS.lower()}-normalized": dummy_token_output,
+        f"{PoolingType.CLS.lower()}": dummy_token_output,
+        f"{PoolingType.DISABLED.lower()}-normalized": dummy_pooled_output,
+        f"{PoolingType.DISABLED.lower()}": dummy_pooled_output,
     }
 
-    check_custom_models_number(class_num_models_map)
-    TextEmbedding.add_custom_model(
-        f"{custom_model_name}-mean-normalize",
-        pooling=PoolingType.MEAN,
-        normalization=True,
-        sources=source,
-        dim=dim,
-        size_in_gb=size_in_gb,
-    )
-    assert PooledNormalizedEmbedding.CUSTOM_MODELS[0] == replace(
-        role_model_description, model=f"{custom_model_name}-mean-normalize"
-    )
-    class_num_models_map[PooledNormalizedEmbedding] += 1
-    check_custom_models_number(class_num_models_map)
-    current_supported_models_number += 1
-    assert len(TextEmbedding._list_supported_models()) == current_supported_models_number
+    expected_output = {
+        f"{PoolingType.MEAN.lower()}-normalized": normalize(
+            mean_pooling(dummy_token_embedding, dummy_attention_mask)
+        ).astype(np.float32),
+        f"{PoolingType.MEAN.lower()}": mean_pooling(dummy_token_embedding, dummy_attention_mask),
+        f"{PoolingType.CLS.lower()}-normalized": normalize(dummy_token_embedding[:, 0]).astype(
+            np.float32
+        ),
+        f"{PoolingType.CLS.lower()}": dummy_token_embedding[:, 0],
+        f"{PoolingType.DISABLED.lower()}-normalized": normalize(dummy_pooled_embedding).astype(
+            np.float32
+        ),
+        f"{PoolingType.DISABLED.lower()}": dummy_pooled_embedding,
+    }
 
-    TextEmbedding.add_custom_model(
-        f"{custom_model_name}-cls-no-normalize",
-        pooling=PoolingType.CLS,
-        normalization=True,
-        sources=source,
-        dim=dim,
-        size_in_gb=size_in_gb,
-    )
-    assert OnnxTextEmbedding.CUSTOM_MODELS[0] == replace(
-        role_model_description, model=f"{custom_model_name}-cls-no-normalize"
-    )
-    class_num_models_map[OnnxTextEmbedding] += 1
-    check_custom_models_number(class_num_models_map)
-    current_supported_models_number += 1
-    assert len(TextEmbedding._list_supported_models()) == current_supported_models_number
+    for pooling, normalization in itertools.product(
+        (PoolingType.MEAN, PoolingType.CLS, PoolingType.DISABLED), (True, False)
+    ):
+        model_name = f"{pooling.name.lower()}{'-normalized' if normalization else ''}"
+        TextEmbedding.add_custom_model(
+            model_name,
+            pooling=pooling,
+            normalization=normalization,
+            sources=source,
+            dim=dim,
+            size_in_gb=size_in_gb,
+        )
 
-    TextEmbedding.add_custom_model(
-        f"{custom_model_name}-no-pooling-normalize",
-        pooling=PoolingType.DISABLED,
-        normalization=True,
-        sources=source,
-        dim=dim,
-        size_in_gb=size_in_gb,
-    )
-    assert OnnxTextEmbedding.CUSTOM_MODELS[1] == replace(
-        role_model_description, model=f"{custom_model_name}-no-pooling-normalize"
-    )
-    class_num_models_map[OnnxTextEmbedding] += 1
-    check_custom_models_number(class_num_models_map)
-    current_supported_models_number += 1
-    assert len(TextEmbedding._list_supported_models()) == current_supported_models_number
+        custom_text_embedding = CustomTextEmbedding(
+            model_name,
+            lazy_load=True,
+            specific_model_path="./",  # disable model downloading and loading
+        )
 
-    TextEmbedding.add_custom_model(
-        f"{custom_model_name}-mean-no-normalize",
-        pooling=PoolingType.MEAN,
-        normalization=False,
-        sources=source,
-        dim=dim,
-        size_in_gb=size_in_gb,
-    )
-    assert PooledEmbedding.CUSTOM_MODELS[0] == replace(
-        role_model_description, model=f"{custom_model_name}-mean-no-normalize"
-    )
-    class_num_models_map[PooledEmbedding] += 1
-    check_custom_models_number(class_num_models_map)
-    current_supported_models_number += 1
-    assert len(TextEmbedding._list_supported_models()) == current_supported_models_number
-
-    TextEmbedding.add_custom_model(
-        f"{custom_model_name}-no-pooling-no-normalize",
-        pooling=PoolingType.DISABLED,
-        normalization=False,
-        sources=source,
-        dim=dim,
-        size_in_gb=size_in_gb,
-    )
-    assert CLIPOnnxEmbedding.CUSTOM_MODELS[0] == replace(
-        role_model_description, model=f"{custom_model_name}-no-pooling-no-normalize"
-    )
-    class_num_models_map[CLIPOnnxEmbedding] += 1
-    check_custom_models_number(class_num_models_map)
-    current_supported_models_number += 1
-    assert len(TextEmbedding._list_supported_models()) == current_supported_models_number
-
-    TextEmbedding.add_custom_model(
-        f"{custom_model_name}-mean-normalize-multitask",
-        pooling=PoolingType.MEAN,
-        normalization=True,
-        sources=source,
-        dim=dim,
-        size_in_gb=size_in_gb,
-        tasks={"task1": 1},
-    )
-    assert JinaEmbeddingV3.CUSTOM_MODELS[0] == replace(
-        role_model_description,
-        tasks={"task1": 1},
-        model=f"{custom_model_name}-mean-normalize-multitask",
-    )
-    class_num_models_map[JinaEmbeddingV3] += 1
-    check_custom_models_number(class_num_models_map)
-    current_supported_models_number += 1
-    assert len(TextEmbedding._list_supported_models()) == current_supported_models_number
+        post_processed_output = next(
+            iter(custom_text_embedding._post_process_onnx_output(input_data[model_name]))
+        )
+        assert np.allclose(post_processed_output, expected_output[model_name], atol=1e-3)
 
 
 def test_do_not_add_existing_model():

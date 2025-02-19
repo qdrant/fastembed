@@ -22,6 +22,16 @@ def normalize(input_array: NumpyArray, p: int = 2, dim: int = 1, eps: float = 1e
     return normalized_array
 
 
+def mean_pooling(input_array: NumpyArray, attention_mask: NumpyArray) -> NumpyArray:
+    input_mask_expanded = np.expand_dims(attention_mask, axis=-1)
+    input_mask_expanded = np.tile(input_mask_expanded, (1, 1, input_array.shape[-1]))
+    input_mask_expanded = input_mask_expanded.astype(np.float32)
+    sum_embeddings = np.sum(input_array * input_mask_expanded, axis=1)
+    sum_mask = np.sum(input_mask_expanded, axis=1)
+    pooled_embeddings = sum_embeddings / np.maximum(sum_mask, 1e-9)
+    return pooled_embeddings
+
+
 def iter_batch(iterable: Iterable[T], size: int) -> Iterable[list[T]]:
     """
     >>> list(iter_batch([1,2,3,4,5], 3))
