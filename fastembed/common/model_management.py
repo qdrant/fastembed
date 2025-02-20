@@ -34,6 +34,31 @@ class ModelManagement(Generic[T]):
         raise NotImplementedError()
 
     @classmethod
+    def add_custom_model(
+        cls,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        """Add a custom model to the existing embedding classes based on the passed model descriptions
+
+        Model description dict should contain the fields same as in one of the model descriptions presented
+         in fastembed.common.model_description
+
+         E.g. for BaseModelDescription:
+              model: str
+              sources: ModelSource
+              model_file: str
+              description: str
+              license: str
+              size_in_GB: float
+              additional_files: list[str]
+
+        Returns:
+            None
+        """
+        raise NotImplementedError()
+
+    @classmethod
     def _list_supported_models(cls) -> list[T]:
         raise NotImplementedError()
 

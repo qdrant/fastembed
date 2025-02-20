@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Optional, Any
 
 
@@ -28,7 +29,7 @@ class BaseModelDescription:
 @dataclass(frozen=True)
 class DenseModelDescription(BaseModelDescription):
     dim: Optional[int] = None
-    tasks: Optional[dict[str, Any]] = None
+    tasks: Optional[dict[str, Any]] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         assert self.dim is not None, "dim is required for dense model description"
@@ -38,3 +39,9 @@ class DenseModelDescription(BaseModelDescription):
 class SparseModelDescription(BaseModelDescription):
     requires_idf: Optional[bool] = None
     vocab_size: Optional[int] = None
+
+
+class PoolingType(str, Enum):
+    CLS = "CLS"
+    MEAN = "MEAN"
+    DISABLED = "DISABLED"

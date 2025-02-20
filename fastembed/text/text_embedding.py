@@ -4,12 +4,13 @@ from dataclasses import asdict
 
 from fastembed.common.types import NumpyArray, OnnxProvider
 from fastembed.text.clip_embedding import CLIPOnnxEmbedding
+from fastembed.text.custom_text_embedding import CustomTextEmbedding
 from fastembed.text.pooled_normalized_embedding import PooledNormalizedEmbedding
 from fastembed.text.pooled_embedding import PooledEmbedding
 from fastembed.text.multitask_embedding import JinaEmbeddingV3
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
 from fastembed.text.text_embedding_base import TextEmbeddingBase
-from fastembed.common.model_description import DenseModelDescription
+from fastembed.common.model_description import DenseModelDescription, ModelSource, PoolingType
 
 
 class TextEmbedding(TextEmbeddingBase):
@@ -19,6 +20,7 @@ class TextEmbedding(TextEmbeddingBase):
         PooledNormalizedEmbedding,
         PooledEmbedding,
         JinaEmbeddingV3,
+        CustomTextEmbedding,
     ]
 
     @classmethod
@@ -36,6 +38,43 @@ class TextEmbedding(TextEmbeddingBase):
         for embedding in cls.EMBEDDINGS_REGISTRY:
             result.extend(embedding._list_supported_models())
         return result
+
+    @classmethod
+    def add_custom_model(
+        cls,
+        model: str,
+        pooling: PoolingType,
+        normalization: bool,
+        sources: ModelSource,
+        dim: int,
+        model_file: str = "onnx/model.onnx",
+        description: str = "",
+        license: str = "",
+        size_in_gb: float = 0.0,
+        additional_files: Optional[list[str]] = None,
+    ) -> None:
+        registered_models = cls._list_supported_models()
+        for registered_model in registered_models:
+            if model == registered_model.model:
+                raise ValueError(
+                    f"Model {model} is already registered in TextEmbedding, if you still want to add this model, "
+                    f"please use another model name"
+                )
+
+        CustomTextEmbedding.add_model(
+            DenseModelDescription(
+                model=model,
+                sources=sources,
+                dim=dim,
+                model_file=model_file,
+                description=description,
+                license=license,
+                size_in_GB=size_in_gb,
+                additional_files=additional_files or [],
+            ),
+            pooling=pooling,
+            normalization=normalization,
+        )
 
     def __init__(
         self,
