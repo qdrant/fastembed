@@ -1,6 +1,7 @@
 from typing import Any, Iterable, Type
 
 import numpy as np
+from numpy.typing import NDArray
 
 from fastembed.common.types import NumpyArray
 from fastembed.common.onnx_model import OnnxOutputContext
@@ -94,10 +95,12 @@ class PooledEmbedding(OnnxTextEmbedding):
         return PooledEmbeddingWorker
 
     @classmethod
-    def mean_pooling(cls, model_output: NumpyArray, attention_mask: NumpyArray) -> NumpyArray:
-        token_embeddings = model_output.astype(np.float32)
-        attention_mask = attention_mask.astype(np.float32)
-        return mean_pooling(token_embeddings, attention_mask)
+    def mean_pooling(
+        cls, model_output: NumpyArray, attention_mask: NDArray[np.int64]
+    ) -> NumpyArray:
+        # token_embeddings = model_output.astype(np.float32)
+        # attention_mask = attention_mask.astype(np.float32)
+        return mean_pooling(model_output, attention_mask)
 
     @classmethod
     def _list_supported_models(cls) -> list[DenseModelDescription]:

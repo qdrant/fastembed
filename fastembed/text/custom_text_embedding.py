@@ -1,6 +1,10 @@
 from typing import Optional, Sequence, Any, Iterable
 
 from dataclasses import dataclass
+
+import numpy as np
+from numpy.typing import NDArray
+
 from fastembed.common import OnnxProvider
 from fastembed.common.model_description import (
     PoolingType,
@@ -58,7 +62,7 @@ class CustomTextEmbedding(OnnxTextEmbedding):
         return self._normalize(self._pool(output.model_output, output.attention_mask))
 
     def _pool(
-        self, embeddings: NumpyArray, attention_mask: Optional[NumpyArray] = None
+        self, embeddings: NumpyArray, attention_mask: Optional[NDArray[np.int64]] = None
     ) -> NumpyArray:
         if self._pooling == PoolingType.CLS:
             return embeddings[:, 0]
