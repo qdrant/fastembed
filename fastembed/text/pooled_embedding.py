@@ -98,8 +98,6 @@ class PooledEmbedding(OnnxTextEmbedding):
     def mean_pooling(
         cls, model_output: NumpyArray, attention_mask: NDArray[np.int64]
     ) -> NumpyArray:
-        # token_embeddings = model_output.astype(np.float32)
-        # attention_mask = attention_mask.astype(np.float32)
         return mean_pooling(model_output, attention_mask)
 
     @classmethod
