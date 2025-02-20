@@ -1,3 +1,4 @@
+import warnings
 from typing import Any, Iterable, Optional, Sequence, Type, Union
 from dataclasses import asdict
 
@@ -63,6 +64,12 @@ class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase)
         **kwargs: Any,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
+        if not cuda and device_ids:
+            warnings.warn(
+                "`device_ids` are only used when `cuda` is set to True. Device ids will be ignored.",
+                UserWarning,
+                stacklevel=2,
+            )
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
             supported_models = EMBEDDING_MODEL_TYPE._list_supported_models()
             if any(model_name.lower() == model.model.lower() for model in supported_models):

@@ -61,6 +61,13 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
         **kwargs: Any,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
+        if not cuda and device_ids:
+            warnings.warn(
+                "`device_ids` are only used when `cuda` is set to True. Device ids will be ignored.",
+                UserWarning,
+                stacklevel=2,
+            )
+
         if model_name == "prithvida/Splade_PP_en_v1":
             warnings.warn(
                 "The right spelling is prithivida/Splade_PP_en_v1. "
