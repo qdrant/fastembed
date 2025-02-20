@@ -195,35 +195,6 @@ supported_onnx_models: list[DenseModelDescription] = [
 class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):
     """Implementation of the Flag Embedding model."""
 
-    CUSTOM_MODELS: list[DenseModelDescription] = []
-
-    @classmethod
-    def add_custom_model(
-        cls,
-        model: str,
-        sources: ModelSource,
-        model_file: str,
-        dim: int,
-        description: str,
-        license: str,
-        size_in_gb: float,
-        additional_files: Optional[list[str]] = None,
-        tasks: Optional[dict[str, Any]] = None,
-    ) -> None:
-        cls.CUSTOM_MODELS.append(
-            DenseModelDescription(
-                model=model,
-                sources=sources,
-                dim=dim,
-                model_file=model_file,
-                description=description,
-                license=license,
-                size_in_GB=size_in_gb,
-                additional_files=additional_files if additional_files else [],
-                tasks=tasks if tasks else {},
-            )
-        )
-
     @classmethod
     def _list_supported_models(cls) -> list[DenseModelDescription]:
         """
@@ -232,7 +203,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):
         Returns:
             list[DenseModelDescription]: A list of DenseModelDescription objects containing the model information.
         """
-        return supported_onnx_models + cls.CUSTOM_MODELS
+        return supported_onnx_models
 
     def __init__(
         self,

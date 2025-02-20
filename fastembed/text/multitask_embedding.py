@@ -43,7 +43,6 @@ class Task(int, Enum):
 class JinaEmbeddingV3(PooledNormalizedEmbedding):
     PASSAGE_TASK = Task.RETRIEVAL_PASSAGE
     QUERY_TASK = Task.RETRIEVAL_QUERY
-    CUSTOM_MODELS: list[DenseModelDescription] = []
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
@@ -55,7 +54,7 @@ class JinaEmbeddingV3(PooledNormalizedEmbedding):
 
     @classmethod
     def _list_supported_models(cls) -> list[DenseModelDescription]:
-        return supported_multitask_models + cls.CUSTOM_MODELS
+        return supported_multitask_models
 
     def _preprocess_onnx_input(
         self, onnx_input: dict[str, NumpyArray], **kwargs: Any
