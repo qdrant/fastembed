@@ -94,18 +94,6 @@ supported_onnx_models: list[DenseModelDescription] = [
         model_file="model_optimized.onnx",
     ),
     DenseModelDescription(
-        model="thenlper/gte-large",
-        dim=1024,
-        description=(
-            "Text embeddings, Unimodal (text), English, 512 input tokens truncation, "
-            "Prefixes for queries/documents: not necessary, 2023 year."
-        ),
-        license="mit",
-        size_in_GB=1.20,
-        sources=ModelSource(hf="qdrant/gte-large-onnx"),
-        model_file="model.onnx",
-    ),
-    DenseModelDescription(
         model="mixedbread-ai/mxbai-embed-large-v1",
         dim=1024,
         description=(
@@ -314,6 +302,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):
 
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[NumpyArray]:
         embeddings = output.model_output
+
         if embeddings.ndim == 3:  # (batch_size, seq_len, embedding_dim)
             processed_embeddings = embeddings[:, 0]
         elif embeddings.ndim == 2:  # (batch_size, embedding_dim)
