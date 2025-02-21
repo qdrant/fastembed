@@ -90,29 +90,24 @@ class TextEmbedding(TextEmbeddingBase):
         super().__init__(model_name, cache_dir, threads, **kwargs)
         if model_name == "nomic-ai/nomic-embed-text-v1.5-Q":
             warnings.warn(
-                "The model 'nomic-ai/nomic-embed-text-v1.5-Q' has been updated on HuggingFace. "
-                "Please review the latest documentation and release notes to ensure compatibility with your workflow. ",
-                UserWarning,
-                stacklevel=2,
-            )
-        if model_name == "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2":
-            warnings.warn(
-                "The model 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2' has been updated to "
-                "include a mean pooling layer. Please ensure your usage aligns with the new functionality. "
-                "Support for the previous version without mean pooling will be removed as of version 0.5.2.",
+                "The model 'nomic-ai/nomic-embed-text-v1.5-Q' has been updated on HuggingFace. Please review "
+                "the latest documentation on HF and release notes to ensure compatibility with your workflow. ",
                 UserWarning,
                 stacklevel=2,
             )
         if model_name in {
-            "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
+            "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+            "thenlper/gte-large",
             "intfloat/multilingual-e5-large",
+            "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
         }:
             warnings.warn(
-                f"{model_name} has been updated as of fastembed 0.5.2, outputs are now average pooled.",
+                f"The model {model_name} now uses mean pooling instead of CLS embedding. "
+                f"In order to preserve the previous behaviour, consider either pinning fastembed version to 0.5.1 or "
+                "using `add_custom_model` functionality.",
                 UserWarning,
                 stacklevel=2,
             )
-
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
             supported_models = EMBEDDING_MODEL_TYPE._list_supported_models()
             if any(model_name.lower() == model.model.lower() for model in supported_models):

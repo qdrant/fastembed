@@ -109,6 +109,18 @@ supported_pooled_normalized_models: list[DenseModelDescription] = [
         sources=ModelSource(hf="thenlper/gte-base"),
         model_file="onnx/model.onnx",
     ),
+    DenseModelDescription(
+        model="thenlper/gte-large",
+        dim=1024,
+        description=(
+            "Text embeddings, Unimodal (text), English, 512 input tokens truncation, "
+            "Prefixes for queries/documents: not necessary, 2023 year."
+        ),
+        license="mit",
+        size_in_GB=1.20,
+        sources=ModelSource(hf="qdrant/gte-large-onnx"),
+        model_file="model.onnx",
+    ),
 ]
 
 
