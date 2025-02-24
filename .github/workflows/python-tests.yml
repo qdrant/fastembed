@@ -2,8 +2,8 @@ name: Tests
 
 on:
   push:
-    branches: [ master, main, gpu ]
-  pull_request:
+    branches: [ speedup-ci ] # master, main, gpu
+  # pull_request:
 
 env:
   CARGO_TERM_COLOR: always
@@ -34,11 +34,27 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+        
       - name: Install dependencies
         run: |
           python -m pip install poetry
           poetry config virtualenvs.create false
           poetry install --no-interaction --no-ansi --without dev,docs
+      
+      - name: Set Model Cache Directory
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            echo "MODEL_CACHE_DIR=$LOCALAPPDATA\\Temp\\fastembed_tmp" >> $GITHUB_ENV
+          else
+            echo "MODEL_CACHE_DIR=/tmp/fastembed_tmp" >> $GITHUB_ENV
+          fi
+        shell: bash
+      
+      - name: Cache Model Files
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.MODEL_CACHE_DIR }}
+          key: model-cache-${{ runner.os }}-${{ hashFiles('tests/**') }}
 
       - name: Run pytest
         run: |
