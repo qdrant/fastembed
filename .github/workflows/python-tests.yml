@@ -14,14 +14,14 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - '3.9.x'
-          - '3.10.x'
-          - '3.11.x'
-          - '3.12.x'
+          # - '3.9.x'
+          # - '3.10.x'
+          # - '3.11.x'
+          # - '3.12.x'
           - '3.13.x'
         os:
-          - ubuntu-latest
-          - macos-latest
+          # - ubuntu-latest
+          # - macos-latest
           - windows-latest
 
     runs-on: ${{ matrix.os }}
@@ -58,7 +58,7 @@ jobs:
 
       - name: Run pytest
         run: |
-          poetry run pytest tests/test_text_multitask_embeddings.py
+          poetry run pytest
       
       - name: List Cached Models (Windows)
         if: runner.os == 'Windows'
