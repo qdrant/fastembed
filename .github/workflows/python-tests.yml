@@ -44,9 +44,9 @@ jobs:
       - name: Set Model Cache Directory
         run: |
           if [[ "$RUNNER_OS" == "Windows" ]]; then
-            echo "MODEL_CACHE_DIR=$LOCALAPPDATA\\Temp\\fastembed_tmp" >> $GITHUB_ENV
+            echo "MODEL_CACHE_DIR=$LOCALAPPDATA\\Temp\\fastembed_cache" >> $GITHUB_ENV
           else
-            echo "MODEL_CACHE_DIR=/tmp/fastembed_tmp" >> $GITHUB_ENV
+            echo "MODEL_CACHE_DIR=/tmp/fastembed_cache" >> $GITHUB_ENV
           fi
         shell: bash
       
@@ -62,10 +62,10 @@ jobs:
       
       - name: List Cached Models (Windows)
         if: runner.os == 'Windows'
-        run: dir C:\Users\runneradmin\AppData\Local\Temp\
+        run: dir C:\Users\runneradmin\AppData\Local\Temp\fastembed_cache
         shell: cmd
         
       - name: List Cached Models (Linux/macOS)
         if: runner.os != 'Windows'
-        run: ls -lah /tmp/
+        run: ls -lah /tmp/fastembed_cache
         shell: bash
