@@ -41,20 +41,20 @@ jobs:
           poetry config virtualenvs.create false
           poetry install --no-interaction --no-ansi --without dev,docs
       
-      # - name: Set Model Cache Directory
-      #   run: |
-      #     if [[ "$RUNNER_OS" == "Windows" ]]; then
-      #       echo "MODEL_CACHE_DIR=$LOCALAPPDATA\\Temp\\fastembed_tmp" >> $GITHUB_ENV
-      #     else
-      #       echo "MODEL_CACHE_DIR=/tmp/fastembed_tmp" >> $GITHUB_ENV
-      #     fi
-      #   shell: bash
+      - name: Set Model Cache Directory
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            echo "MODEL_CACHE_DIR=$LOCALAPPDATA\\Temp\\fastembed_tmp" >> $GITHUB_ENV
+          else
+            echo "MODEL_CACHE_DIR=/tmp/fastembed_tmp" >> $GITHUB_ENV
+          fi
+        shell: bash
       
-      # - name: Cache Model Files
-      #   uses: actions/cache@v3
-      #   with:
-      #     path: ${{ env.MODEL_CACHE_DIR }}
-      #     key: model-cache-${{ runner.os }}-${{ hashFiles('tests/**') }}
+      - name: Cache Model Files
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.MODEL_CACHE_DIR }}
+          key: model-cache-${{ runner.os }}-${{ hashFiles('tests/**') }}
 
       - name: Run pytest
         run: |
