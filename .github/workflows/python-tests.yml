@@ -59,3 +59,13 @@ jobs:
       - name: Run pytest
         run: |
           poetry run pytest tests/test_text_multitask_embeddings.py
+      
+      - name: List Cached Models (Windows)
+        if: runner.os == 'Windows'
+        run: dir C:\Users\runneradmin\AppData\Local\Temp\fastembed_tmp
+        shell: cmd
+        
+      - name: List Cached Models (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: ls -lah /tmp/fastembed_tmp
+        shell: bash
