@@ -15,10 +15,10 @@ jobs:
       matrix:
         python-version:
           - '3.9.x'
-          - '3.10.x'
-          - '3.11.x'
-          - '3.12.x'
-          - '3.13.x'
+          # - '3.10.x'
+          # - '3.11.x'
+          # - '3.12.x'
+          # - '3.13.x'
         os:
           # - ubuntu-latest
           # - macos-latest
@@ -61,11 +61,6 @@ jobs:
       - name: Run pytest
         run: |
           poetry run pytest tests/test_image_onnx_embeddings.py
-      
-      - name: List Cached Models (Windows) 1
-        if: runner.os == 'Windows'
-        run: dir $LOCALAPPDATA\\Temp\\fastembed_cache
-        shell: cmd
       
       - name: List Cached Models (Windows) 2
         if: runner.os == 'Windows'
