@@ -43,22 +43,17 @@ jobs:
       
       - name: Set Model Cache Directory
         run: |
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            echo "MODEL_CACHE_DIR=$TEMP/fastembed_cache" >> $GITHUB_ENV
-          elif [[ "$RUNNER_OS" == "MacOS" ]]; then
-            echo "MODEL_CACHE_DIR=/var/folders/fastembed_cache" >> $GITHUB_ENV
-          else
-            echo "MODEL_CACHE_DIR=/tmp/fastembed_cache" >> $GITHUB_ENV
-          fi
+          echo "MODEL_CACHE_DIR=./fastembed_cache" >> $GITHUB_ENV
         shell: bash
       
       - name: Cache Model Files
         uses: actions/cache@v4
         with:
           path: "${{ env.MODEL_CACHE_DIR }}"
-          key: ml-models-cache-${{ runner.os }}-${{ hashFiles('**/test_*.py') }}
+          key: ml-models-cache-${{ hashFiles('**/test_*.py') }}
           restore-keys: |
-            ml-models-cache-${{ runner.os }}-
+            ml-models-cache-
+          enableCrossOsArchive: true
 
       - name: Run pytest
         run: |
@@ -75,4 +70,13 @@ jobs:
       - name: List Cached Models (MacOS) tmp
         if: runner.os == 'MacOS'
         run: ls -lah /var/folders/
+        shell: bash
+      
+      - name: List Cached Models
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            dir "${{ env.MODEL_CACHE_DIR }}"
+          else
+            ls -lah "${{ env.MODEL_CACHE_DIR }}"
+          fi
         shell: bash
