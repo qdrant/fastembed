@@ -66,11 +66,6 @@ jobs:
         if: runner.os == 'Windows'
         run: dir C:\Users\runneradmin\AppData\Local\Temp\fastembed_cache
         shell: cmd
-        
-      - name: List Cached Models (Linux/macOS) - var/tmp
-        if: runner.os != 'Windows'
-        run: ls -lah /var/tmp/fastembed_cache
-        shell: bash
 
       - name: List Cached Models (Linux/macOS) - /tmp
         if: runner.os != 'Windows'
