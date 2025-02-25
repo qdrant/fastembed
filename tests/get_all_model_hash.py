@@ -1,21 +1,16 @@
 import hashlib
 
 from fastembed import (
-    TextEmbedding,
-    LateInteractionTextEmbedding,
     SparseTextEmbedding,
-    ImageEmbedding,
-    LateInteractionMultimodalEmbedding,
 )
-from fastembed.rerank.cross_encoder import TextCrossEncoder
 
 
 models = [
-    *TextEmbedding.list_supported_models(),
-    *ImageEmbedding.list_supported_models(),
-    *LateInteractionTextEmbedding.list_supported_models(),
-    *LateInteractionMultimodalEmbedding.list_supported_models(),
-    *TextCrossEncoder.list_supported_models(),
+    # *TextEmbedding.list_supported_models(),
+    # *ImageEmbedding.list_supported_models(),
+    # *LateInteractionTextEmbedding.list_supported_models(),
+    # *LateInteractionMultimodalEmbedding.list_supported_models(),
+    # *TextCrossEncoder.list_supported_models(),
     *SparseTextEmbedding.list_supported_models(),
 ]
 
