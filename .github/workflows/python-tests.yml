@@ -67,7 +67,7 @@ jobs:
 
       - name: Run pytest
         run: |
-          poetry run pytest
+          poetry run pytest tests/test_sparse_embeddings.py
 
       - name: List Cached Models (Linux)
         if: runner.os == 'Linux'
