@@ -14,13 +14,13 @@ jobs:
     strategy:
       matrix:
         python-version:
-          # - '3.9.x'
-          # - '3.10.x'
-          # - '3.11.x'
-          # - '3.12.x'
+          - '3.9.x'
+          - '3.10.x'
+          - '3.11.x'
+          - '3.12.x'
           - '3.13.x'
         os:
-          # - ubuntu-latest
+          - ubuntu-latest
           # - macos-latest
           - windows-latest
 
@@ -63,7 +63,7 @@ jobs:
 
       - name: Run pytest
         run: |
-          poetry run pytest tests/test_image_onnx_embeddings.py
+          poetry run pytest
 
       - name: List Cached Models (Linux)
         if: runner.os == 'Linux'
