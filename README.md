@@ -63,6 +63,23 @@ embeddings = list(model.embed(documents))
 
 ```
 
+Dense text embedding can also be extended with models which are not in the list of supported models.
+
+```python
+from fastembed import TextEmbedding
+from fastembed.common.model_description import PoolingType, ModelSource
+
+TextEmbedding.add_custom_model(
+    model="intfloat/multilingual-e5-small",
+    pooling=PoolingType.MEAN,
+    normalization=True,
+    sources=ModelSource(hf="intfloat/multilingual-e5-small"),  # can be used with an `url` to load files from a private storage
+    dim=384,
+    model_file="onnx/model.onnx",  # can be used to load an already supported model with another optimization or quantization, e.g. onnx/model_O4.onnx
+)
+model = TextEmbedding(model_name="intfloat/multilingual-e5-small")
+embeddings = list(model.embed(documents))
+```
 
 
 ### 🔱 Sparse text embeddings
@@ -135,6 +152,27 @@ embeddings = list(model.embed(images))
 #   array([-0.1115,  0.0097,  0.0052,  0.0195, ...], dtype=float32),
 #   array([-0.1019,  0.0635, -0.0332,  0.0522, ...], dtype=float32)
 # ]
+```
+
+### Late interaction multimodal models (ColPali)
+
+```python
+from fastembed import LateInteractionMultimodalEmbedding
+
+doc_images = [
+    "./path/to/qdrant_pdf_doc_1_screenshot.jpg",
+    "./path/to/colpali_pdf_doc_2_screenshot.jpg",
+]
+
+query = "What is Qdrant?"
+
+model = LateInteractionMultimodalEmbedding(model_name="Qdrant/colpali-v1.3-fp16")
+doc_images_embeddings = list(model.embed_image(doc_images))
+# shape (2, 1030, 128)
+# [array([[-0.03353882, -0.02090454, ..., -0.15576172, -0.07678223]], dtype=float32)]
+query_embedding = model.embed_text(query)
+# shape (1, 20, 128)
+# [array([[-0.00218201,  0.14758301, ...,  -0.02207947,  0.16833496]], dtype=float32)]
 ```
 
 ### 🔄 Rerankers
