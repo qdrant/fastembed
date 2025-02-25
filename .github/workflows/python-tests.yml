@@ -43,7 +43,13 @@ jobs:
       
       - name: Set Model Cache Directory
         run: |
-          echo "MODEL_CACHE_DIR=./fastembed_cache" >> $GITHUB_ENV
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            echo "MODEL_CACHE_DIR=$TEMP/fastembed_cache" >> $GITHUB_ENV
+          elif [[ "$RUNNER_OS" == "MacOS" ]]; then
+            echo "MODEL_CACHE_DIR=/private/var/tmp/fastembed_cache" >> $GITHUB_ENV
+          else
+            echo "MODEL_CACHE_DIR=/tmp/fastembed_cache" >> $GITHUB_ENV
+          fi
         shell: bash
       
       - name: Cache Model Files
@@ -69,14 +75,5 @@ jobs:
         shell: bash
       - name: List Cached Models (MacOS) tmp
         if: runner.os == 'MacOS'
-        run: ls -lah /var/folders/
-        shell: bash
-      
-      - name: List Cached Models
-        run: |
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            dir "${{ env.MODEL_CACHE_DIR }}"
-          else
-            ls -lah "${{ env.MODEL_CACHE_DIR }}"
-          fi
+        run: ls -lah /private/var/tmp/
         shell: bash
