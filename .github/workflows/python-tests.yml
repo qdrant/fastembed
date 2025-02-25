@@ -20,9 +20,9 @@ jobs:
           # - '3.12.x'
           - '3.13.x'
         os:
-          # - ubuntu-latest
+          - ubuntu-latest
           # - macos-latest
-          - windows-latest
+          # - windows-latest
 
     runs-on: ${{ matrix.os }}
 
@@ -54,7 +54,9 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{ env.MODEL_CACHE_DIR }}
-          key: model-cache-${{ runner.os }}-${{ hashFiles('tests/**') }}
+          key: ml-models-cache-${{ hashFiles('**/test_*.py') }}
+          restore-keys: |
+            ml-models-cache-
 
       - name: Run pytest
         run: |
@@ -65,7 +67,12 @@ jobs:
         run: dir C:\Users\runneradmin\AppData\Local\Temp\fastembed_cache
         shell: cmd
         
-      - name: List Cached Models (Linux/macOS)
+      - name: List Cached Models (Linux/macOS) - var/tmp
+        if: runner.os != 'Windows'
+        run: ls -lah /var/tmp/fastembed_cache
+        shell: bash
+
+      - name: List Cached Models (Linux/macOS) - /tmp
         if: runner.os != 'Windows'
         run: ls -lah /tmp/fastembed_cache
         shell: bash
