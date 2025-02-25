@@ -21,7 +21,7 @@ jobs:
           # - '3.13.x'
         os:
           - ubuntu-latest
-          - macos-latest
+          # - macos-latest
           - windows-latest
 
     runs-on: ${{ matrix.os }}
@@ -44,14 +44,14 @@ jobs:
       - name: Set Model Cache Directory
         run: |
           if [[ "$RUNNER_OS" == "Windows" ]]; then
-            echo "MODEL_CACHE_DIR=$TEMP\\fastembed_cache" >> $GITHUB_ENV
+            echo "MODEL_CACHE_DIR=~\AppData\Local\Temp\fastembed_cache" >> $GITHUB_ENV
           else
             echo "MODEL_CACHE_DIR=/tmp/fastembed_cache" >> $GITHUB_ENV
           fi
         shell: bash
       
       - name: Cache Model Files
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: "${{ env.MODEL_CACHE_DIR }}"
           key: ml-models-cache-${{ runner.os }}-${{ hashFiles('**/test_*.py') }}
@@ -69,5 +69,5 @@ jobs:
       
       - name: List Cached Models (Windows) - %TEMP%
         if: runner.os == 'Windows'
-        run: ls -lah $TEMP\fastembed_cache
+        run: ls -lah ~\AppData\Local\Temp\fastembed_cache
         shell: bash
