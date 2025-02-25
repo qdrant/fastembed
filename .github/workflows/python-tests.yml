@@ -63,7 +63,7 @@ jobs:
           poetry run pytest tests/test_image_onnx_embeddings.py
 
       - name: List Cached Models (Linux)
-        if: runner.os != 'Linux'
+        if: runner.os == 'Linux'
         run: ls -lah /tmp/fastembed_cache
         shell: bash
       - name: List Cached Models (Windows)
