@@ -40,7 +40,11 @@ jobs:
           python -m pip install poetry
           poetry config virtualenvs.create false
           poetry install --no-interaction --no-ansi --without dev,docs
-      
+
+      - name: Compute Model Cache Key
+        id: model_cache_key
+        run: echo "MODEL_HASH=$(python tests/get_all_model_hash.py)" >> $GITHUB_ENV
+
       - name: Set Model Cache Directory
         run: |
           if [[ "$RUNNER_OS" == "Windows" ]]; then
@@ -56,7 +60,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: "${{ env.MODEL_CACHE_DIR }}"
-          key: ml-models-cache-${{ hashFiles('**/test_*.py') }}
+          key: ml-models-cache-${{ env.MODEL_HASH }}"
           restore-keys: |
             ml-models-cache-
           enableCrossOsArchive: true
