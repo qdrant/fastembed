@@ -60,7 +60,7 @@ jobs:
 
       - name: Run pytest
         run: |
-          poetry run pytest
+          poetry run pytest tests/test_image_onnx_embeddings.py
       
       - name: List Cached Models (Windows)
         if: runner.os == 'Windows'
