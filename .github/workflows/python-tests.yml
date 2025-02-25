@@ -44,7 +44,7 @@ jobs:
       - name: Set Model Cache Directory
         run: |
           if [[ "$RUNNER_OS" == "Windows" ]]; then
-            echo "MODEL_CACHE_DIR=$LOCALAPPDATA\\Temp\\fastembed_cache" >> $GITHUB_ENV
+            echo "MODEL_CACHE_DIR=%TEMP%\\fastembed_cache" >> $GITHUB_ENV
           else
             echo "MODEL_CACHE_DIR=/tmp/fastembed_cache" >> $GITHUB_ENV
           fi
@@ -54,18 +54,13 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{ env.MODEL_CACHE_DIR }}
-          key: ml-models-cache-${{ hashFiles('**/test_*.py') }}
+          key: ml-models-cache-${{ runner.os }}-${{ hashFiles('**/test_*.py') }}
           restore-keys: |
             ml-models-cache-${{ runner.os }}-
 
       - name: Run pytest
         run: |
           poetry run pytest tests/test_image_onnx_embeddings.py
-      
-      - name: List Cached Models (Windows) 2
-        if: runner.os == 'Windows'
-        run: dir %TEMP%\\fastembed_cache
-        shell: cmd
 
       - name: List Cached Models (Linux/macOS) - /tmp
         if: runner.os != 'Windows'
