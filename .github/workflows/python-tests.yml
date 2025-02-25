@@ -56,7 +56,7 @@ jobs:
           path: ${{ env.MODEL_CACHE_DIR }}
           key: ml-models-cache-${{ hashFiles('**/test_*.py') }}
           restore-keys: |
-            ml-models-cache-
+            ml-models-cache-${{ runner.os }}-
 
       - name: Run pytest
         run: |
