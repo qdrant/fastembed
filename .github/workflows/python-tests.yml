@@ -44,7 +44,7 @@ jobs:
       - name: Set Model Cache Directory
         run: |
           if [[ "$RUNNER_OS" == "Windows" ]]; then
-            echo "MODEL_CACHE_DIR=%TEMP%\\fastembed_cache" >> $GITHUB_ENV
+            echo "MODEL_CACHE_DIR=$TEMP\\fastembed_cache" >> $GITHUB_ENV
           else
             echo "MODEL_CACHE_DIR=/tmp/fastembed_cache" >> $GITHUB_ENV
           fi
@@ -62,12 +62,23 @@ jobs:
         run: |
           poetry run pytest tests/test_image_onnx_embeddings.py
 
-      - name: List Cached Models (Linux/macOS) - /tmp
-        if: runner.os != 'Windows'
+      - name: List Cached Models (Linux)
+        if: runner.os != 'Linux'
         run: ls -lah /tmp/fastembed_cache
         shell: bash
-      
-      - name: List Cached Models (Windows) - %TEMP%
+      - name: List Cached Models (Windows)
         if: runner.os == 'Windows'
         run: ls -la "$TEMP\\fastembed_cache"
+        shell: bash
+      - name: List Cached Models (MacOS) tmp
+        if: runner.os == 'MacOS'
+        run: ls -lah /tmp/
+        shell: bash
+      - name: List Cached Models (MacOS) ~/Library/Caches
+        if: runner.os == 'MacOS'
+        run: ls -lah ~/Library/Caches
+        shell: bash
+      - name: List Cached Models (MacOS) /var/folders/
+        if: runner.os == 'MacOS'
+        run: ls -lah /var/folders/
         shell: bash
