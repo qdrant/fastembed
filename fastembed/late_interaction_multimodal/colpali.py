@@ -197,12 +197,11 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
         Returns:
             Dict[str, NumpyArray]: ONNX input with text placeholders.
         """
-
         onnx_input["input_ids"] = np.array(
-            [self.EMPTY_TEXT_PLACEHOLDER for _ in onnx_input["input_ids"]]
+            [self.EMPTY_TEXT_PLACEHOLDER for _ in onnx_input["pixel_values"]]
         )
         onnx_input["attention_mask"] = np.array(
-            [self.EVEN_ATTENTION_MASK for _ in onnx_input["input_ids"]]
+            [self.EVEN_ATTENTION_MASK for _ in onnx_input["pixel_values"]]
         )
         return onnx_input
 

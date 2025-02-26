@@ -73,8 +73,8 @@ class OnnxMultimodalModel(OnnxModel[T]):
             cuda=cuda,
             device_id=device_id,
         )
-        assert self.tokenizer is not None
         self.tokenizer, self.special_token_to_id = load_tokenizer(model_dir=model_dir)
+        assert self.tokenizer is not None
         self.processor = load_preprocessor(model_dir=model_dir)
 
     def load_onnx_model(self) -> None:
@@ -159,10 +159,6 @@ class OnnxMultimodalModel(OnnxModel[T]):
             for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
                 yield from self._post_process_onnx_text_output(batch)  # type: ignore
 
-    def _build_onnx_image_input(self, encoded: NumpyArray) -> dict[str, NumpyArray]:
-        input_name = self.model.get_inputs()[0].name  # type: ignore[union-attr]
-        return {input_name: encoded}
-
     def onnx_embed_image(self, images: list[ImageInput], **kwargs: Any) -> OnnxOutputContext:
         with contextlib.ExitStack():
             image_files = [
@@ -171,7 +167,7 @@ class OnnxMultimodalModel(OnnxModel[T]):
             ]
             assert self.processor is not None, "Processor is not initialized"
             encoded = np.array(self.processor(image_files))
-        onnx_input = self._build_onnx_image_input(encoded)
+        onnx_input = {"pixel_values": encoded}
         onnx_input = self._preprocess_onnx_image_input(onnx_input, **kwargs)
         model_output = self.model.run(None, onnx_input)  # type: ignore[union-attr]
         embeddings = model_output[0].reshape(len(images), -1)
