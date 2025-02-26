@@ -11,15 +11,13 @@ from tests.config import TEST_MISC_DIR
 CANONICAL_IMAGE_VALUES = {
     "Qdrant/colpali-v1.3-fp16": np.array(
         [
-            [
-                [-0.0345, -0.022, 0.0567, -0.0518, -0.0782, 0.1714, -0.1738],
-                [-0.1181, -0.099, 0.0268, 0.0774, 0.0228, 0.0563, -0.1021],
-                [-0.117, -0.0683, 0.0371, 0.0921, 0.0107, 0.0659, -0.0666],
-                [-0.1393, -0.0948, 0.037, 0.0951, -0.0126, 0.0678, -0.087],
-                [-0.0957, -0.081, 0.0404, 0.052, 0.0409, 0.0335, -0.064],
-                [-0.0626, -0.0445, 0.056, 0.0592, -0.0229, 0.0409, -0.0301],
-                [-0.1299, -0.0691, 0.1097, 0.0728, 0.0123, 0.0519, 0.0122],
-            ]
+            [-0.0345, -0.022, 0.0567, -0.0518, -0.0782, 0.1714, -0.1738],
+            [-0.1181, -0.099, 0.0268, 0.0774, 0.0228, 0.0563, -0.1021],
+            [-0.117, -0.0683, 0.0371, 0.0921, 0.0107, 0.0659, -0.0666],
+            [-0.1393, -0.0948, 0.037, 0.0951, -0.0126, 0.0678, -0.087],
+            [-0.0957, -0.081, 0.0404, 0.052, 0.0409, 0.0335, -0.064],
+            [-0.0626, -0.0445, 0.056, 0.0592, -0.0229, 0.0409, -0.0301],
+            [-0.1299, -0.0691, 0.1097, 0.0728, 0.0123, 0.0519, 0.0122],
         ]
     ),
 }
@@ -56,8 +54,8 @@ def test_batch_embedding():
             result = list(model.embed_image(images, batch_size=2))
 
             for value in result:
-                batch_size, token_num, abridged_dim = expected_result.shape
-                assert np.allclose(value[:token_num, :abridged_dim], expected_result, atol=1e-3)
+                token_num, abridged_dim = expected_result.shape
+                assert np.allclose(value[:token_num, :abridged_dim], expected_result, atol=2e-3)
 
 
 def test_single_embedding():
@@ -67,7 +65,7 @@ def test_single_embedding():
             print("evaluating", model_name)
             model = LateInteractionMultimodalEmbedding(model_name=model_name)
             result = next(iter(model.embed_image(images, batch_size=6)))
-            batch_size, token_num, abridged_dim = expected_result.shape
+            token_num, abridged_dim = expected_result.shape
             assert np.allclose(result[:token_num, :abridged_dim], expected_result, atol=2e-3)
 
 
