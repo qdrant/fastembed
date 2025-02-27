@@ -330,9 +330,10 @@ class ModelManagement(Generic[T]):
         model_name: str,
         source_url: str,
         cache_dir: str,
+        deprecated_tar_struct: bool = False,
         local_files_only: bool = False,
     ) -> Path:
-        fast_model_name = f"fast-{model_name.split('/')[-1]}"
+        fast_model_name = f"{'fast-' if deprecated_tar_struct else ''}{model_name.split('/')[-1]}"
         cache_tmp_dir = Path(cache_dir) / "tmp"
         model_tmp_dir = cache_tmp_dir / fast_model_name
         model_dir = Path(cache_dir) / fast_model_name
@@ -438,6 +439,7 @@ class ModelManagement(Generic[T]):
                         model.model,
                         str(url_source),
                         str(cache_dir),
+                        deprecated_tar_struct=model.sources.deprecated_tar_struct,
                         local_files_only=local_files_only,
                     )
                 except Exception:
