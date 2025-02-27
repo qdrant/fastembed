@@ -34,7 +34,7 @@ def test_embedding() -> None:
     all_models = ImageEmbedding._list_supported_models()
 
     models_to_test = (
-        [next(model for model in all_models if model.model in CANONICAL_VECTOR_VALUES)]
+        [model for model in all_models if model.model in CANONICAL_VECTOR_VALUES][:1]
         if not is_manual
         else all_models
     )

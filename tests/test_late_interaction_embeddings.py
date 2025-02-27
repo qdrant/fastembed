@@ -177,7 +177,7 @@ def test_single_embedding():
 
     all_models = LateInteractionTextEmbedding._list_supported_models()
     models_to_test = (
-        [next(model for model in all_models if model.model in CANONICAL_COLUMN_VALUES)]
+        [model for model in all_models if model.model in CANONICAL_COLUMN_VALUES][:1]
         if not is_manual
         else all_models
     )
@@ -206,7 +206,7 @@ def test_single_embedding_query():
 
     all_models = LateInteractionTextEmbedding._list_supported_models()
     models_to_test = (
-        [next(model for model in all_models if model.model in CANONICAL_QUERY_VALUES)]
+        [model for model in all_models if model.model in CANONICAL_QUERY_VALUES][:1]
         if not is_manual
         else all_models
     )

@@ -70,7 +70,7 @@ def test_single_embedding() -> None:
 
     all_models = SparseTextEmbedding._list_supported_models()
     models_to_test = (
-        [next(model for model in all_models if model.model in CANONICAL_COLUMN_VALUES)]
+        [model for model in all_models if model.model in CANONICAL_COLUMN_VALUES][:1]
         if not is_manual
         else all_models
     )

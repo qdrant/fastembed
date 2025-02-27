@@ -93,7 +93,7 @@ def test_single_embedding():
 
     all_models = TextEmbedding._list_supported_models()
     models_to_test = (
-        [next(model for model in all_models if model.model in CANONICAL_VECTOR_VALUES)]
+        [model for model in all_models if model.model in CANONICAL_VECTOR_VALUES][:1]
         if not is_manual
         else all_models
     )
@@ -133,7 +133,7 @@ def test_single_embedding_query():
 
     all_models = TextEmbedding._list_supported_models()
     models_to_test = (
-        [next(model for model in all_models if model.model in CANONICAL_VECTOR_VALUES)]
+        [model for model in all_models if model.model in CANONICAL_VECTOR_VALUES][:1]
         if not is_manual
         else all_models
     )
@@ -172,7 +172,7 @@ def test_single_embedding_passage():
 
     all_models = TextEmbedding._list_supported_models()
     models_to_test = (
-        [next(model for model in all_models if model.model in CANONICAL_VECTOR_VALUES)]
+        [model for model in all_models if model.model in CANONICAL_VECTOR_VALUES][:1]
         if not is_manual
         else all_models
     )

@@ -22,7 +22,7 @@ def test_rerank() -> None:
 
     all_models = TextCrossEncoder._list_supported_models()
     models_to_test = (
-        [next(model for model in all_models if model.model in CANONICAL_SCORE_VALUES)]
+        [model for model in all_models if model.model in CANONICAL_SCORE_VALUES][:1]
         if not is_manual
         else all_models
     )
