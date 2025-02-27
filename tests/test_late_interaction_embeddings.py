@@ -206,7 +206,7 @@ def test_single_embedding_query():
 
     all_models = LateInteractionTextEmbedding._list_supported_models()
     models_to_test = (
-        [next(model for model in all_models if model.model in CANONICAL_COLUMN_VALUES)]
+        [next(model for model in all_models if model.model in CANONICAL_QUERY_VALUES)]
         if not is_manual
         else all_models
     )
@@ -220,7 +220,7 @@ def test_single_embedding_query():
         print("evaluating", model_name)
         model = LateInteractionTextEmbedding(model_name=model_name)
         result = next(iter(model.query_embed(queries_to_embed)))
-        expected_result = CANONICAL_COLUMN_VALUES[model_name]
+        expected_result = CANONICAL_QUERY_VALUES[model_name]
         token_num, abridged_dim = expected_result.shape
         assert np.allclose(result[:, :abridged_dim], expected_result, atol=2e-3)
 
