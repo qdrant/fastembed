@@ -21,7 +21,11 @@ def test_rerank(model_name: str) -> None:
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
     all_models = TextCrossEncoder._list_supported_models()
-    models_to_test = [all_models[0]] if not is_manual else all_models
+    models_to_test = (
+        [next(model for model in all_models if model.model in CANONICAL_SCORE_VALUES)]
+        if not is_manual
+        else all_models
+    )
 
     for model_desc in models_to_test:
         if (

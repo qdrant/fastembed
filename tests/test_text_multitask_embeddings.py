@@ -92,7 +92,11 @@ def test_single_embedding():
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
     all_models = TextEmbedding._list_supported_models()
-    models_to_test = [all_models[0]] if not is_manual else all_models
+    models_to_test = (
+        [next(model for model in all_models if model.model in CANONICAL_VECTOR_VALUES)]
+        if not is_manual
+        else all_models
+    )
 
     for model_desc in models_to_test:
         if (
@@ -128,7 +132,11 @@ def test_single_embedding_query():
     task_id = Task.RETRIEVAL_QUERY
 
     all_models = TextEmbedding._list_supported_models()
-    models_to_test = [all_models[0]] if not is_manual else all_models
+    models_to_test = (
+        [next(model for model in all_models if model.model in CANONICAL_VECTOR_VALUES)]
+        if not is_manual
+        else all_models
+    )
 
     for model_desc in models_to_test:
         if (
@@ -163,7 +171,11 @@ def test_single_embedding_passage():
     task_id = Task.RETRIEVAL_PASSAGE
 
     all_models = TextEmbedding._list_supported_models()
-    models_to_test = [all_models[0]] if not is_manual else all_models
+    models_to_test = (
+        [next(model for model in all_models if model.model in CANONICAL_VECTOR_VALUES)]
+        if not is_manual
+        else all_models
+    )
 
     for model_desc in models_to_test:
         if (
