@@ -16,7 +16,7 @@ CANONICAL_SCORE_VALUES = {
 }
 
 
-def test_rerank(model_name: str) -> None:
+def test_rerank() -> None:
     is_ci = os.getenv("CI")
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
@@ -28,9 +28,8 @@ def test_rerank(model_name: str) -> None:
     )
 
     for model_desc in models_to_test:
-        if (
-            not is_ci and model_desc.size_in_GB > 1
-        ) or model_desc.model not in CANONICAL_SCORE_VALUES:
+        model_name = model_desc.model
+        if (not is_ci and model_desc.size_in_GB > 1) or model_name not in CANONICAL_SCORE_VALUES:
             continue
 
         model = TextCrossEncoder(model_name=model_name)
