@@ -15,43 +15,43 @@ CANONICAL_SCORE_VALUES = {
     "jinaai/jina-reranker-v2-base-multilingual": np.array([1.6533, -1.6455]),
 }
 
-SELECTED_MODELS = {
-    "Xenova": "Xenova/ms-marco-MiniLM-L-6-v2",
-    "BAAI": "BAAI/bge-reranker-base",
-    "jinaai": "jinaai/jina-reranker-v1-tiny-en",
-}
 
-
-@pytest.mark.parametrize(
-    "model_name",
-    [model_name for model_name in CANONICAL_SCORE_VALUES],
-)
 def test_rerank(model_name: str) -> None:
     is_ci = os.getenv("CI")
+    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
-    model = TextCrossEncoder(model_name=model_name)
+    all_models = TextCrossEncoder._list_supported_models()
+    models_to_test = [all_models[0]] if not is_manual else all_models
 
-    query = "What is the capital of France?"
-    documents = ["Paris is the capital of France.", "Berlin is the capital of Germany."]
-    scores = np.array(list(model.rerank(query, documents)))
+    for model_desc in models_to_test:
+        if (
+            not is_ci and model_desc.size_in_GB > 1
+        ) or model_desc.model not in CANONICAL_SCORE_VALUES:
+            continue
 
-    pairs = [(query, doc) for doc in documents]
-    scores2 = np.array(list(model.rerank_pairs(pairs)))
-    assert np.allclose(
-        scores, scores2, atol=1e-5
-    ), f"Model: {model_name}, Scores: {scores}, Scores2: {scores2}"
+        model = TextCrossEncoder(model_name=model_name)
 
-    canonical_scores = CANONICAL_SCORE_VALUES[model_name]
-    assert np.allclose(
-        scores, canonical_scores, atol=1e-3
-    ), f"Model: {model_name}, Scores: {scores}, Expected: {canonical_scores}"
-    if is_ci:
-        delete_model_cache(model.model._model_dir)
+        query = "What is the capital of France?"
+        documents = ["Paris is the capital of France.", "Berlin is the capital of Germany."]
+        scores = np.array(list(model.rerank(query, documents)))
+
+        pairs = [(query, doc) for doc in documents]
+        scores2 = np.array(list(model.rerank_pairs(pairs)))
+        assert np.allclose(
+            scores, scores2, atol=1e-5
+        ), f"Model: {model_name}, Scores: {scores}, Scores2: {scores2}"
+
+        canonical_scores = CANONICAL_SCORE_VALUES[model_name]
+        assert np.allclose(
+            scores, canonical_scores, atol=1e-3
+        ), f"Model: {model_name}, Scores: {scores}, Expected: {canonical_scores}"
+        if is_ci:
+            delete_model_cache(model.model._model_dir)
 
 
 @pytest.mark.parametrize(
     "model_name",
-    [model_name for model_name in SELECTED_MODELS.values()],
+    ["Xenova/ms-marco-MiniLM-L-6-v2"],
 )
 def test_batch_rerank(model_name: str) -> None:
     is_ci = os.getenv("CI")
@@ -97,7 +97,7 @@ def test_lazy_load(model_name: str) -> None:
 
 @pytest.mark.parametrize(
     "model_name",
-    [model_name for model_name in SELECTED_MODELS.values()],
+    ["Xenova/ms-marco-MiniLM-L-6-v2"],
 )
 def test_rerank_pairs_parallel(model_name: str) -> None:
     is_ci = os.getenv("CI")

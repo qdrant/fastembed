@@ -29,9 +29,16 @@ CANONICAL_VECTOR_VALUES = {
 
 def test_embedding() -> None:
     is_ci = os.getenv("CI")
+    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
-    for model_desc in ImageEmbedding._list_supported_models():
-        if not is_ci and model_desc.size_in_GB > 1:
+    all_models = ImageEmbedding._list_supported_models()
+
+    models_to_test = [all_models[0]] if not is_manual else all_models
+
+    for model_desc in models_to_test:
+        if (
+            not is_ci and model_desc.size_in_GB > 1
+        ) or model_desc.model not in CANONICAL_VECTOR_VALUES:
             continue
 
         dim = model_desc.dim
@@ -74,8 +81,12 @@ def test_batch_embedding(n_dims: int, model_name: str) -> None:
 
     embeddings = list(model.embed(images, batch_size=10))
     embeddings = np.stack(embeddings, axis=0)
+    assert np.allclose(embeddings[1], embeddings[2])
+
+    canonical_vector = CANONICAL_VECTOR_VALUES[model_name]
 
     assert embeddings.shape == (len(test_images) * n_images, n_dims)
+    assert np.allclose(embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3)
     if is_ci:
         delete_model_cache(model.model._model_dir)
 

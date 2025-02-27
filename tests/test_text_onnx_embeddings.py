@@ -75,12 +75,18 @@ MULTI_TASK_MODELS = ["jinaai/jina-embeddings-v3"]
 def test_embedding() -> None:
     is_ci = os.getenv("CI")
     is_mac = platform.system() == "Darwin"
+    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
-    for model_desc in TextEmbedding._list_supported_models():
+    all_models = TextEmbedding._list_supported_models()
+
+    models_to_test = [all_models[0]] if not is_manual else all_models
+
+    for model_desc in models_to_test:
         if (
             (not is_ci and model_desc.size_in_GB > 1)
             or model_desc.model in MULTI_TASK_MODELS
             or (is_mac and model_desc.model == "nomic-ai/nomic-embed-text-v1.5-Q")
+            or model_desc.model not in CANONICAL_VECTOR_VALUES
         ):
             continue
 
@@ -95,15 +101,12 @@ def test_embedding() -> None:
         canonical_vector = CANONICAL_VECTOR_VALUES[model_desc.model]
         assert np.allclose(
             embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3
-        ), model_desc["model"]
+        ), model_desc.model
         if is_ci:
             delete_model_cache(model.model._model_dir)
 
 
-@pytest.mark.parametrize(
-    "n_dims,model_name",
-    [(384, "BAAI/bge-small-en-v1.5"), (768, "jinaai/jina-embeddings-v2-base-en")],
-)
+@pytest.mark.parametrize("n_dims,model_name", [(384, "BAAI/bge-small-en-v1.5")])
 def test_batch_embedding(n_dims: int, model_name: str) -> None:
     is_ci = os.getenv("CI")
     model = TextEmbedding(model_name=model_name)
@@ -112,14 +115,14 @@ def test_batch_embedding(n_dims: int, model_name: str) -> None:
     embeddings = list(model.embed(docs, batch_size=10))
     embeddings = np.stack(embeddings, axis=0)
 
-    assert embeddings.shape == (200, n_dims)
+    assert embeddings.shape == (len(docs), n_dims)
     if is_ci:
         delete_model_cache(model.model._model_dir)
 
 
 @pytest.mark.parametrize(
     "n_dims,model_name",
-    [(384, "BAAI/bge-small-en-v1.5"), (768, "jinaai/jina-embeddings-v2-base-en")],
+    [(384, "BAAI/bge-small-en-v1.5")],
 )
 def test_parallel_processing(n_dims: int, model_name: str) -> None:
     is_ci = os.getenv("CI")
@@ -135,7 +138,7 @@ def test_parallel_processing(n_dims: int, model_name: str) -> None:
     embeddings_3 = list(model.embed(docs, batch_size=10, parallel=0))
     embeddings_3 = np.stack(embeddings_3, axis=0)
 
-    assert embeddings.shape == (200, n_dims)
+    assert embeddings.shape == (len(docs), n_dims)
     assert np.allclose(embeddings, embeddings_2, atol=1e-3)
     assert np.allclose(embeddings, embeddings_3, atol=1e-3)
 

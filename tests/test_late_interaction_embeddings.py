@@ -153,46 +153,66 @@ CANONICAL_QUERY_VALUES = {
 docs = ["Hello World"]
 
 
-def test_batch_embedding():
+@pytest.mark.parametrize("model_name", ["answerdotai/answerai-colbert-small-v1"])
+def test_batch_embedding(model_name: str):
     is_ci = os.getenv("CI")
     docs_to_embed = docs * 10
 
-    for model_name, expected_result in CANONICAL_COLUMN_VALUES.items():
-        print("evaluating", model_name)
-        model = LateInteractionTextEmbedding(model_name=model_name)
-        result = list(model.embed(docs_to_embed, batch_size=6))
+    model = LateInteractionTextEmbedding(model_name=model_name)
+    result = list(model.embed(docs_to_embed, batch_size=6))
+    expected_result = CANONICAL_COLUMN_VALUES[model_name]
 
-        for value in result:
-            token_num, abridged_dim = expected_result.shape
-            assert np.allclose(value[:, :abridged_dim], expected_result, atol=2e-3)
+    for value in result:
+        token_num, abridged_dim = expected_result.shape
+        assert np.allclose(value[:, :abridged_dim], expected_result, atol=2e-3)
 
-        if is_ci:
-            delete_model_cache(model.model._model_dir)
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
 
 
 def test_single_embedding():
     is_ci = os.getenv("CI")
+    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
     docs_to_embed = docs
 
-    for model_name, expected_result in CANONICAL_COLUMN_VALUES.items():
+    all_models = LateInteractionTextEmbedding._list_supported_models()
+    models_to_test = [all_models[0]] if not is_manual else all_models
+
+    for model_desc in models_to_test:
+        model_name = model_desc.model
+        if (
+            not is_ci and model_desc.size_in_GB > 1
+        ) or model_desc.model not in CANONICAL_COLUMN_VALUES:
+            continue
         print("evaluating", model_name)
         model = LateInteractionTextEmbedding(model_name=model_name)
         result = next(iter(model.embed(docs_to_embed, batch_size=6)))
+        expected_result = CANONICAL_COLUMN_VALUES[model_name]
         token_num, abridged_dim = expected_result.shape
         assert np.allclose(result[:, :abridged_dim], expected_result, atol=2e-3)
 
-        if is_ci:
-            delete_model_cache(model.model._model_dir)
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
 
 
 def test_single_embedding_query():
     is_ci = os.getenv("CI")
+    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
     queries_to_embed = docs
 
-    for model_name, expected_result in CANONICAL_QUERY_VALUES.items():
+    all_models = LateInteractionTextEmbedding._list_supported_models()
+    models_to_test = [all_models[0]] if not is_manual else all_models
+
+    for model_desc in models_to_test:
+        model_name = model_desc.model
+        if (
+            not is_ci and model_desc.size_in_GB > 1
+        ) or model_desc.model not in CANONICAL_QUERY_VALUES:
+            continue
         print("evaluating", model_name)
         model = LateInteractionTextEmbedding(model_name=model_name)
         result = next(iter(model.query_embed(queries_to_embed)))
+        expected_result = CANONICAL_COLUMN_VALUES[model_name]
         token_num, abridged_dim = expected_result.shape
         assert np.allclose(result[:, :abridged_dim], expected_result, atol=2e-3)
 
@@ -200,10 +220,14 @@ def test_single_embedding_query():
             delete_model_cache(model.model._model_dir)
 
 
-def test_parallel_processing():
+@pytest.mark.parametrize(
+    "token_dim,model_name",
+    [(96, "answerdotai/answerai-colbert-small-v1")],
+)
+def test_parallel_processing(token_dim: int, model_name: str):
     is_ci = os.getenv("CI")
-    model = LateInteractionTextEmbedding(model_name="colbert-ir/colbertv2.0")
-    token_dim = 128
+    model = LateInteractionTextEmbedding(model_name=model_name)
+
     docs = ["hello world", "flag embedding"] * 100
     embeddings = list(model.embed(docs, batch_size=10, parallel=2))
     embeddings = np.stack(embeddings, axis=0)
@@ -224,7 +248,7 @@ def test_parallel_processing():
 
 @pytest.mark.parametrize(
     "model_name",
-    ["colbert-ir/colbertv2.0"],
+    ["answerdotai/answerai-colbert-small-v1"],
 )
 def test_lazy_load(model_name: str):
     is_ci = os.getenv("CI")

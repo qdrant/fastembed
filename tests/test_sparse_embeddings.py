@@ -66,11 +66,21 @@ def test_batch_embedding() -> None:
 
 def test_single_embedding() -> None:
     is_ci = os.getenv("CI")
-    for model_name, expected_result in CANONICAL_COLUMN_VALUES.items():
+    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+
+    all_models = SparseTextEmbedding._list_supported_models()
+    models_to_test = [all_models[0]] if not is_manual else all_models
+
+    for model_desc in models_to_test:
+        model_name = model_desc.model
+        if (not is_ci and model_desc.size_in_GB > 1) or model_name not in CANONICAL_COLUMN_VALUES:
+            continue
+
         model = SparseTextEmbedding(model_name=model_name)
 
         passage_result = next(iter(model.embed(docs, batch_size=6)))
         query_result = next(iter(model.query_embed(docs)))
+        expected_result = CANONICAL_COLUMN_VALUES[model_name]
         for result in [passage_result, query_result]:
             assert result.indices.tolist() == expected_result["indices"]
 
