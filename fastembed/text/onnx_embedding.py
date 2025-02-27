@@ -1,6 +1,5 @@
 from typing import Any, Iterable, Optional, Sequence, Type, Union
 
-import numpy as np
 from fastembed.common.types import NumpyArray, OnnxProvider
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.utils import define_cache_dir, normalize
@@ -309,7 +308,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):
             processed_embeddings = embeddings
         else:
             raise ValueError(f"Unsupported embedding shape: {embeddings.shape}")
-        return normalize(processed_embeddings).astype(np.float32)
+        return normalize(processed_embeddings)
 
     def load_onnx_model(self) -> None:
         self._load_onnx_model(

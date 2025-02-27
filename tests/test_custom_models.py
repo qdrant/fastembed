@@ -71,8 +71,8 @@ def test_mock_add_custom_models():
     source = ModelSource(hf="artificial")
 
     num_tokens = 10
-    dummy_pooled_embedding = np.random.random((1, dim)).astype(np.float32)
-    dummy_token_embedding = np.random.random((1, num_tokens, dim)).astype(np.float32)
+    dummy_pooled_embedding = np.random.random((1, dim))
+    dummy_token_embedding = np.random.random((1, num_tokens, dim))
     dummy_attention_mask = np.ones((1, num_tokens)).astype(np.int64)
 
     dummy_token_output = OnnxOutputContext(
@@ -91,15 +91,11 @@ def test_mock_add_custom_models():
     expected_output = {
         f"{PoolingType.MEAN.lower()}-normalized": normalize(
             mean_pooling(dummy_token_embedding, dummy_attention_mask)
-        ).astype(np.float32),
+        ),
         f"{PoolingType.MEAN.lower()}": mean_pooling(dummy_token_embedding, dummy_attention_mask),
-        f"{PoolingType.CLS.lower()}-normalized": normalize(dummy_token_embedding[:, 0]).astype(
-            np.float32
-        ),
+        f"{PoolingType.CLS.lower()}-normalized": normalize(dummy_token_embedding[:, 0]),
         f"{PoolingType.CLS.lower()}": dummy_token_embedding[:, 0],
-        f"{PoolingType.DISABLED.lower()}-normalized": normalize(dummy_pooled_embedding).astype(
-            np.float32
-        ),
+        f"{PoolingType.DISABLED.lower()}-normalized": normalize(dummy_pooled_embedding),
         f"{PoolingType.DISABLED.lower()}": dummy_pooled_embedding,
     }
 
