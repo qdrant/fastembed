@@ -71,8 +71,6 @@ def test_batch_embedding(dim: int, model_name: str):
 
     model = TextEmbedding(model_name=model_name)
 
-    print(f"evaluating {model_name} default task")
-
     embeddings = list(model.embed(documents=docs_to_embed, batch_size=6))
     embeddings = np.stack(embeddings, axis=0)
 
@@ -87,15 +85,19 @@ def test_batch_embedding(dim: int, model_name: str):
         delete_model_cache(model.model._model_dir)
 
 
-def test_single_embedding():
+@pytest.mark.parametrize(
+    "model_name",
+    ["jinaai/jina-embeddings-v3"],
+)
+def test_single_embedding(model_name: str):
     is_ci = os.getenv("CI")
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
     all_models = TextEmbedding._list_supported_models()
     models_to_test = (
-        [model for model in all_models if model.model in CANONICAL_VECTOR_VALUES][:1]
-        if not is_manual
-        else all_models
+        [model for model in all_models if model.model in CANONICAL_VECTOR_VALUES]
+        if is_manual
+        else [model_name]
     )
 
     for model_desc in models_to_test:
@@ -126,16 +128,20 @@ def test_single_embedding():
             delete_model_cache(model.model._model_dir)
 
 
-def test_single_embedding_query():
+@pytest.mark.parametrize(
+    "model_name",
+    ["jinaai/jina-embeddings-v3"],
+)
+def test_single_embedding_query(model_name: str):
     is_ci = os.getenv("CI")
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
     task_id = Task.RETRIEVAL_QUERY
 
     all_models = TextEmbedding._list_supported_models()
     models_to_test = (
-        [model for model in all_models if model.model in CANONICAL_VECTOR_VALUES][:1]
-        if not is_manual
-        else all_models
+        [model for model in all_models if model.model in CANONICAL_VECTOR_VALUES]
+        if is_manual
+        else [model_name]
     )
 
     for model_desc in models_to_test:
@@ -165,16 +171,20 @@ def test_single_embedding_query():
             delete_model_cache(model.model._model_dir)
 
 
-def test_single_embedding_passage():
+@pytest.mark.parametrize(
+    "model_name",
+    ["jinaai/jina-embeddings-v3"],
+)
+def test_single_embedding_passage(model_name: str):
     is_ci = os.getenv("CI")
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
     task_id = Task.RETRIEVAL_PASSAGE
 
     all_models = TextEmbedding._list_supported_models()
     models_to_test = (
-        [model for model in all_models if model.model in CANONICAL_VECTOR_VALUES][:1]
-        if not is_manual
-        else all_models
+        [model for model in all_models if model.model in CANONICAL_VECTOR_VALUES]
+        if is_manual
+        else [model_name]
     )
 
     for model_desc in models_to_test:

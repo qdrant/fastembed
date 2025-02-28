@@ -46,6 +46,8 @@ CANONICAL_COLUMN_VALUES = {
     }
 }
 
+ALL_SPARSE_MODEL_DESC = SparseTextEmbedding._list_supported_models()
+
 docs = ["Hello World"]
 
 
@@ -64,15 +66,22 @@ def test_batch_embedding() -> None:
             delete_model_cache(model.model._model_dir)
 
 
-def test_single_embedding() -> None:
+@pytest.mark.parametrize(
+    "model_name",
+    [
+        min(ALL_SPARSE_MODEL_DESC, key=lambda m: m.size_in_GB).model
+        if CANONICAL_COLUMN_VALUES
+        else "prithivida/Splade_PP_en_v1"
+    ],
+)
+def test_single_embedding(model_name: str) -> None:
     is_ci = os.getenv("CI")
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
-    all_models = SparseTextEmbedding._list_supported_models()
     models_to_test = (
-        [model for model in all_models if model.model in CANONICAL_COLUMN_VALUES][:1]
-        if not is_manual
-        else all_models
+        [model for model in ALL_SPARSE_MODEL_DESC if model.model in CANONICAL_COLUMN_VALUES]
+        if is_manual
+        else [model_name]
     )
 
     for model_desc in models_to_test:

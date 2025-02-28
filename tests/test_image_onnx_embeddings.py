@@ -26,17 +26,25 @@ CANONICAL_VECTOR_VALUES = {
     ),
 }
 
+ALL_IMAGE_MODEL_DESC = ImageEmbedding._list_supported_models()
 
-def test_embedding() -> None:
+
+@pytest.mark.parametrize(
+    "model_name",
+    [
+        min(ALL_IMAGE_MODEL_DESC, key=lambda m: m.size_in_GB).model
+        if CANONICAL_VECTOR_VALUES
+        else "Qdrant/clip-ViT-B-32-vision"
+    ],
+)
+def test_embedding(model_name: str) -> None:
     is_ci = os.getenv("CI")
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
-    all_models = ImageEmbedding._list_supported_models()
-
     models_to_test = (
-        [model for model in all_models if model.model in CANONICAL_VECTOR_VALUES][:1]
-        if not is_manual
-        else all_models
+        [model for model in ALL_IMAGE_MODEL_DESC if model.model in CANONICAL_VECTOR_VALUES]
+        if is_manual
+        else [model_name]
     )
 
     for model_desc in models_to_test:

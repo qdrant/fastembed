@@ -71,18 +71,26 @@ CANONICAL_VECTOR_VALUES = {
 
 MULTI_TASK_MODELS = ["jinaai/jina-embeddings-v3"]
 
+ALL_TEXT_MODEL_DESC = TextEmbedding._list_supported_models()
 
-def test_embedding() -> None:
+
+@pytest.mark.parametrize(
+    "model_name",
+    [
+        min(ALL_TEXT_MODEL_DESC, key=lambda m: m.size_in_GB).model
+        if CANONICAL_VECTOR_VALUES
+        else "BAAI/bge-small-en-v1.5"
+    ],
+)
+def test_embedding(model_name: str) -> None:
     is_ci = os.getenv("CI")
     is_mac = platform.system() == "Darwin"
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
-    all_models = TextEmbedding._list_supported_models()
-
     models_to_test = (
-        [model for model in all_models if model.model in CANONICAL_VECTOR_VALUES][:1]
-        if not is_manual
-        else all_models
+        [model for model in ALL_TEXT_MODEL_DESC if model.model in CANONICAL_VECTOR_VALUES]
+        if is_manual
+        else [model_name]
     )
 
     for model_desc in models_to_test:

@@ -170,16 +170,20 @@ def test_batch_embedding(model_name: str):
         delete_model_cache(model.model._model_dir)
 
 
-def test_single_embedding():
+@pytest.mark.parametrize(
+    "model_name",
+    ["answerdotai/answerai-colbert-small-v1"],
+)
+def test_single_embedding(model_name: str):
     is_ci = os.getenv("CI")
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
     docs_to_embed = docs
 
     all_models = LateInteractionTextEmbedding._list_supported_models()
     models_to_test = (
-        [model for model in all_models if model.model in CANONICAL_COLUMN_VALUES][:1]
-        if not is_manual
-        else all_models
+        [model for model in all_models if model.model in CANONICAL_COLUMN_VALUES]
+        if is_manual
+        else [model_name]
     )
 
     for model_desc in models_to_test:
@@ -199,16 +203,20 @@ def test_single_embedding():
             delete_model_cache(model.model._model_dir)
 
 
-def test_single_embedding_query():
+@pytest.mark.parametrize(
+    "model_name",
+    ["answerdotai/answerai-colbert-small-v1"],
+)
+def test_single_embedding_query(model_name: str):
     is_ci = os.getenv("CI")
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
     queries_to_embed = docs
 
     all_models = LateInteractionTextEmbedding._list_supported_models()
     models_to_test = (
-        [model for model in all_models if model.model in CANONICAL_QUERY_VALUES][:1]
-        if not is_manual
-        else all_models
+        [model for model in all_models if model.model in CANONICAL_COLUMN_VALUES]
+        if is_manual
+        else [model_name]
     )
 
     for model_desc in models_to_test:
