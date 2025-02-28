@@ -15,24 +15,22 @@ CANONICAL_SCORE_VALUES = {
     "jinaai/jina-reranker-v2-base-multilingual": np.array([1.6533, -1.6455]),
 }
 
-ALL_RERANK_MODEL_DESC = TextCrossEncoder._list_supported_models()
-
 
 @pytest.mark.parametrize("model_name", ["Xenova/ms-marco-MiniLM-L-6-v2"])
 def test_rerank(model_name: str) -> None:
     is_ci = os.getenv("CI")
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
-    models_to_test = (
-        [model for model in ALL_RERANK_MODEL_DESC if model.model in CANONICAL_SCORE_VALUES]
-        if is_manual
-        else [model_name]
-    )
-
-    for model_desc in models_to_test:
-        model_name = model_desc.model
-        if (not is_ci and model_desc.size_in_GB > 1) or model_name not in CANONICAL_SCORE_VALUES:
+    for model_desc in TextCrossEncoder._list_supported_models():
+        if not is_ci and model_desc.size_in_GB > 1:
             continue
+
+        if is_manual:
+            if model_desc.model not in CANONICAL_SCORE_VALUES:
+                continue
+        else:
+            if model_desc.model != model_name:
+                continue
 
         model = TextCrossEncoder(model_name=model_name)
 

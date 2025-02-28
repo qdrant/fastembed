@@ -46,8 +46,6 @@ CANONICAL_COLUMN_VALUES = {
     }
 }
 
-ALL_SPARSE_MODEL_DESC = SparseTextEmbedding._list_supported_models()
-
 docs = ["Hello World"]
 
 
@@ -71,16 +69,16 @@ def test_single_embedding(model_name: str) -> None:
     is_ci = os.getenv("CI")
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
-    models_to_test = (
-        [model for model in ALL_SPARSE_MODEL_DESC if model.model in CANONICAL_COLUMN_VALUES]
-        if is_manual
-        else [model_name]
-    )
-
-    for model_desc in models_to_test:
-        model_name = model_desc.model
-        if (not is_ci and model_desc.size_in_GB > 1) or model_name not in CANONICAL_COLUMN_VALUES:
+    for model_desc in SparseTextEmbedding._list_supported_models():
+        if not is_ci and model_desc.size_in_GB > 1:
             continue
+
+        if is_manual:
+            if model_desc.model not in CANONICAL_COLUMN_VALUES:
+                continue
+        else:
+            if model_desc.model != model_name:
+                continue
 
         model = SparseTextEmbedding(model_name=model_name)
 

@@ -71,8 +71,6 @@ CANONICAL_VECTOR_VALUES = {
 
 MULTI_TASK_MODELS = ["jinaai/jina-embeddings-v3"]
 
-ALL_TEXT_MODEL_DESC = TextEmbedding._list_supported_models()
-
 
 @pytest.mark.parametrize("model_name", ["BAAI/bge-small-en-v1.5"])
 def test_embedding(model_name: str) -> None:
@@ -80,20 +78,20 @@ def test_embedding(model_name: str) -> None:
     is_mac = platform.system() == "Darwin"
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
-    models_to_test = (
-        [model for model in ALL_TEXT_MODEL_DESC if model.model in CANONICAL_VECTOR_VALUES]
-        if is_manual
-        else [model_name]
-    )
-
-    for model_desc in models_to_test:
-        if (
-            (not is_ci and model_desc.size_in_GB > 1)
-            or model_desc.model in MULTI_TASK_MODELS
-            or (is_mac and model_desc.model == "nomic-ai/nomic-embed-text-v1.5-Q")
-            or model_desc.model not in CANONICAL_VECTOR_VALUES
-        ):
+    for model_desc in TextEmbedding._list_supported_models():
+        if not is_ci and model_desc.size_in_GB > 1:
             continue
+
+        if is_manual:
+            if (
+                model_desc.model not in CANONICAL_VECTOR_VALUES
+                or model_desc.model in MULTI_TASK_MODELS
+                or (is_mac and model_desc.model == "nomic-ai/nomic-embed-text-v1.5-Q")
+            ):
+                continue
+        else:
+            if model_desc.model != model_name:
+                continue
 
         dim = model_desc.dim
 

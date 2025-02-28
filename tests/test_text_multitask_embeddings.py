@@ -87,18 +87,16 @@ def test_single_embedding(model_name: str):
     is_ci = os.getenv("CI")
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
-    all_models = TextEmbedding._list_supported_models()
-    models_to_test = (
-        [model for model in all_models if model.model in CANONICAL_VECTOR_VALUES]
-        if is_manual
-        else [model_name]
-    )
-
-    for model_desc in models_to_test:
-        if (
-            not is_ci and model_desc.size_in_GB > 1
-        ) or model_desc.model not in CANONICAL_VECTOR_VALUES:
+    for model_desc in TextEmbedding._list_supported_models():
+        if not is_ci and model_desc.size_in_GB > 1:
             continue
+
+        if is_manual:
+            if model_desc.model not in CANONICAL_VECTOR_VALUES:
+                continue
+        else:
+            if model_desc.model != model_name:
+                continue
 
         model_name = model_desc.model
         dim = model_desc.dim
@@ -128,18 +126,16 @@ def test_single_embedding_query(model_name: str):
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
     task_id = Task.RETRIEVAL_QUERY
 
-    all_models = TextEmbedding._list_supported_models()
-    models_to_test = (
-        [model for model in all_models if model.model in CANONICAL_VECTOR_VALUES]
-        if is_manual
-        else [model_name]
-    )
-
-    for model_desc in models_to_test:
-        if (
-            not is_ci and model_desc.size_in_GB > 1
-        ) or model_desc.model not in CANONICAL_VECTOR_VALUES:
+    for model_desc in TextEmbedding._list_supported_models():
+        if not is_ci and model_desc.size_in_GB > 1:
             continue
+
+        if is_manual:
+            if model_desc.model not in CANONICAL_VECTOR_VALUES:
+                continue
+        else:
+            if model_desc.model != model_name:
+                continue
 
         model_name = model_desc.model
         dim = model_desc.dim
@@ -168,18 +164,16 @@ def test_single_embedding_passage(model_name: str):
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
     task_id = Task.RETRIEVAL_PASSAGE
 
-    all_models = TextEmbedding._list_supported_models()
-    models_to_test = (
-        [model for model in all_models if model.model in CANONICAL_VECTOR_VALUES]
-        if is_manual
-        else [model_name]
-    )
-
-    for model_desc in models_to_test:
-        if (
-            not is_ci and model_desc.size_in_GB > 1
-        ) or model_desc.model not in CANONICAL_VECTOR_VALUES:
+    for model_desc in TextEmbedding._list_supported_models():
+        if not is_ci and model_desc.size_in_GB > 1:
             continue
+
+        if is_manual:
+            if model_desc.model not in CANONICAL_VECTOR_VALUES:
+                continue
+        else:
+            if model_desc.model != model_name:
+                continue
 
         model_name = model_desc.model
         dim = model_desc.dim

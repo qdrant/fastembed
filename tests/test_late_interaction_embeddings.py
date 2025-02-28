@@ -176,19 +176,17 @@ def test_single_embedding(model_name: str):
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
     docs_to_embed = docs
 
-    all_models = LateInteractionTextEmbedding._list_supported_models()
-    models_to_test = (
-        [model for model in all_models if model.model in CANONICAL_COLUMN_VALUES]
-        if is_manual
-        else [model_name]
-    )
-
-    for model_desc in models_to_test:
-        model_name = model_desc.model
-        if (
-            not is_ci and model_desc.size_in_GB > 1
-        ) or model_desc.model not in CANONICAL_COLUMN_VALUES:
+    for model_desc in LateInteractionTextEmbedding._list_supported_models():
+        if not is_ci and model_desc.size_in_GB > 1:
             continue
+
+        if is_manual:
+            if model_desc.model not in CANONICAL_COLUMN_VALUES:
+                continue
+        else:
+            if model_desc.model != model_name:
+                continue
+
         print("evaluating", model_name)
         model = LateInteractionTextEmbedding(model_name=model_name)
         result = next(iter(model.embed(docs_to_embed, batch_size=6)))
@@ -206,19 +204,17 @@ def test_single_embedding_query(model_name: str):
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
     queries_to_embed = docs
 
-    all_models = LateInteractionTextEmbedding._list_supported_models()
-    models_to_test = (
-        [model for model in all_models if model.model in CANONICAL_COLUMN_VALUES]
-        if is_manual
-        else [model_name]
-    )
-
-    for model_desc in models_to_test:
-        model_name = model_desc.model
-        if (
-            not is_ci and model_desc.size_in_GB > 1
-        ) or model_desc.model not in CANONICAL_QUERY_VALUES:
+    for model_desc in LateInteractionTextEmbedding._list_supported_models():
+        if not is_ci and model_desc.size_in_GB > 1:
             continue
+
+        if is_manual:
+            if model_desc.model not in CANONICAL_QUERY_VALUES:
+                continue
+        else:
+            if model_desc.model != model_name:
+                continue
+
         print("evaluating", model_name)
         model = LateInteractionTextEmbedding(model_name=model_name)
         result = next(iter(model.query_embed(queries_to_embed)))
