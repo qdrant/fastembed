@@ -8,7 +8,7 @@ from fastembed.sparse.sparse_text_embedding import SparseTextEmbedding
 from tests.utils import delete_model_cache
 
 CANONICAL_COLUMN_VALUES = {
-    "prithvida/Splade_PP_en_v1": {
+    "prithivida/Splade_PP_en_v1": {
         "indices": [
             2040,
             2047,
