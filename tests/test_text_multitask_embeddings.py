@@ -60,10 +60,7 @@ CANONICAL_VECTOR_VALUES = {
 docs = ["Hello World", "Follow the white rabbit."]
 
 
-@pytest.mark.parametrize(
-    "dim,model_name",
-    [(1024, "jinaai/jina-embeddings-v3")],
-)
+@pytest.mark.parametrize("dim,model_name", [(1024, "jinaai/jina-embeddings-v3")])
 def test_batch_embedding(dim: int, model_name: str):
     is_ci = os.getenv("CI")
     docs_to_embed = docs * 10
@@ -85,10 +82,7 @@ def test_batch_embedding(dim: int, model_name: str):
         delete_model_cache(model.model._model_dir)
 
 
-@pytest.mark.parametrize(
-    "model_name",
-    ["jinaai/jina-embeddings-v3"],
-)
+@pytest.mark.parametrize("model_name", ["jinaai/jina-embeddings-v3"])
 def test_single_embedding(model_name: str):
     is_ci = os.getenv("CI")
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
@@ -128,10 +122,7 @@ def test_single_embedding(model_name: str):
             delete_model_cache(model.model._model_dir)
 
 
-@pytest.mark.parametrize(
-    "model_name",
-    ["jinaai/jina-embeddings-v3"],
-)
+@pytest.mark.parametrize("model_name", ["jinaai/jina-embeddings-v3"])
 def test_single_embedding_query(model_name: str):
     is_ci = os.getenv("CI")
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
@@ -171,10 +162,7 @@ def test_single_embedding_query(model_name: str):
             delete_model_cache(model.model._model_dir)
 
 
-@pytest.mark.parametrize(
-    "model_name",
-    ["jinaai/jina-embeddings-v3"],
-)
+@pytest.mark.parametrize("model_name", ["jinaai/jina-embeddings-v3"])
 def test_single_embedding_passage(model_name: str):
     is_ci = os.getenv("CI")
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
@@ -214,10 +202,7 @@ def test_single_embedding_passage(model_name: str):
             delete_model_cache(model.model._model_dir)
 
 
-@pytest.mark.parametrize(
-    "dim,model_name",
-    [(1024, "jinaai/jina-embeddings-v3")],
-)
+@pytest.mark.parametrize("dim,model_name", [(1024, "jinaai/jina-embeddings-v3")])
 def test_parallel_processing(dim: int, model_name: str):
     is_ci = os.getenv("CI")
 
@@ -263,10 +248,7 @@ def test_task_assignment():
             delete_model_cache(model.model._model_dir)
 
 
-@pytest.mark.parametrize(
-    "model_name",
-    ["jinaai/jina-embeddings-v3"],
-)
+@pytest.mark.parametrize("model_name", ["jinaai/jina-embeddings-v3"])
 def test_lazy_load(model_name: str):
     is_ci = os.getenv("CI")
     model = TextEmbedding(model_name=model_name, lazy_load=True)

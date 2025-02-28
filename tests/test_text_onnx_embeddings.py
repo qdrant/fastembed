@@ -74,14 +74,7 @@ MULTI_TASK_MODELS = ["jinaai/jina-embeddings-v3"]
 ALL_TEXT_MODEL_DESC = TextEmbedding._list_supported_models()
 
 
-@pytest.mark.parametrize(
-    "model_name",
-    [
-        min(ALL_TEXT_MODEL_DESC, key=lambda m: m.size_in_GB).model
-        if CANONICAL_VECTOR_VALUES
-        else "BAAI/bge-small-en-v1.5"
-    ],
-)
+@pytest.mark.parametrize("model_name", ["BAAI/bge-small-en-v1.5"])
 def test_embedding(model_name: str) -> None:
     is_ci = os.getenv("CI")
     is_mac = platform.system() == "Darwin"

@@ -66,14 +66,7 @@ def test_batch_embedding() -> None:
             delete_model_cache(model.model._model_dir)
 
 
-@pytest.mark.parametrize(
-    "model_name",
-    [
-        min(ALL_SPARSE_MODEL_DESC, key=lambda m: m.size_in_GB).model
-        if CANONICAL_COLUMN_VALUES
-        else "prithivida/Splade_PP_en_v1"
-    ],
-)
+@pytest.mark.parametrize("model_name", ["prithivida/Splade_PP_en_v1"])
 def test_single_embedding(model_name: str) -> None:
     is_ci = os.getenv("CI")
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
@@ -195,10 +188,7 @@ def test_disable_stemmer_behavior(disable_stemmer: bool) -> None:
     assert result == expected, f"Expected {expected}, but got {result}"
 
 
-@pytest.mark.parametrize(
-    "model_name",
-    ["prithivida/Splade_PP_en_v1"],
-)
+@pytest.mark.parametrize("model_name", ["prithivida/Splade_PP_en_v1"])
 def test_lazy_load(model_name: str) -> None:
     is_ci = os.getenv("CI")
     model = SparseTextEmbedding(model_name=model_name, lazy_load=True)

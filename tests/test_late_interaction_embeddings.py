@@ -170,10 +170,7 @@ def test_batch_embedding(model_name: str):
         delete_model_cache(model.model._model_dir)
 
 
-@pytest.mark.parametrize(
-    "model_name",
-    ["answerdotai/answerai-colbert-small-v1"],
-)
+@pytest.mark.parametrize("model_name", ["answerdotai/answerai-colbert-small-v1"])
 def test_single_embedding(model_name: str):
     is_ci = os.getenv("CI")
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
@@ -203,10 +200,7 @@ def test_single_embedding(model_name: str):
             delete_model_cache(model.model._model_dir)
 
 
-@pytest.mark.parametrize(
-    "model_name",
-    ["answerdotai/answerai-colbert-small-v1"],
-)
+@pytest.mark.parametrize("model_name", ["answerdotai/answerai-colbert-small-v1"])
 def test_single_embedding_query(model_name: str):
     is_ci = os.getenv("CI")
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
@@ -236,10 +230,7 @@ def test_single_embedding_query(model_name: str):
             delete_model_cache(model.model._model_dir)
 
 
-@pytest.mark.parametrize(
-    "token_dim,model_name",
-    [(96, "answerdotai/answerai-colbert-small-v1")],
-)
+@pytest.mark.parametrize("token_dim,model_name", [(96, "answerdotai/answerai-colbert-small-v1")])
 def test_parallel_processing(token_dim: int, model_name: str):
     is_ci = os.getenv("CI")
     model = LateInteractionTextEmbedding(model_name=model_name)
@@ -262,10 +253,7 @@ def test_parallel_processing(token_dim: int, model_name: str):
         delete_model_cache(model.model._model_dir)
 
 
-@pytest.mark.parametrize(
-    "model_name",
-    ["answerdotai/answerai-colbert-small-v1"],
-)
+@pytest.mark.parametrize("model_name", ["answerdotai/answerai-colbert-small-v1"])
 def test_lazy_load(model_name: str):
     is_ci = os.getenv("CI")
 

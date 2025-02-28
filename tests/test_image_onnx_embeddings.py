@@ -27,17 +27,9 @@ CANONICAL_VECTOR_VALUES = {
 }
 
 ALL_IMAGE_MODEL_DESC = ImageEmbedding._list_supported_models()
-smallest_model = min(ALL_IMAGE_MODEL_DESC, key=lambda m: m.size_in_GB).model
 
 
-@pytest.mark.parametrize(
-    "model_name",
-    [
-        smallest_model
-        if smallest_model in CANONICAL_VECTOR_VALUES
-        else "Qdrant/clip-ViT-B-32-vision"
-    ],
-)
+@pytest.mark.parametrize("model_name", ["Qdrant/clip-ViT-B-32-vision"])
 def test_embedding(model_name: str) -> None:
     is_ci = os.getenv("CI")
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"

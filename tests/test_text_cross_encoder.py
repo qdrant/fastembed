@@ -18,14 +18,7 @@ CANONICAL_SCORE_VALUES = {
 ALL_RERANK_MODEL_DESC = TextCrossEncoder._list_supported_models()
 
 
-@pytest.mark.parametrize(
-    "model_name",
-    [
-        min(ALL_RERANK_MODEL_DESC, key=lambda m: m.size_in_GB).model
-        if CANONICAL_SCORE_VALUES
-        else "Xenova/ms-marco-MiniLM-L-6-v2"
-    ],
-)
+@pytest.mark.parametrize("model_name", ["Xenova/ms-marco-MiniLM-L-6-v2"])
 def test_rerank(model_name: str) -> None:
     is_ci = os.getenv("CI")
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
@@ -61,10 +54,7 @@ def test_rerank(model_name: str) -> None:
             delete_model_cache(model.model._model_dir)
 
 
-@pytest.mark.parametrize(
-    "model_name",
-    ["Xenova/ms-marco-MiniLM-L-6-v2"],
-)
+@pytest.mark.parametrize("model_name", ["Xenova/ms-marco-MiniLM-L-6-v2"])
 def test_batch_rerank(model_name: str) -> None:
     is_ci = os.getenv("CI")
 
@@ -90,10 +80,7 @@ def test_batch_rerank(model_name: str) -> None:
         delete_model_cache(model.model._model_dir)
 
 
-@pytest.mark.parametrize(
-    "model_name",
-    ["Xenova/ms-marco-MiniLM-L-6-v2"],
-)
+@pytest.mark.parametrize("model_name", ["Xenova/ms-marco-MiniLM-L-6-v2"])
 def test_lazy_load(model_name: str) -> None:
     is_ci = os.getenv("CI")
     model = TextCrossEncoder(model_name=model_name, lazy_load=True)
@@ -107,10 +94,7 @@ def test_lazy_load(model_name: str) -> None:
         delete_model_cache(model.model._model_dir)
 
 
-@pytest.mark.parametrize(
-    "model_name",
-    ["Xenova/ms-marco-MiniLM-L-6-v2"],
-)
+@pytest.mark.parametrize("model_name", ["Xenova/ms-marco-MiniLM-L-6-v2"])
 def test_rerank_pairs_parallel(model_name: str) -> None:
     is_ci = os.getenv("CI")
 
