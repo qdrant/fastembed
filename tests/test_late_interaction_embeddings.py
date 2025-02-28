@@ -195,8 +195,8 @@ def test_single_embedding():
         token_num, abridged_dim = expected_result.shape
         assert np.allclose(result[:, :abridged_dim], expected_result, atol=2e-3)
 
-    if is_ci:
-        delete_model_cache(model.model._model_dir)
+        if is_ci:
+            delete_model_cache(model.model._model_dir)
 
 
 def test_single_embedding_query():
