@@ -27,13 +27,14 @@ CANONICAL_VECTOR_VALUES = {
 }
 
 ALL_IMAGE_MODEL_DESC = ImageEmbedding._list_supported_models()
+smallest_model = min(ALL_IMAGE_MODEL_DESC, key=lambda m: m.size_in_GB).model
 
 
 @pytest.mark.parametrize(
     "model_name",
     [
-        min(ALL_IMAGE_MODEL_DESC, key=lambda m: m.size_in_GB).model
-        if CANONICAL_VECTOR_VALUES
+        smallest_model
+        if smallest_model in CANONICAL_VECTOR_VALUES
         else "Qdrant/clip-ViT-B-32-vision"
     ],
 )
