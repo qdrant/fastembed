@@ -22,6 +22,7 @@ supported_pooled_normalized_models: list[DenseModelDescription] = [
         sources=ModelSource(
             url="https://storage.googleapis.com/qdrant-fastembed/sentence-transformers-all-MiniLM-L6-v2.tar.gz",
             hf="qdrant/all-MiniLM-L6-v2-onnx",
+            _deprecated_tar_struct=True,
         ),
         model_file="model.onnx",
     ),
