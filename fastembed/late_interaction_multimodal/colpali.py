@@ -142,7 +142,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
         assert self.model_description.dim is not None, "Model dim is not defined"
         return output.model_output.reshape(
             output.model_output.shape[0], -1, self.model_description.dim
-        ).astype(np.float32)
+        )
 
     def _post_process_onnx_text_output(
         self,
@@ -157,7 +157,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
         Returns:
             Iterable[NumpyArray]: Post-processed output as NumPy arrays.
         """
-        return output.model_output.astype(np.float32)
+        return output.model_output
 
     def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
         texts_query: list[str] = []
