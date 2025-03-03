@@ -71,8 +71,8 @@ def test_mock_add_custom_models():
     source = ModelSource(hf="artificial")
 
     num_tokens = 10
-    dummy_pooled_embedding = np.random.random((1, dim))
-    dummy_token_embedding = np.random.random((1, num_tokens, dim))
+    dummy_pooled_embedding = np.random.random((1, dim)).astype(np.float32)
+    dummy_token_embedding = np.random.random((1, num_tokens, dim)).astype(np.float32)
     dummy_attention_mask = np.ones((1, num_tokens)).astype(np.int64)
 
     dummy_token_output = OnnxOutputContext(
