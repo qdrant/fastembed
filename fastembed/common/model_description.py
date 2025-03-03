@@ -7,6 +7,11 @@ from typing import Optional, Any
 class ModelSource:
     hf: Optional[str] = None
     url: Optional[str] = None
+    _deprecated_tar_struct: bool = False
+
+    @property
+    def deprecated_tar_struct(self) -> bool:
+        return self._deprecated_tar_struct
 
     def __post_init__(self) -> None:
         if self.hf is None and self.url is None:

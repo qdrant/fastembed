@@ -82,6 +82,7 @@ supported_pooled_models: list[DenseModelDescription] = [
         sources=ModelSource(
             hf="qdrant/multilingual-e5-large-onnx",
             url="https://storage.googleapis.com/qdrant-fastembed/fast-multilingual-e5-large.tar.gz",
+            _deprecated_tar_struct=True,
         ),
         model_file="model.onnx",
         additional_files=["model.onnx_data"],
