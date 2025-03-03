@@ -1,6 +1,5 @@
 from typing import Any, Iterable, Optional, Sequence, Type, Union
 
-import numpy as np
 
 from fastembed.common.types import NumpyArray
 from fastembed.common import ImageInput, OnnxProvider
@@ -195,7 +194,7 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[NumpyArray]):
         return onnx_input
 
     def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[NumpyArray]:
-        return normalize(output.model_output).astype(np.float32)
+        return normalize(output.model_output)
 
 
 class OnnxImageEmbeddingWorker(ImageEmbeddingWorker[NumpyArray]):

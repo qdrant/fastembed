@@ -116,7 +116,7 @@ class PooledEmbedding(OnnxTextEmbedding):
 
         embeddings = output.model_output
         attn_mask = output.attention_mask
-        return self.mean_pooling(embeddings, attn_mask).astype(np.float32)
+        return self.mean_pooling(embeddings, attn_mask)
 
 
 class PooledEmbeddingWorker(OnnxTextEmbeddingWorker):
