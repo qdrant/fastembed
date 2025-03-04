@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from fastembed import TextEmbedding
-from fastembed.text.multitask_embedding import Task
+from fastembed.text.multitask_embedding import JinaEmbeddingV3, Task
 from tests.utils import delete_model_cache
 
 
@@ -67,7 +67,7 @@ def test_batch_embedding(dim: int, model_name: str):
     docs_to_embed = docs * 10
     default_task = Task.RETRIEVAL_PASSAGE
 
-    if not is_manual:
+    if is_ci and not is_manual:
         pytest.skip("Skipping in CI non-manual mode")
 
     model = TextEmbedding(model_name=model_name)
@@ -91,9 +91,7 @@ def test_single_embedding(model_name: str):
     is_ci = os.getenv("CI")
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
-    for model_desc in TextEmbedding._list_supported_models():
-        if model_desc.model not in CANONICAL_VECTOR_VALUES:
-            continue
+    for model_desc in JinaEmbeddingV3._list_supported_models():
         if not is_ci:
             if model_desc.size_in_GB > 1:
                 continue
@@ -128,9 +126,7 @@ def test_single_embedding_query(model_name: str):
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
     task_id = Task.RETRIEVAL_QUERY
 
-    for model_desc in TextEmbedding._list_supported_models():
-        if model_desc.model not in CANONICAL_VECTOR_VALUES:
-            continue
+    for model_desc in JinaEmbeddingV3._list_supported_models():
         if not is_ci:
             if model_desc.size_in_GB > 1:
                 continue
@@ -164,9 +160,7 @@ def test_single_embedding_passage(model_name: str):
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
     task_id = Task.RETRIEVAL_PASSAGE
 
-    for model_desc in TextEmbedding._list_supported_models():
-        if model_desc.model not in CANONICAL_VECTOR_VALUES:
-            continue
+    for model_desc in JinaEmbeddingV3._list_supported_models():
         if not is_ci:
             if model_desc.size_in_GB > 1:
                 continue
@@ -201,7 +195,7 @@ def test_parallel_processing(dim: int, model_name: str):
 
     docs = ["Hello World", "Follow the white rabbit."] * 10
 
-    if not is_manual:
+    if is_ci and not is_manual:
         pytest.skip("Skipping in CI non-manual mode")
 
     model = TextEmbedding(model_name=model_name)
@@ -227,10 +221,10 @@ def test_task_assignment():
     is_ci = os.getenv("CI")
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
-    if not is_manual:
+    if is_ci and not is_manual:
         pytest.skip("Skipping in CI non-manual mode")
 
-    for model_desc in TextEmbedding._list_supported_models():
+    for model_desc in JinaEmbeddingV3._list_supported_models():
         if not is_ci and model_desc.size_in_GB > 1:
             continue
 
@@ -253,7 +247,7 @@ def test_lazy_load(model_name: str):
     is_ci = os.getenv("CI")
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
-    if not is_manual:
+    if is_ci and not is_manual:
         pytest.skip("Skipping in CI non-manual mode")
 
     model = TextEmbedding(model_name=model_name, lazy_load=True)
