@@ -68,7 +68,12 @@ class OnnxModel(Generic[T]):
             if device_id is None:
                 onnx_providers = ["CUDAExecutionProvider"]
             else:
-                onnx_providers = [("CUDAExecutionProvider", {"device_id": device_id})]
+                onnx_providers = [
+                    (
+                        "CUDAExecutionProvider",
+                        {"device_id": device_id, "arena_extend_strategy": "kSameAsRequested"},
+                    )
+                ]
         else:
             onnx_providers = ["CPUExecutionProvider"]
 
