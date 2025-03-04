@@ -6,6 +6,7 @@ from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
 from PIL import Image
+import onnxruntime as ort
 
 from fastembed.image.transform.operators import Compose
 from fastembed.common.types import NumpyArray
@@ -65,6 +66,7 @@ class OnnxImageModel(OnnxModel[T]):
         return {input_name: encoded}
 
     def onnx_embed(self, images: list[ImageInput], **kwargs: Any) -> OnnxOutputContext:
+        device_id = kwargs.pop("device_id", 0)
         with contextlib.ExitStack():
             image_files = [
                 Image.open(image) if not isinstance(image, Image.Image) else image
@@ -74,6 +76,11 @@ class OnnxImageModel(OnnxModel[T]):
             encoded = np.array(self.processor(image_files))
         onnx_input = self._build_onnx_input(encoded)
         onnx_input = self._preprocess_onnx_input(onnx_input)
+        device_id = device_id if isinstance(device_id, int) else 0
+        run_options = ort.RunOptions()
+        run_options.add_run_config_entry(
+            "memory.enable_memory_arena_shrinkage", f"gpu:{device_id}"
+        )
         model_output = self.model.run(None, onnx_input)  # type: ignore[union-attr]
         embeddings = model_output[0].reshape(len(images), -1)
         return OnnxOutputContext(model_output=embeddings)
@@ -129,7 +136,9 @@ class OnnxImageModel(OnnxModel[T]):
 
 
 class ImageEmbeddingWorker(EmbeddingWorker[T]):
-    def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, Any]]:
+    def process(
+        self, items: Iterable[tuple[int, Any]], **kwargs: Any
+    ) -> Iterable[tuple[int, Any]]:
         for idx, batch in items:
-            embeddings = self.model.onnx_embed(batch)
+            embeddings = self.model.onnx_embed(batch, **kwargs)
             yield idx, embeddings

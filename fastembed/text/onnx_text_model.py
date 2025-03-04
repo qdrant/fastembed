@@ -68,6 +68,7 @@ class OnnxTextModel(OnnxModel[T]):
         documents: list[str],
         **kwargs: Any,
     ) -> OnnxOutputContext:
+        device_id = kwargs.pop("device_id", 0)
         encoded = self.tokenize(documents, **kwargs)
         input_ids = np.array([e.ids for e in encoded])
         attention_mask = np.array([e.attention_mask for e in encoded])
@@ -83,8 +84,11 @@ class OnnxTextModel(OnnxModel[T]):
             )
         onnx_input = self._preprocess_onnx_input(onnx_input, **kwargs)
 
+        device_id = device_id if isinstance(device_id, int) else 0
         run_options = ort.RunOptions()
-        run_options.add_run_config_entry("memory.enable_memory_arena_shrinkage", "gpu:0")
+        run_options.add_run_config_entry(
+            "memory.enable_memory_arena_shrinkage", f"gpu:{device_id}"
+        )
         model_output = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input, run_options)  # type: ignore[union-attr]
         return OnnxOutputContext(
             model_output=model_output[0],
@@ -143,7 +147,9 @@ class OnnxTextModel(OnnxModel[T]):
 
 
 class TextEmbeddingWorker(EmbeddingWorker[T]):
-    def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, OnnxOutputContext]]:
+    def process(
+        self, items: Iterable[tuple[int, Any]], **kwargs: Any
+    ) -> Iterable[tuple[int, OnnxOutputContext]]:
         for idx, batch in items:
-            onnx_output = self.model.onnx_embed(batch)
+            onnx_output = self.model.onnx_embed(batch, **kwargs)
             yield idx, onnx_output

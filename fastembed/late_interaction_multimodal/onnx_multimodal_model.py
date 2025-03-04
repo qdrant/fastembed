@@ -6,6 +6,7 @@ from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
 from PIL import Image
+import onnxruntime as ort
 from tokenizers import Encoding, Tokenizer
 
 from fastembed.common import OnnxProvider, ImageInput
@@ -88,6 +89,7 @@ class OnnxMultimodalModel(OnnxModel[T]):
         documents: list[str],
         **kwargs: Any,
     ) -> OnnxOutputContext:
+        device_id = kwargs.pop("device_id", 0)
         encoded = self.tokenize(documents, **kwargs)
         input_ids = np.array([e.ids for e in encoded])
         attention_mask = np.array([e.attention_mask for e in encoded])  # type: ignore[union-attr]
@@ -103,6 +105,11 @@ class OnnxMultimodalModel(OnnxModel[T]):
             )
 
         onnx_input = self._preprocess_onnx_text_input(onnx_input, **kwargs)
+        device_id = device_id if isinstance(device_id, int) else 0
+        run_options = ort.RunOptions()
+        run_options.add_run_config_entry(
+            "memory.enable_memory_arena_shrinkage", f"gpu:{device_id}"
+        )
         model_output = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)  # type: ignore[union-attr]
         return OnnxOutputContext(
             model_output=model_output[0],
@@ -160,6 +167,7 @@ class OnnxMultimodalModel(OnnxModel[T]):
                 yield from self._post_process_onnx_text_output(batch)  # type: ignore
 
     def onnx_embed_image(self, images: list[ImageInput], **kwargs: Any) -> OnnxOutputContext:
+        device_id = kwargs.pop("device_id", 0)
         with contextlib.ExitStack():
             image_files = [
                 Image.open(image) if not isinstance(image, Image.Image) else image
@@ -169,6 +177,11 @@ class OnnxMultimodalModel(OnnxModel[T]):
             encoded = np.array(self.processor(image_files))
         onnx_input = {"pixel_values": encoded}
         onnx_input = self._preprocess_onnx_image_input(onnx_input, **kwargs)
+        device_id = device_id if isinstance(device_id, int) else 0
+        run_options = ort.RunOptions()
+        run_options.add_run_config_entry(
+            "memory.enable_memory_arena_shrinkage", f"gpu:{device_id}"
+        )
         model_output = self.model.run(None, onnx_input)  # type: ignore[union-attr]
         embeddings = model_output[0].reshape(len(images), -1)
         return OnnxOutputContext(model_output=embeddings)
@@ -241,9 +254,11 @@ class TextEmbeddingWorker(EmbeddingWorker[T]):
     ) -> OnnxMultimodalModel:
         raise NotImplementedError()
 
-    def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, Any]]:
+    def process(
+        self, items: Iterable[tuple[int, Any]], **kwargs: Any
+    ) -> Iterable[tuple[int, Any]]:
         for idx, batch in items:
-            onnx_output = self.model.onnx_embed_text(batch)
+            onnx_output = self.model.onnx_embed_text(batch, **kwargs)
             yield idx, onnx_output
 
 
@@ -265,7 +280,9 @@ class ImageEmbeddingWorker(EmbeddingWorker[T]):
     ) -> OnnxMultimodalModel:
         raise NotImplementedError()
 
-    def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, Any]]:
+    def process(
+        self, items: Iterable[tuple[int, Any]], **kwargs: Any
+    ) -> Iterable[tuple[int, Any]]:
         for idx, batch in items:
-            embeddings = self.model.onnx_embed_image(batch)
+            embeddings = self.model.onnx_embed_image(batch, **kwargs)
             yield idx, embeddings

@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Iterable, Optional, Sequence, Type
 
 import numpy as np
+import onnxruntime as ort
 from tokenizers import Encoding
 
 from fastembed.common.onnx_model import (
@@ -68,10 +69,16 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         return self.onnx_embed_pairs(pairs, **kwargs)
 
     def onnx_embed_pairs(self, pairs: list[tuple[str, str]], **kwargs: Any) -> OnnxOutputContext:
+        device_id = kwargs.pop("device_id", 0)
         tokenized_input = self.tokenize(pairs, **kwargs)
         inputs = self._build_onnx_input(tokenized_input)
         onnx_input = self._preprocess_onnx_input(inputs, **kwargs)
-        outputs = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)  # type: ignore[union-attr]
+        device_id = device_id if isinstance(device_id, int) else 0
+        run_options = ort.RunOptions()
+        run_options.add_run_config_entry(
+            "memory.enable_memory_arena_shrinkage", f"gpu:{device_id}"
+        )
+        outputs = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input, run_options)  # type: ignore[union-attr]
         relevant_output = outputs[0]
         scores: NumpyArray = relevant_output[:, 0]
         return OnnxOutputContext(model_output=scores)
@@ -163,7 +170,9 @@ class TextRerankerWorker(EmbeddingWorker[float]):
     ) -> OnnxCrossEncoderModel:
         raise NotImplementedError()
 
-    def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, Any]]:
+    def process(
+        self, items: Iterable[tuple[int, Any]], **kwargs: Any
+    ) -> Iterable[tuple[int, Any]]:
         for idx, batch in items:
-            onnx_output = self.model.onnx_embed_pairs(batch)
+            onnx_output = self.model.onnx_embed_pairs(batch, **kwargs)
             yield idx, onnx_output
