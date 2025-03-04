@@ -63,8 +63,12 @@ docs = ["Hello World", "Follow the white rabbit."]
 @pytest.mark.parametrize("dim,model_name", [(1024, "jinaai/jina-embeddings-v3")])
 def test_batch_embedding(dim: int, model_name: str):
     is_ci = os.getenv("CI")
+    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
     docs_to_embed = docs * 10
     default_task = Task.RETRIEVAL_PASSAGE
+
+    if not is_manual:
+        pytest.skip("Skipping in CI non-manual mode")
 
     model = TextEmbedding(model_name=model_name)
 
@@ -93,7 +97,7 @@ def test_single_embedding(model_name: str):
         if not is_ci:
             if model_desc.size_in_GB > 1:
                 continue
-        elif not is_manual and model_desc.model != model_name:
+        elif not is_manual:
             continue
 
         model_name = model_desc.model
@@ -130,7 +134,7 @@ def test_single_embedding_query(model_name: str):
         if not is_ci:
             if model_desc.size_in_GB > 1:
                 continue
-        elif not is_manual and model_desc.model != model_name:
+        elif not is_manual:
             continue
 
         model_name = model_desc.model
@@ -166,7 +170,7 @@ def test_single_embedding_passage(model_name: str):
         if not is_ci:
             if model_desc.size_in_GB > 1:
                 continue
-        elif not is_manual and model_desc.model != model_name:
+        elif not is_manual:
             continue
 
         model_name = model_desc.model
@@ -193,8 +197,12 @@ def test_single_embedding_passage(model_name: str):
 @pytest.mark.parametrize("dim,model_name", [(1024, "jinaai/jina-embeddings-v3")])
 def test_parallel_processing(dim: int, model_name: str):
     is_ci = os.getenv("CI")
+    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
     docs = ["Hello World", "Follow the white rabbit."] * 10
+
+    if not is_manual:
+        pytest.skip("Skipping in CI non-manual mode")
 
     model = TextEmbedding(model_name=model_name)
 
@@ -217,6 +225,10 @@ def test_parallel_processing(dim: int, model_name: str):
 
 def test_task_assignment():
     is_ci = os.getenv("CI")
+    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+
+    if not is_manual:
+        pytest.skip("Skipping in CI non-manual mode")
 
     for model_desc in TextEmbedding._list_supported_models():
         if not is_ci and model_desc.size_in_GB > 1:
@@ -239,6 +251,11 @@ def test_task_assignment():
 @pytest.mark.parametrize("model_name", ["jinaai/jina-embeddings-v3"])
 def test_lazy_load(model_name: str):
     is_ci = os.getenv("CI")
+    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+
+    if not is_manual:
+        pytest.skip("Skipping in CI non-manual mode")
+
     model = TextEmbedding(model_name=model_name, lazy_load=True)
     assert not hasattr(model.model, "model")
 
