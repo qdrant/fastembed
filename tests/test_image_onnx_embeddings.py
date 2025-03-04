@@ -33,15 +33,11 @@ def test_embedding(model_name: str) -> None:
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
     for model_desc in ImageEmbedding._list_supported_models():
-        if not is_ci and model_desc.size_in_GB > 1:
+        if not is_ci:
+            if model_desc.size_in_GB > 1:
+                continue
+        elif not is_manual and model_desc.model != model_name:
             continue
-
-        if is_manual:
-            if model_desc.model not in CANONICAL_VECTOR_VALUES:
-                continue
-        else:
-            if model_desc.model != model_name:
-                continue
 
         dim = model_desc.dim
 

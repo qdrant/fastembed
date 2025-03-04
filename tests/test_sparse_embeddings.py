@@ -49,19 +49,20 @@ CANONICAL_COLUMN_VALUES = {
 docs = ["Hello World"]
 
 
-def test_batch_embedding() -> None:
+@pytest.mark.parametrize("model_name", ["prithivida/Splade_PP_en_v1"])
+def test_batch_embedding(model_name: str) -> None:
     is_ci = os.getenv("CI")
     docs_to_embed = docs * 10
 
-    for model_name, expected_result in CANONICAL_COLUMN_VALUES.items():
-        model = SparseTextEmbedding(model_name=model_name)
-        result = next(iter(model.embed(docs_to_embed, batch_size=6)))
-        assert result.indices.tolist() == expected_result["indices"]
+    model = SparseTextEmbedding(model_name=model_name)
+    result = next(iter(model.embed(docs_to_embed, batch_size=6)))
+    expected_result = CANONICAL_COLUMN_VALUES[model_name]
+    assert result.indices.tolist() == expected_result["indices"]
 
-        for i, value in enumerate(result.values):
-            assert pytest.approx(value, abs=0.001) == expected_result["values"][i]
-        if is_ci:
-            delete_model_cache(model.model._model_dir)
+    for i, value in enumerate(result.values):
+        assert pytest.approx(value, abs=0.001) == expected_result["values"][i]
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
 
 
 @pytest.mark.parametrize("model_name", ["prithivida/Splade_PP_en_v1"])
@@ -70,15 +71,13 @@ def test_single_embedding(model_name: str) -> None:
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
     for model_desc in SparseTextEmbedding._list_supported_models():
-        if not is_ci and model_desc.size_in_GB > 1:
+        if model_desc.model not in CANONICAL_COLUMN_VALUES:
             continue
-
-        if is_manual:
-            if model_desc.model not in CANONICAL_COLUMN_VALUES:
+        if not is_ci:
+            if model_desc.size_in_GB > 1:
                 continue
-        else:
-            if model_desc.model != model_name:
-                continue
+        elif not is_manual and model_desc.model != model_name:
+            continue
 
         model = SparseTextEmbedding(model_name=model_name)
 
@@ -94,9 +93,10 @@ def test_single_embedding(model_name: str) -> None:
             delete_model_cache(model.model._model_dir)
 
 
-def test_parallel_processing() -> None:
+@pytest.mark.parametrize("model_name", ["prithivida/Splade_PP_en_v1"])
+def test_parallel_processing(model_name: str) -> None:
     is_ci = os.getenv("CI")
-    model = SparseTextEmbedding(model_name="prithivida/Splade_PP_en_v1")
+    model = SparseTextEmbedding(model_name=model_name)
     docs = ["hello world", "flag embedding"] * 30
     sparse_embeddings_duo = list(model.embed(docs, batch_size=10, parallel=2))
     sparse_embeddings_all = list(model.embed(docs, batch_size=10, parallel=0))

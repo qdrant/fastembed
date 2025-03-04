@@ -79,19 +79,15 @@ def test_embedding(model_name: str) -> None:
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
     for model_desc in TextEmbedding._list_supported_models():
-        if not is_ci and model_desc.size_in_GB > 1:
+        if model_desc.model in MULTI_TASK_MODELS or (
+            is_mac and model_desc.model == "nomic-ai/nomic-embed-text-v1.5-Q"
+        ):
             continue
-
-        if is_manual:
-            if (
-                model_desc.model not in CANONICAL_VECTOR_VALUES
-                or model_desc.model in MULTI_TASK_MODELS
-                or (is_mac and model_desc.model == "nomic-ai/nomic-embed-text-v1.5-Q")
-            ):
+        if not is_ci:
+            if model_desc.size_in_GB > 1:
                 continue
-        else:
-            if model_desc.model != model_name:
-                continue
+        elif not is_manual and model_desc.model != model_name:
+            continue
 
         dim = model_desc.dim
 
@@ -123,10 +119,7 @@ def test_batch_embedding(n_dims: int, model_name: str) -> None:
         delete_model_cache(model.model._model_dir)
 
 
-@pytest.mark.parametrize(
-    "n_dims,model_name",
-    [(384, "BAAI/bge-small-en-v1.5")],
-)
+@pytest.mark.parametrize("n_dims,model_name", [(384, "BAAI/bge-small-en-v1.5")])
 def test_parallel_processing(n_dims: int, model_name: str) -> None:
     is_ci = os.getenv("CI")
     model = TextEmbedding(model_name=model_name)
@@ -149,10 +142,7 @@ def test_parallel_processing(n_dims: int, model_name: str) -> None:
         delete_model_cache(model.model._model_dir)
 
 
-@pytest.mark.parametrize(
-    "model_name",
-    ["BAAI/bge-small-en-v1.5"],
-)
+@pytest.mark.parametrize("model_name", ["BAAI/bge-small-en-v1.5"])
 def test_lazy_load(model_name: str) -> None:
     is_ci = os.getenv("CI")
     model = TextEmbedding(model_name=model_name, lazy_load=True)

@@ -177,15 +177,11 @@ def test_single_embedding(model_name: str):
     docs_to_embed = docs
 
     for model_desc in LateInteractionTextEmbedding._list_supported_models():
-        if not is_ci and model_desc.size_in_GB > 1:
+        if not is_ci:
+            if model_desc.size_in_GB > 1:
+                continue
+        elif not is_manual and model_desc.model != model_name:
             continue
-
-        if is_manual:
-            if model_desc.model not in CANONICAL_COLUMN_VALUES:
-                continue
-        else:
-            if model_desc.model != model_name:
-                continue
 
         print("evaluating", model_name)
         model = LateInteractionTextEmbedding(model_name=model_name)
@@ -205,15 +201,11 @@ def test_single_embedding_query(model_name: str):
     queries_to_embed = docs
 
     for model_desc in LateInteractionTextEmbedding._list_supported_models():
-        if not is_ci and model_desc.size_in_GB > 1:
+        if not is_ci:
+            if model_desc.size_in_GB > 1:
+                continue
+        elif not is_manual and model_desc.model != model_name:
             continue
-
-        if is_manual:
-            if model_desc.model not in CANONICAL_QUERY_VALUES:
-                continue
-        else:
-            if model_desc.model != model_name:
-                continue
 
         print("evaluating", model_name)
         model = LateInteractionTextEmbedding(model_name=model_name)

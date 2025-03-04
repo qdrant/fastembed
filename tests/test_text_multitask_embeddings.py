@@ -88,15 +88,13 @@ def test_single_embedding(model_name: str):
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
     for model_desc in TextEmbedding._list_supported_models():
-        if not is_ci and model_desc.size_in_GB > 1:
+        if model_desc.model not in CANONICAL_VECTOR_VALUES:
             continue
-
-        if is_manual:
-            if model_desc.model not in CANONICAL_VECTOR_VALUES:
+        if not is_ci:
+            if model_desc.size_in_GB > 1:
                 continue
-        else:
-            if model_desc.model != model_name:
-                continue
+        elif not is_manual and model_desc.model != model_name:
+            continue
 
         model_name = model_desc.model
         dim = model_desc.dim
@@ -127,15 +125,13 @@ def test_single_embedding_query(model_name: str):
     task_id = Task.RETRIEVAL_QUERY
 
     for model_desc in TextEmbedding._list_supported_models():
-        if not is_ci and model_desc.size_in_GB > 1:
+        if model_desc.model not in CANONICAL_VECTOR_VALUES:
             continue
-
-        if is_manual:
-            if model_desc.model not in CANONICAL_VECTOR_VALUES:
+        if not is_ci:
+            if model_desc.size_in_GB > 1:
                 continue
-        else:
-            if model_desc.model != model_name:
-                continue
+        elif not is_manual and model_desc.model != model_name:
+            continue
 
         model_name = model_desc.model
         dim = model_desc.dim
@@ -165,15 +161,13 @@ def test_single_embedding_passage(model_name: str):
     task_id = Task.RETRIEVAL_PASSAGE
 
     for model_desc in TextEmbedding._list_supported_models():
-        if not is_ci and model_desc.size_in_GB > 1:
+        if model_desc.model not in CANONICAL_VECTOR_VALUES:
             continue
-
-        if is_manual:
-            if model_desc.model not in CANONICAL_VECTOR_VALUES:
+        if not is_ci:
+            if model_desc.size_in_GB > 1:
                 continue
-        else:
-            if model_desc.model != model_name:
-                continue
+        elif not is_manual and model_desc.model != model_name:
+            continue
 
         model_name = model_desc.model
         dim = model_desc.dim
@@ -229,7 +223,7 @@ def test_task_assignment():
             continue
 
         model_name = model_desc.model
-        if model_name not in CANONICAL_VECTOR_VALUES.keys():
+        if model_name not in CANONICAL_VECTOR_VALUES:
             continue
 
         model = TextEmbedding(model_name=model_name)
@@ -245,7 +239,7 @@ def test_task_assignment():
 @pytest.mark.parametrize("model_name", ["jinaai/jina-embeddings-v3"])
 def test_lazy_load(model_name: str):
     is_ci = os.getenv("CI")
-    model = TextEmbedding(model_name=model_name, lazy_load=True)
+    model = TextEmbedding(model_name=model_name, lazy_load=True, cache_dir="models")
     assert not hasattr(model.model, "model")
 
     list(model.embed(docs))
