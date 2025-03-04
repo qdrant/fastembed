@@ -239,7 +239,7 @@ def test_task_assignment():
 @pytest.mark.parametrize("model_name", ["jinaai/jina-embeddings-v3"])
 def test_lazy_load(model_name: str):
     is_ci = os.getenv("CI")
-    model = TextEmbedding(model_name=model_name, lazy_load=True, cache_dir="models")
+    model = TextEmbedding(model_name=model_name, lazy_load=True)
     assert not hasattr(model.model, "model")
 
     list(model.embed(docs))
