@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
+import onnxruntime as ort
 from numpy.typing import NDArray
 from tokenizers import Encoding, Tokenizer
 
@@ -82,7 +83,9 @@ class OnnxTextModel(OnnxModel[T]):
             )
         onnx_input = self._preprocess_onnx_input(onnx_input, **kwargs)
 
-        model_output = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)  # type: ignore[union-attr]
+        run_options = ort.RunOptions()
+        run_options.add_config_entry("memory.enable_memory_arena_shrinkage", "1")
+        model_output = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input, run_options)  # type: ignore[union-attr]
         return OnnxOutputContext(
             model_output=model_output[0],
             attention_mask=onnx_input.get("attention_mask", attention_mask),

@@ -90,7 +90,7 @@ class OnnxModel(Generic[T]):
 
         so = ort.SessionOptions()
         so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-        so.add_session_config_entry("memory.enable_memory_arena_shrinkage", "1")
+        # so.add_session_config_entry("memory.enable_memory_arena_shrinkage", "1")
 
         if threads is not None:
             so.intra_op_num_threads = threads
