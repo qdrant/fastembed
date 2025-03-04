@@ -24,8 +24,6 @@ class OnnxOutputContext:
 
 
 class OnnxModel(Generic[T]):
-    INITIAL_CHUNK_SIZE_IN_GB = 0.5
-
     @classmethod
     def _get_worker_class(cls) -> Type["EmbeddingWorker[T]"]:
         raise NotImplementedError("Subclasses must implement this method")
@@ -73,7 +71,7 @@ class OnnxModel(Generic[T]):
                 onnx_providers = [
                     (
                         "CUDAExecutionProvider",
-                        {"device_id": device_id},
+                        {"device_id": device_id, "arena_extend_strategy": "kSameAsRequested"},
                     )
                 ]
         else:
@@ -93,10 +91,7 @@ class OnnxModel(Generic[T]):
         so = ort.SessionOptions()
         so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
         so.add_session_config_entry("memory.enable_memory_arena_shrinkage", "1")
-        so.add_session_config_entry(
-            "session.memory_arena_cfg",
-            f"initial_chunk_size_bytes={1024*1024*1024*self.INITIAL_CHUNK_SIZE_IN_GB},arena_extend_strategy=1",
-        )
+
         if threads is not None:
             so.intra_op_num_threads = threads
             so.inter_op_num_threads = threads
