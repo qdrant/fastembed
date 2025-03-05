@@ -344,7 +344,7 @@ class Bm25Worker(Worker):
         return cls(model_name=model_name, cache_dir=cache_dir, **kwargs)
 
     def process(
-        self, items: Iterable[tuple[int, Any]]
+        self, items: Iterable[tuple[int, Any]], **kwargs: Any
     ) -> Iterable[tuple[int, list[SparseEmbedding]]]:
         for idx, batch in items:
             onnx_output = self.model.raw_embed(batch)
