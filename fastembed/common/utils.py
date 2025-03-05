@@ -5,12 +5,12 @@ import tempfile
 import unicodedata
 from pathlib import Path
 from itertools import islice
-from typing import Iterable, Optional, TypeVar
+from typing import Iterable, Optional, TypeVar, Sequence
 
 import numpy as np
 from numpy.typing import NDArray
 
-from fastembed.common.types import NumpyArray
+from fastembed.common.types import NumpyArray, OnnxProvider
 
 T = TypeVar("T")
 
@@ -67,3 +67,18 @@ def get_all_punctuation() -> set[str]:
 
 def remove_non_alphanumeric(text: str) -> str:
     return re.sub(r"[^\w\s]", " ", text, flags=re.UNICODE)
+
+
+def is_cuda_enabled(cuda: bool, providers: Optional[Sequence[OnnxProvider]]) -> bool:
+    """
+    Check if CUDA is enabled based on the `cuda` and `providers` parameters
+    """
+    if cuda:
+        return True
+    if not providers:
+        return False
+    if isinstance(providers, str):
+        return "CUDAExecutionProvider" in providers
+    return isinstance(providers, (list, tuple)) and any(
+        isinstance(p, str) and "CUDAExecutionProvider" in p for p in providers
+    )

@@ -13,7 +13,7 @@ from fastembed.common.types import NumpyArray
 from fastembed.common import ImageInput, OnnxProvider
 from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
 from fastembed.common.preprocessor_utils import load_preprocessor
-from fastembed.common.utils import iter_batch
+from fastembed.common.utils import iter_batch, is_cuda_enabled
 from fastembed.parallel_processor import ParallelWorkerPool
 
 # Holds type of the embedding result
@@ -66,7 +66,6 @@ class OnnxImageModel(OnnxModel[T]):
         return {input_name: encoded}
 
     def onnx_embed(self, images: list[ImageInput], **kwargs: Any) -> OnnxOutputContext:
-        device_id = kwargs.pop("device_id", 0)
         with contextlib.ExitStack():
             image_files = [
                 Image.open(image) if not isinstance(image, Image.Image) else image
@@ -76,12 +75,18 @@ class OnnxImageModel(OnnxModel[T]):
             encoded = np.array(self.processor(image_files))
         onnx_input = self._build_onnx_input(encoded)
         onnx_input = self._preprocess_onnx_input(onnx_input)
-        device_id = device_id if isinstance(device_id, int) else 0
+
         run_options = ort.RunOptions()
-        run_options.add_run_config_entry(
-            "memory.enable_memory_arena_shrinkage", f"gpu:{device_id}"
-        )
-        model_output = self.model.run(None, onnx_input)  # type: ignore[union-attr]
+        providers = kwargs.get("providers", None)
+        cuda = kwargs.get("cuda", False)
+        if is_cuda_enabled(cuda, providers):
+            device_id = kwargs.get("device_id", None)
+            device_id = str(device_id if isinstance(device_id, int) else 0)
+            run_options.add_run_config_entry(
+                "memory.enable_memory_arena_shrinkage", f"gpu:{device_id}"
+            )
+
+        model_output = self.model.run(None, onnx_input, run_options)  # type: ignore[union-attr]
         embeddings = model_output[0].reshape(len(images), -1)
         return OnnxOutputContext(model_output=embeddings)
 

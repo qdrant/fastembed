@@ -15,7 +15,7 @@ from fastembed.common.onnx_model import (
 )
 from fastembed.common.types import NumpyArray
 from fastembed.common.preprocessor_utils import load_tokenizer
-from fastembed.common.utils import iter_batch
+from fastembed.common.utils import iter_batch, is_cuda_enabled
 from fastembed.parallel_processor import ParallelWorkerPool
 
 
@@ -69,15 +69,20 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         return self.onnx_embed_pairs(pairs, **kwargs)
 
     def onnx_embed_pairs(self, pairs: list[tuple[str, str]], **kwargs: Any) -> OnnxOutputContext:
-        device_id = kwargs.pop("device_id", 0)
         tokenized_input = self.tokenize(pairs, **kwargs)
         inputs = self._build_onnx_input(tokenized_input)
         onnx_input = self._preprocess_onnx_input(inputs, **kwargs)
-        device_id = device_id if isinstance(device_id, int) else 0
+
         run_options = ort.RunOptions()
-        run_options.add_run_config_entry(
-            "memory.enable_memory_arena_shrinkage", f"gpu:{device_id}"
-        )
+        providers = kwargs.get("providers", None)
+        cuda = kwargs.get("cuda", False)
+        if is_cuda_enabled(cuda, providers):
+            device_id = kwargs.get("device_id", None)
+            device_id = str(device_id if isinstance(device_id, int) else 0)
+            run_options.add_run_config_entry(
+                "memory.enable_memory_arena_shrinkage", f"gpu:{device_id}"
+            )
+
         outputs = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input, run_options)  # type: ignore[union-attr]
         relevant_output = outputs[0]
         scores: NumpyArray = relevant_output[:, 0]

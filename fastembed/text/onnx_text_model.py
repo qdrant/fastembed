@@ -11,7 +11,7 @@ from tokenizers import Encoding, Tokenizer
 from fastembed.common.types import NumpyArray, OnnxProvider
 from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
 from fastembed.common.preprocessor_utils import load_tokenizer
-from fastembed.common.utils import iter_batch
+from fastembed.common.utils import iter_batch, is_cuda_enabled
 from fastembed.parallel_processor import ParallelWorkerPool
 
 
@@ -68,7 +68,6 @@ class OnnxTextModel(OnnxModel[T]):
         documents: list[str],
         **kwargs: Any,
     ) -> OnnxOutputContext:
-        device_id = kwargs.pop("device_id", 0)
         encoded = self.tokenize(documents, **kwargs)
         input_ids = np.array([e.ids for e in encoded])
         attention_mask = np.array([e.attention_mask for e in encoded])
@@ -84,11 +83,16 @@ class OnnxTextModel(OnnxModel[T]):
             )
         onnx_input = self._preprocess_onnx_input(onnx_input, **kwargs)
 
-        device_id = device_id if isinstance(device_id, int) else 0
         run_options = ort.RunOptions()
-        run_options.add_run_config_entry(
-            "memory.enable_memory_arena_shrinkage", f"gpu:{device_id}"
-        )
+        providers = kwargs.get("providers", None)
+        cuda = kwargs.get("cuda", False)
+        if is_cuda_enabled(cuda, providers):
+            device_id = kwargs.get("device_id", None)
+            device_id = str(device_id if isinstance(device_id, int) else 0)
+            run_options.add_run_config_entry(
+                "memory.enable_memory_arena_shrinkage", f"gpu:{device_id}"
+            )
+
         model_output = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input, run_options)  # type: ignore[union-attr]
         return OnnxOutputContext(
             model_output=model_output[0],
