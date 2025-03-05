@@ -201,7 +201,6 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
         current_max_length = self.tokenizer.truncation["max_length"]
         # ensure not to overflow after adding document-marker
         self.tokenizer.enable_truncation(max_length=current_max_length - 1)
-        print("ME VERSION")
 
     def embed(
         self,

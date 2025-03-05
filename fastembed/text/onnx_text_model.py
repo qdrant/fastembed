@@ -89,6 +89,9 @@ class OnnxTextModel(OnnxModel[T]):
         if is_cuda_enabled(cuda, providers):
             device_id = kwargs.get("device_id", None)
             device_id = str(device_id if isinstance(device_id, int) else 0)
+            # enables memory arena shrinkage, freeing unused memory after each Run() cycle.
+            # helps prevent excessive memory retention, especially for dynamic workloads.
+            # source: https://onnxruntime.ai/docs/get-started/with-c.html#features:~:text=Memory%20arena%20shrinkage:
             run_options.add_run_config_entry(
                 "memory.enable_memory_arena_shrinkage", f"gpu:{device_id}"
             )

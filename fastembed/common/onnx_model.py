@@ -68,6 +68,9 @@ class OnnxModel(Generic[T]):
             if device_id is None:
                 onnx_providers = ["CUDAExecutionProvider"]
             else:
+                # kSameAsRequested: Allocates only the requested memory, avoiding over-allocation.
+                # more precise than 'kNextPowerOfTwo', which grows memory aggressively.
+                # source: https://onnxruntime.ai/docs/get-started/with-c.html#features:~:text=Memory%20arena%20shrinkage:
                 onnx_providers = [
                     (
                         "CUDAExecutionProvider",
