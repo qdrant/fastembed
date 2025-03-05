@@ -83,7 +83,7 @@ def test_embedding(model_name: str) -> None:
             is_mac and model_desc.model == "nomic-ai/nomic-embed-text-v1.5-Q"
         ):
             continue
-        if not should_test_model(model_name, model_desc, is_ci, is_manual):
+        if not should_test_model(model_desc, model_name, is_ci, is_manual):
             continue
 
         dim = model_desc.dim

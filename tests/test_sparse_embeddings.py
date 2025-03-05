@@ -71,9 +71,12 @@ def test_single_embedding(model_name: str) -> None:
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
     for model_desc in SparseTextEmbedding._list_supported_models():
-        if model_desc.model not in CANONICAL_COLUMN_VALUES:
+        if (
+            model_desc.model not in CANONICAL_COLUMN_VALUES
+        ):  # attention models and bm25 are also parts of
+            # SparseTextEmbedding, however, they have their own tests
             continue
-        if not should_test_model(model_name, model_desc, is_ci, is_manual):
+        if not should_test_model(model_desc, model_name, is_ci, is_manual):
             continue
 
         model = SparseTextEmbedding(model_name=model_name)

@@ -22,7 +22,7 @@ def test_rerank(model_name: str) -> None:
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
     for model_desc in TextCrossEncoder._list_supported_models():
-        if not should_test_model(model_name, model_desc, is_ci, is_manual):
+        if not should_test_model(model_desc, model_name, is_ci, is_manual):
             continue
 
         model = TextCrossEncoder(model_name=model_name)
