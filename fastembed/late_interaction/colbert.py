@@ -46,7 +46,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
         self, output: OnnxOutputContext, is_doc: bool = True
     ) -> Iterable[NumpyArray]:
         if not is_doc:
-            return output.model_output.astype(np.float32)
+            return output.model_output
 
         if output.input_ids is None or output.attention_mask is None:
             raise ValueError(
@@ -58,11 +58,11 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
                 if token_id in self.skip_list or token_id == self.pad_token_id:
                     output.attention_mask[i, j] = 0
 
-        output.model_output *= np.expand_dims(output.attention_mask, 2).astype(np.float32)
+        output.model_output *= np.expand_dims(output.attention_mask, 2)
         norm = np.linalg.norm(output.model_output, ord=2, axis=2, keepdims=True)
         norm_clamped = np.maximum(norm, 1e-12)
         output.model_output /= norm_clamped
-        return output.model_output.astype(np.float32)
+        return output.model_output
 
     def _preprocess_onnx_input(
         self, onnx_input: dict[str, NumpyArray], is_doc: bool = True, **kwargs: Any

@@ -1,6 +1,5 @@
 from typing import Any, Iterable, Type
 
-import numpy as np
 
 from fastembed.common.types import NumpyArray
 from fastembed.common.onnx_model import OnnxOutputContext
@@ -22,6 +21,7 @@ supported_pooled_normalized_models: list[DenseModelDescription] = [
         sources=ModelSource(
             url="https://storage.googleapis.com/qdrant-fastembed/sentence-transformers-all-MiniLM-L6-v2.tar.gz",
             hf="qdrant/all-MiniLM-L6-v2-onnx",
+            _deprecated_tar_struct=True,
         ),
         model_file="model.onnx",
     ),
@@ -144,7 +144,7 @@ class PooledNormalizedEmbedding(PooledEmbedding):
 
         embeddings = output.model_output
         attn_mask = output.attention_mask
-        return normalize(self.mean_pooling(embeddings, attn_mask)).astype(np.float32)
+        return normalize(self.mean_pooling(embeddings, attn_mask))
 
 
 class PooledNormalizedEmbeddingWorker(OnnxTextEmbeddingWorker):

@@ -91,15 +91,11 @@ def test_mock_add_custom_models():
     expected_output = {
         f"{PoolingType.MEAN.lower()}-normalized": normalize(
             mean_pooling(dummy_token_embedding, dummy_attention_mask)
-        ).astype(np.float32),
+        ),
         f"{PoolingType.MEAN.lower()}": mean_pooling(dummy_token_embedding, dummy_attention_mask),
-        f"{PoolingType.CLS.lower()}-normalized": normalize(dummy_token_embedding[:, 0]).astype(
-            np.float32
-        ),
+        f"{PoolingType.CLS.lower()}-normalized": normalize(dummy_token_embedding[:, 0]),
         f"{PoolingType.CLS.lower()}": dummy_token_embedding[:, 0],
-        f"{PoolingType.DISABLED.lower()}-normalized": normalize(dummy_pooled_embedding).astype(
-            np.float32
-        ),
+        f"{PoolingType.DISABLED.lower()}-normalized": normalize(dummy_pooled_embedding),
         f"{PoolingType.DISABLED.lower()}": dummy_pooled_embedding,
     }
 

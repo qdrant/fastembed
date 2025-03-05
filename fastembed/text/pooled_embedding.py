@@ -82,6 +82,7 @@ supported_pooled_models: list[DenseModelDescription] = [
         sources=ModelSource(
             hf="qdrant/multilingual-e5-large-onnx",
             url="https://storage.googleapis.com/qdrant-fastembed/fast-multilingual-e5-large.tar.gz",
+            _deprecated_tar_struct=True,
         ),
         model_file="model.onnx",
         additional_files=["model.onnx_data"],
@@ -115,7 +116,7 @@ class PooledEmbedding(OnnxTextEmbedding):
 
         embeddings = output.model_output
         attn_mask = output.attention_mask
-        return self.mean_pooling(embeddings, attn_mask).astype(np.float32)
+        return self.mean_pooling(embeddings, attn_mask)
 
 
 class PooledEmbeddingWorker(OnnxTextEmbeddingWorker):
