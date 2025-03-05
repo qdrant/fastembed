@@ -5,7 +5,7 @@ import numpy as np
 
 from fastembed.sparse.bm25 import Bm25
 from fastembed.sparse.sparse_text_embedding import SparseTextEmbedding
-from tests.utils import delete_model_cache
+from tests.utils import delete_model_cache, should_test_model
 
 CANONICAL_COLUMN_VALUES = {
     "prithivida/Splade_PP_en_v1": {
@@ -73,10 +73,7 @@ def test_single_embedding(model_name: str) -> None:
     for model_desc in SparseTextEmbedding._list_supported_models():
         if model_desc.model not in CANONICAL_COLUMN_VALUES:
             continue
-        if not is_ci:
-            if model_desc.size_in_GB > 1:
-                continue
-        elif not is_manual and model_desc.model != model_name:
+        if not should_test_model(model_name, model_desc, is_ci, is_manual):
             continue
 
         model = SparseTextEmbedding(model_name=model_name)

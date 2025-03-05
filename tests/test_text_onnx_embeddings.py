@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from fastembed.text.text_embedding import TextEmbedding
-from tests.utils import delete_model_cache
+from tests.utils import delete_model_cache, should_test_model
 
 CANONICAL_VECTOR_VALUES = {
     "BAAI/bge-small-en": np.array([-0.0232, -0.0255, 0.0174, -0.0639, -0.0006]),
@@ -83,10 +83,7 @@ def test_embedding(model_name: str) -> None:
             is_mac and model_desc.model == "nomic-ai/nomic-embed-text-v1.5-Q"
         ):
             continue
-        if not is_ci:
-            if model_desc.size_in_GB > 1:
-                continue
-        elif not is_manual and model_desc.model != model_name:
+        if not should_test_model(model_name, model_desc, is_ci, is_manual):
             continue
 
         dim = model_desc.dim

@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from fastembed.rerank.cross_encoder import TextCrossEncoder
-from tests.utils import delete_model_cache
+from tests.utils import delete_model_cache, should_test_model
 
 CANONICAL_SCORE_VALUES = {
     "Xenova/ms-marco-MiniLM-L-6-v2": np.array([8.500708, -2.541011]),
@@ -22,10 +22,7 @@ def test_rerank(model_name: str) -> None:
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
     for model_desc in TextCrossEncoder._list_supported_models():
-        if not is_ci:
-            if model_desc.size_in_GB > 1:
-                continue
-        elif not is_manual and model_desc.model != model_name:
+        if not should_test_model(model_name, model_desc, is_ci, is_manual):
             continue
 
         model = TextCrossEncoder(model_name=model_name)

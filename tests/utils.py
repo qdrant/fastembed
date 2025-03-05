@@ -3,7 +3,9 @@ import traceback
 
 from pathlib import Path
 from types import TracebackType
-from typing import Union, Callable, Any, Type
+from typing import Union, Callable, Any, Type, Optional
+
+from fastembed.common.model_description import BaseModelDescription
 
 
 def delete_model_cache(model_dir: Union[str, Path]) -> None:
@@ -35,3 +37,15 @@ def delete_model_cache(model_dir: Union[str, Path]) -> None:
     if model_dir.exists():
         # todo: PermissionDenied is raised on blobs removal in Windows, with blobs > 2GB
         shutil.rmtree(model_dir, onerror=on_error)
+
+
+def should_test_model(
+    model_name: str, model_desc: BaseModelDescription, is_ci: Optional[str], is_manual: bool
+):
+    """Determine if a model should be tested based on environment"""
+    if not is_ci:
+        if model_desc.size_in_GB > 1:
+            return False
+    elif not is_manual and model_desc.model != model_name:
+        return False
+    return True

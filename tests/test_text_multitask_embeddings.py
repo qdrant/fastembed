@@ -229,8 +229,6 @@ def test_task_assignment():
             continue
 
         model_name = model_desc.model
-        if model_name not in CANONICAL_VECTOR_VALUES:
-            continue
 
         model = TextEmbedding(model_name=model_name)
 

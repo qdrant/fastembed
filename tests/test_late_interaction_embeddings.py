@@ -6,7 +6,7 @@ import numpy as np
 from fastembed.late_interaction.late_interaction_text_embedding import (
     LateInteractionTextEmbedding,
 )
-from tests.utils import delete_model_cache
+from tests.utils import delete_model_cache, should_test_model
 
 # vectors are abridged and rounded for brevity
 CANONICAL_COLUMN_VALUES = {
@@ -177,10 +177,7 @@ def test_single_embedding(model_name: str):
     docs_to_embed = docs
 
     for model_desc in LateInteractionTextEmbedding._list_supported_models():
-        if not is_ci:
-            if model_desc.size_in_GB > 1:
-                continue
-        elif not is_manual and model_desc.model != model_name:
+        if not should_test_model(model_name, model_desc, is_ci, is_manual):
             continue
 
         print("evaluating", model_name)
@@ -201,10 +198,7 @@ def test_single_embedding_query(model_name: str):
     queries_to_embed = docs
 
     for model_desc in LateInteractionTextEmbedding._list_supported_models():
-        if not is_ci:
-            if model_desc.size_in_GB > 1:
-                continue
-        elif not is_manual and model_desc.model != model_name:
+        if not should_test_model(model_name, model_desc, is_ci, is_manual):
             continue
 
         print("evaluating", model_name)

@@ -8,7 +8,7 @@ from PIL import Image
 
 from fastembed import ImageEmbedding
 from tests.config import TEST_MISC_DIR
-from tests.utils import delete_model_cache
+from tests.utils import delete_model_cache, should_test_model
 
 CANONICAL_VECTOR_VALUES = {
     "Qdrant/clip-ViT-B-32-vision": np.array([-0.0098, 0.0128, -0.0274, 0.002, -0.0059]),
@@ -33,10 +33,7 @@ def test_embedding(model_name: str) -> None:
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
     for model_desc in ImageEmbedding._list_supported_models():
-        if not is_ci:
-            if model_desc.size_in_GB > 1:
-                continue
-        elif not is_manual and model_desc.model != model_name:
+        if not should_test_model(model_name, model_desc, is_ci, is_manual):
             continue
 
         dim = model_desc.dim
