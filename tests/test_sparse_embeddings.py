@@ -5,10 +5,10 @@ import numpy as np
 
 from fastembed.sparse.bm25 import Bm25
 from fastembed.sparse.sparse_text_embedding import SparseTextEmbedding
-from tests.utils import delete_model_cache
+from tests.utils import delete_model_cache, should_test_model
 
 CANONICAL_COLUMN_VALUES = {
-    "prithvida/Splade_PP_en_v1": {
+    "prithivida/Splade_PP_en_v1": {
         "indices": [
             2040,
             2047,
@@ -49,28 +49,41 @@ CANONICAL_COLUMN_VALUES = {
 docs = ["Hello World"]
 
 
-def test_batch_embedding() -> None:
+@pytest.mark.parametrize("model_name", ["prithivida/Splade_PP_en_v1"])
+def test_batch_embedding(model_name: str) -> None:
     is_ci = os.getenv("CI")
     docs_to_embed = docs * 10
 
-    for model_name, expected_result in CANONICAL_COLUMN_VALUES.items():
-        model = SparseTextEmbedding(model_name=model_name)
-        result = next(iter(model.embed(docs_to_embed, batch_size=6)))
-        assert result.indices.tolist() == expected_result["indices"]
+    model = SparseTextEmbedding(model_name=model_name)
+    result = next(iter(model.embed(docs_to_embed, batch_size=6)))
+    expected_result = CANONICAL_COLUMN_VALUES[model_name]
+    assert result.indices.tolist() == expected_result["indices"]
 
-        for i, value in enumerate(result.values):
-            assert pytest.approx(value, abs=0.001) == expected_result["values"][i]
-        if is_ci:
-            delete_model_cache(model.model._model_dir)
+    for i, value in enumerate(result.values):
+        assert pytest.approx(value, abs=0.001) == expected_result["values"][i]
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
 
 
-def test_single_embedding() -> None:
+@pytest.mark.parametrize("model_name", ["prithivida/Splade_PP_en_v1"])
+def test_single_embedding(model_name: str) -> None:
     is_ci = os.getenv("CI")
-    for model_name, expected_result in CANONICAL_COLUMN_VALUES.items():
+    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+
+    for model_desc in SparseTextEmbedding._list_supported_models():
+        if (
+            model_desc.model not in CANONICAL_COLUMN_VALUES
+        ):  # attention models and bm25 are also parts of
+            # SparseTextEmbedding, however, they have their own tests
+            continue
+        if not should_test_model(model_desc, model_name, is_ci, is_manual):
+            continue
+
         model = SparseTextEmbedding(model_name=model_name)
 
         passage_result = next(iter(model.embed(docs, batch_size=6)))
         query_result = next(iter(model.query_embed(docs)))
+        expected_result = CANONICAL_COLUMN_VALUES[model_name]
         for result in [passage_result, query_result]:
             assert result.indices.tolist() == expected_result["indices"]
 
@@ -80,9 +93,10 @@ def test_single_embedding() -> None:
             delete_model_cache(model.model._model_dir)
 
 
-def test_parallel_processing() -> None:
+@pytest.mark.parametrize("model_name", ["prithivida/Splade_PP_en_v1"])
+def test_parallel_processing(model_name: str) -> None:
     is_ci = os.getenv("CI")
-    model = SparseTextEmbedding(model_name="prithivida/Splade_PP_en_v1")
+    model = SparseTextEmbedding(model_name=model_name)
     docs = ["hello world", "flag embedding"] * 30
     sparse_embeddings_duo = list(model.embed(docs, batch_size=10, parallel=2))
     sparse_embeddings_all = list(model.embed(docs, batch_size=10, parallel=0))
@@ -172,10 +186,7 @@ def test_disable_stemmer_behavior(disable_stemmer: bool) -> None:
     assert result == expected, f"Expected {expected}, but got {result}"
 
 
-@pytest.mark.parametrize(
-    "model_name",
-    ["prithivida/Splade_PP_en_v1"],
-)
+@pytest.mark.parametrize("model_name", ["prithivida/Splade_PP_en_v1"])
 def test_lazy_load(model_name: str) -> None:
     is_ci = os.getenv("CI")
     model = SparseTextEmbedding(model_name=model_name, lazy_load=True)

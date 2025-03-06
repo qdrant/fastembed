@@ -1,5 +1,6 @@
 import os
 
+import pytest
 from PIL import Image
 import numpy as np
 
@@ -45,38 +46,38 @@ images = [
 
 
 def test_batch_embedding():
-    is_ci = os.getenv("CI")
+    if os.getenv("CI"):
+        pytest.skip("Colpali is too large to test in CI")
 
-    if not is_ci:
-        for model_name, expected_result in CANONICAL_IMAGE_VALUES.items():
-            print("evaluating", model_name)
-            model = LateInteractionMultimodalEmbedding(model_name=model_name)
-            result = list(model.embed_image(images, batch_size=2))
+    for model_name, expected_result in CANONICAL_IMAGE_VALUES.items():
+        print("evaluating", model_name)
+        model = LateInteractionMultimodalEmbedding(model_name=model_name)
+        result = list(model.embed_image(images, batch_size=2))
 
-            for value in result:
-                token_num, abridged_dim = expected_result.shape
-                assert np.allclose(value[:token_num, :abridged_dim], expected_result, atol=2e-3)
+        for value in result:
+            token_num, abridged_dim = expected_result.shape
+            assert np.allclose(value[:token_num, :abridged_dim], expected_result, atol=2e-3)
 
 
 def test_single_embedding():
-    is_ci = os.getenv("CI")
-    if not is_ci:
-        for model_name, expected_result in CANONICAL_IMAGE_VALUES.items():
-            print("evaluating", model_name)
-            model = LateInteractionMultimodalEmbedding(model_name=model_name)
-            result = next(iter(model.embed_image(images, batch_size=6)))
-            token_num, abridged_dim = expected_result.shape
-            assert np.allclose(result[:token_num, :abridged_dim], expected_result, atol=2e-3)
+    if os.getenv("CI"):
+        pytest.skip("Colpali is too large to test in CI")
+
+    for model_name, expected_result in CANONICAL_IMAGE_VALUES.items():
+        print("evaluating", model_name)
+        model = LateInteractionMultimodalEmbedding(model_name=model_name)
+        result = next(iter(model.embed_image(images, batch_size=6)))
+        token_num, abridged_dim = expected_result.shape
+        assert np.allclose(result[:token_num, :abridged_dim], expected_result, atol=2e-3)
 
 
 def test_single_embedding_query():
-    is_ci = os.getenv("CI")
-    if not is_ci:
-        queries_to_embed = queries
+    if os.getenv("CI"):
+        pytest.skip("Colpali is too large to test in CI")
 
-        for model_name, expected_result in CANONICAL_QUERY_VALUES.items():
-            print("evaluating", model_name)
-            model = LateInteractionMultimodalEmbedding(model_name=model_name)
-            result = next(iter(model.embed_text(queries_to_embed)))
-            token_num, abridged_dim = expected_result.shape
-            assert np.allclose(result[:token_num, :abridged_dim], expected_result, atol=2e-3)
+    for model_name, expected_result in CANONICAL_QUERY_VALUES.items():
+        print("evaluating", model_name)
+        model = LateInteractionMultimodalEmbedding(model_name=model_name)
+        result = next(iter(model.embed_text(queries)))
+        token_num, abridged_dim = expected_result.shape
+        assert np.allclose(result[:token_num, :abridged_dim], expected_result, atol=2e-3)
