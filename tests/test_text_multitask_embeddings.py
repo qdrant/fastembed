@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from fastembed import TextEmbedding
-from fastembed.text.multitask_embedding import Task
+from fastembed.text.multitask_embedding import JinaEmbeddingV3, Task
 from tests.utils import delete_model_cache
 
 
@@ -60,51 +60,42 @@ CANONICAL_VECTOR_VALUES = {
 docs = ["Hello World", "Follow the white rabbit."]
 
 
-def test_batch_embedding():
+@pytest.mark.parametrize("dim,model_name", [(1024, "jinaai/jina-embeddings-v3")])
+def test_batch_embedding(dim: int, model_name: str):
     is_ci = os.getenv("CI")
+    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    if is_ci and not is_manual:
+        pytest.skip("Skipping multitask models in CI non-manual mode")
+
     docs_to_embed = docs * 10
     default_task = Task.RETRIEVAL_PASSAGE
 
-    for model_desc in TextEmbedding._list_supported_models():
-        if not is_ci and model_desc.size_in_GB > 1:
-            continue
+    model = TextEmbedding(model_name=model_name)
 
-        model_name = model_desc.model
-        dim = model_desc.dim
+    embeddings = list(model.embed(documents=docs_to_embed, batch_size=6))
+    embeddings = np.stack(embeddings, axis=0)
 
-        if model_name not in CANONICAL_VECTOR_VALUES.keys():
-            continue
+    assert embeddings.shape == (len(docs_to_embed), dim)
 
-        model = TextEmbedding(model_name=model_name)
+    canonical_vector = CANONICAL_VECTOR_VALUES[model_name][default_task]["vectors"]
+    assert np.allclose(
+        embeddings[: len(docs), : canonical_vector.shape[1]], canonical_vector, atol=1e-4
+    ), model_name
 
-        print(f"evaluating {model_name} default task")
-
-        embeddings = list(model.embed(documents=docs_to_embed, batch_size=6))
-        embeddings = np.stack(embeddings, axis=0)
-
-        assert embeddings.shape == (len(docs_to_embed), dim)
-
-        canonical_vector = CANONICAL_VECTOR_VALUES[model_name][default_task]["vectors"]
-        assert np.allclose(
-            embeddings[: len(docs), : canonical_vector.shape[1]], canonical_vector, atol=1e-4
-        ), model_desc.model
-
-        if is_ci:
-            delete_model_cache(model.model._model_dir)
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
 
 
 def test_single_embedding():
     is_ci = os.getenv("CI")
+    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    if is_ci and not is_manual:
+        pytest.skip("Skipping multitask models in CI non-manual mode")
 
-    for model_desc in TextEmbedding._list_supported_models():
-        if not is_ci and model_desc.size_in_GB > 1:
-            continue
-
+    for model_desc in JinaEmbeddingV3._list_supported_models():
+        # todo: once we add more models, we should not test models >1GB size locally
         model_name = model_desc.model
         dim = model_desc.dim
-
-        if model_name not in CANONICAL_VECTOR_VALUES.keys():
-            continue
 
         model = TextEmbedding(model_name=model_name)
 
@@ -127,17 +118,16 @@ def test_single_embedding():
 
 def test_single_embedding_query():
     is_ci = os.getenv("CI")
+    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    if is_ci and not is_manual:
+        pytest.skip("Skipping multitask models in CI non-manual mode")
+
     task_id = Task.RETRIEVAL_QUERY
 
-    for model_desc in TextEmbedding._list_supported_models():
-        if not is_ci and model_desc.size_in_GB > 1:
-            continue
-
+    for model_desc in JinaEmbeddingV3._list_supported_models():
+        # todo: once we add more models, we should not test models >1GB size locally
         model_name = model_desc.model
         dim = model_desc.dim
-
-        if model_name not in CANONICAL_VECTOR_VALUES.keys():
-            continue
 
         model = TextEmbedding(model_name=model_name)
 
@@ -159,17 +149,17 @@ def test_single_embedding_query():
 
 def test_single_embedding_passage():
     is_ci = os.getenv("CI")
+    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    if is_ci and not is_manual:
+        pytest.skip("Skipping multitask models in CI non-manual mode")
+
     task_id = Task.RETRIEVAL_PASSAGE
 
-    for model_desc in TextEmbedding._list_supported_models():
-        if not is_ci and model_desc.size_in_GB > 1:
-            continue
+    for model_desc in JinaEmbeddingV3._list_supported_models():
+        # todo: once we add more models, we should not test models >1GB size locally
 
         model_name = model_desc.model
         dim = model_desc.dim
-
-        if model_name not in CANONICAL_VECTOR_VALUES.keys():
-            continue
 
         model = TextEmbedding(model_name=model_name)
 
@@ -189,13 +179,14 @@ def test_single_embedding_passage():
             delete_model_cache(model.model._model_dir)
 
 
-def test_parallel_processing():
+@pytest.mark.parametrize("dim,model_name", [(1024, "jinaai/jina-embeddings-v3")])
+def test_parallel_processing(dim: int, model_name: str):
     is_ci = os.getenv("CI")
+    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    if is_ci and not is_manual:
+        pytest.skip("Skipping in CI non-manual mode")
 
     docs = ["Hello World", "Follow the white rabbit."] * 10
-
-    model_name = "jinaai/jina-embeddings-v3"
-    dim = 1024
 
     model = TextEmbedding(model_name=model_name)
 
@@ -218,14 +209,14 @@ def test_parallel_processing():
 
 def test_task_assignment():
     is_ci = os.getenv("CI")
+    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
-    for model_desc in TextEmbedding._list_supported_models():
-        if not is_ci and model_desc.size_in_GB > 1:
-            continue
+    if is_ci and not is_manual:
+        pytest.skip("Skipping in CI non-manual mode")
 
+    for model_desc in JinaEmbeddingV3._list_supported_models():
+        # todo: once we add more models, we should not test models >1GB size locally
         model_name = model_desc.model
-        if model_name not in CANONICAL_VECTOR_VALUES.keys():
-            continue
 
         model = TextEmbedding(model_name=model_name)
 
@@ -237,12 +228,14 @@ def test_task_assignment():
             delete_model_cache(model.model._model_dir)
 
 
-@pytest.mark.parametrize(
-    "model_name",
-    ["jinaai/jina-embeddings-v3"],
-)
+@pytest.mark.parametrize("model_name", ["jinaai/jina-embeddings-v3"])
 def test_lazy_load(model_name: str):
     is_ci = os.getenv("CI")
+    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+
+    if is_ci and not is_manual:
+        pytest.skip("Skipping in CI non-manual mode")
+
     model = TextEmbedding(model_name=model_name, lazy_load=True)
     assert not hasattr(model.model, "model")
 

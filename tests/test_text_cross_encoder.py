@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from fastembed.rerank.cross_encoder import TextCrossEncoder
-from tests.utils import delete_model_cache
+from tests.utils import delete_model_cache, should_test_model
 
 CANONICAL_SCORE_VALUES = {
     "Xenova/ms-marco-MiniLM-L-6-v2": np.array([8.500708, -2.541011]),
@@ -15,44 +15,37 @@ CANONICAL_SCORE_VALUES = {
     "jinaai/jina-reranker-v2-base-multilingual": np.array([1.6533, -1.6455]),
 }
 
-SELECTED_MODELS = {
-    "Xenova": "Xenova/ms-marco-MiniLM-L-6-v2",
-    "BAAI": "BAAI/bge-reranker-base",
-    "jinaai": "jinaai/jina-reranker-v1-tiny-en",
-}
 
-
-@pytest.mark.parametrize(
-    "model_name",
-    [model_name for model_name in CANONICAL_SCORE_VALUES],
-)
+@pytest.mark.parametrize("model_name", ["Xenova/ms-marco-MiniLM-L-6-v2"])
 def test_rerank(model_name: str) -> None:
     is_ci = os.getenv("CI")
+    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
-    model = TextCrossEncoder(model_name=model_name)
+    for model_desc in TextCrossEncoder._list_supported_models():
+        if not should_test_model(model_desc, model_name, is_ci, is_manual):
+            continue
 
-    query = "What is the capital of France?"
-    documents = ["Paris is the capital of France.", "Berlin is the capital of Germany."]
-    scores = np.array(list(model.rerank(query, documents)))
+        model = TextCrossEncoder(model_name=model_name)
 
-    pairs = [(query, doc) for doc in documents]
-    scores2 = np.array(list(model.rerank_pairs(pairs)))
-    assert np.allclose(
-        scores, scores2, atol=1e-5
-    ), f"Model: {model_name}, Scores: {scores}, Scores2: {scores2}"
+        query = "What is the capital of France?"
+        documents = ["Paris is the capital of France.", "Berlin is the capital of Germany."]
+        scores = np.array(list(model.rerank(query, documents)))
 
-    canonical_scores = CANONICAL_SCORE_VALUES[model_name]
-    assert np.allclose(
-        scores, canonical_scores, atol=1e-3
-    ), f"Model: {model_name}, Scores: {scores}, Expected: {canonical_scores}"
-    if is_ci:
-        delete_model_cache(model.model._model_dir)
+        pairs = [(query, doc) for doc in documents]
+        scores2 = np.array(list(model.rerank_pairs(pairs)))
+        assert np.allclose(
+            scores, scores2, atol=1e-5
+        ), f"Model: {model_name}, Scores: {scores}, Scores2: {scores2}"
+
+        canonical_scores = CANONICAL_SCORE_VALUES[model_name]
+        assert np.allclose(
+            scores, canonical_scores, atol=1e-3
+        ), f"Model: {model_name}, Scores: {scores}, Expected: {canonical_scores}"
+        if is_ci:
+            delete_model_cache(model.model._model_dir)
 
 
-@pytest.mark.parametrize(
-    "model_name",
-    [model_name for model_name in SELECTED_MODELS.values()],
-)
+@pytest.mark.parametrize("model_name", ["Xenova/ms-marco-MiniLM-L-6-v2"])
 def test_batch_rerank(model_name: str) -> None:
     is_ci = os.getenv("CI")
 
@@ -78,10 +71,7 @@ def test_batch_rerank(model_name: str) -> None:
         delete_model_cache(model.model._model_dir)
 
 
-@pytest.mark.parametrize(
-    "model_name",
-    ["Xenova/ms-marco-MiniLM-L-6-v2"],
-)
+@pytest.mark.parametrize("model_name", ["Xenova/ms-marco-MiniLM-L-6-v2"])
 def test_lazy_load(model_name: str) -> None:
     is_ci = os.getenv("CI")
     model = TextCrossEncoder(model_name=model_name, lazy_load=True)
@@ -95,10 +85,7 @@ def test_lazy_load(model_name: str) -> None:
         delete_model_cache(model.model._model_dir)
 
 
-@pytest.mark.parametrize(
-    "model_name",
-    [model_name for model_name in SELECTED_MODELS.values()],
-)
+@pytest.mark.parametrize("model_name", ["Xenova/ms-marco-MiniLM-L-6-v2"])
 def test_rerank_pairs_parallel(model_name: str) -> None:
     is_ci = os.getenv("CI")
 

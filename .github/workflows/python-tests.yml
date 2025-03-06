@@ -1,9 +1,10 @@
 name: Tests
 
 on:
-  push:
-    branches: [ master, main, gpu ]
   pull_request:
+    branches: [ master, main, gpu ]
+  workflow_dispatch:
+  
 
 env:
   CARGO_TERM_COLOR: always

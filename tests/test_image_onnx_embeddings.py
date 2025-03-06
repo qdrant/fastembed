@@ -8,7 +8,7 @@ from PIL import Image
 
 from fastembed import ImageEmbedding
 from tests.config import TEST_MISC_DIR
-from tests.utils import delete_model_cache
+from tests.utils import delete_model_cache, should_test_model
 
 CANONICAL_VECTOR_VALUES = {
     "Qdrant/clip-ViT-B-32-vision": np.array([-0.0098, 0.0128, -0.0274, 0.002, -0.0059]),
@@ -27,11 +27,13 @@ CANONICAL_VECTOR_VALUES = {
 }
 
 
-def test_embedding() -> None:
+@pytest.mark.parametrize("model_name", ["Qdrant/clip-ViT-B-32-vision"])
+def test_embedding(model_name: str) -> None:
     is_ci = os.getenv("CI")
+    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
     for model_desc in ImageEmbedding._list_supported_models():
-        if not is_ci and model_desc.size_in_GB > 1:
+        if not should_test_model(model_desc, model_name, is_ci, is_manual):
             continue
 
         dim = model_desc.dim
@@ -74,8 +76,12 @@ def test_batch_embedding(n_dims: int, model_name: str) -> None:
 
     embeddings = list(model.embed(images, batch_size=10))
     embeddings = np.stack(embeddings, axis=0)
+    assert np.allclose(embeddings[1], embeddings[2])
+
+    canonical_vector = CANONICAL_VECTOR_VALUES[model_name]
 
     assert embeddings.shape == (len(test_images) * n_images, n_dims)
+    assert np.allclose(embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3)
     if is_ci:
         delete_model_cache(model.model._model_dir)
 
