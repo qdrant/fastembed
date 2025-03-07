@@ -68,7 +68,15 @@ class OnnxModel(Generic[T]):
             if device_id is None:
                 onnx_providers = ["CUDAExecutionProvider"]
             else:
-                onnx_providers = [("CUDAExecutionProvider", {"device_id": device_id})]
+                # kSameAsRequested: Allocates only the requested memory, avoiding over-allocation.
+                # more precise than 'kNextPowerOfTwo', which grows memory aggressively.
+                # source: https://onnxruntime.ai/docs/get-started/with-c.html#features:~:text=Memory%20arena%20shrinkage:
+                onnx_providers = [
+                    (
+                        "CUDAExecutionProvider",
+                        {"device_id": device_id, "arena_extend_strategy": "kSameAsRequested"},
+                    )
+                ]
         else:
             onnx_providers = ["CPUExecutionProvider"]
 
@@ -132,5 +140,7 @@ class EmbeddingWorker(Worker, Generic[T]):
     def start(cls, model_name: str, cache_dir: str, **kwargs: Any) -> "EmbeddingWorker[T]":
         return cls(model_name=model_name, cache_dir=cache_dir, **kwargs)
 
-    def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, Any]]:
+    def process(
+        self, items: Iterable[tuple[int, Any]], **kwargs: Any
+    ) -> Iterable[tuple[int, Any]]:
         raise NotImplementedError("Subclasses must implement this method")
