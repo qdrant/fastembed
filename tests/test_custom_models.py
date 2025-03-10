@@ -3,7 +3,12 @@ import os
 import numpy as np
 import pytest
 
-from fastembed.common.model_description import PoolingType, ModelSource, DenseModelDescription
+from fastembed.common.model_description import (
+    PoolingType,
+    ModelSource,
+    DenseModelDescription,
+    BaseModelDescription,
+)
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.utils import normalize, mean_pooling
 from fastembed.text.custom_text_embedding import CustomTextEmbedding, PostprocessingConfig
@@ -16,8 +21,10 @@ from tests.utils import delete_model_cache
 @pytest.fixture(autouse=True)
 def restore_custom_models_fixture():
     CustomTextEmbedding.SUPPORTED_MODELS = []
+    CustomCrossEncoderModel.SUPPORTED_MODELS = []
     yield
     CustomTextEmbedding.SUPPORTED_MODELS = []
+    CustomCrossEncoderModel.SUPPORTED_MODELS = []
 
 
 def test_text_custom_model():
@@ -69,31 +76,27 @@ def test_text_custom_model():
 
 def test_cross_encoder_custom_model():
     is_ci = os.getenv("CI")
-    custom_model_name = "viplao5/bge-reranker-v2-m3-onnx"
-    canonical_vector = np.array([1.3330, -1.2428], dtype=np.float32)
-    dim = 1
-    size_in_gb = 2.5
+    custom_model_name = "Xenova/ms-marco-MiniLM-L-4-v2"
+    size_in_gb = 0.08
     source = ModelSource(hf=custom_model_name)
+    canonical_vector = np.array([-5.7170815, -11.112114], dtype=np.float32)
 
     TextCrossEncoder.add_custom_model(
         custom_model_name,
-        model_file="model.onnx",
+        model_file="onnx/model.onnx",
         sources=source,
-        dim=dim,
         size_in_gb=size_in_gb,
-        additional_files=["model.onnx_data"],
+        additional_files=["onnx/model.onnx_data"],
     )
 
-    assert CustomCrossEncoderModel.SUPPORTED_MODELS[0] == DenseModelDescription(
+    assert CustomCrossEncoderModel.SUPPORTED_MODELS[0] == BaseModelDescription(
         model=custom_model_name,
         sources=source,
-        model_file="model.onnx",
+        model_file="onnx/model.onnx",
         description="",
         license="",
         size_in_GB=size_in_gb,
-        additional_files=["model.onnx_data"],
-        dim=dim,
-        tasks={},
+        additional_files=["onnx/model.onnx_data"],
     )
 
     model = TextCrossEncoder(custom_model_name)
@@ -105,8 +108,7 @@ def test_cross_encoder_custom_model():
 
     embeddings = np.stack(scores, axis=0)
     assert embeddings.shape == (2,)
-
-    assert np.allclose(embeddings[: canonical_vector.shape[0]], canonical_vector, atol=1e-3)
+    assert np.allclose(embeddings, canonical_vector, atol=1e-3)
     if is_ci:
         delete_model_cache(model.model._model_dir)
 
@@ -201,4 +203,29 @@ def test_do_not_add_existing_model():
             sources=ModelSource(hf=custom_model_name),
             dim=384,
             size_in_gb=0.47,
+        )
+
+
+def test_do_not_add_existing_cross_encoder():
+    existing_base_model = "Xenova/ms-marco-MiniLM-L-6-v2"
+    custom_model_name = "Xenova/ms-marco-MiniLM-L-4-v2"
+
+    with pytest.raises(ValueError, match=f"Model {existing_base_model} is already registered"):
+        TextCrossEncoder.add_custom_model(
+            existing_base_model,
+            sources=ModelSource(hf=existing_base_model),
+            size_in_gb=0.08,
+        )
+
+    TextCrossEncoder.add_custom_model(
+        custom_model_name,
+        sources=ModelSource(hf=existing_base_model),
+        size_in_gb=0.08,
+    )
+
+    with pytest.raises(ValueError, match=f"Model {custom_model_name} is already registered"):
+        TextCrossEncoder.add_custom_model(
+            custom_model_name,
+            sources=ModelSource(hf=custom_model_name),
+            size_in_gb=0.08,
         )

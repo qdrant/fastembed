@@ -7,7 +7,6 @@ from fastembed.rerank.cross_encoder.custom_reranker_model import CustomCrossEnco
 
 from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
 from fastembed.common.model_description import (
-    DenseModelDescription,
     ModelSource,
     BaseModelDescription,
 )
@@ -137,7 +136,6 @@ class TextCrossEncoder(TextCrossEncoderBase):
         cls,
         model: str,
         sources: ModelSource,
-        dim: int,
         model_file: str = "onnx/model.onnx",
         description: str = "",
         license: str = "",
@@ -153,14 +151,13 @@ class TextCrossEncoder(TextCrossEncoderBase):
                 )
 
         CustomCrossEncoderModel.add_model(
-            DenseModelDescription(
+            BaseModelDescription(
                 model=model,
                 sources=sources,
-                dim=dim,
                 model_file=model_file,
                 description=description,
                 license=license,
                 size_in_GB=size_in_gb,
                 additional_files=additional_files or [],
-            ),
+            )
         )
