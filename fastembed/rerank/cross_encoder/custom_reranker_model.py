@@ -1,12 +1,12 @@
 from typing import Optional, Sequence, Any
 
 from fastembed.common import OnnxProvider
-from fastembed.common.model_description import DenseModelDescription
+from fastembed.common.model_description import BaseModelDescription
 from fastembed.rerank.cross_encoder.onnx_text_cross_encoder import OnnxTextCrossEncoder
 
 
 class CustomCrossEncoderModel(OnnxTextCrossEncoder):
-    SUPPORTED_MODELS: list[DenseModelDescription] = []
+    SUPPORTED_MODELS: list[BaseModelDescription] = []
 
     def __init__(
         self,
@@ -35,12 +35,12 @@ class CustomCrossEncoderModel(OnnxTextCrossEncoder):
         )
 
     @classmethod
-    def _list_supported_models(cls) -> list[DenseModelDescription]:
+    def _list_supported_models(cls) -> list[BaseModelDescription]:
         return cls.SUPPORTED_MODELS
 
     @classmethod
     def add_model(
         cls,
-        model_description: DenseModelDescription,
+        model_description: BaseModelDescription,
     ) -> None:
         cls.SUPPORTED_MODELS.append(model_description)
