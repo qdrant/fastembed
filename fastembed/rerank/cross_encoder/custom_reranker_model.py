@@ -1,9 +1,7 @@
 from typing import Optional, Sequence, Any
 
 from fastembed.common import OnnxProvider
-from fastembed.common.model_description import (
-    DenseModelDescription,
-)
+from fastembed.common.model_description import DenseModelDescription
 from fastembed.rerank.cross_encoder.onnx_text_cross_encoder import OnnxTextCrossEncoder
 
 

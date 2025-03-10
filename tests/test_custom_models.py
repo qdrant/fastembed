@@ -7,6 +7,8 @@ from fastembed.common.model_description import PoolingType, ModelSource, DenseMo
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.utils import normalize, mean_pooling
 from fastembed.text.custom_text_embedding import CustomTextEmbedding, PostprocessingConfig
+from fastembed.rerank.cross_encoder.custom_reranker_model import CustomCrossEncoderModel
+from fastembed.rerank.cross_encoder import TextCrossEncoder
 from fastembed.text.text_embedding import TextEmbedding
 from tests.utils import delete_model_cache
 
@@ -61,6 +63,50 @@ def test_text_custom_model():
     assert embeddings.shape == (2, dim)
 
     assert np.allclose(embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3)
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
+
+
+def test_cross_encoder_custom_model():
+    is_ci = os.getenv("CI")
+    custom_model_name = "viplao5/bge-reranker-v2-m3-onnx"
+    canonical_vector = np.array([1.3330, -1.2428], dtype=np.float32)
+    dim = 1
+    size_in_gb = 2.5
+    source = ModelSource(hf=custom_model_name)
+
+    TextCrossEncoder.add_custom_model(
+        custom_model_name,
+        model_file="model.onnx",
+        sources=source,
+        dim=dim,
+        size_in_gb=size_in_gb,
+        # additional_files=['model.onnx_data']
+    )
+
+    assert CustomCrossEncoderModel.SUPPORTED_MODELS[0] == DenseModelDescription(
+        model=custom_model_name,
+        sources=source,
+        model_file="model.onnx",
+        description="",
+        license="",
+        size_in_GB=size_in_gb,
+        additional_files=[],
+        dim=dim,
+        tasks={},
+    )
+
+    model = TextCrossEncoder(custom_model_name)
+    pairs = [
+        ("What is AI?", "Artificial intelligence is ..."),
+        ("What is ML?", "Machine learning is ..."),
+    ]
+    scores = list(model.rerank_pairs(pairs))
+
+    embeddings = np.stack(scores, axis=0)
+    assert embeddings.shape == (2,)
+
+    assert np.allclose(embeddings[: canonical_vector.shape[0]], canonical_vector, atol=1e-3)
     if is_ci:
         delete_model_cache(model.model._model_dir)
 
