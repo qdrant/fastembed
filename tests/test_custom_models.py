@@ -81,7 +81,7 @@ def test_cross_encoder_custom_model():
         sources=source,
         dim=dim,
         size_in_gb=size_in_gb,
-        # additional_files=['model.onnx_data']
+        additional_files=["model.onnx_data"],
     )
 
     assert CustomCrossEncoderModel.SUPPORTED_MODELS[0] == DenseModelDescription(
@@ -91,7 +91,7 @@ def test_cross_encoder_custom_model():
         description="",
         license="",
         size_in_GB=size_in_gb,
-        additional_files=[],
+        additional_files=["model.onnx_data"],
         dim=dim,
         tasks={},
     )
