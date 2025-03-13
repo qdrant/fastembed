@@ -6,6 +6,7 @@ from typing import Any, Iterable, Optional, Sequence, Type, Union
 import numpy as np
 from numpy.typing import NDArray
 from tokenizers import Encoding, Tokenizer
+import onnxruntime as ort
 
 from fastembed.common.types import NumpyArray, OnnxProvider
 from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
@@ -69,18 +70,18 @@ class OnnxTextModel(OnnxModel[T]):
         io_binding = self.model.io_binding()
 
         for name, value in onnx_input.items():
-            io_binding.bind_input(
-                name=name,
-                device_type="cuda",
-                device_id=device_id,
-                element_type=value.dtype,
-                shape=value.shape,
-                buffer_ptr=value.ctypes.data,
+            ort_value = ort.OrtValue.ortvalue_from_numpy(
+                numpy_obj=value, device_type="cuda", device_id=device_id
             )
+            io_binding.bind_ortvalue_input(name=name, ortvalue=ort_value)
 
         output_names = [output.name for output in self.model.get_outputs()]
         for output_name in output_names:
-            io_binding.bind_output(name=output_name, device_type="cuda", device_id=device_id)
+            io_binding.bind_output(
+                name=output_name,
+                device_type="cuda",
+                device_id=device_id,
+            )
 
         self.model.run_with_iobinding(io_binding)
 
