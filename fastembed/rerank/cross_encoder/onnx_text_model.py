@@ -125,7 +125,9 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
             if not hasattr(self, "model") or self.model is None:
                 self.load_onnx_model()
             for batch in iter_batch(pairs, batch_size):
-                yield from self._post_process_onnx_output(self.onnx_embed_pairs(batch, **kwargs))
+                yield from self._post_process_onnx_output(
+                    self.onnx_embed_pairs(batch, cuda=cuda, providers=providers, **kwargs)
+                )
         else:
             if parallel == 0:
                 parallel = os.cpu_count()

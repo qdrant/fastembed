@@ -86,6 +86,7 @@ class OnnxTextModel(OnnxModel[T]):
         run_options = ort.RunOptions()
         providers = kwargs.get("providers", None)
         cuda = kwargs.get("cuda", False)
+
         if is_cuda_enabled(cuda, providers):
             device_id = kwargs.get("device_id", None)
             device_id = str(device_id if isinstance(device_id, int) else 0)
@@ -129,7 +130,9 @@ class OnnxTextModel(OnnxModel[T]):
             if not hasattr(self, "model") or self.model is None:
                 self.load_onnx_model()
             for batch in iter_batch(documents, batch_size):
-                yield from self._post_process_onnx_output(self.onnx_embed(batch))
+                yield from self._post_process_onnx_output(
+                    self.onnx_embed(batch, cuda=cuda, providers=providers)
+                )
         else:
             if parallel == 0:
                 parallel = os.cpu_count()

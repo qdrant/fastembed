@@ -119,7 +119,9 @@ class OnnxImageModel(OnnxModel[T]):
                 self.load_onnx_model()
 
             for batch in iter_batch(images, batch_size):
-                yield from self._post_process_onnx_output(self.onnx_embed(batch))
+                yield from self._post_process_onnx_output(
+                    self.onnx_embed(batch, cuda=cuda, providers=providers)
+                )
         else:
             if parallel == 0:
                 parallel = os.cpu_count()
