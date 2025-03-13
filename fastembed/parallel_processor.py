@@ -28,7 +28,9 @@ class Worker:
     def start(cls, *args: Any, **kwargs: Any) -> "Worker":
         raise NotImplementedError()
 
-    def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, Any]]:
+    def process(
+        self, items: Iterable[tuple[int, Any]], **kwargs: Any
+    ) -> Iterable[tuple[int, Any]]:
         raise NotImplementedError()
 
 
@@ -63,7 +65,7 @@ def _worker(
                     break
                 yield item
 
-        for processed_item in worker.process(input_queue_iterable()):
+        for processed_item in worker.process(input_queue_iterable(), **kwargs):
             output_queue.put(processed_item)
     except Exception as e:  # pylint: disable=broad-except
         logging.exception(e)

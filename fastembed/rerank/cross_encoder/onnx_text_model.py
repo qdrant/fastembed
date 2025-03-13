@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Iterable, Optional, Sequence, Type
 
 import numpy as np
+import onnxruntime as ort
 from tokenizers import Encoding
 
 from fastembed.common.onnx_model import (
@@ -14,7 +15,7 @@ from fastembed.common.onnx_model import (
 )
 from fastembed.common.types import NumpyArray
 from fastembed.common.preprocessor_utils import load_tokenizer
-from fastembed.common.utils import iter_batch
+from fastembed.common.utils import iter_batch, is_cuda_enabled
 from fastembed.parallel_processor import ParallelWorkerPool
 
 
@@ -71,7 +72,21 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         tokenized_input = self.tokenize(pairs, **kwargs)
         inputs = self._build_onnx_input(tokenized_input)
         onnx_input = self._preprocess_onnx_input(inputs, **kwargs)
-        outputs = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)  # type: ignore[union-attr]
+
+        run_options = ort.RunOptions()
+        providers = kwargs.get("providers", None)
+        cuda = kwargs.get("cuda", False)
+        if is_cuda_enabled(cuda, providers):
+            device_id = kwargs.get("device_id", None)
+            device_id = str(device_id if isinstance(device_id, int) else 0)
+            # Enables memory arena shrinkage, freeing unused memory after each Run() cycle.
+            # Helps prevent excessive memory retention, especially for dynamic workloads.
+            # Source: https://onnxruntime.ai/docs/get-started/with-c.html#features:~:text=Memory%20arena%20shrinkage:
+            run_options.add_run_config_entry(
+                "memory.enable_memory_arena_shrinkage", f"gpu:{device_id}"
+            )
+
+        outputs = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input, run_options)  # type: ignore[union-attr]
         relevant_output = outputs[0]
         scores: NumpyArray = relevant_output[:, 0]
         return OnnxOutputContext(model_output=scores)
@@ -110,7 +125,9 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
             if not hasattr(self, "model") or self.model is None:
                 self.load_onnx_model()
             for batch in iter_batch(pairs, batch_size):
-                yield from self._post_process_onnx_output(self.onnx_embed_pairs(batch, **kwargs))
+                yield from self._post_process_onnx_output(
+                    self.onnx_embed_pairs(batch, cuda=cuda, providers=providers, **kwargs)
+                )
         else:
             if parallel == 0:
                 parallel = os.cpu_count()
@@ -163,7 +180,9 @@ class TextRerankerWorker(EmbeddingWorker[float]):
     ) -> OnnxCrossEncoderModel:
         raise NotImplementedError()
 
-    def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, Any]]:
+    def process(
+        self, items: Iterable[tuple[int, Any]], **kwargs: Any
+    ) -> Iterable[tuple[int, Any]]:
         for idx, batch in items:
-            onnx_output = self.model.onnx_embed_pairs(batch)
+            onnx_output = self.model.onnx_embed_pairs(batch, **kwargs)
             yield idx, onnx_output

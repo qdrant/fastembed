@@ -6,13 +6,14 @@ from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
 from PIL import Image
+import onnxruntime as ort
 
 from fastembed.image.transform.operators import Compose
 from fastembed.common.types import NumpyArray
 from fastembed.common import ImageInput, OnnxProvider
 from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
 from fastembed.common.preprocessor_utils import load_preprocessor
-from fastembed.common.utils import iter_batch
+from fastembed.common.utils import iter_batch, is_cuda_enabled
 from fastembed.parallel_processor import ParallelWorkerPool
 
 # Holds type of the embedding result
@@ -74,7 +75,21 @@ class OnnxImageModel(OnnxModel[T]):
             encoded = np.array(self.processor(image_files))
         onnx_input = self._build_onnx_input(encoded)
         onnx_input = self._preprocess_onnx_input(onnx_input)
-        model_output = self.model.run(None, onnx_input)  # type: ignore[union-attr]
+
+        run_options = ort.RunOptions()
+        providers = kwargs.get("providers", None)
+        cuda = kwargs.get("cuda", False)
+        if is_cuda_enabled(cuda, providers):
+            device_id = kwargs.get("device_id", None)
+            device_id = str(device_id if isinstance(device_id, int) else 0)
+            # enables memory arena shrinkage, freeing unused memory after each Run() cycle.
+            # helps prevent excessive memory retention, especially for dynamic workloads.
+            # source: https://onnxruntime.ai/docs/get-started/with-c.html#features:~:text=Memory%20arena%20shrinkage:
+            run_options.add_run_config_entry(
+                "memory.enable_memory_arena_shrinkage", f"gpu:{device_id}"
+            )
+
+        model_output = self.model.run(None, onnx_input, run_options)  # type: ignore[union-attr]
         embeddings = model_output[0].reshape(len(images), -1)
         return OnnxOutputContext(model_output=embeddings)
 
@@ -104,7 +119,9 @@ class OnnxImageModel(OnnxModel[T]):
                 self.load_onnx_model()
 
             for batch in iter_batch(images, batch_size):
-                yield from self._post_process_onnx_output(self.onnx_embed(batch))
+                yield from self._post_process_onnx_output(
+                    self.onnx_embed(batch, cuda=cuda, providers=providers)
+                )
         else:
             if parallel == 0:
                 parallel = os.cpu_count()
@@ -129,7 +146,9 @@ class OnnxImageModel(OnnxModel[T]):
 
 
 class ImageEmbeddingWorker(EmbeddingWorker[T]):
-    def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, Any]]:
+    def process(
+        self, items: Iterable[tuple[int, Any]], **kwargs: Any
+    ) -> Iterable[tuple[int, Any]]:
         for idx, batch in items:
-            embeddings = self.model.onnx_embed(batch)
+            embeddings = self.model.onnx_embed(batch, **kwargs)
             yield idx, embeddings

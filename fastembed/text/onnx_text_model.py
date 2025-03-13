@@ -4,13 +4,14 @@ from pathlib import Path
 from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
+import onnxruntime as ort
 from numpy.typing import NDArray
 from tokenizers import Encoding, Tokenizer
 
 from fastembed.common.types import NumpyArray, OnnxProvider
 from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
 from fastembed.common.preprocessor_utils import load_tokenizer
-from fastembed.common.utils import iter_batch
+from fastembed.common.utils import iter_batch, is_cuda_enabled
 from fastembed.parallel_processor import ParallelWorkerPool
 
 
@@ -82,7 +83,21 @@ class OnnxTextModel(OnnxModel[T]):
             )
         onnx_input = self._preprocess_onnx_input(onnx_input, **kwargs)
 
-        model_output = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)  # type: ignore[union-attr]
+        run_options = ort.RunOptions()
+        providers = kwargs.get("providers", None)
+        cuda = kwargs.get("cuda", False)
+
+        if is_cuda_enabled(cuda, providers):
+            device_id = kwargs.get("device_id", None)
+            device_id = str(device_id if isinstance(device_id, int) else 0)
+            # enables memory arena shrinkage, freeing unused memory after each Run() cycle.
+            # helps prevent excessive memory retention, especially for dynamic workloads.
+            # source: https://onnxruntime.ai/docs/get-started/with-c.html#features:~:text=Memory%20arena%20shrinkage:
+            run_options.add_run_config_entry(
+                "memory.enable_memory_arena_shrinkage", f"gpu:{device_id}"
+            )
+
+        model_output = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input, run_options)  # type: ignore[union-attr]
         return OnnxOutputContext(
             model_output=model_output[0],
             attention_mask=onnx_input.get("attention_mask", attention_mask),
@@ -115,7 +130,9 @@ class OnnxTextModel(OnnxModel[T]):
             if not hasattr(self, "model") or self.model is None:
                 self.load_onnx_model()
             for batch in iter_batch(documents, batch_size):
-                yield from self._post_process_onnx_output(self.onnx_embed(batch))
+                yield from self._post_process_onnx_output(
+                    self.onnx_embed(batch, cuda=cuda, providers=providers)
+                )
         else:
             if parallel == 0:
                 parallel = os.cpu_count()
@@ -140,7 +157,9 @@ class OnnxTextModel(OnnxModel[T]):
 
 
 class TextEmbeddingWorker(EmbeddingWorker[T]):
-    def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, OnnxOutputContext]]:
+    def process(
+        self, items: Iterable[tuple[int, Any]], **kwargs: Any
+    ) -> Iterable[tuple[int, OnnxOutputContext]]:
         for idx, batch in items:
-            onnx_output = self.model.onnx_embed(batch)
+            onnx_output = self.model.onnx_embed(batch, **kwargs)
             yield idx, onnx_output
