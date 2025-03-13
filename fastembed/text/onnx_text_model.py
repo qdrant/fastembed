@@ -10,7 +10,7 @@ from tokenizers import Encoding, Tokenizer
 from fastembed.common.types import NumpyArray, OnnxProvider
 from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
 from fastembed.common.preprocessor_utils import load_tokenizer
-from fastembed.common.utils import iter_batch
+from fastembed.common.utils import iter_batch, is_cuda_enabled
 from fastembed.parallel_processor import ParallelWorkerPool
 
 
@@ -62,6 +62,30 @@ class OnnxTextModel(OnnxModel[T]):
     def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
         return self.tokenizer.encode_batch(documents)  # type: ignore[union-attr]
 
+    def _run_with_io_binding(
+        self, onnx_input: dict[str, NumpyArray], device_id: int = 0
+    ) -> NumpyArray:
+        """Run inference with IO Binding for optimized memory transfer for non-CPU execution providers."""
+        io_binding = self.model.io_binding()
+
+        for name, value in onnx_input.items():
+            io_binding.bind_input(
+                name=name,
+                device_type="cuda",
+                device_id=device_id,
+                element_type=value.dtype,
+                shape=value.shape,
+                buffer_ptr=value.ctypes.data,
+            )
+
+        output_names = [output.name for output in self.model.get_outputs()]
+        for output_name in output_names:
+            io_binding.bind_output(name=output_name, device_type="cuda", device_id=device_id)
+
+        self.model.run_with_iobinding(io_binding)
+
+        return io_binding.copy_outputs_to_cpu()
+
     def onnx_embed(
         self,
         documents: list[str],
@@ -82,7 +106,13 @@ class OnnxTextModel(OnnxModel[T]):
             )
         onnx_input = self._preprocess_onnx_input(onnx_input, **kwargs)
 
-        model_output = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)  # type: ignore[union-attr]
+        providers = kwargs.get("providers", None)
+        cuda = kwargs.get("cuda", False)
+
+        if is_cuda_enabled(cuda, providers):
+            model_output = self._run_with_io_binding(onnx_input)
+        else:
+            model_output = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)  # type: ignore[union-attr]
         return OnnxOutputContext(
             model_output=model_output[0],
             attention_mask=onnx_input.get("attention_mask", attention_mask),
@@ -115,7 +145,9 @@ class OnnxTextModel(OnnxModel[T]):
             if not hasattr(self, "model") or self.model is None:
                 self.load_onnx_model()
             for batch in iter_batch(documents, batch_size):
-                yield from self._post_process_onnx_output(self.onnx_embed(batch))
+                yield from self._post_process_onnx_output(
+                    self.onnx_embed(batch, cuda=cuda, providers=providers)
+                )
         else:
             if parallel == 0:
                 parallel = os.cpu_count()
