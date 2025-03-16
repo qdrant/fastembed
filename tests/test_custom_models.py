@@ -12,7 +12,7 @@ from fastembed.common.model_description import (
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.utils import normalize, mean_pooling
 from fastembed.text.custom_text_embedding import CustomTextEmbedding, PostprocessingConfig
-from fastembed.rerank.cross_encoder.custom_reranker_model import CustomCrossEncoderModel
+from fastembed.rerank.cross_encoder.custom_text_cross_encoder import CustomTextCrossEncoder
 from fastembed.rerank.cross_encoder import TextCrossEncoder
 from fastembed.text.text_embedding import TextEmbedding
 from tests.utils import delete_model_cache
@@ -21,10 +21,10 @@ from tests.utils import delete_model_cache
 @pytest.fixture(autouse=True)
 def restore_custom_models_fixture():
     CustomTextEmbedding.SUPPORTED_MODELS = []
-    CustomCrossEncoderModel.SUPPORTED_MODELS = []
+    CustomTextCrossEncoder.SUPPORTED_MODELS = []
     yield
     CustomTextEmbedding.SUPPORTED_MODELS = []
-    CustomCrossEncoderModel.SUPPORTED_MODELS = []
+    CustomTextCrossEncoder.SUPPORTED_MODELS = []
 
 
 def test_text_custom_model():
@@ -89,7 +89,7 @@ def test_cross_encoder_custom_model():
         additional_files=["onnx/model.onnx_data"],
     )
 
-    assert CustomCrossEncoderModel.SUPPORTED_MODELS[0] == BaseModelDescription(
+    assert CustomTextCrossEncoder.SUPPORTED_MODELS[0] == BaseModelDescription(
         model=custom_model_name,
         sources=source,
         model_file="onnx/model.onnx",

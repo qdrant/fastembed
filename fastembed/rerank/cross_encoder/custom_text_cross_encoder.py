@@ -5,7 +5,7 @@ from fastembed.common.model_description import BaseModelDescription
 from fastembed.rerank.cross_encoder.onnx_text_cross_encoder import OnnxTextCrossEncoder
 
 
-class CustomCrossEncoderModel(OnnxTextCrossEncoder):
+class CustomTextCrossEncoder(OnnxTextCrossEncoder):
     SUPPORTED_MODELS: list[BaseModelDescription] = []
 
     def __init__(

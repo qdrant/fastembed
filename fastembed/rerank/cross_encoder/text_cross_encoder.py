@@ -3,7 +3,7 @@ from dataclasses import asdict
 
 from fastembed.common import OnnxProvider
 from fastembed.rerank.cross_encoder.onnx_text_cross_encoder import OnnxTextCrossEncoder
-from fastembed.rerank.cross_encoder.custom_reranker_model import CustomCrossEncoderModel
+from fastembed.rerank.cross_encoder.custom_text_cross_encoder import CustomTextCrossEncoder
 
 from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
 from fastembed.common.model_description import (
@@ -15,7 +15,7 @@ from fastembed.common.model_description import (
 class TextCrossEncoder(TextCrossEncoderBase):
     CROSS_ENCODER_REGISTRY: list[Type[TextCrossEncoderBase]] = [
         OnnxTextCrossEncoder,
-        CustomCrossEncoderModel,
+        CustomTextCrossEncoder,
     ]
 
     @classmethod
@@ -150,7 +150,7 @@ class TextCrossEncoder(TextCrossEncoderBase):
                     f"please use another model name"
                 )
 
-        CustomCrossEncoderModel.add_model(
+        CustomTextCrossEncoder.add_model(
             BaseModelDescription(
                 model=model,
                 sources=sources,
