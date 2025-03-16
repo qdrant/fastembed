@@ -3,13 +3,19 @@ from dataclasses import asdict
 
 from fastembed.common import OnnxProvider
 from fastembed.rerank.cross_encoder.onnx_text_cross_encoder import OnnxTextCrossEncoder
+from fastembed.rerank.cross_encoder.custom_text_cross_encoder import CustomTextCrossEncoder
+
 from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
-from fastembed.common.model_description import BaseModelDescription
+from fastembed.common.model_description import (
+    ModelSource,
+    BaseModelDescription,
+)
 
 
 class TextCrossEncoder(TextCrossEncoderBase):
     CROSS_ENCODER_REGISTRY: list[Type[TextCrossEncoderBase]] = [
         OnnxTextCrossEncoder,
+        CustomTextCrossEncoder,
     ]
 
     @classmethod
@@ -123,4 +129,35 @@ class TextCrossEncoder(TextCrossEncoderBase):
         """
         yield from self.model.rerank_pairs(
             pairs, batch_size=batch_size, parallel=parallel, **kwargs
+        )
+
+    @classmethod
+    def add_custom_model(
+        cls,
+        model: str,
+        sources: ModelSource,
+        model_file: str = "onnx/model.onnx",
+        description: str = "",
+        license: str = "",
+        size_in_gb: float = 0.0,
+        additional_files: Optional[list[str]] = None,
+    ) -> None:
+        registered_models = cls._list_supported_models()
+        for registered_model in registered_models:
+            if model == registered_model.model:
+                raise ValueError(
+                    f"Model {model} is already registered in CrossEncoderModel, if you still want to add this model, "
+                    f"please use another model name"
+                )
+
+        CustomTextCrossEncoder.add_model(
+            BaseModelDescription(
+                model=model,
+                sources=sources,
+                model_file=model_file,
+                description=description,
+                license=license,
+                size_in_GB=size_in_gb,
+                additional_files=additional_files or [],
+            )
         )

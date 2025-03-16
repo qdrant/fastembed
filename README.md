@@ -190,6 +190,23 @@ scores = list(encoder.rerank(query, documents))
 # [-11.48061752319336, 5.472434997558594]
 ```
 
+Text cross encoders can also be extended with models which are not in the list of supported models.
+
+```python
+from fastembed.rerank.cross_encoder import TextCrossEncoder 
+from fastembed.common.model_description import ModelSource
+
+TextCrossEncoder.add_custom_model(
+    model="Xenova/ms-marco-MiniLM-L-4-v2",
+    model_file="onnx/model.onnx",
+    sources=ModelSource(hf="Xenova/ms-marco-MiniLM-L-4-v2"),
+)
+model = TextCrossEncoder(model_name="Xenova/ms-marco-MiniLM-L-4-v2")
+scores = list(model.rerank_pairs(
+    [("What is AI?", "Artificial intelligence is ..."), ("What is ML?", "Machine learning is ..."),]
+))
+```
+
 ## ⚡️ FastEmbed on a GPU
 
 FastEmbed supports running on GPU devices.
