@@ -86,7 +86,6 @@ def test_cross_encoder_custom_model():
         model_file="onnx/model.onnx",
         sources=source,
         size_in_gb=size_in_gb,
-        additional_files=["onnx/model.onnx_data"],
     )
 
     assert CustomTextCrossEncoder.SUPPORTED_MODELS[0] == BaseModelDescription(
@@ -96,7 +95,6 @@ def test_cross_encoder_custom_model():
         description="",
         license="",
         size_in_GB=size_in_gb,
-        additional_files=["onnx/model.onnx_data"],
     )
 
     model = TextCrossEncoder(custom_model_name)
