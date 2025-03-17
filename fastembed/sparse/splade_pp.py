@@ -18,7 +18,7 @@ supported_splade_models: list[SparseModelDescription] = [
         description="Independent Implementation of SPLADE++ Model for English.",
         license="apache-2.0",
         size_in_GB=0.532,
-        sources=ModelSource(hf="Qdrant/SPLADE_PP_en_v1"),
+        sources=ModelSource(hf="Qdrant/Splade_PP_en_v1"),
         model_file="model.onnx",
     ),
     SparseModelDescription(
@@ -27,7 +27,7 @@ supported_splade_models: list[SparseModelDescription] = [
         description="Independent Implementation of SPLADE++ Model for English.",
         license="apache-2.0",
         size_in_GB=0.532,
-        sources=ModelSource(hf="Qdrant/SPLADE_PP_en_v1"),
+        sources=ModelSource(hf="Qdrant/Splade_PP_en_v1"),
         model_file="model.onnx",
     ),
 ]
