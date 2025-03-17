@@ -103,7 +103,7 @@ class ParallelWorkerPool:
         self.output_queue: Optional[Queue] = None
         self.ctx: BaseContext = get_context(start_method)
         self.processes: list[BaseProcess] = []
-        self.queue_size = self.num_workers * max_internal_batch_size
+        self.queue_size = max_internal_batch_size
         self.emergency_shutdown = False
         self.device_ids = device_ids
         self.cuda = cuda
