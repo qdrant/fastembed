@@ -1,14 +1,14 @@
 import json
+from typing import Any
+from pathlib import Path
 import sys
 import warnings
-from pathlib import Path
-from typing import Tuple
 from tokenizers import AddedToken, Tokenizer
 
 from fastembed.image.transform.operators import Compose
 
 
-def load_special_tokens(model_dir: Path) -> dict:
+def load_special_tokens(model_dir: Path) -> dict[str, Any]:
     tokens_map_path = model_dir / "special_tokens_map.json"
     if not tokens_map_path.exists():
         raise ValueError(f"Could not find special_tokens_map.json in {model_dir}")
@@ -19,7 +19,7 @@ def load_special_tokens(model_dir: Path) -> dict:
     return tokens_map
 
 
-def load_tokenizer(model_dir: Path) -> Tuple[Tokenizer, dict]:
+def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
     config_path = model_dir / "config.json"
     if not config_path.exists():
         raise ValueError(f"Could not find config.json in {model_dir}")
@@ -38,7 +38,7 @@ def load_tokenizer(model_dir: Path) -> Tuple[Tokenizer, dict]:
     with open(str(tokenizer_config_path)) as tokenizer_config_file:
         tokenizer_config = json.load(tokenizer_config_file)
         assert (
-                "model_max_length" in tokenizer_config or "max_length" in tokenizer_config
+            "model_max_length" in tokenizer_config or "max_length" in tokenizer_config
         ), "Models without model_max_length or max_length are not supported."
         if "model_max_length" not in tokenizer_config:
             max_context = tokenizer_config["max_length"]
@@ -48,6 +48,7 @@ def load_tokenizer(model_dir: Path) -> Tuple[Tokenizer, dict]:
             max_context = min(tokenizer_config["model_max_length"], tokenizer_config["max_length"])
 
     tokens_map = load_special_tokens(model_dir)
+
     tokenizer = Tokenizer.from_file(str(tokenizer_path))
 
     max_safe_length = min(max_context, sys.maxsize)
@@ -55,10 +56,9 @@ def load_tokenizer(model_dir: Path) -> Tuple[Tokenizer, dict]:
         warnings.warn(
             f"Requested max_context ({max_context}) exceeds system maximum integer size. "
             f"Truncating to {sys.maxsize}.",
-            RuntimeWarning
+            RuntimeWarning,
         )
-    tokenizer.enable_truncation(max_length=max_context)
-
+    tokenizer.enable_truncation(max_length=max_safe_length)
     tokenizer.enable_padding(
         pad_id=config.get("pad_token_id", 0), pad_token=tokenizer_config["pad_token"]
     )
@@ -69,7 +69,7 @@ def load_tokenizer(model_dir: Path) -> Tuple[Tokenizer, dict]:
         elif isinstance(token, dict):
             tokenizer.add_special_tokens([AddedToken(**token)])
 
-    special_token_to_id = {}
+    special_token_to_id: dict[str, int] = {}
 
     for token in tokens_map.values():
         if isinstance(token, str):
