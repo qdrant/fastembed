@@ -39,9 +39,6 @@ def _worker(
     logging.info(
         f"Reader worker: {worker_id} PID: {os.getpid()} Device: {kwargs.get('device_id', 'CPU')}"
     )
-    print(
-        f"Reader worker: {worker_id} PID: {os.getpid()} Device: {kwargs.get('device_id', 'CPU')}"
-    )
     try:
         worker: Worker = worker_class.start(**kwargs)
         condition = Condition(lock)
@@ -51,13 +48,9 @@ def _worker(
                 lock.acquire()
                 try:
                     if completed.value >= num_tasks.value and num_tasks.value > 0:
-                        print(f"Worker {worker_id} exiting: all tasks completed")
                         return
 
                     if task_index.value >= num_tasks.value:
-                        print(
-                            f"Worker {worker_id} waiting: task_index={task_index.value}, num_tasks={num_tasks.value}, completed={completed.value} <<<<<<<<<<"
-                        )
                         condition.wait(timeout=0.1)
                         continue
 
@@ -65,7 +58,6 @@ def _worker(
                     task_index.value += 1
 
                     batch: Optional[Any] = input_shared[my_task % len(input_shared)]
-                    print(f"Worker {worker_id} got batch {my_task}: {batch} <<<<<")
                 finally:
                     lock.release()
 
@@ -73,20 +65,16 @@ def _worker(
                     yield (my_task, batch)
 
         for idx, result in worker.process(task_iterable()):
-            print(f"Worker {worker_id} processing complete for task {idx}")
             lock.acquire()
             try:
                 output_shared[idx % len(output_shared)] = result
                 completed.value += 1
                 condition.notify_all()
-                print(f"Worker {worker_id} completed task {idx}, completed={completed.value}")
             finally:
                 lock.release()
     except Exception as e:  # pylint: disable=broad-except
-        print(f"Reader worker {worker_id} failed: {e}")
         logging.exception(f"Reader worker {worker_id} failed: {e}")
     finally:
-        print(f"Reader worker {worker_id} finished")
         logging.info(f"Reader worker {worker_id} finished")
 
 
@@ -180,7 +168,6 @@ class ParallelWorkerPool:
                             self.condition.wait(timeout=0.1)
                             self.check_worker_health()
 
-                    print(f"pushing batch {pushed}: {batch}")
                     self.input_shared[pushed % self.shared_storage_size] = batch
                     self.num_tasks.value = pushed + 1
                     self.condition.notify_all()
@@ -193,7 +180,6 @@ class ParallelWorkerPool:
                     if self.completed.value > total_completed:
                         for i in range(self.num_tasks.value):
                             if self.output_shared[i] is not None:
-                                print(f"yielding from scan: idx={i}")
                                 yield (i, self.output_shared[i])
                                 total_completed += 1
                                 self.output_shared[i] = None  # clear slot (improtant)
@@ -204,13 +190,9 @@ class ParallelWorkerPool:
                 self.check_worker_health()
                 self.lock.acquire()
                 try:
-                    print(
-                        f"drain: total_completed={total_completed}, pushed={pushed}, completed={self.completed.value} <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-                    )
                     if self.completed.value > total_completed:
                         for i in range(self.num_tasks.value):
                             if self.output_shared[i] is not None:
-                                print(f"yielding from drain: idx={i}")
                                 yield (i, self.output_shared[i])
                                 total_completed += 1
                                 self.output_shared[i] = None
@@ -219,7 +201,6 @@ class ParallelWorkerPool:
                 finally:
                     self.lock.release()
         except Exception as e:  # pylint: disable=broad-except
-            print(f"Error in semi_ordered_map: {e}")
             logging.exception(f"Error in semi_ordered_map: {e}")
         finally:
             self.join()
