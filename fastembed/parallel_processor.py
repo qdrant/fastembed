@@ -4,7 +4,7 @@ from collections import defaultdict
 from copy import deepcopy
 from enum import Enum
 from dataclasses import dataclass
-from multiprocessing import shared_memory
+from multiprocessing import shared_memory, Manager, Lock
 from multiprocessing import Queue, get_context
 from multiprocessing.context import BaseContext
 from multiprocessing.process import BaseProcess
@@ -46,12 +46,54 @@ class Worker:
         raise NotImplementedError()
 
 
+class SharedMemoryPool:
+    def __init__(self, lock: Lock):
+        self._lock = lock
+        self._pool: dict[str, tuple[shared_memory.SharedMemory, int, np.dtype]] = {}
+        self._free_buffers: list[str] = []
+
+    def allocate(self, size: int, dtype: np.dtype) -> tuple[shared_memory.SharedMemory, str]:
+        best_match = None
+        best_size = float("inf")
+        for buf_name in self._free_buffers:
+            shm, buf_size, buf_dtype = self._pool[buf_name]
+            # get best match for needed size
+            if buf_size >= size and buf_dtype == dtype and buf_size < best_size:
+                best_match = buf_name
+                best_size = buf_size
+            if best_match:
+                self._free_buffers.remove(best_match)
+                return self._pool[best_match][0], best_match
+            shm = shared_memory.SharedMemory(create=True, size=size)
+            self._pool[shm.name] = (shm, size, dtype)
+            return shm, shm.name
+        # if no match found, create new buffer
+        shm = shared_memory.SharedMemory(create=True, size=size)
+        self._pool[shm.name] = (shm, size, dtype)
+        return shm, shm.name
+
+    def release(self, name: str) -> None:
+        if name in self._pool and name not in self._free_buffers:
+            self._free_buffers.append(name)
+
+    def cleanup(self) -> None:
+        for shm, _, _ in self._pool.values():
+            shm.close()
+            shm.unlink()
+        self._pool.clear()
+        self._free_buffers.clear()
+
+    def __del__(self):
+        self.cleanup()
+
+
 def _worker(
     worker_class: Type[Worker],
     input_queue: Queue,
     output_queue: Queue,
     num_active_workers: BaseValue,
     worker_id: int,
+    shared_pool: SharedMemoryPool,
     kwargs: Optional[dict[str, Any]] = None,
 ) -> None:
     """
@@ -66,11 +108,9 @@ def _worker(
     logging.info(
         f"Reader worker: {worker_id} PID: {os.getpid()} Device: {kwargs.get('device_id', 'CPU')}"
     )
-    shm_buffers = []
     try:
         worker = worker_class.start(**kwargs)
 
-        # Keep going until you get an item that's None.
         def input_queue_iterable() -> Iterable[Any]:
             while True:
                 item = input_queue.get()
@@ -84,19 +124,18 @@ def _worker(
             for field in ["model_output", "attention_mask", "input_ids"]:
                 array = getattr(output_context, field, None)
                 if array is not None:
-                    # Create shared memory and copy array
-                    shm = shared_memory.SharedMemory(create=True, size=array.nbytes)
-                    shm_buffers.append(shm)
+                    shm, shm_name = shared_pool.allocate(array.nbytes, array.dtype)
                     shm_array = np.ndarray(array.shape, dtype=array.dtype, buffer=shm.buf)
                     np.copyto(shm_array, array)
                     output_metadata[field] = {
-                        "name": shm.name,
+                        "name": shm_name,
                         "shape": array.shape,
                         "dtype": array.dtype.str,
                     }
                     shm.close()
             output_queue.put((idx, output_metadata))
-            shm_buffers.clear()
+            for field in output_metadata:  # mark release to reuse
+                shared_pool.release(output_metadata[field]["name"])
 
     except Exception as e:  # pylint: disable=broad-except
         logging.exception(e)
@@ -110,9 +149,6 @@ def _worker(
         # See:
         # https://docs.python.org/3.6/library/multiprocessing.html?highlight=process#pipes-and-queues
         # https://docs.python.org/3.6/library/multiprocessing.html?highlight=process#programming-guidelines
-        for shm in shm_buffers:
-            shm.close()
-            shm.unlink()
         input_queue.close()
         output_queue.close()
         input_queue.join_thread()
@@ -144,6 +180,8 @@ class ParallelWorkerPool:
         self.device_ids = device_ids
         self.cuda = cuda
         self.num_active_workers: Optional[BaseValue] = None
+        self.manager = Manager()
+        self.shared_pool = SharedMemoryPool(self.manager.Lock())
 
     def start(self, **kwargs: Any) -> None:
         self.input_queue = self.ctx.Queue(self.queue_size)
@@ -169,6 +207,7 @@ class ParallelWorkerPool:
                     self.output_queue,
                     self.num_active_workers,
                     worker_id,
+                    self.shared_pool,
                     worker_kwargs,
                 ),
             )
@@ -224,7 +263,6 @@ class ParallelWorkerPool:
                         ).copy()
                         output_arrays[field] = array
                         shm.close()
-                        shm.unlink()
                     yield (idx, OnnxOutputContext(**output_arrays))
                     read += 1
 
@@ -248,10 +286,10 @@ class ParallelWorkerPool:
                     array = np.ndarray(meta["shape"], dtype=meta["dtype"], buffer=shm.buf).copy()
                     output_arrays[field] = array
                     shm.close()
-                    shm.unlink()
                 yield (idx, OnnxOutputContext(**output_arrays))
                 read += 1
         finally:
+            self.shared_pool.cleanup()
             assert self.input_queue is not None, "Input queue is None"
             assert self.output_queue is not None, "Output queue is None"
             self.join()
@@ -287,11 +325,13 @@ class ParallelWorkerPool:
             if process.is_alive():
                 process.terminate()
         self.processes.clear()
+        self.shared_pool.cleanup()
 
     def join(self) -> None:
         for process in self.processes:
             process.join()
         self.processes.clear()
+        self.shared_pool.cleanup()
 
     def __del__(self) -> None:
         """
@@ -306,3 +346,4 @@ class ParallelWorkerPool:
         for process in self.processes:
             if process.is_alive():
                 process.terminate()
+        self.shared_pool.cleanup()
