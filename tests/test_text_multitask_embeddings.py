@@ -109,9 +109,25 @@ def test_single_embedding():
 
             canonical_vector = task["vectors"]
             assert np.allclose(
-                embeddings[: len(docs), : canonical_vector.shape[1]], canonical_vector, atol=1e-4
+                embeddings[:, : canonical_vector.shape[1]], canonical_vector, atol=1e-4
             ), model_desc.model
 
+        classification_embeddings = list(model.embed(documents=docs, task_id=Task.CLASSIFICATION))
+        classification_embeddings = np.stack(classification_embeddings, axis=0)
+
+        assert classification_embeddings.shape == (len(docs), dim)
+
+        model = TextEmbedding(model_name=model_name, task_id=Task.CLASSIFICATION)
+        default_embeddings = list(model.embed(documents=docs))
+        default_embeddings = np.stack(default_embeddings, axis=0)
+
+        assert default_embeddings.shape == (len(docs), dim)
+
+        assert np.allclose(
+            classification_embeddings,
+            default_embeddings,
+            atol=1e-4,
+        ), model_desc.model
         if is_ci:
             delete_model_cache(model.model._model_dir)
 
@@ -140,7 +156,7 @@ def test_single_embedding_query():
 
         canonical_vector = CANONICAL_VECTOR_VALUES[model_name][task_id]["vectors"]
         assert np.allclose(
-            embeddings[: len(docs), : canonical_vector.shape[1]], canonical_vector, atol=1e-4
+            embeddings[:, : canonical_vector.shape[1]], canonical_vector, atol=1e-4
         ), model_desc.model
 
         if is_ci:
@@ -172,7 +188,7 @@ def test_single_embedding_passage():
 
         canonical_vector = CANONICAL_VECTOR_VALUES[model_name][task_id]["vectors"]
         assert np.allclose(
-            embeddings[: len(docs), : canonical_vector.shape[1]], canonical_vector, atol=1e-4
+            embeddings[:, : canonical_vector.shape[1]], canonical_vector, atol=1e-4
         ), model_desc.model
 
         if is_ci:
