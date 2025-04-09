@@ -3,6 +3,7 @@ from typing import Any, Type, Iterable, Union, Optional
 
 import numpy as np
 
+from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.types import NumpyArray
 from fastembed.text.pooled_normalized_embedding import PooledNormalizedEmbedding
 from fastembed.text.onnx_embedding import OnnxTextEmbeddingWorker
@@ -44,9 +45,11 @@ class JinaEmbeddingV3(PooledNormalizedEmbedding):
     PASSAGE_TASK = Task.RETRIEVAL_PASSAGE
     QUERY_TASK = Task.RETRIEVAL_QUERY
 
-    def __init__(self, *args: Any, **kwargs: Any):
+    def __init__(self, *args: Any, task_id: Optional[int] = None, **kwargs: Any):
         super().__init__(*args, **kwargs)
-        self.current_task_id: Union[Task, int] = self.PASSAGE_TASK
+        self.default_task_id: Union[Task, int] = (
+            task_id if task_id is not None else self.PASSAGE_TASK
+        )
 
     @classmethod
     def _get_worker_class(cls) -> Type[OnnxTextEmbeddingWorker]:
@@ -59,7 +62,7 @@ class JinaEmbeddingV3(PooledNormalizedEmbedding):
     def _preprocess_onnx_input(
         self, onnx_input: dict[str, NumpyArray], **kwargs: Any
     ) -> dict[str, NumpyArray]:
-        onnx_input["task_id"] = np.array(self.current_task_id, dtype=np.int64)
+        onnx_input["task_id"] = np.array(kwargs["task_id"], dtype=np.int64)
         return onnx_input
 
     def embed(
@@ -67,19 +70,20 @@ class JinaEmbeddingV3(PooledNormalizedEmbedding):
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
         parallel: Optional[int] = None,
-        task_id: int = PASSAGE_TASK,
+        task_id: Optional[int] = None,
         **kwargs: Any,
     ) -> Iterable[NumpyArray]:
-        self.current_task_id = task_id
-        kwargs["task_id"] = task_id
+        kwargs["task_id"] = (
+            task_id if task_id is not None else self.default_task_id
+        )  # required for multiprocessing
         yield from super().embed(documents, batch_size, parallel, **kwargs)
 
     def query_embed(self, query: Union[str, Iterable[str]], **kwargs: Any) -> Iterable[NumpyArray]:
-        self.current_task_id = self.QUERY_TASK
+        kwargs["task_id"] = self.QUERY_TASK
         yield from super().embed(query, **kwargs)
 
     def passage_embed(self, texts: Iterable[str], **kwargs: Any) -> Iterable[NumpyArray]:
-        self.current_task_id = self.PASSAGE_TASK
+        kwargs["task_id"] = self.PASSAGE_TASK
         yield from super().embed(texts, **kwargs)
 
 
@@ -96,5 +100,9 @@ class JinaEmbeddingV3Worker(OnnxTextEmbeddingWorker):
             threads=1,
             **kwargs,
         )
-        model.current_task_id = kwargs["task_id"]
         return model
+
+    def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, OnnxOutputContext]]:
+        for idx, batch in items:
+            onnx_output = self.model.onnx_embed(batch, task_id=self.model.default_task_id)
+            yield idx, onnx_output

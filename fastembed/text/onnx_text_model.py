@@ -115,7 +115,7 @@ class OnnxTextModel(OnnxModel[T]):
             if not hasattr(self, "model") or self.model is None:
                 self.load_onnx_model()
             for batch in iter_batch(documents, batch_size):
-                yield from self._post_process_onnx_output(self.onnx_embed(batch))
+                yield from self._post_process_onnx_output(self.onnx_embed(batch, **kwargs))
         else:
             if parallel == 0:
                 parallel = os.cpu_count()

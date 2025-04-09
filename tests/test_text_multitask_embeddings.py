@@ -207,27 +207,6 @@ def test_parallel_processing(dim: int, model_name: str):
         delete_model_cache(model.model._model_dir)
 
 
-def test_task_assignment():
-    is_ci = os.getenv("CI")
-    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
-
-    if is_ci and not is_manual:
-        pytest.skip("Skipping in CI non-manual mode")
-
-    for model_desc in JinaEmbeddingV3._list_supported_models():
-        # todo: once we add more models, we should not test models >1GB size locally
-        model_name = model_desc.model
-
-        model = TextEmbedding(model_name=model_name)
-
-        for i, task_id in enumerate(Task):
-            _ = list(model.embed(documents=docs, batch_size=1, task_id=i))
-            assert model.model.current_task_id == task_id
-
-        if is_ci:
-            delete_model_cache(model.model._model_dir)
-
-
 @pytest.mark.parametrize("model_name", ["jinaai/jina-embeddings-v3"])
 def test_lazy_load(model_name: str):
     is_ci = os.getenv("CI")
