@@ -3,6 +3,7 @@ from typing import Any, Type, Iterable, Union, Optional
 
 import numpy as np
 
+from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.types import NumpyArray
 from fastembed.text.pooled_normalized_embedding import PooledNormalizedEmbedding
 from fastembed.text.onnx_embedding import OnnxTextEmbeddingWorker
@@ -44,9 +45,11 @@ class JinaEmbeddingV3(PooledNormalizedEmbedding):
     PASSAGE_TASK = Task.RETRIEVAL_PASSAGE
     QUERY_TASK = Task.RETRIEVAL_QUERY
 
-    def __init__(self, *args: Any, **kwargs: Any):
+    def __init__(self, *args: Any, task_id: Optional[int] = None, **kwargs: Any):
         super().__init__(*args, **kwargs)
-        self.current_task_id: Union[Task, int] = self.PASSAGE_TASK
+        self.default_task_id: Union[Task, int] = (
+            task_id if task_id is not None else self.PASSAGE_TASK
+        )
 
     @classmethod
     def _get_worker_class(cls) -> Type[OnnxTextEmbeddingWorker]:
@@ -57,9 +60,14 @@ class JinaEmbeddingV3(PooledNormalizedEmbedding):
         return supported_multitask_models
 
     def _preprocess_onnx_input(
-        self, onnx_input: dict[str, NumpyArray], **kwargs: Any
+        self,
+        onnx_input: dict[str, NumpyArray],
+        task_id: Optional[Union[int, Task]] = None,
+        **kwargs: Any,
     ) -> dict[str, NumpyArray]:
-        onnx_input["task_id"] = np.array(self.current_task_id, dtype=np.int64)
+        if task_id is None:
+            raise ValueError(f"task_id must be provided for JinaEmbeddingV3, got <{task_id}>")
+        onnx_input["task_id"] = np.array(task_id, dtype=np.int64)
         return onnx_input
 
     def embed(
@@ -67,20 +75,19 @@ class JinaEmbeddingV3(PooledNormalizedEmbedding):
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
         parallel: Optional[int] = None,
-        task_id: int = PASSAGE_TASK,
+        task_id: Optional[int] = None,
         **kwargs: Any,
     ) -> Iterable[NumpyArray]:
-        self.current_task_id = task_id
-        kwargs["task_id"] = task_id
-        yield from super().embed(documents, batch_size, parallel, **kwargs)
+        task_id = (
+            task_id if task_id is not None else self.default_task_id
+        )  # required for multiprocessing
+        yield from super().embed(documents, batch_size, parallel, task_id=task_id, **kwargs)
 
     def query_embed(self, query: Union[str, Iterable[str]], **kwargs: Any) -> Iterable[NumpyArray]:
-        self.current_task_id = self.QUERY_TASK
-        yield from super().embed(query, **kwargs)
+        yield from super().embed(query, task_id=self.QUERY_TASK, **kwargs)
 
     def passage_embed(self, texts: Iterable[str], **kwargs: Any) -> Iterable[NumpyArray]:
-        self.current_task_id = self.PASSAGE_TASK
-        yield from super().embed(texts, **kwargs)
+        yield from super().embed(texts, task_id=self.PASSAGE_TASK, **kwargs)
 
 
 class JinaEmbeddingV3Worker(OnnxTextEmbeddingWorker):
@@ -90,11 +97,15 @@ class JinaEmbeddingV3Worker(OnnxTextEmbeddingWorker):
         cache_dir: str,
         **kwargs: Any,
     ) -> JinaEmbeddingV3:
-        model = JinaEmbeddingV3(
+        return JinaEmbeddingV3(
             model_name=model_name,
             cache_dir=cache_dir,
             threads=1,
             **kwargs,
         )
-        model.current_task_id = kwargs["task_id"]
-        return model
+
+    def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, OnnxOutputContext]]:
+        self.model: JinaEmbeddingV3  # mypy complaints `self.model` does not have `default_task_id`
+        for idx, batch in items:
+            onnx_output = self.model.onnx_embed(batch, task_id=self.model.default_task_id)
+            yield idx, onnx_output

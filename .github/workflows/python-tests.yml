@@ -42,5 +42,7 @@ jobs:
           poetry install --no-interaction --no-ansi --without dev,docs
 
       - name: Run pytest
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          poetry run pytest 
+          poetry run pytest
