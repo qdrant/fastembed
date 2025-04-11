@@ -26,8 +26,6 @@ jobs:
           python -m pip install --upgrade pip poetry
           poetry install --no-interaction --no-ansi --without dev,docs,test
 
-          poetry run pip install "numpy<2.0.0"  # https://github.com/python/mypy/issues/17396
-
       - name: mypy
         run: |
             poetry run mypy fastembed \
