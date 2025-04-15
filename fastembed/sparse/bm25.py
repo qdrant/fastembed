@@ -21,13 +21,9 @@ from fastembed.sparse.sparse_embedding_base import (
 from fastembed.sparse.utils.tokenizer import SimpleTokenizer
 from fastembed.common.model_description import SparseModelDescription, ModelSource
 
+
 supported_languages = [
     "arabic",
-    "azerbaijani",
-    "basque",
-    "bengali",
-    "catalan",
-    "chinese",
     "danish",
     "dutch",
     "english",
@@ -35,21 +31,15 @@ supported_languages = [
     "french",
     "german",
     "greek",
-    "hebrew",
-    "hinglish",
     "hungarian",
-    "indonesian",
     "italian",
-    "kazakh",
-    "nepali",
     "norwegian",
     "portuguese",
     "romanian",
     "russian",
-    "slovene",
     "spanish",
     "swedish",
-    "tajik",
+    "tamil",
     "turkish",
 ]
 
