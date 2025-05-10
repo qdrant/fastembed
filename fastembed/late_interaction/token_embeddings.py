@@ -1,9 +1,10 @@
 from typing import Union, Iterable, Optional, List, Dict, Any, Type
 
-import numpy as np
-
 from fastembed.common.onnx_model import OnnxOutputContext
-from fastembed.late_interaction.late_interaction_embedding_base import LateInteractionTextEmbeddingBase
+from fastembed.common.types import NumpyArray
+from fastembed.late_interaction.late_interaction_embedding_base import (
+    LateInteractionTextEmbeddingBase,
+)
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
 from fastembed.text.onnx_text_model import TextEmbeddingWorker
 
@@ -12,7 +13,7 @@ supported_token_embeddings_models = [
         "model": "jinaai/jina-embeddings-v2-small-en-tokens",
         "dim": 512,
         "description": "Text embeddings, Unimodal (text), English, 8192 input tokens truncation,"
-                       " Prefixes for queries/documents: not necessary, 2023 year.",
+        " Prefixes for queries/documents: not necessary, 2023 year.",
         "license": "apache-2.0",
         "size_in_GB": 0.12,
         "sources": {"hf": "xenova/jina-embeddings-v2-small-en"},
@@ -32,13 +33,16 @@ class TokenEmbeddingsModel(OnnxTextEmbedding, LateInteractionTextEmbeddingBase):
         return supported_token_embeddings_models
 
     @classmethod
-    def _get_worker_class(cls) -> Type[TextEmbeddingWorker]:
+    def _get_worker_class(cls) -> Type[TextEmbeddingWorker[NumpyArray]]:
         return TokensEmbeddingWorker
 
-    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[np.ndarray]:
+    def _post_process_onnx_output(
+        self, output: OnnxOutputContext, **kwargs: Any
+    ) -> Iterable[NumpyArray]:
         # Size: (batch_size, sequence_length, hidden_size)
         embeddings = output.model_output
         # Size: (batch_size, sequence_length)
+        assert output.attention_mask is not None
         masks = output.attention_mask
 
         # For each document we only select those embeddings that are not masked out
@@ -47,20 +51,22 @@ class TokenEmbeddingsModel(OnnxTextEmbedding, LateInteractionTextEmbeddingBase):
             yield embeddings[i, masks[i] == 1]
 
     def embed(
-            self,
-            documents: Union[str, Iterable[str]],
-            batch_size: int = 256,
-            parallel: Optional[int] = None,
-            **kwargs,
-    ) -> Iterable[np.ndarray]:
-        yield from OnnxTextEmbedding.embed(self, documents, batch_size=batch_size, parallel=parallel, **kwargs)
+        self,
+        documents: Union[str, Iterable[str]],
+        batch_size: int = 256,
+        parallel: Optional[int] = None,
+        **kwargs: Any,
+    ) -> Iterable[NumpyArray]:
+        yield from OnnxTextEmbedding.embed(
+            self, documents, batch_size=batch_size, parallel=parallel, **kwargs
+        )
 
-    def tokenize_docs(self, documents: List[str]) -> List[np.ndarray]:
+    def tokenize_docs(self, documents: List[str]) -> List[NumpyArray]:
         encoded = self.tokenizer.encode_batch(documents)
         return [e.ids for e in encoded]
 
 
-class TokensEmbeddingWorker(TextEmbeddingWorker):
+class TokensEmbeddingWorker(TextEmbeddingWorker[NumpyArray]):
     def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> TokenEmbeddingsModel:
         return TokenEmbeddingsModel(
             model_name=model_name,

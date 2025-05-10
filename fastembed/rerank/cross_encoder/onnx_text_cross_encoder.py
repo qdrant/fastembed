@@ -196,7 +196,9 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
     def _get_worker_class(cls) -> Type[TextRerankerWorker]:
         return TextCrossEncoderWorker
 
-    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[float]:
+    def _post_process_onnx_output(
+        self, output: OnnxOutputContext, **kwargs: Any
+    ) -> Iterable[float]:
         return (float(elem) for elem in output.model_output)
 
 

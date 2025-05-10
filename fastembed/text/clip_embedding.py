@@ -35,7 +35,9 @@ class CLIPOnnxEmbedding(OnnxTextEmbedding):
         """
         return supported_clip_models
 
-    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[NumpyArray]:
+    def _post_process_onnx_output(
+        self, output: OnnxOutputContext, **kwargs: Any
+    ) -> Iterable[NumpyArray]:
         return output.model_output
 
 

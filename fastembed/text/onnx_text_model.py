@@ -21,7 +21,16 @@ class OnnxTextModel(OnnxModel[T]):
     def _get_worker_class(cls) -> Type["TextEmbeddingWorker[T]"]:
         raise NotImplementedError("Subclasses must implement this method")
 
-    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[T]:
+    def _post_process_onnx_output(self, output: OnnxOutputContext, **kwargs: Any) -> Iterable[T]:
+        """Post-process the ONNX model output to convert it into a usable format.
+
+        Args:
+            output (OnnxOutputContext): The raw output from the ONNX model.
+            **kwargs: Additional keyword arguments that may be needed by specific implementations.
+
+        Returns:
+            Iterable[T]: Post-processed output as an iterable of type T.
+        """
         raise NotImplementedError("Subclasses must implement this method")
 
     def __init__(self) -> None:
@@ -115,7 +124,9 @@ class OnnxTextModel(OnnxModel[T]):
             if not hasattr(self, "model") or self.model is None:
                 self.load_onnx_model()
             for batch in iter_batch(documents, batch_size):
-                yield from self._post_process_onnx_output(self.onnx_embed(batch, **kwargs))
+                yield from self._post_process_onnx_output(
+                    self.onnx_embed(batch, **kwargs), **kwargs
+                )
         else:
             if parallel == 0:
                 parallel = os.cpu_count()
@@ -136,7 +147,7 @@ class OnnxTextModel(OnnxModel[T]):
                 start_method=start_method,
             )
             for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
-                yield from self._post_process_onnx_output(batch)  # type: ignore
+                yield from self._post_process_onnx_output(batch, **kwargs)  # type: ignore
 
 
 class TextEmbeddingWorker(EmbeddingWorker[T]):

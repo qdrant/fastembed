@@ -138,7 +138,9 @@ class PooledNormalizedEmbedding(PooledEmbedding):
         """
         return supported_pooled_normalized_models
 
-    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[NumpyArray]:
+    def _post_process_onnx_output(
+        self, output: OnnxOutputContext, **kwargs: Any
+    ) -> Iterable[NumpyArray]:
         if output.attention_mask is None:
             raise ValueError("attention_mask must be provided for document post-processing")
 

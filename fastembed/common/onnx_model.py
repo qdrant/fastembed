@@ -28,7 +28,16 @@ class OnnxModel(Generic[T]):
     def _get_worker_class(cls) -> Type["EmbeddingWorker[T]"]:
         raise NotImplementedError("Subclasses must implement this method")
 
-    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[T]:
+    def _post_process_onnx_output(self, output: OnnxOutputContext, **kwargs: Any) -> Iterable[T]:
+        """Post-process the ONNX model output to convert it into a usable format.
+
+        Args:
+            output (OnnxOutputContext): The raw output from the ONNX model.
+            **kwargs: Additional keyword arguments that may be needed by specific implementations.
+
+        Returns:
+            Iterable[T]: Post-processed output as an iterable of type T.
+        """
         raise NotImplementedError("Subclasses must implement this method")
 
     def __init__(self) -> None:

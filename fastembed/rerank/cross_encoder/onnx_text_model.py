@@ -133,7 +133,18 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
             for batch in pool.ordered_map(iter_batch(pairs, batch_size), **params):
                 yield from self._post_process_onnx_output(batch)  # type: ignore
 
-    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[float]:
+    def _post_process_onnx_output(
+        self, output: OnnxOutputContext, **kwargs: Any
+    ) -> Iterable[float]:
+        """Post-process the ONNX model output to convert it into a usable format.
+
+        Args:
+            output (OnnxOutputContext): The raw output from the ONNX model.
+            **kwargs: Additional keyword arguments that may be needed by specific implementations.
+
+        Returns:
+            Iterable[float]: Post-processed output as an iterable of float values.
+        """
         raise NotImplementedError("Subclasses must implement this method")
 
     def _preprocess_onnx_input(

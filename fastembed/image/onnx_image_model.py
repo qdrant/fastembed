@@ -23,7 +23,16 @@ class OnnxImageModel(OnnxModel[T]):
     def _get_worker_class(cls) -> Type["ImageEmbeddingWorker[T]"]:
         raise NotImplementedError("Subclasses must implement this method")
 
-    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[T]:
+    def _post_process_onnx_output(self, output: OnnxOutputContext, **kwargs: Any) -> Iterable[T]:
+        """Post-process the ONNX model output to convert it into a usable format.
+
+        Args:
+            output (OnnxOutputContext): The raw output from the ONNX model.
+            **kwargs: Additional keyword arguments that may be needed by specific implementations.
+
+        Returns:
+            Iterable[T]: Post-processed output as an iterable of type T.
+        """
         raise NotImplementedError("Subclasses must implement this method")
 
     def __init__(self) -> None:
@@ -104,7 +113,7 @@ class OnnxImageModel(OnnxModel[T]):
                 self.load_onnx_model()
 
             for batch in iter_batch(images, batch_size):
-                yield from self._post_process_onnx_output(self.onnx_embed(batch))
+                yield from self._post_process_onnx_output(self.onnx_embed(batch), **kwargs)
         else:
             if parallel == 0:
                 parallel = os.cpu_count()
@@ -125,7 +134,7 @@ class OnnxImageModel(OnnxModel[T]):
                 start_method=start_method,
             )
             for batch in pool.ordered_map(iter_batch(images, batch_size), **params):
-                yield from self._post_process_onnx_output(batch)  # type: ignore
+                yield from self._post_process_onnx_output(batch, **kwargs)  # type: ignore
 
 
 class ImageEmbeddingWorker(EmbeddingWorker[T]):

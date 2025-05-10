@@ -43,7 +43,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
     MASK_TOKEN = "[MASK]"
 
     def _post_process_onnx_output(
-        self, output: OnnxOutputContext, is_doc: bool = True
+        self, output: OnnxOutputContext, is_doc: bool = True, **kwargs: Any
     ) -> Iterable[NumpyArray]:
         if not is_doc:
             return output.model_output
