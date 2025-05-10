@@ -1,7 +1,7 @@
 import string
 from pathlib import Path
 import numpy as np
-from typing import Any, Dict, Optional, Sequence, Iterable, Union
+from typing import Any, Dict, Optional, Sequence, Iterable, Union, Set
 
 from fastembed.common.model_description import SparseModelDescription, ModelSource
 from fastembed.sparse.sparse_embedding_base import (
@@ -19,6 +19,7 @@ from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
 from py_rust_stemmers import SnowballStemmer
 from fastembed.common import OnnxProvider
 from fastembed.common.utils import define_cache_dir
+from tokenizers import Tokenizer
 
 
 MINICOIL_MODEL_FILE = "minicoil.triplet.model.npy"
@@ -107,43 +108,32 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         super().__init__(model_name, cache_dir, threads, **kwargs)
         self.providers = providers
         self.lazy_load = lazy_load
-
-        # List of device ids, that can be used for data parallel processing in workers
         self.device_ids = device_ids
         self.cuda = cuda
+        self.device_id = device_id
+        self.k = k
+        self.b = b
+        self.avg_len = avg_len
 
-        # This device_id will be used if we need to load model in current process
-        self.device_id: Optional[int] = None
-        if device_id is not None:
-            self.device_id = device_id
-        elif self.device_ids is not None:
-            self.device_id = self.device_ids[0]
+        # Initialize class attributes
+        self.tokenizer: Optional[Tokenizer] = None
+        self.invert_vocab: Dict[int, str] = {}
+        self.special_tokens: Set[str] = set()
+        self.special_tokens_ids: Set[int] = set()
+        self.stopwords: Set[str] = set()
+        self.vocab_resolver: Optional[VocabResolver] = None
+        self.encoder: Optional[Encoder] = None
+        self.output_dim: Optional[int] = None
+        self.sparse_vector_converter: Optional[SparseVectorConverter] = None
 
         self.model_description = self._get_model_description(model_name)
         self.cache_dir = str(define_cache_dir(cache_dir))
-
         self._model_dir = self.download_model(
             self.model_description,
             self.cache_dir,
             local_files_only=self._local_files_only,
             specific_model_path=specific_model_path,
         )
-
-        self.invert_vocab: dict[int, str] = {}
-
-        self.special_tokens: set[str] = set()
-        self.special_tokens_ids: set[int] = set()
-        self.punctuation = set(string.punctuation)
-        self.stopwords = None
-        self.stemmer = None
-        self.vocab_resolver = None
-        self.encoder = None
-        self.sparse_vector_converter = None
-
-        self.k = k
-        self.b = b
-        self.avg_len = avg_len
-        self.output_dim = 0
 
         if not self.lazy_load:
             self.load_onnx_model()
@@ -289,45 +279,37 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             # Size: (sequence_length)
             token_ids: NDArray[np.int64] = output.input_ids[i, masks[i] == 1]
 
-            word_ids, counts, oov, forms = self.vocab_resolver.resolve_tokens(token_ids)
+            word_ids_array, counts, oov, forms = self.vocab_resolver.resolve_tokens(token_ids)
 
             # Size: (1, words)
-            word_ids: NDArray[np.int64] = np.expand_dims(word_ids, axis=0)
+            word_ids_array_expanded: NDArray[np.int64] = np.expand_dims(word_ids_array, axis=0)
 
             # Size: (1, words, embedding_size)
-            token_embeddings: NDArray[np.float32] = np.expand_dims(token_embeddings, axis=0)
+            token_embeddings_array: NDArray[np.float32] = np.expand_dims(token_embeddings, axis=0)
 
-            assert word_ids.shape[1] == token_embeddings.shape[1]
+            assert word_ids_array_expanded.shape[1] == token_embeddings_array.shape[1]
 
             # Size of word_ids_mapping: (unique_words, 2) - [vocab_id, batch_id]
             # Size of embeddings: (unique_words, embedding_size)
-            ids_mapping, minicoil_embeddings = self.encoder.forward(word_ids, token_embeddings)
+            ids_mapping, minicoil_embeddings = self.encoder.forward(word_ids_array_expanded, token_embeddings_array)
 
             # Size of counts: (unique_words)
-            words_ids = ids_mapping[:, 0]
+            words_ids = ids_mapping[:, 0].tolist()
 
             sentence_result: Dict[str, WordEmbedding] = {}
 
             words = [self.vocab_resolver.lookup_word(word_id) for word_id in words_ids]
 
-            for word, word_id, emb in zip(words, words_ids, minicoil_embeddings):
+            for word, word_id, emb in zip(words, words_ids, minicoil_embeddings.tolist()):
                 if word_id == 0:
                     continue
-
-                # sentence_result[word] = {
-                #     "word": word,
-                #     "forms": forms[word],
-                #     "count": int(counts[word_id]),
-                #     "word_id": int(word_id),
-                #     "embedding": emb.tolist()
-                # }
 
                 sentence_result[word] = WordEmbedding(
                     word=word,
                     forms=forms[word],
                     count=int(counts[word_id]),
                     word_id=int(word_id),
-                    embedding=emb.tolist(),
+                    embedding=emb,
                 )
 
             for oov_word, count in oov.items():
@@ -361,7 +343,7 @@ class MiniCoilTextEmbeddingWorker(TextEmbeddingWorker[SparseEmbedding]):
         )
 
 
-def test_minicoil():
+def test_minicoil() -> None:
     model = MiniCOIL(model_name="Qdrant/minicoil-v1")
 
     embedding = next(iter(model.embed("the bat of the cave")))

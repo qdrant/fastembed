@@ -16,6 +16,7 @@ ImageInput: TypeAlias = Union[PathInput, Image.Image]
 
 OnnxProvider: TypeAlias = Union[str, tuple[str, dict[Any, Any]]]
 NumpyArray = Union[
+    NDArray[np.float64],
     NDArray[np.float32],
     NDArray[np.float16],
     NDArray[np.int8],

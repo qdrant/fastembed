@@ -175,8 +175,8 @@ class SparseVectorConverter:
             tf = self.bm25_tf(num_occurences, sentence_len)
 
             if word_id >= 0:  # miniCOIL starts with ID 1
-                embedding = embedding.embedding
-                normalized_embedding = self.normalize_vector(embedding)
+                embedding_values = embedding.embedding
+                normalized_embedding = self.normalize_vector(embedding_values)
 
                 for val_id, value in enumerate(normalized_embedding):
                     indices.append(
@@ -188,8 +188,8 @@ class SparseVectorConverter:
                 values.append(tf)
 
         return SparseEmbedding(
-            indices=np.array(indices),
-            values=np.array(values),
+            indices=np.array(indices, dtype=np.int32),
+            values=np.array(values, dtype=np.float32),
         )
 
     def embedding_to_vector_query(
@@ -215,8 +215,8 @@ class SparseVectorConverter:
             tf = 1.0
 
             if word_id >= 0:  # miniCOIL starts with ID 1
-                embedding = embedding.embedding
-                normalized_embedding = self.normalize_vector(embedding)
+                embedding_values = embedding.embedding
+                normalized_embedding = self.normalize_vector(embedding_values)
 
                 for val_id, value in enumerate(normalized_embedding):
                     indices.append(
@@ -228,6 +228,6 @@ class SparseVectorConverter:
                 values.append(tf)
 
         return SparseEmbedding(
-            indices=np.array(indices),
-            values=np.array(values),
+            indices=np.array(indices, dtype=np.int32),
+            values=np.array(values, dtype=np.float32),
         )

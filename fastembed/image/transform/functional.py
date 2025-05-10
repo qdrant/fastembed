@@ -72,26 +72,26 @@ def normalize(
     if not np.issubdtype(image.dtype, np.floating):
         image = image.astype(np.float32)
 
-    mean = mean if isinstance(mean, list) else [mean] * num_channels
+    mean_list = mean if isinstance(mean, list) else [mean] * num_channels
 
-    if len(mean) != num_channels:
+    if len(mean_list) != num_channels:
         raise ValueError(
             f"mean must have the same number of channels as the image, image has {num_channels} channels, got "
-            f"{len(mean)}"
+            f"{len(mean_list)}"
         )
 
-    mean_arr = np.array(mean, dtype=np.float32)
+    mean_arr = np.array(mean_list, dtype=np.float32)
 
-    std = std if isinstance(std, list) else [std] * num_channels
-    if len(std) != num_channels:
+    std_list = std if isinstance(std, list) else [std] * num_channels
+    if len(std_list) != num_channels:
         raise ValueError(
-            f"std must have the same number of channels as the image, image has {num_channels} channels, got {len(std)}"
+            f"std must have the same number of channels as the image, image has {num_channels} channels, got {len(std_list)}"
         )
 
-    std_arr = np.array(std, dtype=np.float32)
+    std_arr = np.array(std_list, dtype=np.float32)
 
-    image = ((image.T - mean_arr) / std_arr).T
-    return image
+    image_upd = ((image.T - mean_arr) / std_arr).T
+    return image_upd
 
 
 def resize(

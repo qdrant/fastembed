@@ -64,7 +64,7 @@ class Encoder:
         batch_ids = np.arange(batch_size, dtype=vocab_ids.dtype).reshape(batch_size, 1)
         batch_ids = np.repeat(batch_ids, seq_len, axis=1)
         # Stack vocab_ids and batch_ids along the last dimension
-        combined: NumpyArray = np.stack((vocab_ids, batch_ids), axis=2)
+        combined: NumpyArray = np.stack((vocab_ids, batch_ids), axis=2).astype(np.int32)
         return combined
 
     @classmethod
@@ -80,7 +80,6 @@ class Encoder:
             unique_flattened_vocab_ids: (total_unique, 2) array of [vocab_id, batch_id]
             unique_flattened_embeddings: (total_unique, input_dim) averaged embeddings
         """
-        batch_size, seq_len = vocab_ids.shape
         input_dim = embeddings.shape[2]
 
         # Flatten vocab_ids and embeddings
@@ -97,7 +96,7 @@ class Encoder:
 
         # Prepare arrays to accumulate sums
         unique_count = unique_flattened_vocab_ids.shape[0]
-        unique_flattened_embeddings = np.zeros((unique_count, input_dim), dtype=embeddings.dtype)
+        unique_flattened_embeddings = np.zeros((unique_count, input_dim), dtype=np.float32)
         unique_flattened_count = np.zeros(unique_count, dtype=np.int32)
 
         # Use np.add.at to accumulate sums based on inverse indices
@@ -107,7 +106,7 @@ class Encoder:
         # Compute averages
         unique_flattened_embeddings /= unique_flattened_count[:, None]
 
-        return unique_flattened_vocab_ids, unique_flattened_embeddings
+        return unique_flattened_vocab_ids.astype(np.int32), unique_flattened_embeddings.astype(np.float32)
 
     def forward(
         self, vocab_ids: NumpyArray, embeddings: NumpyArray
@@ -127,7 +126,7 @@ class Encoder:
         )
 
         # Select the encoder weights for each unique vocab_id
-        unique_flattened_vocab_ids = unique_flattened_vocab_ids_and_batch_ids[:, 0]
+        unique_flattened_vocab_ids = unique_flattened_vocab_ids_and_batch_ids[:, 0].astype(np.int32)
 
         # unique_encoder_weights: (total_unique, input_dim, output_dim)
         unique_encoder_weights = self.encoder_weights[unique_flattened_vocab_ids]
@@ -139,7 +138,7 @@ class Encoder:
             "bi,bio->bo", unique_flattened_embeddings, unique_encoder_weights
         )
 
-        # Apply Tanh activation
-        unique_flattened_encoded = self.activation(unique_flattened_encoded)
+        # Apply Tanh activation and ensure float32 type
+        unique_flattened_encoded = self.activation(unique_flattened_encoded).astype(np.float32)
 
-        return unique_flattened_vocab_ids_and_batch_ids, unique_flattened_encoded
+        return unique_flattened_vocab_ids_and_batch_ids.astype(np.int32), unique_flattened_encoded

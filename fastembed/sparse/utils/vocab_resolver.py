@@ -51,21 +51,21 @@ class VocabResolver:
     def convert_ids_to_tokens(self, token_ids: NumpyArray) -> List[str]:
         return self.tokenizer.convert_ids_to_tokens(token_ids)
 
-    def vocab_size(self):
+    def vocab_size(self) -> int:
         return len(self.vocab) + 1
 
-    def save_vocab(self, path: str):
+    def save_vocab(self, path: str) -> None:
         with open(path, "w") as f:
             for word in self.words:
                 f.write(word + "\n")
 
-    def save_json_vocab(self, path: str):
+    def save_json_vocab(self, path: str) -> None:
         import json
 
         with open(path, "w") as f:
             json.dump({"vocab": self.words, "stem_mapping": self.stem_mapping}, f, indent=2)
 
-    def load_json_vocab(self, path: str):
+    def load_json_vocab(self, path: str) -> None:
         import json
 
         with open(path, "r") as f:
@@ -74,7 +74,7 @@ class VocabResolver:
             self.vocab = {word: idx + 1 for idx, word in enumerate(self.words)}
             self.stem_mapping = data["stem_mapping"]
 
-    def add_word(self, word: str):
+    def add_word(self, word: str) -> None:
         if word not in self.vocab:
             self.vocab[word] = len(self.vocab) + 1
             self.words.append(word)
@@ -88,7 +88,7 @@ class VocabResolver:
                     # Example: "swim" is preferred over "swimming"
                     self.stem_mapping[stem] = word
 
-    def load_vocab(self, path: str):
+    def load_vocab(self, path: str) -> None:
         with open(path, "r") as f:
             for line in f:
                 self.add_word(line.strip())

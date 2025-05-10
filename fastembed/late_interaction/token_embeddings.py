@@ -7,6 +7,7 @@ from fastembed.late_interaction.late_interaction_embedding_base import (
 )
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
 from fastembed.text.onnx_text_model import TextEmbeddingWorker
+import numpy as np
 
 supported_token_embeddings_models = [
     {
@@ -62,12 +63,14 @@ class TokenEmbeddingsModel(OnnxTextEmbedding, LateInteractionTextEmbeddingBase):
         )
 
     def tokenize_docs(self, documents: List[str]) -> List[NumpyArray]:
+        if self.tokenizer is None:
+            raise ValueError("Tokenizer not initialized")
         encoded = self.tokenizer.encode_batch(documents)
-        return [e.ids for e in encoded]
+        return [np.array(e.ids, dtype=np.int32) for e in encoded]
 
 
 class TokensEmbeddingWorker(TextEmbeddingWorker[NumpyArray]):
-    def init_embedding(self, model_name: str, cache_dir: str, **kwargs) -> TokenEmbeddingsModel:
+    def init_embedding(self, model_name: str, cache_dir: str, **kwargs: Any) -> TokenEmbeddingsModel:
         return TokenEmbeddingsModel(
             model_name=model_name,
             cache_dir=cache_dir,
