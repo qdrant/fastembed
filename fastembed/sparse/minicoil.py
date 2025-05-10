@@ -1,4 +1,3 @@
-import string
 from pathlib import Path
 import numpy as np
 from typing import Any, Dict, Optional, Sequence, Iterable, Union, Set
@@ -291,7 +290,9 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
             # Size of word_ids_mapping: (unique_words, 2) - [vocab_id, batch_id]
             # Size of embeddings: (unique_words, embedding_size)
-            ids_mapping, minicoil_embeddings = self.encoder.forward(word_ids_array_expanded, token_embeddings_array)
+            ids_mapping, minicoil_embeddings = self.encoder.forward(
+                word_ids_array_expanded, token_embeddings_array
+            )
 
             # Size of counts: (unique_words)
             words_ids = ids_mapping[:, 0].tolist()

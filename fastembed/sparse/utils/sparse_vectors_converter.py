@@ -60,6 +60,8 @@ class SparseVectorConverter:
     @classmethod
     def normalize_vector(cls, vector: List[float]) -> List[float]:
         norm = sum([x**2 for x in vector]) ** 0.5
+        if norm < 1e-8:
+            return vector
         return [x / norm for x in vector]
 
     def clean_words(

@@ -106,7 +106,9 @@ class Encoder:
         # Compute averages
         unique_flattened_embeddings /= unique_flattened_count[:, None]
 
-        return unique_flattened_vocab_ids.astype(np.int32), unique_flattened_embeddings.astype(np.float32)
+        return unique_flattened_vocab_ids.astype(np.int32), unique_flattened_embeddings.astype(
+            np.float32
+        )
 
     def forward(
         self, vocab_ids: NumpyArray, embeddings: NumpyArray
@@ -126,7 +128,9 @@ class Encoder:
         )
 
         # Select the encoder weights for each unique vocab_id
-        unique_flattened_vocab_ids = unique_flattened_vocab_ids_and_batch_ids[:, 0].astype(np.int32)
+        unique_flattened_vocab_ids = unique_flattened_vocab_ids_and_batch_ids[:, 0].astype(
+            np.int32
+        )
 
         # unique_encoder_weights: (total_unique, input_dim, output_dim)
         unique_encoder_weights = self.encoder_weights[unique_flattened_vocab_ids]

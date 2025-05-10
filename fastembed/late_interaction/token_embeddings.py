@@ -70,7 +70,9 @@ class TokenEmbeddingsModel(OnnxTextEmbedding, LateInteractionTextEmbeddingBase):
 
 
 class TokensEmbeddingWorker(TextEmbeddingWorker[NumpyArray]):
-    def init_embedding(self, model_name: str, cache_dir: str, **kwargs: Any) -> TokenEmbeddingsModel:
+    def init_embedding(
+        self, model_name: str, cache_dir: str, **kwargs: Any
+    ) -> TokenEmbeddingsModel:
         return TokenEmbeddingsModel(
             model_name=model_name,
             cache_dir=cache_dir,
