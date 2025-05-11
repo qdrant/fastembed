@@ -347,11 +347,11 @@ class MiniCoilTextEmbeddingWorker(TextEmbeddingWorker[SparseEmbedding]):
 def test_minicoil() -> None:
     model = MiniCOIL(model_name="Qdrant/minicoil-v1")
 
-    embedding = next(iter(model.embed("the bat of the cave")))
+    embedding = next(iter(model.embed("Hello World")))
 
     print(embedding)
 
-    embedding = next(iter(model.query_embed("the bat of the cave")))
+    embedding = next(iter(model.query_embed("Hello World")))
 
     print(embedding)
 

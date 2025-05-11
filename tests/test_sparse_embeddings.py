@@ -43,13 +43,26 @@ CANONICAL_COLUMN_VALUES = {
             2.1904349327087402,
             1.0531445741653442,
         ],
-    }
+    },
+    "Qdrant/minicoil-v1": {
+        "indices": [80, 81, 82, 83, 6664, 6665, 6666, 6667],
+        "values": [
+            0.52634597,
+            0.8711344,
+            1.2264385,
+            0.52123857,
+            0.974713,
+            -0.97803956,
+            -0.94312465,
+            -0.12508166,
+        ],
+    },
 }
 
 docs = ["Hello World"]
 
 
-@pytest.mark.parametrize("model_name", ["prithivida/Splade_PP_en_v1"])
+@pytest.mark.parametrize("model_name", ["prithivida/Splade_PP_en_v1", "Qdrant/minicoil-v1"])
 def test_batch_embedding(model_name: str) -> None:
     is_ci = os.getenv("CI")
     docs_to_embed = docs * 10
