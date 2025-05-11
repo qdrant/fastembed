@@ -104,7 +104,7 @@ class Encoder:
         np.add.at(unique_flattened_count, inverse_indices, 1)
 
         # Compute averages
-        unique_flattened_embeddings = unique_flattened_count[:, None]
+        unique_flattened_embeddings /= unique_flattened_count[:, None]
 
         return unique_flattened_vocab_ids.astype(np.int32), unique_flattened_embeddings.astype(
             np.float32

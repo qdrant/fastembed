@@ -19,9 +19,11 @@ numpy = [
     { version = ">=1.21,<2.1.0", python = "<3.10" },
 ]
 onnxruntime = [
-    { version = ">1.20.0", python = ">=3.13" },
     { version = ">=1.17.0,<1.20.0", python = "<3.10" },
-    { version = ">=1.17.0,!=1.20.0", python = ">=3.10,<3.13" },
+    { version = ">1.20.0,<1.22.0", python = ">=3.13", markers = "sys_platform == 'win32'" },
+    { version = ">=1.17.0,!=1.20.0,<1.22.0", python = ">=3.10,<3.13", markers = "sys_platform == 'win32'" },
+    { version = ">1.20.0", python = ">=3.13", markers = "sys_platform != 'win32'" },
+    { version = ">=1.17.0,!=1.20.0", python = ">=3.10,<3.13", markers = "sys_platform != 'win32'" },
 ]
 tqdm = "^4.66"
 requests = "^2.31"
