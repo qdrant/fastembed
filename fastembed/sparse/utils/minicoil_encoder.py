@@ -7,8 +7,6 @@ This model is not trainable, and should only be used for inference.
 import numpy as np
 from fastembed.common.types import NumpyArray
 
-from typing import Tuple
-
 
 class Encoder:
     """
@@ -35,7 +33,7 @@ class Encoder:
      │                     │
      └─────────────────────┘
 
-     Final liner transformation is accompanied by a non-linear activation function: Tanh.
+     Final linear transformation is accompanied by a non-linear activation function: Tanh.
 
      Tanh is used to ensure that the output is in the range [-1, 1].
      It would be easier to visually interpret the output of the model, assuming that each dimension
@@ -70,7 +68,7 @@ class Encoder:
     @classmethod
     def avg_by_vocab_ids(
         cls, vocab_ids: NumpyArray, embeddings: NumpyArray
-    ) -> Tuple[NumpyArray, NumpyArray]:
+    ) -> tuple[NumpyArray, NumpyArray]:
         """
         Takes:
             vocab_ids: (batch_size, seq_len) int array
@@ -112,7 +110,7 @@ class Encoder:
 
     def forward(
         self, vocab_ids: NumpyArray, embeddings: NumpyArray
-    ) -> Tuple[NumpyArray, NumpyArray]:
+    ) -> tuple[NumpyArray, NumpyArray]:
         """
         Args:
             vocab_ids: (batch_size, seq_len) int array

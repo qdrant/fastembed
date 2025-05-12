@@ -1,24 +1,24 @@
 from pathlib import Path
+
+from typing import Any, Optional, Sequence, Iterable, Union, Type
+
 import numpy as np
-from typing import Any, Dict, Optional, Sequence, Iterable, Union, Set
+from numpy.typing import NDArray
+from py_rust_stemmers import SnowballStemmer
+from tokenizers import Tokenizer
 
 from fastembed.common.model_description import SparseModelDescription, ModelSource
+from fastembed.common.onnx_model import OnnxOutputContext
+from fastembed.common import OnnxProvider
+from fastembed.common.utils import define_cache_dir
 from fastembed.sparse.sparse_embedding_base import (
     SparseEmbedding,
     SparseTextEmbeddingBase,
 )
-
-from numpy.typing import NDArray
-
-from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.sparse.utils.minicoil_encoder import Encoder
 from fastembed.sparse.utils.sparse_vectors_converter import SparseVectorConverter, WordEmbedding
 from fastembed.sparse.utils.vocab_resolver import VocabResolver, VocabTokenizerTokenizer
 from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
-from py_rust_stemmers import SnowballStemmer
-from fastembed.common import OnnxProvider
-from fastembed.common.utils import define_cache_dir
-from tokenizers import Tokenizer
 
 
 MINICOIL_MODEL_FILE = "minicoil.triplet.model.npy"
@@ -57,7 +57,7 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         while keeping exact keyword match behavior.
 
         Each vocabulary token is converted into 4d component of a sparse vector, which is then weighted by the token frequency in the corpus.
-        If the token is not found in the corpus, it is trearted exactly like in BM25.
+        If the token is not found in the corpus, it is treated exactly like in BM25.
     `
         The model is based on `jinaai/jina-embeddings-v2-small-en-tokens`
     """
@@ -116,10 +116,10 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
         # Initialize class attributes
         self.tokenizer: Optional[Tokenizer] = None
-        self.invert_vocab: Dict[int, str] = {}
-        self.special_tokens: Set[str] = set()
-        self.special_tokens_ids: Set[int] = set()
-        self.stopwords: Set[str] = set()
+        self.invert_vocab: dict[int, str] = {}
+        self.special_tokens: set[str] = set()
+        self.special_tokens_ids: set[int] = set()
+        self.stopwords: set[str] = set()
         self.vocab_resolver: Optional[VocabResolver] = None
         self.encoder: Optional[Encoder] = None
         self.output_dim: Optional[int] = None
@@ -219,18 +219,14 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         """
         Encode a list of queries into list of embeddings.
         """
-        yield from self._embed_documents(
-            model_name=self.model_name,
-            cache_dir=str(self.cache_dir),
-            documents=query,
-            providers=self.providers,
-            cuda=self.cuda,
-            device_ids=self.device_ids,
-            k=self.k,
-            b=self.b,
-            avg_len=self.avg_len,
-            is_query=True,
-        )
+        if isinstance(query, str):
+            query = [query]
+
+        if not hasattr(self, "model") or self.model is None:
+            self.load_onnx_model()
+
+        for text in query:
+            yield from self._post_process_onnx_output(self.onnx_embed([text]), is_doc=False)
 
     @classmethod
     def _load_stopwords(cls, model_dir: Path) -> list[str]:
@@ -251,7 +247,7 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         return supported_minicoil_models
 
     def _post_process_onnx_output(
-        self, output: OnnxOutputContext, is_query: bool = False, **kwargs: Any
+        self, output: OnnxOutputContext, is_doc: bool = True, **kwargs: Any
     ) -> Iterable[SparseEmbedding]:
         if output.input_ids is None:
             raise ValueError("input_ids must be provided for document post-processing")
@@ -297,7 +293,7 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             # Size of counts: (unique_words)
             words_ids = ids_mapping[:, 0].tolist()
 
-            sentence_result: Dict[str, WordEmbedding] = {}
+            sentence_result: dict[str, WordEmbedding] = {}
 
             words = [self.vocab_resolver.lookup_word(word_id) for word_id in words_ids]
 
@@ -325,14 +321,18 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
                     word=oov_word, forms=[oov_word], count=int(count), word_id=-1, embedding=[1]
                 )
 
-            if is_query:
-                yield self.sparse_vector_converter.embedding_to_vector_query(
-                    sentence_result, vocab_size=vocab_size, embedding_size=embedding_size
-                )
-            else:
+            if is_doc:
                 yield self.sparse_vector_converter.embedding_to_vector(
                     sentence_result, vocab_size=vocab_size, embedding_size=embedding_size
                 )
+            else:
+                yield self.sparse_vector_converter.embedding_to_vector_query(
+                    sentence_result, vocab_size=vocab_size, embedding_size=embedding_size
+                )
+
+    @classmethod
+    def _get_worker_class(cls) -> Type["MiniCoilTextEmbeddingWorker"]:
+        return MiniCoilTextEmbeddingWorker
 
 
 class MiniCoilTextEmbeddingWorker(TextEmbeddingWorker[SparseEmbedding]):
@@ -340,6 +340,7 @@ class MiniCoilTextEmbeddingWorker(TextEmbeddingWorker[SparseEmbedding]):
         return MiniCOIL(
             model_name=model_name,
             cache_dir=cache_dir,
+            threads=1,
             **kwargs,
         )
 

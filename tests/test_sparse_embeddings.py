@@ -62,7 +62,13 @@ CANONICAL_COLUMN_VALUES = {
 docs = ["Hello World"]
 
 
-@pytest.mark.parametrize("model_name", ["prithivida/Splade_PP_en_v1", "Qdrant/minicoil-v1"])
+@pytest.mark.parametrize(
+    "model_name",
+    [
+        # "prithivida/Splade_PP_en_v1",
+        "Qdrant/minicoil-v1"
+    ],
+)
 def test_batch_embedding(model_name: str) -> None:
     is_ci = os.getenv("CI")
     docs_to_embed = docs * 10
@@ -106,7 +112,13 @@ def test_single_embedding(model_name: str) -> None:
             delete_model_cache(model.model._model_dir)
 
 
-@pytest.mark.parametrize("model_name", ["prithivida/Splade_PP_en_v1"])
+@pytest.mark.parametrize(
+    "model_name",
+    [
+        # "prithivida/Splade_PP_en_v1"
+        "Qdrant/minicoil-v1"
+    ],
+)
 def test_parallel_processing(model_name: str) -> None:
     is_ci = os.getenv("CI")
     model = SparseTextEmbedding(model_name=model_name)

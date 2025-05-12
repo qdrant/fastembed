@@ -32,7 +32,7 @@ class SparseVectorConverter:
         avg_len: float = 150.0,
     ):
         punctuation = set(get_all_punctuation())
-        special_tokens = set(["[CLS]", "[SEP]", "[PAD]", "[UNK]", "[MASK]"])
+        special_tokens = {"[CLS]", "[SEP]", "[PAD]", "[UNK]", "[MASK]"}
 
         self.stemmer = stemmer
         self.unwanted_tokens = punctuation | special_tokens | stopwords
