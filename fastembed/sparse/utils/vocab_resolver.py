@@ -117,7 +117,6 @@ class VocabResolver:
 
         if acc:
             result.append((acc, acc_idx))
-
         return result
 
     def resolve_tokens(
@@ -167,7 +166,6 @@ class VocabResolver:
                     }
 
         """
-
         tokens = self.convert_ids_to_tokens(token_ids)
         tokens_mapping = self._reconstruct_bpe(enumerate(tokens))
 
@@ -199,7 +197,6 @@ class VocabResolver:
                 oov_count[token] += 1
             else:
                 counts[vocab_id] += 1
-
         return token_ids, counts, oov_count, forms
 
     def token_ids_to_vocab_batch(self, token_ids: NumpyArray) -> NumpyArray:
@@ -217,7 +214,6 @@ class VocabResolver:
                     ]
 
         """
-
         for i in range(token_ids.shape[0]):
             self.resolve_tokens(token_ids[i])
 
@@ -240,7 +236,6 @@ class VocabResolver:
             - filtered and flattened token_ids - (total_tokens_size)
             - filtered and flattened token_embeddings - (total_tokens_size, embedding_size)
         """
-
         # (batch_size, seq_len)
         filtered_token_ids = self.token_ids_to_vocab_batch(token_ids)
 

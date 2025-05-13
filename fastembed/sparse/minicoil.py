@@ -29,7 +29,7 @@ STOPWORDS_FILE = "stopwords.txt"
 supported_minicoil_models: list[SparseModelDescription] = [
     SparseModelDescription(
         model="Qdrant/minicoil-v1",
-        vocab_size=30522,
+        vocab_size=19125,
         description="Sparse embedding model, that resolves semantic meaning of the words, "
         "while keeping exact keyword match behavior. "
         "Based on jinaai/jina-embeddings-v2-small-en-tokens",

@@ -163,20 +163,21 @@ class SparseVectorConverter:
         unknown_words_shift = (
             (vocab_size * embedding_size) // GAP + 2
         ) * GAP  # miniCOIL vocab + at least (GAP // embedding_size) + 1 new words gap
-
         sentence_embedding_cleaned = self.clean_words(sentence_embedding)
 
-        # Calcualte sentence length after cleaning
+        # Calculate sentence length after cleaning
         sentence_len = 0
         for embedding in sentence_embedding_cleaned.values():
             sentence_len += embedding.count
 
         for embedding in sentence_embedding_cleaned.values():
             word_id = embedding.word_id
-            num_occurences = embedding.count
-            tf = self.bm25_tf(num_occurences, sentence_len)
-
-            if word_id >= 0:  # miniCOIL starts with ID 1
+            num_occurrences = embedding.count
+            tf = self.bm25_tf(num_occurrences, sentence_len)
+            if (
+                word_id > 0
+            ):  # miniCOIL starts with ID 1, we generally won't have word_id == 0 (UNK), as we don't add
+                # these words to sentence_embedding
                 embedding_values = embedding.embedding
                 normalized_embedding = self.normalize_vector(embedding_values)
 
