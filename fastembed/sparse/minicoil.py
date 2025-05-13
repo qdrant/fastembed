@@ -347,19 +347,3 @@ class MiniCoilTextEmbeddingWorker(TextEmbeddingWorker[SparseEmbedding]):
             threads=1,
             **kwargs,
         )
-
-
-def test_minicoil() -> None:
-    model = MiniCOIL(model_name="Qdrant/minicoil-v1")
-
-    embedding = next(iter(model.embed("Hello World")))
-
-    print(embedding)
-
-    embedding = next(iter(model.query_embed("Hello World")))
-
-    print(embedding)
-
-
-if __name__ == "__main__":
-    test_minicoil()
