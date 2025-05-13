@@ -1,11 +1,11 @@
 from collections import defaultdict
-from typing import Dict, Iterable, Set, Tuple, List
+from typing import Iterable
 
 from py_rust_stemmers import SnowballStemmer
-
 import numpy as np
 from tokenizers import Tokenizer
 from numpy.typing import NDArray
+
 from fastembed.common.types import NumpyArray
 
 
@@ -13,7 +13,7 @@ class VocabTokenizer:
     def tokenize(self, sentence: str) -> NumpyArray:
         raise NotImplementedError()
 
-    def convert_ids_to_tokens(self, token_ids: NumpyArray) -> List[str]:
+    def convert_ids_to_tokens(self, token_ids: NumpyArray) -> list[str]:
         raise NotImplementedError()
 
 
@@ -24,21 +24,21 @@ class VocabTokenizerTokenizer(VocabTokenizer):
     def tokenize(self, sentence: str) -> NumpyArray:
         return np.array(self.tokenizer.encode(sentence).ids)
 
-    def convert_ids_to_tokens(self, token_ids: NumpyArray) -> List[str]:
+    def convert_ids_to_tokens(self, token_ids: NumpyArray) -> list[str]:
         return [self.tokenizer.id_to_token(token_id) for token_id in token_ids]
 
 
 class VocabResolver:
-    def __init__(self, tokenizer: VocabTokenizer, stopwords: Set[str], stemmer: SnowballStemmer):
+    def __init__(self, tokenizer: VocabTokenizer, stopwords: set[str], stemmer: SnowballStemmer):
         # Word to id mapping
-        self.vocab: Dict[str, int] = {}
+        self.vocab: dict[str, int] = {}
         # Id to word mapping
-        self.words: List[str] = []
+        self.words: list[str] = []
         # Lemma to word mapping
-        self.stem_mapping: Dict[str, str] = {}
+        self.stem_mapping: dict[str, str] = {}
         self.tokenizer: VocabTokenizer = tokenizer
         self.stemmer = stemmer
-        self.stopwords: Set[str] = stopwords
+        self.stopwords: set[str] = stopwords
 
     def tokenize(self, sentence: str) -> NumpyArray:
         return self.tokenizer.tokenize(sentence)
@@ -48,7 +48,7 @@ class VocabResolver:
             return "UNK"
         return self.words[word_id - 1]
 
-    def convert_ids_to_tokens(self, token_ids: NumpyArray) -> List[str]:
+    def convert_ids_to_tokens(self, token_ids: NumpyArray) -> list[str]:
         return self.tokenizer.convert_ids_to_tokens(token_ids)
 
     def vocab_size(self) -> int:
@@ -95,11 +95,11 @@ class VocabResolver:
 
     @classmethod
     def _reconstruct_bpe(
-        cls, bpe_tokens: Iterable[Tuple[int, str]]
-    ) -> List[Tuple[str, List[int]]]:
-        result: List[Tuple[str, List[int]]] = []
+        cls, bpe_tokens: Iterable[tuple[int, str]]
+    ) -> list[tuple[str, list[int]]]:
+        result: list[tuple[str, list[int]]] = []
         acc: str = ""
-        acc_idx: List[int] = []
+        acc_idx: list[int] = []
 
         continuing_subword_prefix = "##"
         continuing_subword_prefix_len = len(continuing_subword_prefix)
@@ -117,12 +117,11 @@ class VocabResolver:
 
         if acc:
             result.append((acc, acc_idx))
-
         return result
 
     def resolve_tokens(
         self, token_ids: NDArray[np.int64]
-    ) -> Tuple[NDArray[np.int64], Dict[int, int], Dict[str, int], Dict[str, List[str]]]:
+    ) -> tuple[NDArray[np.int64], dict[int, int], dict[str, int], dict[str, list[str]]]:
         """
         Mark known tokens (including composed tokens) with vocab ids.
 
@@ -167,14 +166,13 @@ class VocabResolver:
                     }
 
         """
-
         tokens = self.convert_ids_to_tokens(token_ids)
         tokens_mapping = self._reconstruct_bpe(enumerate(tokens))
 
-        counts: Dict[int, int] = defaultdict(int)
-        oov_count: Dict[str, int] = defaultdict(int)
+        counts: dict[int, int] = defaultdict(int)
+        oov_count: dict[str, int] = defaultdict(int)
 
-        forms: Dict[str, List[str]] = defaultdict(list)
+        forms: dict[str, list[str]] = defaultdict(list)
 
         for token, mapped_token_ids in tokens_mapping:
             vocab_id = 0
@@ -199,7 +197,6 @@ class VocabResolver:
                 oov_count[token] += 1
             else:
                 counts[vocab_id] += 1
-
         return token_ids, counts, oov_count, forms
 
     def token_ids_to_vocab_batch(self, token_ids: NumpyArray) -> NumpyArray:
@@ -217,7 +214,6 @@ class VocabResolver:
                     ]
 
         """
-
         for i in range(token_ids.shape[0]):
             self.resolve_tokens(token_ids[i])
 
@@ -227,7 +223,7 @@ class VocabResolver:
         self,
         token_ids: NumpyArray,
         token_embeddings: NumpyArray,
-    ) -> Tuple[NumpyArray, NumpyArray, NumpyArray]:
+    ) -> tuple[NumpyArray, NumpyArray, NumpyArray]:
         """
         Filter out tokens that are not in the vocab.
 
@@ -240,7 +236,6 @@ class VocabResolver:
             - filtered and flattened token_ids - (total_tokens_size)
             - filtered and flattened token_embeddings - (total_tokens_size, embedding_size)
         """
-
         # (batch_size, seq_len)
         filtered_token_ids = self.token_ids_to_vocab_batch(token_ids)
 

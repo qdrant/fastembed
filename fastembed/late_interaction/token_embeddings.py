@@ -1,5 +1,7 @@
-from typing import Union, Iterable, Optional, List, Dict, Any, Type
+from dataclasses import asdict
+from typing import Union, Iterable, Optional, Any, Type
 
+from fastembed.common.model_description import DenseModelDescription, ModelSource
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.types import NumpyArray
 from fastembed.late_interaction.late_interaction_embedding_base import (
@@ -10,28 +12,37 @@ from fastembed.text.onnx_text_model import TextEmbeddingWorker
 import numpy as np
 
 supported_token_embeddings_models = [
-    {
-        "model": "jinaai/jina-embeddings-v2-small-en-tokens",
-        "dim": 512,
-        "description": "Text embeddings, Unimodal (text), English, 8192 input tokens truncation,"
+    DenseModelDescription(
+        model="jinaai/jina-embeddings-v2-small-en-tokens",
+        dim=512,
+        description="Text embeddings, Unimodal (text), English, 8192 input tokens truncation,"
         " Prefixes for queries/documents: not necessary, 2023 year.",
-        "license": "apache-2.0",
-        "size_in_GB": 0.12,
-        "sources": {"hf": "xenova/jina-embeddings-v2-small-en"},
-        "model_file": "onnx/model.onnx",
-    },
+        license="apache-2.0",
+        size_in_GB=0.12,
+        sources=ModelSource(hf="xenova/jina-embeddings-v2-small-en"),
+        model_file="onnx/model.onnx",
+    ),
 ]
 
 
 class TokenEmbeddingsModel(OnnxTextEmbedding, LateInteractionTextEmbeddingBase):
     @classmethod
-    def list_supported_models(cls) -> List[Dict[str, Any]]:
+    def _list_supported_models(cls) -> list[DenseModelDescription]:
         """Lists the supported models.
 
         Returns:
-            List[Dict[str, Any]]: A list of dictionaries containing the model information.
+            list[DenseModelDescription]: A list of DenseModelDescription objects containing the model information.
         """
         return supported_token_embeddings_models
+
+    @classmethod
+    def list_supported_models(cls) -> list[dict[str, Any]]:
+        """Lists the supported models.
+
+        Returns:
+            list[dict[str, Any]]: A list of dictionaries containing the model information.
+        """
+        return [asdict(model) for model in cls._list_supported_models()]
 
     @classmethod
     def _get_worker_class(cls) -> Type[TextEmbeddingWorker[NumpyArray]]:
@@ -47,7 +58,6 @@ class TokenEmbeddingsModel(OnnxTextEmbedding, LateInteractionTextEmbeddingBase):
         masks = output.attention_mask
 
         # For each document we only select those embeddings that are not masked out
-
         for i in range(embeddings.shape[0]):
             yield embeddings[i, masks[i] == 1]
 
@@ -58,11 +68,9 @@ class TokenEmbeddingsModel(OnnxTextEmbedding, LateInteractionTextEmbeddingBase):
         parallel: Optional[int] = None,
         **kwargs: Any,
     ) -> Iterable[NumpyArray]:
-        yield from OnnxTextEmbedding.embed(
-            self, documents, batch_size=batch_size, parallel=parallel, **kwargs
-        )
+        yield from super().embed(documents, batch_size=batch_size, parallel=parallel, **kwargs)
 
-    def tokenize_docs(self, documents: List[str]) -> List[NumpyArray]:
+    def tokenize_docs(self, documents: list[str]) -> list[NumpyArray]:
         if self.tokenizer is None:
             raise ValueError("Tokenizer not initialized")
         encoded = self.tokenizer.encode_batch(documents)
@@ -83,6 +91,7 @@ class TokensEmbeddingWorker(TextEmbeddingWorker[NumpyArray]):
 
 if __name__ == "__main__":
     # Example usage
+    print(TokenEmbeddingsModel.list_supported_models())
     model = TokenEmbeddingsModel(model_name="jinaai/jina-embeddings-v2-small-en-tokens")
     docs = ["Hello, world!", "hello", "hello hello"]
 
