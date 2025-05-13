@@ -70,12 +70,6 @@ class TokenEmbeddingsModel(OnnxTextEmbedding, LateInteractionTextEmbeddingBase):
     ) -> Iterable[NumpyArray]:
         yield from super().embed(documents, batch_size=batch_size, parallel=parallel, **kwargs)
 
-    def tokenize_docs(self, documents: list[str]) -> list[NumpyArray]:
-        if self.tokenizer is None:
-            raise ValueError("Tokenizer not initialized")
-        encoded = self.tokenizer.encode_batch(documents)
-        return [np.array(e.ids, dtype=np.int32) for e in encoded]
-
 
 class TokensEmbeddingWorker(TextEmbeddingWorker[NumpyArray]):
     def init_embedding(
@@ -87,16 +81,3 @@ class TokensEmbeddingWorker(TextEmbeddingWorker[NumpyArray]):
             threads=1,
             **kwargs,
         )
-
-
-if __name__ == "__main__":
-    # Example usage
-    print(TokenEmbeddingsModel.list_supported_models())
-    model = TokenEmbeddingsModel(model_name="jinaai/jina-embeddings-v2-small-en-tokens")
-    docs = ["Hello, world!", "hello", "hello hello"]
-
-    embeddings = model.embed(docs)
-    for emb in embeddings:
-        print(emb.shape)
-
-    print(model.tokenize_docs(docs))
