@@ -244,7 +244,9 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
             self.load_onnx_model()
 
         for text in query:
-            yield from self._post_process_onnx_output(self.onnx_embed([text]), is_doc=False)
+            yield from self._post_process_onnx_output(
+                self.onnx_embed([text], is_doc=False), is_doc=False
+            )
 
     @classmethod
     def _get_worker_class(cls) -> Type[TextEmbeddingWorker[NumpyArray]]:
