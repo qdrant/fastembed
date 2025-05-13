@@ -34,7 +34,9 @@ supported_splade_models: list[SparseModelDescription] = [
 
 
 class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
-    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[SparseEmbedding]:
+    def _post_process_onnx_output(
+        self, output: OnnxOutputContext, **kwargs: Any
+    ) -> Iterable[SparseEmbedding]:
         if output.attention_mask is None:
             raise ValueError("attention_mask must be provided for document post-processing")
 

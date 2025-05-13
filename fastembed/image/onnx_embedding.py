@@ -193,7 +193,9 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[NumpyArray]):
 
         return onnx_input
 
-    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[NumpyArray]:
+    def _post_process_onnx_output(
+        self, output: OnnxOutputContext, **kwargs: Any
+    ) -> Iterable[NumpyArray]:
         return normalize(output.model_output)
 
 

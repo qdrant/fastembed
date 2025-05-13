@@ -43,13 +43,46 @@ CANONICAL_COLUMN_VALUES = {
             2.1904349327087402,
             1.0531445741653442,
         ],
-    }
+    },
+    "Qdrant/minicoil-v1": {
+        "indices": [80, 81, 82, 83, 6664, 6665, 6666, 6667],
+        "values": [
+            0.52634597,
+            0.8711344,
+            1.2264385,
+            0.52123857,
+            0.974713,
+            -0.97803956,
+            -0.94312465,
+            -0.12508166,
+        ],
+    },
 }
+
+CANONICAL_QUERY_VALUES = {
+    "Qdrant/minicoil-v1": {
+        "indices": [80, 81, 82, 83, 6664, 6665, 6666, 6667],
+        "values": [
+            0.31389374,
+            0.5195128,
+            0.7314033,
+            0.3108479,
+            0.5812834,
+            -0.5832673,
+            -0.5624452,
+            -0.0745942,
+        ],
+    },
+}
+
 
 docs = ["Hello World"]
 
 
-@pytest.mark.parametrize("model_name", ["prithivida/Splade_PP_en_v1"])
+@pytest.mark.parametrize(
+    "model_name",
+    ["prithivida/Splade_PP_en_v1", "Qdrant/minicoil-v1"],
+)
 def test_batch_embedding(model_name: str) -> None:
     is_ci = os.getenv("CI")
     docs_to_embed = docs * 10
@@ -65,7 +98,7 @@ def test_batch_embedding(model_name: str) -> None:
         delete_model_cache(model.model._model_dir)
 
 
-@pytest.mark.parametrize("model_name", ["prithivida/Splade_PP_en_v1"])
+@pytest.mark.parametrize("model_name", ["prithivida/Splade_PP_en_v1", "Qdrant/minicoil-v1"])
 def test_single_embedding(model_name: str) -> None:
     is_ci = os.getenv("CI")
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
@@ -84,16 +117,23 @@ def test_single_embedding(model_name: str) -> None:
         passage_result = next(iter(model.embed(docs, batch_size=6)))
         query_result = next(iter(model.query_embed(docs)))
         expected_result = CANONICAL_COLUMN_VALUES[model_name]
-        for result in [passage_result, query_result]:
-            assert result.indices.tolist() == expected_result["indices"]
+        expected_query_result = CANONICAL_QUERY_VALUES.get(model_name, expected_result)
+        assert passage_result.indices.tolist() == expected_result["indices"]
+        for i, value in enumerate(passage_result.values):
+            assert pytest.approx(value, abs=0.001) == expected_result["values"][i]
 
-            for i, value in enumerate(result.values):
-                assert pytest.approx(value, abs=0.001) == expected_result["values"][i]
+        assert query_result.indices.tolist() == expected_query_result["indices"]
+        for i, value in enumerate(query_result.values):
+            assert pytest.approx(value, abs=0.001) == expected_query_result["values"][i]
+
         if is_ci:
             delete_model_cache(model.model._model_dir)
 
 
-@pytest.mark.parametrize("model_name", ["prithivida/Splade_PP_en_v1"])
+@pytest.mark.parametrize(
+    "model_name",
+    ["prithivida/Splade_PP_en_v1", "Qdrant/minicoil-v1"],
+)
 def test_parallel_processing(model_name: str) -> None:
     is_ci = os.getenv("CI")
     model = SparseTextEmbedding(model_name=model_name)

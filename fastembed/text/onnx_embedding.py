@@ -303,7 +303,9 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):
         """
         return onnx_input
 
-    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[NumpyArray]:
+    def _post_process_onnx_output(
+        self, output: OnnxOutputContext, **kwargs: Any
+    ) -> Iterable[NumpyArray]:
         embeddings = output.model_output
 
         if embeddings.ndim == 3:  # (batch_size, seq_len, embedding_dim)

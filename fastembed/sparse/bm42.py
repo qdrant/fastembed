@@ -217,7 +217,9 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
         return new_vector
 
-    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[SparseEmbedding]:
+    def _post_process_onnx_output(
+        self, output: OnnxOutputContext, **kwargs: Any
+    ) -> Iterable[SparseEmbedding]:
         if output.input_ids is None:
             raise ValueError("input_ids must be provided for document post-processing")
 

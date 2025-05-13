@@ -36,9 +36,9 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
 
     with open(str(tokenizer_config_path)) as tokenizer_config_file:
         tokenizer_config = json.load(tokenizer_config_file)
-        assert (
-            "model_max_length" in tokenizer_config or "max_length" in tokenizer_config
-        ), "Models without model_max_length or max_length are not supported."
+        assert "model_max_length" in tokenizer_config or "max_length" in tokenizer_config, (
+            "Models without model_max_length or max_length are not supported."
+        )
         if "model_max_length" not in tokenizer_config:
             max_context = tokenizer_config["max_length"]
         elif "max_length" not in tokenizer_config:

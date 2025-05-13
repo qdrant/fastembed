@@ -58,7 +58,9 @@ class CustomTextEmbedding(OnnxTextEmbedding):
     def _list_supported_models(cls) -> list[DenseModelDescription]:
         return cls.SUPPORTED_MODELS
 
-    def _post_process_onnx_output(self, output: OnnxOutputContext) -> Iterable[NumpyArray]:
+    def _post_process_onnx_output(
+        self, output: OnnxOutputContext, **kwargs: Any
+    ) -> Iterable[NumpyArray]:
         return self._normalize(self._pool(output.model_output, output.attention_mask))
 
     def _pool(
