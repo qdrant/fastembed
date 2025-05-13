@@ -9,7 +9,7 @@ from numpy.typing import NDArray
 from fastembed.common.types import NumpyArray
 
 
-class VocabTokenizer:
+class VocabTokenizerBase:
     def tokenize(self, sentence: str) -> NumpyArray:
         raise NotImplementedError()
 
@@ -17,7 +17,7 @@ class VocabTokenizer:
         raise NotImplementedError()
 
 
-class VocabTokenizerTokenizer(VocabTokenizer):
+class VocabTokenizer(VocabTokenizerBase):
     def __init__(self, tokenizer: Tokenizer):
         self.tokenizer = tokenizer
 
@@ -29,14 +29,14 @@ class VocabTokenizerTokenizer(VocabTokenizer):
 
 
 class VocabResolver:
-    def __init__(self, tokenizer: VocabTokenizer, stopwords: set[str], stemmer: SnowballStemmer):
+    def __init__(self, tokenizer: VocabTokenizerBase, stopwords: set[str], stemmer: SnowballStemmer):
         # Word to id mapping
         self.vocab: dict[str, int] = {}
         # Id to word mapping
         self.words: list[str] = []
         # Lemma to word mapping
         self.stem_mapping: dict[str, str] = {}
-        self.tokenizer: VocabTokenizer = tokenizer
+        self.tokenizer: VocabTokenizerBase = tokenizer
         self.stemmer = stemmer
         self.stopwords: set[str] = stopwords
 
@@ -52,6 +52,7 @@ class VocabResolver:
         return self.tokenizer.convert_ids_to_tokens(token_ids)
 
     def vocab_size(self) -> int:
+        # We need +1 for UNK token
         return len(self.vocab) + 1
 
     def save_vocab(self, path: str) -> None:
@@ -199,56 +200,3 @@ class VocabResolver:
                 counts[vocab_id] += 1
         return token_ids, counts, oov_count, forms
 
-    def token_ids_to_vocab_batch(self, token_ids: NumpyArray) -> NumpyArray:
-        """
-        Mark known tokens (including composed tokens) with vocab ids.
-
-        Args:
-            token_ids: (batch_size, seq_len) - list of ids of tokens
-                Example:
-                    [
-                        [101,  3897, 19332, 12718, 23348],
-                        [1010,  1996,  7151,  2296, 4845],
-                        [2359,  2005,  4234,  1010,  4332],
-                        [2871,  3191,  2062, 102, 0]
-                    ]
-
-        """
-        for i in range(token_ids.shape[0]):
-            self.resolve_tokens(token_ids[i])
-
-        return token_ids
-
-    def filter(
-        self,
-        token_ids: NumpyArray,
-        token_embeddings: NumpyArray,
-    ) -> tuple[NumpyArray, NumpyArray, NumpyArray]:
-        """
-        Filter out tokens that are not in the vocab.
-
-        Args:
-            token_ids: (batch_size, seq_len) - list of ids of tokens
-            token_embeddings: (batch_size, seq_len, embedding_size) - embeddings of tokens
-
-        Returns:
-            - number of tokens in each sequence - (batch_size)
-            - filtered and flattened token_ids - (total_tokens_size)
-            - filtered and flattened token_embeddings - (total_tokens_size, embedding_size)
-        """
-        # (batch_size, seq_len)
-        filtered_token_ids = self.token_ids_to_vocab_batch(token_ids)
-
-        # (batch_size, seq_len)
-        mask = filtered_token_ids.__ne__(0)
-
-        # (batch_size)
-        num_tokens = mask.sum(axis=1)
-
-        # (total_tokens_size)
-        filtered_token_ids = filtered_token_ids[mask]
-
-        # (total_tokens_size, embedding_size)
-        filtered_token_embeddings = token_embeddings[mask]
-
-        return num_tokens, filtered_token_ids, filtered_token_embeddings

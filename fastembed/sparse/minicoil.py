@@ -17,7 +17,7 @@ from fastembed.sparse.sparse_embedding_base import (
 )
 from fastembed.sparse.utils.minicoil_encoder import Encoder
 from fastembed.sparse.utils.sparse_vectors_converter import SparseVectorConverter, WordEmbedding
-from fastembed.sparse.utils.vocab_resolver import VocabResolver, VocabTokenizerTokenizer
+from fastembed.sparse.utils.vocab_resolver import VocabResolver, VocabTokenizer
 from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
 
 
@@ -158,7 +158,7 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         stemmer = SnowballStemmer(MODEL_TO_LANGUAGE[self.model_name])
 
         self.vocab_resolver = VocabResolver(
-            tokenizer=VocabTokenizerTokenizer(self.tokenizer),
+            tokenizer=VocabTokenizer(self.tokenizer),
             stopwords=self.stopwords,
             stemmer=stemmer,
         )

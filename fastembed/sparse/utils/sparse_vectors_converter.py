@@ -158,11 +158,22 @@ class SparseVectorConverter:
 
         indices: List[int] = []
         values: List[float] = []
+        
+        # Example:
+        # vocab_size = 10000
+        # embedding_size = 4
+        # GAP = 32000
+        # 
+        # We want to start random words section from the bucket, that is guaranteed to not
+        # include any vocab words.
+        # We need (vocab_size * embedding_size) slots for vocab words.
+        # Therefore we need (vocab_size * embedding_size) // GAP + 1 buckets for vocab words.
+        # Therefore, we can start random words from bucket (vocab_size * embedding_size) // GAP + 1 + 1
 
         # ID at which the scope of OOV words starts
         unknown_words_shift = (
             (vocab_size * embedding_size) // GAP + 2
-        ) * GAP  # miniCOIL vocab + at least (GAP // embedding_size) + 1 new words gap
+        ) * GAP
         sentence_embedding_cleaned = self.clean_words(sentence_embedding)
 
         # Calculate sentence length after cleaning

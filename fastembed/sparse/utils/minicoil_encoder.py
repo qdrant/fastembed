@@ -10,7 +10,7 @@ from fastembed.common.types import NumpyArray
 
 class Encoder:
     """
-    Encoder(768, 128, 4, 10000)
+    Encoder(768, 4, 10000)
 
     Will look like this:
 
@@ -18,7 +18,7 @@ class Encoder:
                                          Per-word
                                          Encoder Matrix
      ┌─────────────────────┐
-     │ Token Embedding(768)├──────┐      (10k, 128, 4)
+     │ Token Embedding(768)├──────┐      (10k, 768, 4)
      └─────────────────────┘      │         ┌─────────┐
                                   │         │         │
      ┌─────────────────────┐      │       ┌─┴───────┐ │
