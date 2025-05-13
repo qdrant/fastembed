@@ -219,14 +219,18 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         """
         Encode a list of queries into list of embeddings.
         """
-        if isinstance(query, str):
-            query = [query]
-
-        if not hasattr(self, "model") or self.model is None:
-            self.load_onnx_model()
-
-        for text in query:
-            yield from self._post_process_onnx_output(self.onnx_embed([text]), is_doc=False)
+        yield from self._embed_documents(
+            model_name=self.model_name,
+            cache_dir=str(self.cache_dir),
+            documents=query,
+            providers=self.providers,
+            cuda=self.cuda,
+            device_ids=self.device_ids,
+            k=self.k,
+            b=self.b,
+            avg_len=self.avg_len,
+            is_query=True,
+        )
 
     @classmethod
     def _load_stopwords(cls, model_dir: Path) -> list[str]:
@@ -247,7 +251,7 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         return supported_minicoil_models
 
     def _post_process_onnx_output(
-        self, output: OnnxOutputContext, is_doc: bool = True, **kwargs: Any
+        self, output: OnnxOutputContext, is_query: bool = False, **kwargs: Any
     ) -> Iterable[SparseEmbedding]:
         if output.input_ids is None:
             raise ValueError("input_ids must be provided for document post-processing")
@@ -321,7 +325,7 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
                     word=oov_word, forms=[oov_word], count=int(count), word_id=-1, embedding=[1]
                 )
 
-            if is_doc:
+            if not is_query:
                 yield self.sparse_vector_converter.embedding_to_vector(
                     sentence_result, vocab_size=vocab_size, embedding_size=embedding_size
                 )
