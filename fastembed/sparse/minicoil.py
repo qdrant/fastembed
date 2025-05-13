@@ -295,13 +295,13 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             )
 
             # Size of counts: (unique_words)
-            words_ids = ids_mapping[:, 0].tolist()
+            words_ids: list[int] = ids_mapping[:, 0].tolist()  # type: ignore[assignment]
 
             sentence_result: dict[str, WordEmbedding] = {}
 
             words = [self.vocab_resolver.lookup_word(word_id) for word_id in words_ids]
 
-            for word, word_id, emb in zip(words, words_ids, minicoil_embeddings.tolist()):
+            for word, word_id, emb in zip(words, words_ids, minicoil_embeddings.tolist()):  # type: ignore[arg-type]
                 if word_id == 0:
                     continue
 
@@ -310,7 +310,7 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
                     forms=forms[word],
                     count=int(counts[word_id]),
                     word_id=int(word_id),
-                    embedding=emb,
+                    embedding=emb,  # type: ignore[arg-type]
                 )
 
             for oov_word, count in oov.items():
