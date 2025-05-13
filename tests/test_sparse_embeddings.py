@@ -132,7 +132,7 @@ def test_single_embedding(model_name: str) -> None:
 
 @pytest.mark.parametrize(
     "model_name",
-    ["prithivida/Splade_PP_en_v1" "Qdrant/minicoil-v1"],
+    ["prithivida/Splade_PP_en_v1", "Qdrant/minicoil-v1"],
 )
 def test_parallel_processing(model_name: str) -> None:
     is_ci = os.getenv("CI")
