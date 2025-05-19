@@ -55,7 +55,7 @@ class TextEmbedding(TextEmbeddingBase):
     ) -> None:
         registered_models = cls._list_supported_models()
         for registered_model in registered_models:
-            if model == registered_model.model:
+            if model.lower() == registered_model.model.lower():
                 raise ValueError(
                     f"Model {model} is already registered in TextEmbedding, if you still want to add this model, "
                     f"please use another model name"
@@ -88,18 +88,18 @@ class TextEmbedding(TextEmbeddingBase):
         **kwargs: Any,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
-        if model_name == "nomic-ai/nomic-embed-text-v1.5-Q":
+        if model_name.lower() == "nomic-ai/nomic-embed-text-v1.5-Q".lower():
             warnings.warn(
                 "The model 'nomic-ai/nomic-embed-text-v1.5-Q' has been updated on HuggingFace. Please review "
                 "the latest documentation on HF and release notes to ensure compatibility with your workflow. ",
                 UserWarning,
                 stacklevel=2,
             )
-        if model_name in {
-            "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
-            "thenlper/gte-large",
-            "intfloat/multilingual-e5-large",
-            "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
+        if model_name.lower() in {
+            "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2".lower(),
+            "thenlper/gte-large".lower(),
+            "intfloat/multilingual-e5-large".lower(),
+            "sentence-transformers/paraphrase-multilingual-mpnet-base-v2".lower(),
         }:
             warnings.warn(
                 f"The model {model_name} now uses mean pooling instead of CLS embedding. "
