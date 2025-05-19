@@ -17,7 +17,6 @@ class LateInteractionTextEmbeddingBase(ModelManagement[DenseModelDescription]):
         self.cache_dir = cache_dir
         self.threads = threads
         self._local_files_only = kwargs.pop("local_files_only", False)
-        self._embedding_size: Optional[int] = None
 
     def embed(
         self,
@@ -60,7 +59,7 @@ class LateInteractionTextEmbeddingBase(ModelManagement[DenseModelDescription]):
         else:
             yield from self.embed(query, **kwargs)
 
-    @property
-    def embedding_size(self) -> int:
+    @classmethod
+    def get_embedding_size(cls, model_name: str) -> int:
         """Returns embedding size of the chosen model."""
         raise NotImplementedError("Subclasses must implement this method")

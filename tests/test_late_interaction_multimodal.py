@@ -84,13 +84,8 @@ def test_single_embedding_query():
 
 
 def test_embedding_size():
-    if os.getenv("CI"):
-        pytest.skip("Colpali is too large to test in CI")
-
     model_name = "Qdrant/colpali-v1.3-fp16"
-    model = LateInteractionMultimodalEmbedding(model_name=model_name, lazy_load=True)
-    assert model.embedding_size == 128
+    assert LateInteractionMultimodalEmbedding.get_embedding_size(model_name) == 128
 
     model_name = "Qdrant/ColPali-v1.3-fp16"
-    model = LateInteractionMultimodalEmbedding(model_name=model_name, lazy_load=True)
-    assert model.embedding_size == 128
+    assert LateInteractionMultimodalEmbedding.get_embedding_size(model_name) == 128

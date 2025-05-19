@@ -60,7 +60,7 @@ class TextEmbeddingBase(ModelManagement[DenseModelDescription]):
         else:
             yield from self.embed(query, **kwargs)
 
-    @property
-    def embedding_size(self) -> int:
+    @classmethod
+    def get_embedding_size(self, model_name: str) -> int:
         """Returns embedding size of the chosen model."""
         raise NotImplementedError("Subclasses must implement this method")

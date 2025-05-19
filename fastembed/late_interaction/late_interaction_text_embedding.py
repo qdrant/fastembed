@@ -80,27 +80,29 @@ class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
             "Please check the supported models using `LateInteractionTextEmbedding.list_supported_models()`"
         )
 
-    @property
-    def embedding_size(self) -> int:
-        """
-        Get the size of the embedding.
+    @classmethod
+    def get_embedding_size(cls, model_name: str) -> int:
+        """Get the embedding size of the passed model
 
         Returns:
             int: The size of the embedding.
+
+        Raises:
+            ValueError: If the model name is not found in the supported models.
         """
-        if self._embedding_size is None:
-            descriptions = self._list_supported_models()
-            for description in descriptions:
-                if description.model.lower() == self.model_name.lower():
-                    self._embedding_size = description.dim
-                    break
-            if self._embedding_size is None:
-                model_names = [description.model for description in descriptions]
-                raise ValueError(
-                    f"Embedding size for model {self.model_name} was None. "
-                    f"Available model names: {model_names}"
-                )
-        return self._embedding_size
+        descriptions = cls._list_supported_models()
+        embedding_size: Optional[int] = None
+        for description in descriptions:
+            if description.model.lower() == model_name.lower():
+                embedding_size = description.dim
+                break
+        if embedding_size is None:
+            model_names = [description.model for description in descriptions]
+            raise ValueError(
+                f"Embedding size for model {model_name} was None. "
+                f"Available model names: {model_names}"
+            )
+        return embedding_size
 
     def embed(
         self,
