@@ -88,25 +88,9 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
         **kwargs: Any,
     ):
         """
-        Args:
-            model_name (str): The name of the model to use.
-            cache_dir (str, optional): The path to the cache directory.
-                                       Can be set using the `FASTEMBED_CACHE_PATH` env variable.
-                                       Defaults to `fastembed_cache` in the system's temp directory.
-            threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
-            providers (Optional[Sequence[OnnxProvider]], optional): The list of onnxruntime providers to use.
-                Mutually exclusive with the `cuda` and `device_ids` arguments. Defaults to None.
-            cuda (bool, optional): Whether to use cuda for inference. Mutually exclusive with `providers`
-                Defaults to False.
-            device_ids (Optional[list[int]], optional): The list of device ids to use for data parallel processing in
-                workers. Should be used with `cuda=True`, mutually exclusive with `providers`. Defaults to None.
-            lazy_load (bool, optional): Whether to load the model during class initialization or on demand.
-                Should be set to True when using multiple-gpu and parallel encoding. Defaults to False.
-            device_id (Optional[int], optional): The device id to use for loading the model in the worker process.
-            specific_model_path (Optional[str], optional): The specific path to the onnx model dir if it should be imported from somewhere else
-
-        Raises:
-            ValueError: If the model_name is not in the format <org>/<model> e.g. Xenova/ms-marco-MiniLM-L-6-v2.
+        Initializes an ONNX-based cross-encoder model for text re-ranking.
+        
+        Configures model selection, caching, threading, device assignment, ONNX runtime providers, and model loading behavior. Downloads and prepares the ONNX model for inference, with support for custom model paths and lazy loading. Raises a ValueError if the model name format is invalid.
         """
         super().__init__(model_name, cache_dir, threads, **kwargs)
         self.providers = providers
@@ -181,6 +165,17 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
         parallel: Optional[int] = None,
         **kwargs: Any,
     ) -> Iterable[float]:
+        """
+        Reranks pairs of texts using the ONNX cross-encoder model.
+        
+        Args:
+            pairs: An iterable of (query, document) string tuples to be scored.
+            batch_size: Number of pairs to process in each batch. Defaults to 64.
+            parallel: Optional number of parallel workers for processing.
+        
+        Yields:
+            Relevance scores as floats for each input pair, in order.
+        """
         yield from self._rerank_pairs(
             model_name=self.model_name,
             cache_dir=str(self.cache_dir),

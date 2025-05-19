@@ -69,27 +69,22 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         **kwargs: Any,
     ):
         """
+        Initializes the Bm42 sparse embedding model with specified configuration.
+        
         Args:
-            model_name (str): The name of the model to use.
-            cache_dir (str, optional): The path to the cache directory.
-                                       Can be set using the `FASTEMBED_CACHE_PATH` env variable.
-                                       Defaults to `fastembed_cache` in the system's temp directory.
-            threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
-            providers (Optional[Sequence[OnnxProvider]], optional): The providers to use for onnxruntime.
-            alpha (float, optional): Parameter, that defines the importance of the token weight in the document
-                versus the importance of the token frequency in the corpus. Defaults to 0.5, based on empirical testing.
-                It is recommended to only change this parameter based on training data for a specific dataset.
-            cuda (bool, optional): Whether to use cuda for inference. Mutually exclusive with `providers`
-                Defaults to False.
-            device_ids (Optional[list[int]], optional): The list of device ids to use for data parallel processing in
-                workers. Should be used with `cuda=True`, mutually exclusive with `providers`. Defaults to None.
-            lazy_load (bool, optional): Whether to load the model during class initialization or on demand.
-                Should be set to True when using multiple-gpu and parallel encoding. Defaults to False.
-            device_id (Optional[int], optional): The device id to use for loading the model in the worker process.
-            specific_model_path (Optional[str], optional): The specific path to the onnx model dir if it should be imported from somewhere else
-
+            model_name: Name of the model to use.
+            cache_dir: Optional path to the cache directory.
+            threads: Optional number of threads for ONNX runtime.
+            providers: Optional ONNX runtime providers.
+            alpha: Controls the importance of token weight versus token frequency in scoring.
+            cuda: Whether to use CUDA for inference.
+            device_ids: Optional list of device IDs for parallel processing.
+            lazy_load: If True, delays model loading until first use.
+            device_id: Optional device ID for model loading in the current process.
+            specific_model_path: Optional path to a specific ONNX model directory.
+        
         Raises:
-            ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
+            ValueError: If the model_name is not in the format <org>/<model>.
         """
 
         super().__init__(model_name, cache_dir, threads, **kwargs)
@@ -278,19 +273,15 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         **kwargs: Any,
     ) -> Iterable[SparseEmbedding]:
         """
-        Encode a list of documents into list of embeddings.
-        We use mean pooling with attention so that the model can handle variable-length inputs.
-
+        Generates sparse embeddings for one or more documents using mean-pooled attention.
+        
         Args:
-            documents: Iterator of documents or single document to embed
-            batch_size: Batch size for encoding -- higher values will use more memory, but be faster
-            parallel:
-                If > 1, data-parallel encoding will be used, recommended for offline encoding of large datasets.
-                If 0, use all available cores.
-                If None, don't use data-parallel processing, use default onnxruntime threading instead.
-
+            documents: A single document or an iterable of documents to embed.
+            batch_size: Number of documents to process in each batch.
+            parallel: Number of parallel workers to use for encoding. If 0, uses all available cores; if None, uses default threading.
+        
         Returns:
-            List of embeddings, one per document
+            An iterable of SparseEmbedding objects, one for each input document.
         """
         yield from self._embed_documents(
             model_name=self.model_name,
