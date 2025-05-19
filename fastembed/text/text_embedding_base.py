@@ -17,7 +17,6 @@ class TextEmbeddingBase(ModelManagement[DenseModelDescription]):
         self.cache_dir = cache_dir
         self.threads = threads
         self._local_files_only = kwargs.pop("local_files_only", False)
-        self._embedding_size: Optional[int] = None
 
     def embed(
         self,
@@ -61,6 +60,6 @@ class TextEmbeddingBase(ModelManagement[DenseModelDescription]):
             yield from self.embed(query, **kwargs)
 
     @classmethod
-    def get_embedding_size(self, model_name: str) -> int:
+    def get_embedding_size(cls, model_name: str) -> int:
         """Returns embedding size of the chosen model."""
         raise NotImplementedError("Subclasses must implement this method")
