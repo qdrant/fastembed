@@ -77,6 +77,28 @@ class ImageEmbedding(ImageEmbeddingBase):
             "Please check the supported models using `ImageEmbedding.list_supported_models()`"
         )
 
+    @property
+    def embedding_size(self) -> int:
+        """
+        Get the size of the embedding.
+
+        Returns:
+            int: The size of the embedding.
+        """
+        if self._embedding_size is None:
+            descriptions = self._list_supported_models()
+            for description in descriptions:
+                if description.model.lower() == self.model_name.lower():
+                    self._embedding_size = description.dim
+                    break
+            if self._embedding_size is None:
+                model_names = [description.model for description in descriptions]
+                raise ValueError(
+                    f"Embedding size for model {self.model_name} was None. "
+                    f"Available model names: {model_names}"
+                )
+        return self._embedding_size
+
     def embed(
         self,
         images: Union[ImageInput, Iterable[ImageInput]],

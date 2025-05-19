@@ -254,3 +254,16 @@ def test_lazy_load(model_name: str):
 
     if is_ci:
         delete_model_cache(model.model._model_dir)
+
+
+def test_embedding_size():
+    is_ci = os.getenv("CI")
+    model_name = "answerdotai/answerai-colbert-small-v1"
+    model = LateInteractionTextEmbedding(model_name=model_name, lazy_load=True)
+    assert model.embedding_size == 96
+
+    model_name = "answerdotai/answerai-ColBERT-small-v1"
+    model = LateInteractionTextEmbedding(model_name=model_name, lazy_load=True)
+    assert model.embedding_size == 96
+    if is_ci:
+        delete_model_cache(model.model._model_dir)

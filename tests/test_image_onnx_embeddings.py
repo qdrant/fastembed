@@ -127,3 +127,15 @@ def test_lazy_load(model_name: str) -> None:
     assert hasattr(model.model, "model")
     if is_ci:
         delete_model_cache(model.model._model_dir)
+
+
+def test_embedding_size() -> None:
+    is_ci = os.getenv("CI")
+    model = ImageEmbedding(model_name="Qdrant/clip-ViT-B-32-vision", lazy_load=True)
+    assert model.embedding_size == 512
+
+    model = ImageEmbedding(model_name="Qdrant/clip-vit-b-32-vision", lazy_load=True)
+    assert model.embedding_size == 512
+
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
