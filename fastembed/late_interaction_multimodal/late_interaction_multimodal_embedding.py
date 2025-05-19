@@ -83,6 +83,13 @@ class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase)
             "Please check the supported models using `LateInteractionMultimodalEmbedding.list_supported_models()`"
         )
 
+    @property
+    def embedding_size(self) -> int:
+        """Get the embedding size of the current model"""
+        if self._embedding_size is None:
+            self._embedding_size = self.get_embedding_size(self.model_name)
+        return self._embedding_size
+
     @classmethod
     def get_embedding_size(cls, model_name: str) -> int:
         """Get the embedding size of the passed model
