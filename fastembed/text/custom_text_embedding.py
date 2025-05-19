@@ -77,6 +77,11 @@ class CustomTextEmbedding(OnnxTextEmbedding):
         if self._pooling == PoolingType.DISABLED:
             return embeddings
 
+        raise ValueError(
+            f"Unsupported pooling type {self._pooling}. "
+            f"Supported types are: {PoolingType.CLS}, {PoolingType.MEAN}, {PoolingType.DISABLED}."
+        )
+
     def _normalize(self, embeddings: NumpyArray) -> NumpyArray:
         return normalize(embeddings) if self._normalization else embeddings
 
