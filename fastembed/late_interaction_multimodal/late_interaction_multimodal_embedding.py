@@ -87,6 +87,9 @@ class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase)
     def get_embedding_size(cls, model_name: str) -> int:
         """Get the embedding size of the passed model
 
+        Args:
+            model_name (str): The name of the model to get embedding size for.
+
         Returns:
             int: The size of the embedding.
 
