@@ -62,7 +62,7 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
         **kwargs: Any,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
-        if model_name == "prithvida/Splade_PP_en_v1":
+        if model_name.lower() == "prithvida/Splade_PP_en_v1".lower():
             warnings.warn(
                 "The right spelling is prithivida/Splade_PP_en_v1. "
                 "Support of this name will be removed soon, please fix the model_name",
