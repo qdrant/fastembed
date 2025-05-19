@@ -120,6 +120,8 @@ class OnnxMultimodalModel(OnnxModel[T]):
         providers: Optional[Sequence[OnnxProvider]] = None,
         cuda: bool = False,
         device_ids: Optional[list[int]] = None,
+        local_files_only: bool = False,
+        specific_model_path: Optional[str] = None,
         **kwargs: Any,
     ) -> Iterable[T]:
         is_small = False
@@ -146,6 +148,8 @@ class OnnxMultimodalModel(OnnxModel[T]):
                 "model_name": model_name,
                 "cache_dir": cache_dir,
                 "providers": providers,
+                "local_files_only": local_files_only,
+                "specific_model_path": specific_model_path,
                 **kwargs,
             }
 
@@ -183,6 +187,8 @@ class OnnxMultimodalModel(OnnxModel[T]):
         providers: Optional[Sequence[OnnxProvider]] = None,
         cuda: bool = False,
         device_ids: Optional[list[int]] = None,
+        local_files_only: bool = False,
+        specific_model_path: Optional[str] = None,
         **kwargs: Any,
     ) -> Iterable[T]:
         is_small = False
@@ -209,6 +215,8 @@ class OnnxMultimodalModel(OnnxModel[T]):
                 "model_name": model_name,
                 "cache_dir": cache_dir,
                 "providers": providers,
+                "local_files_only": local_files_only,
+                "specific_model_path": specific_model_path,
                 **kwargs,
             }
 

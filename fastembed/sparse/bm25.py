@@ -115,11 +115,12 @@ class Bm25(SparseTextEmbeddingBase):
         model_description = self._get_model_description(model_name)
         self.cache_dir = str(define_cache_dir(cache_dir))
 
+        self._specific_model_path = specific_model_path
         self._model_dir = self.download_model(
             model_description,
             self.cache_dir,
             local_files_only=self._local_files_only,
-            specific_model_path=specific_model_path,
+            specific_model_path=self._specific_model_path,
         )
 
         self.token_max_length = token_max_length
@@ -160,6 +161,8 @@ class Bm25(SparseTextEmbeddingBase):
         documents: Union[str, Iterable[str]],
         batch_size: int = 256,
         parallel: Optional[int] = None,
+        local_files_only: bool = False,
+        specific_model_path: Optional[str] = None,
     ) -> Iterable[SparseEmbedding]:
         is_small = False
 
@@ -188,6 +191,8 @@ class Bm25(SparseTextEmbeddingBase):
                 "language": self.language,
                 "token_max_length": self.token_max_length,
                 "disable_stemmer": self.disable_stemmer,
+                "local_files_only": local_files_only,
+                "specific_model_path": specific_model_path,
             }
             pool = ParallelWorkerPool(
                 num_workers=parallel or 1,
@@ -226,6 +231,8 @@ class Bm25(SparseTextEmbeddingBase):
             documents=documents,
             batch_size=batch_size,
             parallel=parallel,
+            local_files_only=self._local_files_only,
+            specific_model_path=self._specific_model_path,
         )
 
     def _stem(self, tokens: list[str]) -> list[str]:

@@ -95,11 +95,12 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
         self.model_description = self._get_model_description(model_name)
         self.cache_dir = str(define_cache_dir(cache_dir))
 
+        self._specific_model_path = specific_model_path
         self._model_dir = self.download_model(
             self.model_description,
             self.cache_dir,
             local_files_only=self._local_files_only,
-            specific_model_path=specific_model_path,
+            specific_model_path=self._specific_model_path,
         )
         self.mask_token_id = None
         self.pad_token_id = None
@@ -235,6 +236,8 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
             providers=self.providers,
             cuda=self.cuda,
             device_ids=self.device_ids,
+            local_files_only=self._local_files_only,
+            specific_model_path=self._specific_model_path,
             **kwargs,
         )
 
@@ -268,6 +271,8 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
             providers=self.providers,
             cuda=self.cuda,
             device_ids=self.device_ids,
+            local_files_only=self._local_files_only,
+            specific_model_path=self._specific_model_path,
             **kwargs,
         )
 
