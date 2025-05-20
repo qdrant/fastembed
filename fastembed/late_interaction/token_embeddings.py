@@ -9,7 +9,7 @@ from fastembed.late_interaction.late_interaction_embedding_base import (
 )
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
 from fastembed.text.onnx_text_model import TextEmbeddingWorker
-import numpy as np
+
 
 supported_token_embeddings_models = [
     DenseModelDescription(
