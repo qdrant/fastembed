@@ -81,3 +81,23 @@ def test_single_embedding_query():
         result = next(iter(model.embed_text(queries)))
         token_num, abridged_dim = expected_result.shape
         assert np.allclose(result[:token_num, :abridged_dim], expected_result, atol=2e-3)
+
+
+def test_get_embedding_size():
+    model_name = "Qdrant/colpali-v1.3-fp16"
+    assert LateInteractionMultimodalEmbedding.get_embedding_size(model_name) == 128
+
+    model_name = "Qdrant/ColPali-v1.3-fp16"
+    assert LateInteractionMultimodalEmbedding.get_embedding_size(model_name) == 128
+
+
+def test_embedding_size():
+    if os.getenv("CI"):
+        pytest.skip("Colpali is too large to test in CI")
+    model_name = "Qdrant/colpali-v1.3-fp16"
+    model = LateInteractionMultimodalEmbedding(model_name=model_name, lazy_load=True)
+    assert model.embedding_size == 128
+
+    model_name = "Qdrant/ColPali-v1.3-fp16"
+    model = LateInteractionMultimodalEmbedding(model_name=model_name, lazy_load=True)
+    assert model.embedding_size == 128

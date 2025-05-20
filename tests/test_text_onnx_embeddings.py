@@ -156,3 +156,22 @@ def test_lazy_load(model_name: str) -> None:
 
     if is_ci:
         delete_model_cache(model.model._model_dir)
+
+
+def test_get_embedding_size() -> None:
+    assert TextEmbedding.get_embedding_size("sentence-transformers/all-MiniLM-L6-v2") == 384
+    assert TextEmbedding.get_embedding_size("sentence-transformers/all-minilm-l6-v2") == 384
+
+
+def test_embedding_size() -> None:
+    is_ci = os.getenv("CI")
+    model_name = "sentence-transformers/all-MiniLM-L6-v2"
+    model = TextEmbedding(model_name=model_name, lazy_load=True)
+    assert model.embedding_size == 384
+
+    model_name = "sentence-transformers/all-minilm-l6-v2"
+    model = TextEmbedding(model_name=model_name, lazy_load=True)
+    assert model.embedding_size == 384
+
+    if is_ci:
+        delete_model_cache(model.model._model_dir)

@@ -19,6 +19,7 @@ class LateInteractionMultimodalEmbeddingBase(ModelManagement[DenseModelDescripti
         self.cache_dir = cache_dir
         self.threads = threads
         self._local_files_only = kwargs.pop("local_files_only", False)
+        self._embedding_size: Optional[int] = None
 
     def embed_text(
         self,
@@ -65,3 +66,13 @@ class LateInteractionMultimodalEmbeddingBase(ModelManagement[DenseModelDescripti
             List of embeddings, one per image
         """
         raise NotImplementedError()
+
+    @classmethod
+    def get_embedding_size(cls, model_name: str) -> int:
+        """Returns embedding size of the chosen model."""
+        raise NotImplementedError("Subclasses must implement this method")
+
+    @property
+    def embedding_size(self) -> int:
+        """Returns embedding size for the current model"""
+        raise NotImplementedError("Subclasses must implement this method")
