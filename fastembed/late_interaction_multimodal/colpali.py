@@ -175,7 +175,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
     ) -> dict[str, NumpyArray]:
         onnx_input["input_ids"] = np.array(
             [
-                self.QUERY_MARKER_TOKEN_ID + input_ids[2:].tolist()
+                self.QUERY_MARKER_TOKEN_ID + input_ids[2:].tolist()  # type: ignore[index]
                 for input_ids in onnx_input["input_ids"]
             ]
         )
