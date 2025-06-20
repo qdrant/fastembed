@@ -98,6 +98,26 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         specific_model_path: Optional[str] = None,
         **kwargs: Any,
     ) -> Iterable[float]:
+        """
+        Reranks a sequence of text pairs using the ONNX cross-encoder model, with optional parallel processing.
+        
+        If parallel processing is enabled and the input is large, distributes batches across multiple worker processes; otherwise, processes batches in the current process. Supports additional options for model loading, including restricting to local files and specifying a model path.
+        
+        Args:
+            model_name: Name of the ONNX model to use.
+            cache_dir: Directory for model caching.
+            pairs: Iterable of (query, document) text pairs to rerank.
+            batch_size: Number of pairs per inference batch.
+            parallel: Number of worker processes to use; if None or input is small, runs in the current process.
+            providers: Optional ONNX runtime providers.
+            cuda: Whether to use CUDA-enabled devices.
+            device_ids: Optional list of device IDs for parallel workers.
+            local_files_only: If True, restricts model loading to local files only.
+            specific_model_path: Optional path to a specific model file.
+        
+        Yields:
+            Reranked scores as floats, in the same order as the input pairs.
+        """
         is_small = False
 
         if isinstance(pairs, tuple):

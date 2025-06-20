@@ -112,6 +112,26 @@ class OnnxTextModel(OnnxModel[T]):
         specific_model_path: Optional[str] = None,
         **kwargs: Any,
     ) -> Iterable[T]:
+        """
+        Embeds a collection of documents using an ONNX text model, with optional batching and parallel processing.
+        
+        Depending on the input size and parallelization settings, processes documents either sequentially or by distributing batches across multiple worker processes. Supports loading models from local files or a specific path.
+        
+        Args:
+            model_name: Name of the ONNX model to use.
+            cache_dir: Directory for caching model files.
+            documents: A string or iterable of strings representing the documents to embed.
+            batch_size: Number of documents per batch for embedding.
+            parallel: Number of parallel worker processes to use; if None or input is small, runs sequentially.
+            providers: Optional sequence of ONNX runtime providers.
+            cuda: Whether to use CUDA-enabled devices.
+            device_ids: Optional list of device IDs for parallel processing.
+            local_files_only: If True, restricts model loading to local files only.
+            specific_model_path: Optional path to a specific model file.
+        
+        Yields:
+            Embeddings for each document, in the same order as the input.
+        """
         is_small = False
 
         if isinstance(documents, str):
