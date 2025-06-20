@@ -1,9 +1,16 @@
+from enum import Enum
 from pathlib import Path
-
 from typing import Any, TypeAlias
+
 import numpy as np
 from numpy.typing import NDArray
 from PIL import Image
+
+
+class Device(str, Enum):
+    CPU = "cpu"
+    CUDA = "cuda"
+    AUTO = "auto"
 
 
 PathInput: TypeAlias = str | Path

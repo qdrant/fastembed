@@ -1,7 +1,7 @@
 from typing import Any, Iterable, Sequence, Type
 from dataclasses import asdict
 
-from fastembed.common.types import NumpyArray
+from fastembed.common.types import NumpyArray, Device
 from fastembed.common import ImageInput, OnnxProvider
 from fastembed.image.image_embedding_base import ImageEmbeddingBase
 from fastembed.image.onnx_embedding import OnnxImageEmbedding
@@ -51,7 +51,7 @@ class ImageEmbedding(ImageEmbeddingBase):
         cache_dir: str | None = None,
         threads: int | None = None,
         providers: Sequence[OnnxProvider] | None = None,
-        cuda: bool = False,
+        cuda: bool | Device = Device.AUTO,
         device_ids: list[int] | None = None,
         lazy_load: bool = False,
         **kwargs: Any,

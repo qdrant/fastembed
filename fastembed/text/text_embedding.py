@@ -2,7 +2,7 @@ import warnings
 from typing import Any, Iterable, Sequence, Type
 from dataclasses import asdict
 
-from fastembed.common.types import NumpyArray, OnnxProvider
+from fastembed.common.types import NumpyArray, OnnxProvider, Device
 from fastembed.text.clip_embedding import CLIPOnnxEmbedding
 from fastembed.text.custom_text_embedding import CustomTextEmbedding
 from fastembed.text.pooled_normalized_embedding import PooledNormalizedEmbedding
@@ -82,7 +82,7 @@ class TextEmbedding(TextEmbeddingBase):
         cache_dir: str | None = None,
         threads: int | None = None,
         providers: Sequence[OnnxProvider] | None = None,
-        cuda: bool = False,
+        cuda: bool | Device = Device.AUTO,
         device_ids: list[int] | None = None,
         lazy_load: bool = False,
         **kwargs: Any,
