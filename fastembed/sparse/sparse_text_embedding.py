@@ -2,6 +2,7 @@ from typing import Any, Iterable, Optional, Sequence, Type, Union
 from dataclasses import asdict
 
 from fastembed.common import OnnxProvider
+from fastembed.common.types import Device
 from fastembed.sparse.bm25 import Bm25
 from fastembed.sparse.bm42 import Bm42
 from fastembed.sparse.minicoil import MiniCOIL
@@ -56,7 +57,7 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
-        cuda: bool = False,
+        cuda: Union[bool, Device] = Device.AUTO,
         device_ids: Optional[list[int]] = None,
         lazy_load: bool = False,
         **kwargs: Any,

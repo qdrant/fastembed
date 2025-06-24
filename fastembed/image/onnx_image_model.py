@@ -8,7 +8,7 @@ import numpy as np
 from PIL import Image
 
 from fastembed.image.transform.operators import Compose
-from fastembed.common.types import NumpyArray
+from fastembed.common.types import NumpyArray, Device
 from fastembed.common import ImageInput, OnnxProvider
 from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
 from fastembed.common.preprocessor_utils import load_preprocessor
@@ -53,7 +53,7 @@ class OnnxImageModel(OnnxModel[T]):
         model_file: str,
         threads: Optional[int],
         providers: Optional[Sequence[OnnxProvider]] = None,
-        cuda: bool = False,
+        cuda: Union[bool, Device] = Device.AUTO,
         device_id: Optional[int] = None,
     ) -> None:
         super()._load_onnx_model(
@@ -95,7 +95,7 @@ class OnnxImageModel(OnnxModel[T]):
         batch_size: int = 256,
         parallel: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
-        cuda: bool = False,
+        cuda: Union[bool, Device] = Device.AUTO,
         device_ids: Optional[list[int]] = None,
         local_files_only: bool = False,
         specific_model_path: Optional[str] = None,

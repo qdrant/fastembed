@@ -1,7 +1,7 @@
 import os
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Iterable, Optional, Sequence, Type
+from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
 from tokenizers import Encoding
@@ -12,7 +12,7 @@ from fastembed.common.onnx_model import (
     OnnxOutputContext,
     OnnxProvider,
 )
-from fastembed.common.types import NumpyArray
+from fastembed.common.types import NumpyArray, Device
 from fastembed.common.preprocessor_utils import load_tokenizer
 from fastembed.common.utils import iter_batch
 from fastembed.parallel_processor import ParallelWorkerPool
@@ -31,7 +31,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         model_file: str,
         threads: Optional[int],
         providers: Optional[Sequence[OnnxProvider]] = None,
-        cuda: bool = False,
+        cuda: Union[bool, Device] = Device.AUTO,
         device_id: Optional[int] = None,
     ) -> None:
         super()._load_onnx_model(
@@ -92,7 +92,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         batch_size: int,
         parallel: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
-        cuda: bool = False,
+        cuda: Union[bool, Device] = Device.AUTO,
         device_ids: Optional[list[int]] = None,
         local_files_only: bool = False,
         specific_model_path: Optional[str] = None,

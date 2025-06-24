@@ -1,7 +1,7 @@
 from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 
-from fastembed.common.types import NumpyArray
+from fastembed.common.types import NumpyArray, Device
 from fastembed.common import ImageInput, OnnxProvider
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.utils import define_cache_dir, normalize
@@ -66,7 +66,7 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[NumpyArray]):
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
-        cuda: bool = False,
+        cuda: Union[bool, Device] = Device.AUTO,
         device_ids: Optional[list[int]] = None,
         lazy_load: bool = False,
         device_id: Optional[int] = None,
@@ -82,10 +82,11 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[NumpyArray]):
             threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
             providers (Optional[Sequence[OnnxProvider]], optional): The list of onnxruntime providers to use.
                 Mutually exclusive with the `cuda` and `device_ids` arguments. Defaults to None.
-            cuda (bool, optional): Whether to use cuda for inference. Mutually exclusive with `providers`
-                Defaults to False.
+            cuda (Union[bool, Device], optional): Whether to use cuda for inference. Mutually exclusive with `providers`
+                Defaults to Device.AUTO.
             device_ids (Optional[list[int]], optional): The list of device ids to use for data parallel processing in
-                workers. Should be used with `cuda=True`, mutually exclusive with `providers`. Defaults to None.
+                workers. Should be used with `cuda` equals to `True`, `Device.AUTO` or `Device.CUDA`, mutually exclusive
+                with `providers`. Defaults to None.
             lazy_load (bool, optional): Whether to load the model during class initialization or on demand.
                 Should be set to True when using multiple-gpu and parallel encoding. Defaults to False.
             device_id (Optional[int], optional): The device id to use for loading the model in the worker process.
