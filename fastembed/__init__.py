@@ -4,6 +4,7 @@ from fastembed.image import ImageEmbedding
 from fastembed.late_interaction import LateInteractionTextEmbedding
 from fastembed.late_interaction_multimodal import LateInteractionMultimodalEmbedding
 from fastembed.sparse import SparseEmbedding, SparseTextEmbedding
+from fastembed.text.muvera_embedding import MuveraEmbedding
 from fastembed.text import TextEmbedding
 
 try:
@@ -19,4 +20,5 @@ __all__ = [
     "ImageEmbedding",
     "LateInteractionTextEmbedding",
     "LateInteractionMultimodalEmbedding",
+    "MuveraEmbedding",
 ]
