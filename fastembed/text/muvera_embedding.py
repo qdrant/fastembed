@@ -305,6 +305,7 @@ class MuveraEmbedding(TextEmbeddingBase):
             k_sim (int): Number of SimHash functions (creates 2^k_sim clusters). Default: 4
             d_proj (int): Dimensionality after random projection. Default: 32
             R_reps (int): Number of random projection repetitions for robustness. Default: 10
+            random_seed (Optional[int]): Random seed for reproducibility. Default: None
             **kwargs: Additional arguments passed to the late interaction model
 
         Raises:
