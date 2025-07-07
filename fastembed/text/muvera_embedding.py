@@ -1,13 +1,5 @@
-"""
-MUVERA (Multi-Vector Retrieval Architecture) embeddings implementation.
-
-This module provides a text embedding class that combines late interaction models
-(like ColBERT) with the MUVERA algorithm to create fixed-dimensional embeddings
-from variable-length token sequences.
-"""
-
 import numpy as np
-from typing import Any, Iterable, Optional, Union, Type
+from typing import Any, Iterable, Optional, Union
 from dataclasses import asdict
 
 from fastembed.common.types import NumpyArray
