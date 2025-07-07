@@ -29,18 +29,24 @@ class SimHashProjection:
         simhash_vectors (np.ndarray): Random hyperplane normal vectors of shape (d, k_sim)
     """
 
-    def __init__(self, k_sim: int, d: int):
+    def __init__(
+        self,
+        k_sim: int,
+        d: int,
+        random_generator: np.random.Generator = np.random
+    ):
         """
         Initialize SimHash projection with random hyperplanes.
 
         Args:
             k_sim (int): Number of SimHash functions, determines 2^k_sim clusters
             d (int): Dimensionality of input vectors
+            random_generator (np.random.Generator): Random number random_generator for reproducibility
         """
         self.k_sim = k_sim
         self.d = d
         # Generate k_sim random hyperplanes (normal vectors) from standard normal distribution
-        self.simhash_vectors = np.random.normal(size=(d, k_sim))
+        self.simhash_vectors = random_generator.normal(size=(d, k_sim))
 
     def get_cluster_id(self, vector: np.ndarray) -> int:
         """
@@ -96,7 +102,14 @@ class MuveraAlgorithm:
         S_projections (np.ndarray): Random projection matrices of shape (R_reps, d, d_proj)
     """
 
-    def __init__(self, k_sim: int, d: int, d_proj: int, R_reps: int):
+    def __init__(
+        self,
+        k_sim: int,
+        d: int,
+        d_proj: int,
+        R_reps: int,
+        random_generator: np.random.Generator = np.random
+    ):
         """
         Initialize MUVERA algorithm with specified parameters.
 
@@ -105,6 +118,7 @@ class MuveraAlgorithm:
             d (int): Dimensionality of input vectors
             d_proj (int): Dimensionality after random projection (must be <= d)
             R_reps (int): Number of random projection repetitions for robustness
+            random_generator (np.random.Generator): Random number random_generator for reproducibility
 
         Raises:
             ValueError: If d_proj > d (cannot project to higher dimensionality)
@@ -117,9 +131,9 @@ class MuveraAlgorithm:
         self.d_proj = d_proj
         self.R_reps = R_reps
         # Create R_reps independent SimHash projections for robustness
-        self.simhash_projections = [SimHashProjection(k_sim=self.k_sim, d=self.d) for _ in range(R_reps)]
+        self.simhash_projections = [SimHashProjection(k_sim=self.k_sim, d=self.d, random_generator=random_generator) for _ in range(R_reps)]
         # Random projection matrices with entries from {-1, +1} for each repetition
-        self.S_projections = np.random.choice([-1, 1], size=(R_reps, d, d_proj))
+        self.S_projections = random_generator.choice([-1, 1], size=(R_reps, d, d_proj))
 
     def get_output_dimension(self) -> int:
         """
@@ -277,6 +291,7 @@ class MuveraEmbedding(TextEmbeddingBase):
         k_sim: int = 4,
         d_proj: int = 32,
         R_reps: int = 10,
+        random_seed: Optional[int] = None,
         **kwargs: Any,
     ):
         """
@@ -322,11 +337,13 @@ class MuveraEmbedding(TextEmbeddingBase):
         self.token_dim = self.late_interaction_model.embedding_size
 
         # Initialize MUVERA algorithm
+        generator = np.random.default_rng(random_seed) if random_seed is not None else np.random
         self.muvera_algorithm = MuveraAlgorithm(
             k_sim=k_sim,
             d=self.token_dim,
             d_proj=d_proj,
-            R_reps=R_reps
+            R_reps=R_reps,
+            random_generator=generator,
         )
 
         # Cache the output embedding size
