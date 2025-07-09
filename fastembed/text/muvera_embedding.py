@@ -21,12 +21,7 @@ class SimHashProjection:
         simhash_vectors (np.ndarray): Random hyperplane normal vectors of shape (d, k_sim)
     """
 
-    def __init__(
-        self,
-        k_sim: int,
-        d: int,
-        random_generator: np.random.Generator = np.random
-    ):
+    def __init__(self, k_sim: int, d: int, random_generator: np.random.Generator):
         """
         Initialize SimHash projection with random hyperplanes.
 
@@ -57,7 +52,9 @@ class SimHashProjection:
         Raises:
             AssertionError: If vector shape doesn't match expected dimensionality
         """
-        assert vector.shape == (self.d,), f"Expected vector of shape ({self.d},), got {vector.shape}"
+        assert vector.shape == (
+            self.d,
+        ), f"Expected vector of shape ({self.d},), got {vector.shape}"
 
         # Project vector onto each hyperplane normal vector
         dot_product = np.dot(vector, self.simhash_vectors)
@@ -69,7 +66,7 @@ class SimHashProjection:
         # Each bit position i contributes bit_value * 2^i to the final ID
         cluster_id = 0
         for i, bit in enumerate(binary_values):
-            cluster_id += bit * (2 ** i)
+            cluster_id += bit * (2**i)
         return cluster_id
 
 
@@ -100,7 +97,7 @@ class MuveraAlgorithm:
         d: int,
         d_proj: int,
         R_reps: int,
-        random_generator: np.random.Generator = np.random
+        random_generator: np.random.Generator,
     ):
         """
         Initialize MUVERA algorithm with specified parameters.
@@ -116,14 +113,19 @@ class MuveraAlgorithm:
             ValueError: If d_proj > d (cannot project to higher dimensionality)
         """
         if d_proj > d:
-            raise ValueError(f"Cannot project to a higher dimensionality (d_proj={d_proj} > d={d})")
+            raise ValueError(
+                f"Cannot project to a higher dimensionality (d_proj={d_proj} > d={d})"
+            )
 
         self.k_sim = k_sim
         self.d = d
         self.d_proj = d_proj
         self.R_reps = R_reps
         # Create R_reps independent SimHash projections for robustness
-        self.simhash_projections = [SimHashProjection(k_sim=self.k_sim, d=self.d, random_generator=random_generator) for _ in range(R_reps)]
+        self.simhash_projections = [
+            SimHashProjection(k_sim=self.k_sim, d=self.d, random_generator=random_generator)
+            for _ in range(R_reps)
+        ]
         # Random projection matrices with entries from {-1, +1} for each repetition
         self.S_projections = random_generator.choice([-1, 1], size=(R_reps, d, d_proj))
 
@@ -134,7 +136,7 @@ class MuveraAlgorithm:
         Returns:
             int: Output dimension (R_reps * B * d_proj) where B = 2^k_sim
         """
-        B = 2 ** self.k_sim
+        B = 2**self.k_sim
         return self.R_reps * B * self.d_proj
 
     def encode_document(self, vectors: np.ndarray) -> np.ndarray:
@@ -167,7 +169,12 @@ class MuveraAlgorithm:
         """
         return self.encode(vectors, fill_empty_clusters=False, normalize_by_count=False)
 
-    def encode(self, vectors: np.ndarray, fill_empty_clusters: bool = True, normalize_by_count: bool = True) -> np.ndarray:
+    def encode(
+        self,
+        vectors: np.ndarray,
+        fill_empty_clusters: bool = True,
+        normalize_by_count: bool = True,
+    ) -> np.ndarray:
         """
         Core encoding method that transforms variable-length vector sequences into FDEs.
 
@@ -195,13 +202,15 @@ class MuveraAlgorithm:
         Raises:
             AssertionError: If input vectors don't have expected dimensionality
         """
-        assert vectors.shape[1] == self.d, f"Expected vectors of shape (n, {self.d}), got {vectors.shape}"
+        assert (
+            vectors.shape[1] == self.d
+        ), f"Expected vectors of shape (n, {self.d}), got {vectors.shape}"
 
         # Store results from each random projection
         output_vectors = []
 
         # B is the number of clusters (2^k_sim)
-        B = 2 ** self.k_sim
+        B = 2**self.k_sim
         for projection_index, simhash in enumerate(self.simhash_projections):
             # Initialize cluster centers and count vectors assigned to each cluster
             cluster_centers = np.zeros((B, self.d))
@@ -240,7 +249,9 @@ class MuveraAlgorithm:
 
             # Apply random projection for dimensionality reduction if needed
             if self.d_proj < self.d:
-                S = self.S_projections[projection_index]  # Get projection matrix for this repetition
+                S = self.S_projections[
+                    projection_index
+                ]  # Get projection matrix for this repetition
                 projected_centers = (1 / np.sqrt(self.d_proj)) * np.dot(cluster_centers, S)
 
                 # Flatten cluster centers into a single vector and add to output
@@ -307,12 +318,12 @@ class MuveraEmbedding(TextEmbeddingBase):
 
         # Initialize the late interaction model (import locally to avoid circular imports)
         try:
-            from fastembed.late_interaction.late_interaction_text_embedding import LateInteractionTextEmbedding
+            from fastembed.late_interaction.late_interaction_text_embedding import (
+                LateInteractionTextEmbedding,
+            )
+
             self.late_interaction_model = LateInteractionTextEmbedding(
-                model_name=model_name,
-                cache_dir=cache_dir,
-                threads=threads,
-                **kwargs
+                model_name=model_name, cache_dir=cache_dir, threads=threads, **kwargs
             )
         except ValueError as e:
             raise ValueError(
@@ -330,7 +341,7 @@ class MuveraEmbedding(TextEmbeddingBase):
         self.token_dim = self.late_interaction_model.embedding_size
 
         # Initialize MUVERA algorithm
-        generator = np.random.default_rng(random_seed) if random_seed is not None else np.random
+        generator = np.random.default_rng(random_seed)
         self.muvera_algorithm = MuveraAlgorithm(
             k_sim=k_sim,
             d=self.token_dim,
@@ -340,7 +351,7 @@ class MuveraEmbedding(TextEmbeddingBase):
         )
 
         # Cache the output embedding size
-        self._embedding_size = self.muvera_algorithm.get_output_dimension()
+        self._embedding_size: int = self.muvera_algorithm.get_output_dimension()
 
     @property
     def embedding_size(self) -> int:
@@ -348,7 +359,9 @@ class MuveraEmbedding(TextEmbeddingBase):
         return self._embedding_size
 
     @classmethod
-    def get_embedding_size(cls, model_name: str, k_sim: int = 4, d_proj: int = 32, R_reps: int = 10) -> int:
+    def get_embedding_size(
+        cls, model_name: str, k_sim: int = 4, d_proj: int = 32, R_reps: int = 10
+    ) -> int:
         """
         Get the embedding size for a given model and MUVERA parameters.
 
@@ -365,7 +378,7 @@ class MuveraEmbedding(TextEmbeddingBase):
             ValueError: If the model name is not found in supported models
         """
         # Calculate MUVERA output dimension
-        B = 2 ** k_sim
+        B = 2**k_sim
         return R_reps * B * d_proj
 
     @classmethod
@@ -376,7 +389,10 @@ class MuveraEmbedding(TextEmbeddingBase):
         Returns:
             list[DenseModelDescription]: List of supported late interaction models
         """
-        from fastembed.late_interaction.late_interaction_text_embedding import LateInteractionTextEmbedding
+        from fastembed.late_interaction.late_interaction_text_embedding import (
+            LateInteractionTextEmbedding,
+        )
+
         return LateInteractionTextEmbedding._list_supported_models()
 
     @classmethod
@@ -419,10 +435,7 @@ class MuveraEmbedding(TextEmbeddingBase):
 
         # Get token-level embeddings from the late interaction model
         token_embeddings = self.late_interaction_model.embed(
-            documents=documents,
-            batch_size=batch_size,
-            parallel=parallel,
-            **kwargs
+            documents=documents, batch_size=batch_size, parallel=parallel, **kwargs
         )
 
         # Apply MUVERA algorithm to each document's token embeddings
