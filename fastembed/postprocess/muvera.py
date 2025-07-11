@@ -205,6 +205,10 @@ class MuveraPostprocessor:
         B = 2**self.k_sim
         return self.R_reps * B * self.d_proj
 
+    @property
+    def embedding_size(self) -> int:
+        return self.get_output_dimension()
+
     def process_document(self, vectors: np.ndarray) -> np.ndarray:
         """
         Encode a document's vectors into a Fixed Dimensional Encoding (FDE).
