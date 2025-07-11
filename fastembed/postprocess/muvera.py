@@ -187,8 +187,9 @@ class MuveraPostprocessor:
             >>> embeddings = model.embed(["sample text"])
             >>> fde = muvera_postprocessor.process_document(embeddings[0])
         """
+        model_desc = model._get_model_description(model.model_name)
         return cls(
-            d=model.embedding_size,
+            d=model_desc.dim,
             k_sim=k_sim,
             d_proj=d_proj,
             R_reps=R_reps,
