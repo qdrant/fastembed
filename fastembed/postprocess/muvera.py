@@ -1,6 +1,14 @@
 import numpy as np
 
 from fastembed.common.types import NumpyArray
+from fastembed.late_interaction.late_interaction_embedding_base import (
+    LateInteractionTextEmbeddingBase,
+)
+from fastembed.late_interaction_multimodal.late_interaction_multimodal_embedding_base import (
+    LateInteractionMultimodalEmbeddingBase,
+)
+
+MultiVectorModel = LateInteractionTextEmbeddingBase | LateInteractionMultimodalEmbeddingBase
 
 
 class SimHashProjection:
@@ -89,21 +97,25 @@ class MuveraPostprocessor:
 
     def __init__(
         self,
-        k_sim: int,
         d: int,
-        d_proj: int,
-        R_reps: int,
-        random_seed: np.random.Generator = 42,
+        k_sim: int = 5,
+        d_proj: int = 16,
+        R_reps: int = 20,  # noqa[naming]
+        random_seed: int = 42,
     ):
         """
         Initialize MUVERA algorithm with specified parameters.
 
         Args:
-            k_sim (int): Number of SimHash functions (creates 2^k_sim clusters)
-            d (int): Dimensionality of input vectors
-            d_proj (int): Dimensionality after random projection (must be <= d)
-            R_reps (int): Number of random projection repetitions for robustness
-            random_seed (np.random.Generator): Seed for random generator
+            d (int): Dimensionality of individual input vectors
+            k_sim (int, optional): Number of SimHash functions (creates 2^k_sim clusters).
+                                   Defaults to 5.
+            d_proj (int, optional): Dimensionality after random projection (must be <= d).
+                                    Defaults to 16.
+            R_reps (int, optional): Number of random projection repetitions for robustness.
+                                    Defaults to 20.
+            random_seed (int, optional): Seed for random number generator to ensure
+                                         reproducible results. Defaults to 42.
 
         Raises:
             ValueError: If d_proj > d (cannot project to higher dimensionality)
@@ -124,7 +136,64 @@ class MuveraPostprocessor:
             for _ in range(R_reps)
         ]
         # Random projection matrices with entries from {-1, +1} for each repetition
-        self.S_projections = random_seed.choice([-1, 1], size=(R_reps, d, d_proj))
+        self.S_projections = generator.choice([-1, 1], size=(R_reps, d, d_proj))
+
+    @classmethod
+    def from_multivector_model(
+        cls,
+        model: MultiVectorModel,
+        k_sim: int = 5,
+        d_proj: int = 16,
+        R_reps: int = 20,  # noqa[naming]
+        random_seed: int = 42,
+    ) -> "MuveraPostprocessor":
+        """
+        Create a MuveraPostprocessor instance from a multi-vector embedding model.
+
+        This class method provides a convenient way to initialize a MUVERA postprocessor
+        that is compatible with a given multi-vector model by automatically extracting
+        the embedding dimensionality from the model.
+
+        Args:
+            model (MultiVectorModel): A late interaction text or multimodal embedding model
+                                    that provides multi-vector embeddings. Must have an
+                                    `embedding_size` attribute specifying the dimensionality
+                                    of individual vectors.
+            k_sim (int, optional): Number of SimHash functions (creates 2^k_sim clusters).
+                                   Defaults to 5.
+            d_proj (int, optional): Dimensionality after random projection (must be <= model's
+                                    embedding_size). Defaults to 16.
+            R_reps (int, optional): Number of random projection repetitions for robustness.
+                                    Defaults to 20.
+            random_seed (int, optional): Seed for random number generator to ensure
+                                         reproducible results. Defaults to 42.
+
+        Returns:
+            MuveraPostprocessor: A configured MUVERA postprocessor instance ready to
+                               process embeddings from the given model.
+
+        Raises:
+            ValueError: If d_proj > model.embedding_size (cannot project to higher dimensionality)
+
+        Example:
+            >>> from fastembed.late_interaction.colbert import Colbert
+            >>> model = Colbert(model_name="colbert-ir/colbertv2.0")
+            >>> muvera_postprocessor = MuveraPostprocessor.from_multivector_model(
+            ...     model=model,
+            ...     k_sim=6,
+            ...     d_proj=32
+            ... )
+            >>> # Now use postprocessor with embeddings from the model
+            >>> embeddings = model.embed(["sample text"])
+            >>> fde = muvera_postprocessor.process_document(embeddings[0])
+        """
+        return cls(
+            d=model.embedding_size,
+            k_sim=k_sim,
+            d_proj=d_proj,
+            R_reps=R_reps,
+            random_seed=random_seed,
+        )
 
     def get_output_dimension(self) -> int:
         """
