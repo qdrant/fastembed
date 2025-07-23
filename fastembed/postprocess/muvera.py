@@ -1,3 +1,5 @@
+from typing import Union
+
 import numpy as np
 
 from fastembed.common.types import NumpyArray
@@ -8,7 +10,7 @@ from fastembed.late_interaction_multimodal.late_interaction_multimodal_embedding
     LateInteractionMultimodalEmbeddingBase,
 )
 
-MultiVectorModel = LateInteractionTextEmbeddingBase | LateInteractionMultimodalEmbeddingBase
+MultiVectorModel = Union[LateInteractionTextEmbeddingBase, LateInteractionMultimodalEmbeddingBase]
 
 
 class SimHashProjection:
