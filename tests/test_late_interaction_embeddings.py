@@ -171,6 +171,23 @@ def test_batch_embedding(model_name: str):
 
 
 @pytest.mark.parametrize("model_name", ["answerdotai/answerai-colbert-small-v1"])
+def test_batch_inference_size_same_as_single_inference(model_name: str):
+    is_ci = os.getenv("CI")
+
+    model = LateInteractionTextEmbedding(model_name=model_name)
+    docs_to_embed = [
+        "short document",
+        "A bit longer document, which should not affect the size"
+    ]
+    result = list(model.embed(docs_to_embed, batch_size=1))
+    result_2 = list(model.embed(docs_to_embed, batch_size=2))
+    assert len(result[0]) == len(result_2[0])
+
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
+
+
+@pytest.mark.parametrize("model_name", ["answerdotai/answerai-colbert-small-v1"])
 def test_single_embedding(model_name: str):
     is_ci = os.getenv("CI")
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
@@ -219,17 +236,16 @@ def test_parallel_processing(token_dim: int, model_name: str):
 
     docs = ["hello world", "flag embedding"] * 100
     embeddings = list(model.embed(docs, batch_size=10, parallel=2))
-    embeddings = np.stack(embeddings, axis=0)
 
     embeddings_2 = list(model.embed(docs, batch_size=10, parallel=None))
-    embeddings_2 = np.stack(embeddings_2, axis=0)
 
     embeddings_3 = list(model.embed(docs, batch_size=10, parallel=0))
-    embeddings_3 = np.stack(embeddings_3, axis=0)
 
-    assert embeddings.shape[0] == len(docs) and embeddings.shape[-1] == token_dim
-    assert np.allclose(embeddings, embeddings_2, atol=1e-3)
-    assert np.allclose(embeddings, embeddings_3, atol=1e-3)
+    assert len(embeddings) == len(docs) and embeddings[0].shape[-1] == token_dim
+
+    for i in range(len(embeddings)):
+        assert np.allclose(embeddings[i], embeddings_2[i], atol=1e-3)
+        assert np.allclose(embeddings[i], embeddings_3[i], atol=1e-3)
 
     if is_ci:
         delete_model_cache(model.model._model_dir)
