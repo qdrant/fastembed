@@ -246,36 +246,36 @@ pip install qdrant-client[fastembed-gpu]
 You might have to use quotes ```pip install 'qdrant-client[fastembed]'``` on zsh.
 
 ```python
-from qdrant_client import QdrantClient
+from qdrant_client import QdrantClient, models
 
 # Initialize the client
 client = QdrantClient("localhost", port=6333) # For production
-# client = QdrantClient(":memory:") # For small experiments
+# client = QdrantClient(":memory:") # For experimentation
 
-# Prepare your documents, metadata, and IDs
-docs = ["Qdrant has Langchain integrations", "Qdrant also has Llama Index integrations"]
-metadata = [
-    {"source": "Langchain-docs"},
-    {"source": "Llama-index-docs"},
+model_name = "sentence-transformers/all-MiniLM-L6-v2"
+payload = [
+    {"document": "Qdrant has Langchain integrations", "source": "Langchain-docs", },
+    {"document": "Qdrant also has Llama Index integrations", "source": "LlamaIndex-docs"},
 ]
+docs = [models.Document(text=data["document"], model=model_name) for data in payload]
 ids = [42, 2]
 
-# If you want to change the model:
-# client.set_model("sentence-transformers/all-MiniLM-L6-v2")
-# List of supported models: https://qdrant.github.io/fastembed/examples/Supported_Models
-
-# Use the new add() instead of upsert()
-# This internally calls embed() of the configured embedding model
-client.add(
-    collection_name="demo_collection",
-    documents=docs,
-    metadata=metadata,
-    ids=ids
+client.create_collection(
+    "demo_collection",
+    vectors_config=models.VectorParams(
+        size=client.get_embedding_size(model_name), distance=models.Distance.COSINE)
 )
 
-search_result = client.query(
+client.upload_collection(
     collection_name="demo_collection",
-    query_text="This is a query document"
+    vectors=docs,
+    ids=ids,
+    payload=payload,
 )
+
+search_result = client.query_points(
+    collection_name="demo_collection",
+    query=models.Document(text="This is a query document", model=model_name)
+).points
 print(search_result)
 ```
