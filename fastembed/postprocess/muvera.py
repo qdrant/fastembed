@@ -1,0 +1,338 @@
+from typing import Union
+
+import numpy as np
+
+from fastembed.common.types import NumpyArray
+from fastembed.late_interaction.late_interaction_embedding_base import (
+    LateInteractionTextEmbeddingBase,
+)
+from fastembed.late_interaction_multimodal.late_interaction_multimodal_embedding_base import (
+    LateInteractionMultimodalEmbeddingBase,
+)
+
+MultiVectorModel = Union[LateInteractionTextEmbeddingBase, LateInteractionMultimodalEmbeddingBase]
+
+
+class SimHashProjection:
+    """
+    SimHash projection component for MUVERA clustering.
+
+    This class implements locality-sensitive hashing using random hyperplanes
+    to partition the vector space into 2^k_sim clusters. Each vector is assigned
+    to a cluster based on which side of k_sim random hyperplanes it falls on.
+
+    Attributes:
+        k_sim (int): Number of SimHash functions (hyperplanes)
+        dim (int): Dimensionality of input vectors
+        simhash_vectors (np.ndarray): Random hyperplane normal vectors of shape (dim, k_sim)
+    """
+
+    def __init__(self, k_sim: int, dim: int, random_generator: np.random.Generator):
+        """
+        Initialize SimHash projection with random hyperplanes.
+
+        Args:
+            k_sim (int): Number of SimHash functions, determines 2^k_sim clusters
+            dim (int): Dimensionality of input vectors
+            random_generator (np.random.Generator): Random number generator for reproducibility
+        """
+        self.k_sim = k_sim
+        self.dim = dim
+        # Generate k_sim random hyperplanes (normal vectors) from standard normal distribution
+        self.simhash_vectors = random_generator.normal(size=(dim, k_sim))
+
+    def get_cluster_id(self, vector: np.ndarray) -> int:
+        """
+        Compute the cluster ID for a given vector using SimHash.
+
+        The cluster ID is determined by computing the dot product of the vector
+        with each hyperplane normal vector, taking the sign, and interpreting
+        the resulting binary string as an integer.
+
+        Args:
+            vector (np.ndarray): Input vector of shape (dim,)
+
+        Returns:
+            int: Cluster ID in range [0, 2^k_sim - 1]
+
+        Raises:
+            AssertionError: If a vector shape doesn't match expected dimensionality
+        """
+        assert vector.shape == (
+            self.dim,
+        ), f"Expected vector of shape ({self.dim},), got {vector.shape}"
+
+        # Project vector onto each hyperplane normal vector
+        dot_product = np.dot(vector, self.simhash_vectors)
+
+        # Apply sign function to get binary values (1 if positive, 0 if negative)
+        binary_values = (dot_product > 0).astype(int)
+        # Convert binary representation to decimal cluster ID
+        # Each bit position i contributes bit_value * 2^i to the final ID
+        cluster_id = 0
+        for i, bit in enumerate(binary_values):
+            cluster_id += bit * (2**i)
+
+        return cluster_id
+
+
+class Muvera:
+    """
+    MUVERA (Multi-Vector Retrieval Architecture) algorithm implementation.
+
+    This class creates Fixed Dimensional Encodings (FDEs) from variable-length
+    sequences of vectors by using SimHash clustering and random projections.
+    The process involves:
+    1. Clustering vectors using multiple SimHash projections
+    2. Computing cluster centers (with different strategies for docs vs queries)
+    3. Applying random projections for dimensionality reduction
+    4. Concatenating results from all projections
+
+    Attributes:
+        k_sim (int): Number of SimHash functions per projection
+        dim (int): Input vector dimensionality
+        dim_proj (int): Output dimensionality after random projection
+        r_reps (int): Number of random projection repetitions
+        simhash_projections (List[SimHashProjection]): SimHash instances for clustering
+        dim_reduction_projections (np.ndarray): Random projection matrices of shape (R_reps, d, d_proj)
+    """
+
+    def __init__(
+        self,
+        dim: int,
+        k_sim: int = 5,
+        dim_proj: int = 16,
+        r_reps: int = 20,
+        random_seed: int = 42,
+    ):
+        """
+        Initialize MUVERA algorithm with specified parameters.
+
+        Args:
+            dim (int): Dimensionality of individual input vectors
+            k_sim (int, optional): Number of SimHash functions (creates 2^k_sim clusters).
+                                   Defaults to 5.
+            dim_proj (int, optional): Dimensionality after random projection (must be <= dim).
+                                    Defaults to 16.
+            r_reps (int, optional): Number of random projection repetitions for robustness.
+                                    Defaults to 20.
+            random_seed (int, optional): Seed for random number generator to ensure
+                                         reproducible results. Defaults to 42.
+
+        Raises:
+            ValueError: If dim_proj > dim (cannot project to higher dimensionality)
+        """
+        if dim_proj > dim:
+            raise ValueError(
+                f"Cannot project to a higher dimensionality (dim_proj={dim_proj} > dim={dim})"
+            )
+
+        self.k_sim = k_sim
+        self.dim = dim
+        self.dim_proj = dim_proj
+        self.r_reps = r_reps
+        # Create r_reps independent SimHash projections for robustness
+        generator = np.random.default_rng(random_seed)
+        self.simhash_projections = [
+            SimHashProjection(k_sim=self.k_sim, dim=self.dim, random_generator=generator)
+            for _ in range(r_reps)
+        ]
+        # Random projection matrices with entries from {-1, +1} for each repetition
+        self.dim_reduction_projections = generator.choice([-1, 1], size=(r_reps, dim, dim_proj))
+
+    @classmethod
+    def from_multivector_model(
+        cls,
+        model: MultiVectorModel,
+        k_sim: int = 5,
+        dim_proj: int = 16,
+        r_reps: int = 20,  # noqa[naming]
+        random_seed: int = 42,
+    ) -> "Muvera":
+        """
+        Create a Muvera instance from a multi-vector embedding model.
+
+        This class method provides a convenient way to initialize a MUVERA
+        that is compatible with a given multi-vector model by automatically extracting
+        the embedding dimensionality from the model.
+
+        Args:
+            model (MultiVectorModel): A late interaction text or multimodal embedding model
+                                    that provides multi-vector embeddings. Must have an
+                                    `embedding_size` attribute specifying the dimensionality
+                                    of individual vectors.
+            k_sim (int, optional): Number of SimHash functions (creates 2^k_sim clusters).
+                                   Defaults to 5.
+            dim_proj (int, optional): Dimensionality after random projection (must be <= model's
+                                    embedding_size). Defaults to 16.
+            r_reps (int, optional): Number of random projection repetitions for robustness.
+                                    Defaults to 20.
+            random_seed (int, optional): Seed for random number generator to ensure
+                                         reproducible results. Defaults to 42.
+
+        Returns:
+            Muvera: A configured MUVERA instance ready to process embeddings from the given model.
+
+        Raises:
+            ValueError: If dim_proj > model.embedding_size (cannot project to higher dimensionality)
+
+        Example:
+            >>> from fastembed import LateInteractionTextEmbedding
+            >>> model = LateInteractionTextEmbedding(model_name="colbert-ir/colbertv2.0")
+            >>> muvera = Muvera.from_multivector_model(
+            ...     model=model,
+            ...     k_sim=6,
+            ...     dim_proj=32
+            ... )
+            >>> # Now use postprocessor with embeddings from the model
+            >>> embeddings = np.array(list(model.embed(["sample text"])))
+            >>> fde = muvera.process_document(embeddings[0])
+        """
+        return cls(
+            dim=model.embedding_size,
+            k_sim=k_sim,
+            dim_proj=dim_proj,
+            r_reps=r_reps,
+            random_seed=random_seed,
+        )
+
+    def _get_output_dimension(self) -> int:
+        """
+        Get the output dimension of the MUVERA algorithm.
+
+        Returns:
+            int: Output dimension (r_reps * num_partitions * dim_proj) where b = 2^k_sim
+        """
+        num_partitions = 2**self.k_sim
+        return self.r_reps * num_partitions * self.dim_proj
+
+    @property
+    def embedding_size(self) -> int:
+        return self._get_output_dimension()
+
+    def process_document(self, vectors: NumpyArray) -> NumpyArray:
+        """
+        Encode a document's vectors into a Fixed Dimensional Encoding (FDE).
+
+        Uses document-specific settings: normalizes cluster centers by vector count
+        and fills empty clusters using Hamming distance-based selection.
+
+        Args:
+            vectors (NumpyArray): Document vectors of shape (n_tokens, dim)
+
+        Returns:
+            NumpyArray: Fixed dimensional encodings of shape (r_reps * b * dim_proj,)
+        """
+        return self.process(vectors, fill_empty_clusters=True, normalize_by_count=True)
+
+    def process_query(self, vectors: NumpyArray) -> NumpyArray:
+        """
+        Encode a query's vectors into a Fixed Dimensional Encoding (FDE).
+
+        Uses query-specific settings: no normalization by count and no empty
+        cluster filling to preserve query vector magnitudes.
+
+        Args:
+            vectors (NumpyArray]): Query vectors of shape (n_tokens, dim)
+
+        Returns:
+            NumpyArray: Fixed dimensional encoding of shape (r_reps * b * dim_proj,)
+        """
+        return self.process(vectors, fill_empty_clusters=False, normalize_by_count=False)
+
+    def process(
+        self,
+        vectors: NumpyArray,
+        fill_empty_clusters: bool = True,
+        normalize_by_count: bool = True,
+    ) -> NumpyArray:
+        """
+        Core encoding method that transforms variable-length vector sequences into FDEs.
+
+        The encoding process:
+        1. For each of r_reps random projections:
+           a. Assign vectors to clusters using SimHash
+           b. Compute cluster centers (sum of vectors in each cluster)
+           c. Optionally normalize by cluster size
+           d. Fill empty clusters using Hamming distance if requested
+           e. Apply random projection for dimensionality reduction
+           f. Flatten cluster centers into a vector
+        2. Concatenate all projection results
+
+        Args:
+            vectors (np.ndarray): Input vectors of shape (n_vectors, dim)
+            fill_empty_clusters (bool): Whether to fill empty clusters using nearest
+                                      vectors based on Hamming distance of cluster IDs
+            normalize_by_count (bool): Whether to normalize cluster centers by the
+                                     number of vectors assigned to each cluster
+
+        Returns:
+            np.ndarray: Fixed dimensional encoding of shape (r_reps * b * dim_proj)
+                        where B = 2^k_sim is the number of clusters
+
+        Raises:
+            AssertionError: If input vectors don't have expected dimensionality
+        """
+        assert (
+            vectors.shape[1] == self.dim
+        ), f"Expected vectors of shape (n, {self.dim}), got {vectors.shape}"
+
+        # Store results from each random projection
+        output_vectors = []
+
+        # num of space partitions in SimHash
+        num_partitions = 2**self.k_sim
+        for projection_index, simhash in enumerate(self.simhash_projections):
+            # Initialize cluster centers and count vectors assigned to each cluster
+            cluster_centers = np.zeros((num_partitions, self.dim))
+            cluster_vector_counts = np.zeros(num_partitions)
+
+            # Assign each vector to its cluster and accumulate cluster centers
+            for vector in vectors:
+                cluster_id = simhash.get_cluster_id(vector)  # type: ignore
+                cluster_centers[cluster_id] += vector
+                cluster_vector_counts[cluster_id] += 1
+
+            # Normalize cluster centers by the number of vectors (for documents)
+            if normalize_by_count:
+                for i in range(num_partitions):
+                    if cluster_vector_counts[i] == 0:
+                        continue  # Skip empty clusters
+                    cluster_centers[i] /= cluster_vector_counts[i]
+
+            # Fill empty clusters using vectors with minimum Hamming distance
+            if fill_empty_clusters:
+                for i in range(num_partitions):
+                    if cluster_vector_counts[i] == 0:  # Empty cluster found
+                        min_hamming = float("inf")
+                        best_vector = None
+                        # Find vector whose cluster ID has minimum Hamming distance to i
+                        for vector in vectors:
+                            vector_cluster_id = simhash.get_cluster_id(vector)  # type: ignore
+                            # Hamming distance = number of differing bits in binary representation
+                            hamming_dist = bin(i ^ vector_cluster_id).count("1")
+                            if hamming_dist < min_hamming:
+                                min_hamming = hamming_dist
+                                best_vector = vector
+                        # Assign the best matching vector to the empty cluster
+                        if best_vector is not None:
+                            cluster_centers[i] = best_vector
+
+            # Apply random projection for dimensionality reduction if needed
+            if self.dim_proj < self.dim:
+                dim_reduction_projection = self.dim_reduction_projections[
+                    projection_index
+                ]  # Get projection matrix for this repetition
+                projected_centers = (1 / np.sqrt(self.dim_proj)) * np.dot(
+                    cluster_centers, dim_reduction_projection
+                )
+
+                # Flatten cluster centers into a single vector and add to output
+                output_vectors.append(projected_centers.flatten())
+                continue
+
+            # If no projection needed (dim_proj == dim), use original cluster centers
+            output_vectors.append(cluster_centers.flatten())
+
+        # Concatenate results from all R_reps projections into final FDE
+        return np.concatenate(output_vectors)
