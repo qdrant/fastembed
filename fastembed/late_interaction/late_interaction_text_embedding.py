@@ -2,7 +2,7 @@ from typing import Any, Iterable, Optional, Sequence, Type, Union
 from dataclasses import asdict
 
 from fastembed.common.model_description import DenseModelDescription
-from fastembed.common.types import NumpyArray
+from fastembed.common.types import NumpyArray, Device
 from fastembed.common import OnnxProvider
 from fastembed.late_interaction.colbert import Colbert
 from fastembed.late_interaction.jina_colbert import JinaColbert
@@ -54,7 +54,7 @@ class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
-        cuda: bool = False,
+        cuda: Union[bool, Device] = Device.AUTO,
         device_ids: Optional[list[int]] = None,
         lazy_load: bool = False,
         **kwargs: Any,

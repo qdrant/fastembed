@@ -1,3 +1,4 @@
+from enum import Enum
 from pathlib import Path
 import sys
 from PIL import Image
@@ -23,3 +24,9 @@ NumpyArray = Union[
     NDArray[np.int64],
     NDArray[np.int32],
 ]
+
+
+class Device(str, Enum):
+    CPU = "cpu"
+    CUDA = "cuda"
+    AUTO = "auto"

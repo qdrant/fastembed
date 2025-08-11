@@ -2,7 +2,7 @@ from typing import Any, Iterable, Optional, Sequence, Type, Union
 from dataclasses import asdict
 
 from fastembed.common import OnnxProvider, ImageInput
-from fastembed.common.types import NumpyArray
+from fastembed.common.types import NumpyArray, Device
 from fastembed.late_interaction_multimodal.colpali import ColPali
 
 from fastembed.late_interaction_multimodal.late_interaction_multimodal_embedding_base import (
@@ -57,7 +57,7 @@ class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase)
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
-        cuda: bool = False,
+        cuda: Union[bool, Device] = Device.AUTO,
         device_ids: Optional[list[int]] = None,
         lazy_load: bool = False,
         **kwargs: Any,

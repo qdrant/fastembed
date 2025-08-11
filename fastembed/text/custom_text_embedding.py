@@ -1,4 +1,4 @@
-from typing import Optional, Sequence, Any, Iterable
+from typing import Optional, Sequence, Any, Iterable, Union
 
 from dataclasses import dataclass
 
@@ -11,7 +11,7 @@ from fastembed.common.model_description import (
     DenseModelDescription,
 )
 from fastembed.common.onnx_model import OnnxOutputContext
-from fastembed.common.types import NumpyArray
+from fastembed.common.types import NumpyArray, Device
 from fastembed.common.utils import normalize, mean_pooling
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
 
@@ -32,7 +32,7 @@ class CustomTextEmbedding(OnnxTextEmbedding):
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
-        cuda: bool = False,
+        cuda: Union[bool, Device] = Device.AUTO,
         device_ids: Optional[list[int]] = None,
         lazy_load: bool = False,
         device_id: Optional[int] = None,

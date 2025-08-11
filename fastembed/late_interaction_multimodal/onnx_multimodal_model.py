@@ -11,7 +11,7 @@ from tokenizers import Encoding, Tokenizer
 from fastembed.common import OnnxProvider, ImageInput
 from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
 from fastembed.common.preprocessor_utils import load_tokenizer, load_preprocessor
-from fastembed.common.types import NumpyArray
+from fastembed.common.types import NumpyArray, Device
 from fastembed.common.utils import iter_batch
 from fastembed.image.transform.operators import Compose
 from fastembed.parallel_processor import ParallelWorkerPool
@@ -62,7 +62,7 @@ class OnnxMultimodalModel(OnnxModel[T]):
         model_file: str,
         threads: Optional[int],
         providers: Optional[Sequence[OnnxProvider]] = None,
-        cuda: bool = False,
+        cuda: Union[bool, Device] = Device.AUTO,
         device_id: Optional[int] = None,
     ) -> None:
         super()._load_onnx_model(
@@ -118,7 +118,7 @@ class OnnxMultimodalModel(OnnxModel[T]):
         batch_size: int = 256,
         parallel: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
-        cuda: bool = False,
+        cuda: Union[bool, Device] = Device.AUTO,
         device_ids: Optional[list[int]] = None,
         local_files_only: bool = False,
         specific_model_path: Optional[str] = None,
@@ -185,7 +185,7 @@ class OnnxMultimodalModel(OnnxModel[T]):
         batch_size: int = 256,
         parallel: Optional[int] = None,
         providers: Optional[Sequence[OnnxProvider]] = None,
-        cuda: bool = False,
+        cuda: Union[bool, Device] = Device.AUTO,
         device_ids: Optional[list[int]] = None,
         local_files_only: bool = False,
         specific_model_path: Optional[str] = None,
