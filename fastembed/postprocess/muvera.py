@@ -293,7 +293,7 @@ class Muvera:
         for projection_index, simhash in enumerate(self.simhash_projections):
             # Initialize cluster centers and count vectors assigned to each cluster
             cluster_centers = np.zeros((num_partitions, self.dim))
-            cluster_center_id_to_vectors = {
+            cluster_center_id_to_vectors: dict[int, list[int]] = {
                 cluster_center_id: [] for cluster_center_id in cluster_center_ids
             }
             cluster_vector_counts = None
@@ -310,11 +310,15 @@ class Muvera:
                 empty_mask = cluster_vector_counts == 0
 
             if normalize_by_count:
+                assert empty_mask is not None
+                assert cluster_vector_counts is not None
                 non_empty_mask = ~empty_mask
                 cluster_centers[non_empty_mask] /= cluster_vector_counts[non_empty_mask][:, None]
 
             # Fill empty clusters using vectors with minimum Hamming distance
             if fill_empty_clusters:
+                assert empty_mask is not None
+                assert precomputed_hamming_matrix is not None
                 masked_hamming = np.where(
                     empty_mask[None, :], MAX_HAMMING_DISTANCE, precomputed_hamming_matrix
                 )
@@ -348,8 +352,8 @@ class Muvera:
 
 
 if __name__ == "__main__":
-    v_arrs = v_arr = np.random.randn(10000, 100, 128)
+    v_arrs = np.random.randn(10000, 100, 128)
     muvera = Muvera(128, 4, 8, 20, 42)
 
     for v_arr in v_arrs:
-        r = muvera.process(v_arr)
+        muvera.process(v_arr)  # type: ignore
