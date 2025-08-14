@@ -293,21 +293,25 @@ class Muvera:
         for projection_index, simhash in enumerate(self.simhash_projections):
             # Initialize cluster centers and count vectors assigned to each cluster
             cluster_centers = np.zeros((num_partitions, self.dim))
+            cluster_center_id_to_vectors = {
+                cluster_center_id: [] for cluster_center_id in cluster_center_ids
+            }
             cluster_vector_counts = None
             empty_mask = None
 
             # Assign each vector to its cluster and accumulate cluster centers
             vector_cluster_ids = simhash.get_cluster_ids(vectors)
-            for idx, vec in zip(vector_cluster_ids, vectors):
-                cluster_centers[idx] += vec
+            for cluster_id, (vec_idx, vec) in zip(vector_cluster_ids, enumerate(vectors)):
+                cluster_centers[cluster_id] += vec
+                cluster_center_id_to_vectors[cluster_id].append(vec_idx)
 
             if normalize_by_count or fill_empty_clusters:
                 cluster_vector_counts = np.bincount(vector_cluster_ids, minlength=num_partitions)
                 empty_mask = cluster_vector_counts == 0
-                cluster_vector_counts[empty_mask] = 1
 
             if normalize_by_count:
-                cluster_centers /= cluster_vector_counts.reshape(-1, 1)
+                non_empty_mask = ~empty_mask
+                cluster_centers[non_empty_mask] /= cluster_vector_counts[non_empty_mask][:, None]
 
             # Fill empty clusters using vectors with minimum Hamming distance
             if fill_empty_clusters:
@@ -315,12 +319,13 @@ class Muvera:
                     empty_mask[None, :], MAX_HAMMING_DISTANCE, precomputed_hamming_matrix
                 )
                 nearest_non_empty = np.argmin(masked_hamming, axis=1)
-                cluster_centers[empty_mask] = cluster_centers[nearest_non_empty[empty_mask]]
-
-                # Nearest non-empty cluster index for each row
-                nearest_non_empty = np.argmin(masked_hamming, axis=1)
-                # Assign best matching vector to the empty clusters
-                cluster_centers[empty_mask] = cluster_centers[nearest_non_empty[empty_mask]]
+                fill_vectors = np.array(
+                    [
+                        vectors[cluster_center_id_to_vectors[cluster_id][0]]
+                        for cluster_id in nearest_non_empty[empty_mask]
+                    ]
+                ).reshape(-1, self.dim)
+                cluster_centers[empty_mask] = fill_vectors
 
             # Apply random projection for dimensionality reduction if needed
             if self.dim_proj < self.dim:
@@ -343,8 +348,6 @@ class Muvera:
 
 
 if __name__ == "__main__":
-    genran = np.random.default_rng(42)
-    sim_hash_proj = SimHashProjection(8, 128, random_generator=genran)
     v_arrs = v_arr = np.random.randn(10000, 100, 128)
     muvera = Muvera(128, 4, 8, 20, 42)
 
