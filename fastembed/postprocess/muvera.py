@@ -199,7 +199,7 @@ class Muvera:
             random_seed=random_seed,
         )
 
-    def get_output_dimension(self) -> int:
+    def _get_output_dimension(self) -> int:
         """
         Get the output dimension of the MUVERA algorithm.
 
@@ -211,7 +211,7 @@ class Muvera:
 
     @property
     def embedding_size(self) -> int:
-        return self.get_output_dimension()
+        return self._get_output_dimension()
 
     def process_document(self, vectors: NumpyArray) -> NumpyArray:
         """
