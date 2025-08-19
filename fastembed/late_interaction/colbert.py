@@ -18,7 +18,7 @@ supported_colbert_models: list[DenseModelDescription] = [
     DenseModelDescription(
         model="colbert-ir/colbertv2.0",
         dim=128,
-        description="Late interaction model",
+        description="Text embeddings, Unimodal (text), English, 512 input tokens truncation, 2023 year",
         license="mit",
         size_in_GB=0.44,
         sources=ModelSource(hf="colbert-ir/colbertv2.0"),
@@ -27,7 +27,7 @@ supported_colbert_models: list[DenseModelDescription] = [
     DenseModelDescription(
         model="answerdotai/answerai-colbert-small-v1",
         dim=96,
-        description="Text embeddings, Unimodal (text), Multilingual (~100 languages), 512 input tokens truncation, 2024 year",
+        description="Text embeddings, Unimodal (text), English, 512 input tokens truncation, 2024 year",
         license="apache-2.0",
         size_in_GB=0.13,
         sources=ModelSource(hf="answerdotai/answerai-colbert-small-v1"),
