@@ -101,6 +101,25 @@ class OnnxImageModel(OnnxModel[T]):
         specific_model_path: Optional[str] = None,
         **kwargs: Any,
     ) -> Iterable[T]:
+        """
+        Embeds images using the ONNX model, processing them sequentially or in parallel.
+        
+        Depending on the input size and the `parallel` parameter, images are embedded either in batches on the main process or distributed across multiple worker processes. Supports additional configuration for model loading and caching.
+        
+        Args:
+            model_name: Name of the ONNX model to use.
+            cache_dir: Directory for model caching.
+            images: Single image or iterable of images to embed.
+            batch_size: Number of images per batch.
+            parallel: Number of parallel worker processes to use; if None or input is small, runs sequentially.
+            cuda: Whether to use CUDA-enabled devices.
+            device_ids: List of device IDs for parallel workers.
+            local_files_only: If True, restricts model loading to local files.
+            specific_model_path: Path to a specific model file to load.
+        
+        Yields:
+            Embeddings for each input image, post-processed as defined by the subclass.
+        """
         is_small = False
 
         if isinstance(images, (str, Path, Image.Image)):

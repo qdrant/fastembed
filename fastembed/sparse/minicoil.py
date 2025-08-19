@@ -79,29 +79,12 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         **kwargs: Any,
     ):
         """
-        Args:
-            model_name (str): The name of the model to use.
-            cache_dir (str, optional): The path to the cache directory.
-                                       Can be set using the `FASTEMBED_CACHE_PATH` env variable.
-                                       Defaults to `fastembed_cache` in the system's temp directory.
-            threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
-            providers (Optional[Sequence[OnnxProvider]], optional): The providers to use for onnxruntime.
-            k (float, optional): The k parameter in the BM25 formula. Defines the saturation of the term frequency.
-                I.e. defines how fast the moment when additional terms stop to increase the score. Defaults to 1.2.
-            b (float, optional): The b parameter in the BM25 formula. Defines the importance of the document length.
-                Defaults to 0.75.
-            avg_len (float, optional): The average length of the documents in the corpus. Defaults to 150.0.
-            cuda (bool, optional): Whether to use cuda for inference. Mutually exclusive with `providers`
-                Defaults to False.
-            device_ids (Optional[list[int]], optional): The list of device ids to use for data parallel processing in
-                workers. Should be used with `cuda=True`, mutually exclusive with `providers`. Defaults to None.
-            lazy_load (bool, optional): Whether to load the model during class initialization or on demand.
-                Should be set to True when using multiple-gpu and parallel encoding. Defaults to False.
-            device_id (Optional[int], optional): The device id to use for loading the model in the worker process.
-            specific_model_path (Optional[str], optional): The specific path to the onnx model dir if it should be imported from somewhere else
-
+        Initializes a MiniCOIL sparse text embedding model with specified configuration.
+        
+        Configures model parameters, BM25 weighting options, device and threading settings, and model file paths. Downloads and prepares the model files, and loads the ONNX model immediately unless lazy loading is enabled.
+        
         Raises:
-            ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
+            ValueError: If the model name is not in the format <org>/<model> (e.g., BAAI/bge-base-en).
         """
 
         super().__init__(model_name, cache_dir, threads, **kwargs)
@@ -185,19 +168,17 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         **kwargs: Any,
     ) -> Iterable[SparseEmbedding]:
         """
-        Encode a list of documents into list of embeddings.
-        We use mean pooling with attention so that the model can handle variable-length inputs.
-
+        Generates sparse embeddings for one or more documents.
+        
+        Encodes input documents into sparse vector representations using mean pooling with attention, supporting batching and optional parallel processing.
+        
         Args:
-            documents: Iterator of documents or single document to embed
-            batch_size: Batch size for encoding -- higher values will use more memory, but be faster
-            parallel:
-                If > 1, data-parallel encoding will be used, recommended for offline encoding of large datasets.
-                If 0, use all available cores.
-                If None, don't use data-parallel processing, use default onnxruntime threading instead.
-
+            documents: A single document or an iterable of documents to embed.
+            batch_size: Number of documents to process per batch.
+            parallel: Number of parallel workers to use; if 0, uses all available cores.
+        
         Returns:
-            List of embeddings, one per document
+            An iterable of sparse embeddings, one for each input document.
         """
         yield from self._embed_documents(
             model_name=self.model_name,
@@ -221,7 +202,13 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         self, query: Union[str, Iterable[str]], **kwargs: Any
     ) -> Iterable[SparseEmbedding]:
         """
-        Encode a list of queries into list of embeddings.
+        Encodes queries into sparse embeddings suitable for retrieval tasks.
+        
+        Args:
+            query: A single query string or an iterable of query strings.
+        
+        Yields:
+            Sparse embeddings representing each input query.
         """
         yield from self._embed_documents(
             model_name=self.model_name,
