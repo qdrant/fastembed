@@ -10,7 +10,25 @@ from fastembed.late_interaction_multimodal.late_interaction_multimodal_embedding
     LateInteractionMultimodalEmbeddingBase,
 )
 
+
 MultiVectorModel = Union[LateInteractionTextEmbeddingBase, LateInteractionMultimodalEmbeddingBase]
+MAX_HAMMING_DISTANCE = 65  # 64 bits + 1
+POPCOUNT_LUT = np.array([bin(x).count("1") for x in range(256)], dtype=np.uint8)
+
+
+def hamming_distance_matrix(ids: np.ndarray) -> np.ndarray:
+    """Compute full Hamming distance matrix
+
+    Args:
+    ids: shape (n,) - array of ids, only size of the array matters
+
+    Return:
+        np.ndarray (n, n) - hamming distance matrix
+    """
+    n = len(ids)
+    xor_vals = np.bitwise_xor(ids[:, None], ids[None, :])  # (n, n) uint64
+    bytes_view = xor_vals.view(np.uint8).reshape(n, n, 8)  # (n, n, 8)
+    return POPCOUNT_LUT[bytes_view].sum(axis=2)
 
 
 class SimHashProjection:
@@ -41,39 +59,28 @@ class SimHashProjection:
         # Generate k_sim random hyperplanes (normal vectors) from standard normal distribution
         self.simhash_vectors = random_generator.normal(size=(dim, k_sim))
 
-    def get_cluster_id(self, vector: np.ndarray) -> int:
+    def get_cluster_ids(self, vectors: np.ndarray) -> np.ndarray:
         """
-        Compute the cluster ID for a given vector using SimHash.
+        Compute the cluster IDs for a given vector using SimHash.
 
         The cluster ID is determined by computing the dot product of the vector
         with each hyperplane normal vector, taking the sign, and interpreting
         the resulting binary string as an integer.
 
         Args:
-            vector (np.ndarray): Input vector of shape (dim,)
+            vectors (np.ndarray): Input vectors of shape (n, dim,)
 
         Returns:
-            int: Cluster ID in range [0, 2^k_sim - 1]
+            np.ndarray: Cluster IDs in range [0, 2^k_sim - 1]
 
         Raises:
             AssertionError: If a vector shape doesn't match expected dimensionality
         """
-        assert vector.shape == (
-            self.dim,
-        ), f"Expected vector of shape ({self.dim},), got {vector.shape}"
-
-        # Project vector onto each hyperplane normal vector
-        dot_product = np.dot(vector, self.simhash_vectors)
-
-        # Apply sign function to get binary values (1 if positive, 0 if negative)
-        binary_values = (dot_product > 0).astype(int)
-        # Convert binary representation to decimal cluster ID
-        # Each bit position i contributes bit_value * 2^i to the final ID
-        cluster_id = 0
-        for i, bit in enumerate(binary_values):
-            cluster_id += bit * (2**i)
-
-        return cluster_id
+        dot_product = (
+            vectors @ self.simhash_vectors
+        )  # (token_num, dim) x (dim, k_sim) -> (token_num, k_sim)
+        cluster_ids = (dot_product > 0) @ (1 << np.arange(self.k_sim))
+        return cluster_ids
 
 
 class Muvera:
@@ -93,6 +100,7 @@ class Muvera:
         dim (int): Input vector dimensionality
         dim_proj (int): Output dimensionality after random projection
         r_reps (int): Number of random projection repetitions
+        random_seed (int): Random seed for consistent random matrix generation
         simhash_projections (List[SimHashProjection]): SimHash instances for clustering
         dim_reduction_projections (np.ndarray): Random projection matrices of shape (R_reps, d, d_proj)
     """
@@ -282,49 +290,59 @@ class Muvera:
 
         # num of space partitions in SimHash
         num_partitions = 2**self.k_sim
+        cluster_center_ids = np.arange(num_partitions)
+        precomputed_hamming_matrix = (
+            hamming_distance_matrix(cluster_center_ids) if fill_empty_clusters else None
+        )
+
         for projection_index, simhash in enumerate(self.simhash_projections):
             # Initialize cluster centers and count vectors assigned to each cluster
             cluster_centers = np.zeros((num_partitions, self.dim))
-            cluster_vector_counts = np.zeros(num_partitions)
+            cluster_center_id_to_vectors: dict[int, list[int]] = {
+                cluster_center_id: [] for cluster_center_id in cluster_center_ids
+            }
+            cluster_vector_counts = None
+            empty_mask = None
 
             # Assign each vector to its cluster and accumulate cluster centers
-            for vector in vectors:
-                cluster_id = simhash.get_cluster_id(vector)  # type: ignore
-                cluster_centers[cluster_id] += vector
-                cluster_vector_counts[cluster_id] += 1
+            vector_cluster_ids = simhash.get_cluster_ids(vectors)
+            for cluster_id, (vec_idx, vec) in zip(vector_cluster_ids, enumerate(vectors)):
+                cluster_centers[cluster_id] += vec
+                cluster_center_id_to_vectors[cluster_id].append(vec_idx)
 
-            # Normalize cluster centers by the number of vectors (for documents)
+            if normalize_by_count or fill_empty_clusters:
+                cluster_vector_counts = np.bincount(vector_cluster_ids, minlength=num_partitions)
+                empty_mask = cluster_vector_counts == 0
+
             if normalize_by_count:
-                for i in range(num_partitions):
-                    if cluster_vector_counts[i] == 0:
-                        continue  # Skip empty clusters
-                    cluster_centers[i] /= cluster_vector_counts[i]
+                assert empty_mask is not None
+                assert cluster_vector_counts is not None
+                non_empty_mask = ~empty_mask
+                cluster_centers[non_empty_mask] /= cluster_vector_counts[non_empty_mask][:, None]
 
             # Fill empty clusters using vectors with minimum Hamming distance
             if fill_empty_clusters:
-                for i in range(num_partitions):
-                    if cluster_vector_counts[i] == 0:  # Empty cluster found
-                        min_hamming = float("inf")
-                        best_vector = None
-                        # Find vector whose cluster ID has minimum Hamming distance to i
-                        for vector in vectors:
-                            vector_cluster_id = simhash.get_cluster_id(vector)  # type: ignore
-                            # Hamming distance = number of differing bits in binary representation
-                            hamming_dist = bin(i ^ vector_cluster_id).count("1")
-                            if hamming_dist < min_hamming:
-                                min_hamming = hamming_dist
-                                best_vector = vector
-                        # Assign the best matching vector to the empty cluster
-                        if best_vector is not None:
-                            cluster_centers[i] = best_vector
+                assert empty_mask is not None
+                assert precomputed_hamming_matrix is not None
+                masked_hamming = np.where(
+                    empty_mask[None, :], MAX_HAMMING_DISTANCE, precomputed_hamming_matrix
+                )
+                nearest_non_empty = np.argmin(masked_hamming, axis=1)
+                fill_vectors = np.array(
+                    [
+                        vectors[cluster_center_id_to_vectors[cluster_id][0]]
+                        for cluster_id in nearest_non_empty[empty_mask]
+                    ]
+                ).reshape(-1, self.dim)
+                cluster_centers[empty_mask] = fill_vectors
 
             # Apply random projection for dimensionality reduction if needed
             if self.dim_proj < self.dim:
                 dim_reduction_projection = self.dim_reduction_projections[
                     projection_index
                 ]  # Get projection matrix for this repetition
-                projected_centers = (1 / np.sqrt(self.dim_proj)) * np.dot(
-                    cluster_centers, dim_reduction_projection
+                projected_centers = (1 / np.sqrt(self.dim_proj)) * (
+                    cluster_centers @ dim_reduction_projection
                 )
 
                 # Flatten cluster centers into a single vector and add to output
@@ -336,3 +354,11 @@ class Muvera:
 
         # Concatenate results from all R_reps projections into final FDE
         return np.concatenate(output_vectors)
+
+
+if __name__ == "__main__":
+    v_arrs = np.random.randn(10, 100, 128)
+    muvera = Muvera(128, 4, 8, 20, 42)
+
+    for v_arr in v_arrs:
+        muvera.process(v_arr)  # type: ignore
