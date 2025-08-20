@@ -17,9 +17,13 @@ POPCOUNT_LUT = np.array([bin(x).count("1") for x in range(256)], dtype=np.uint8)
 
 
 def hamming_distance_matrix(ids: np.ndarray) -> np.ndarray:
-    """
-    Compute full (n, n) Hamming distance matrix
-    ids: shape (n,), dtype=uint64
+    """Compute full Hamming distance matrix
+
+    Args:
+    ids: shape (n,) - array of ids, only size of the array matters
+
+    Return:
+        np.ndarray (n, n) - hamming distance matrix
     """
     n = len(ids)
     xor_vals = np.bitwise_xor(ids[:, None], ids[None, :])  # (n, n) uint64
@@ -96,6 +100,7 @@ class Muvera:
         dim (int): Input vector dimensionality
         dim_proj (int): Output dimensionality after random projection
         r_reps (int): Number of random projection repetitions
+        random_seed (int): Random seed for consistent random matrix generation
         simhash_projections (List[SimHashProjection]): SimHash instances for clustering
         dim_reduction_projections (np.ndarray): Random projection matrices of shape (R_reps, d, d_proj)
     """
@@ -352,7 +357,7 @@ class Muvera:
 
 
 if __name__ == "__main__":
-    v_arrs = np.random.randn(10000, 100, 128)
+    v_arrs = np.random.randn(10, 100, 128)
     muvera = Muvera(128, 4, 8, 20, 42)
 
     for v_arr in v_arrs:
