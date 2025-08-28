@@ -48,24 +48,24 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
         if not is_doc:
             for embedding in output.model_output:
                 yield embedding
+        else:
+            if output.input_ids is None or output.attention_mask is None:
+                raise ValueError(
+                    "input_ids and attention_mask must be provided for document post-processing"
+                )
 
-        if output.input_ids is None or output.attention_mask is None:
-            raise ValueError(
-                "input_ids and attention_mask must be provided for document post-processing"
-            )
+            for i, token_sequence in enumerate(output.input_ids):
+                for j, token_id in enumerate(token_sequence):  # type: ignore
+                    if token_id in self.skip_list or token_id == self.pad_token_id:
+                        output.attention_mask[i, j] = 0
 
-        for i, token_sequence in enumerate(output.input_ids):
-            for j, token_id in enumerate(token_sequence):  # type: ignore
-                if token_id in self.skip_list or token_id == self.pad_token_id:
-                    output.attention_mask[i, j] = 0
+            output.model_output *= np.expand_dims(output.attention_mask, 2)
+            norm = np.linalg.norm(output.model_output, ord=2, axis=2, keepdims=True)
+            norm_clamped = np.maximum(norm, 1e-12)
+            output.model_output /= norm_clamped
 
-        output.model_output *= np.expand_dims(output.attention_mask, 2)
-        norm = np.linalg.norm(output.model_output, ord=2, axis=2, keepdims=True)
-        norm_clamped = np.maximum(norm, 1e-12)
-        output.model_output /= norm_clamped
-
-        for embedding, attention_mask in zip(output.model_output, output.attention_mask):
-            yield embedding[attention_mask == 1]
+            for embedding, attention_mask in zip(output.model_output, output.attention_mask):
+                yield embedding[attention_mask == 1]
 
     def _preprocess_onnx_input(
         self, onnx_input: dict[str, NumpyArray], is_doc: bool = True, **kwargs: Any
