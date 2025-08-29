@@ -175,10 +175,7 @@ def test_batch_inference_size_same_as_single_inference(model_name: str):
     is_ci = os.getenv("CI")
 
     model = LateInteractionTextEmbedding(model_name=model_name)
-    docs_to_embed = [
-        "short document",
-        "A bit longer document, which should not affect the size"
-    ]
+    docs_to_embed = ["short document", "A bit longer document, which should not affect the size"]
     result = list(model.embed(docs_to_embed, batch_size=1))
     result_2 = list(model.embed(docs_to_embed, batch_size=2))
     assert len(result[0]) == len(result_2[0])
@@ -199,7 +196,9 @@ def test_single_embedding(model_name: str):
 
         print("evaluating", model_name)
         model = LateInteractionTextEmbedding(model_name=model_name)
-        result = next(iter(model.embed(docs_to_embed, batch_size=6)))
+        whole_result = list(model.embed(docs_to_embed, batch_size=6))
+        assert len(whole_result) == 1
+        result = whole_result[0]
         expected_result = CANONICAL_COLUMN_VALUES[model_name]
         token_num, abridged_dim = expected_result.shape
         assert np.allclose(result[:, :abridged_dim], expected_result, atol=2e-3)
@@ -220,7 +219,9 @@ def test_single_embedding_query(model_name: str):
 
         print("evaluating", model_name)
         model = LateInteractionTextEmbedding(model_name=model_name)
-        result = next(iter(model.query_embed(queries_to_embed)))
+        whole_result = list(model.query_embed(queries_to_embed))
+        assert len(whole_result) == 1
+        result = whole_result[0]
         expected_result = CANONICAL_QUERY_VALUES[model_name]
         token_num, abridged_dim = expected_result.shape
         assert np.allclose(result[:, :abridged_dim], expected_result, atol=2e-3)
