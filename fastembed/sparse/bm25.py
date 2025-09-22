@@ -101,6 +101,23 @@ class Bm25(SparseTextEmbeddingBase):
         specific_model_path: Optional[str] = None,
         **kwargs: Any,
     ):
+        """
+        Initializes a BM25 sparse embedding model with configurable parameters.
+        
+        Args:
+            model_name: Name of the BM25 model to use.
+            cache_dir: Directory for caching model files.
+            k: BM25 term frequency saturation parameter.
+            b: BM25 document length normalization parameter.
+            avg_len: Average document length for normalization.
+            language: Language for stemming and stopword removal.
+            token_max_length: Maximum allowed token length.
+            disable_stemmer: If True, disables stemming and stopword removal.
+            specific_model_path: Path to a specific model directory, if provided.
+        
+        Raises:
+            ValueError: If the specified language is not supported.
+        """
         super().__init__(model_name, cache_dir, **kwargs)
 
         if language not in supported_languages:
@@ -164,6 +181,21 @@ class Bm25(SparseTextEmbeddingBase):
         local_files_only: bool = False,
         specific_model_path: Optional[str] = None,
     ) -> Iterable[SparseEmbedding]:
+        """
+        Embeds documents into sparse BM25 representations, supporting batching and parallel processing.
+        
+        Args:
+            model_name: Name of the BM25 model to use.
+            cache_dir: Directory for model files and cache.
+            documents: Single string or iterable of document strings to embed.
+            batch_size: Number of documents per batch for processing.
+            parallel: Number of parallel worker processes to use; if None or input is small, processes sequentially.
+            local_files_only: If True, restricts model loading to local files only.
+            specific_model_path: Optional path to a specific model directory.
+        
+        Yields:
+            SparseEmbedding objects representing the BM25 embeddings of the input documents.
+        """
         is_small = False
 
         if isinstance(documents, str):
@@ -211,19 +243,15 @@ class Bm25(SparseTextEmbeddingBase):
         **kwargs: Any,
     ) -> Iterable[SparseEmbedding]:
         """
-        Encode a list of documents into list of embeddings.
-        We use mean pooling with attention so that the model can handle variable-length inputs.
-
+        Embeds one or more documents as sparse BM25 vectors.
+        
         Args:
-            documents: Iterator of documents or single document to embed
-            batch_size: Batch size for encoding -- higher values will use more memory, but be faster
-            parallel:
-                If > 1, data-parallel encoding will be used, recommended for offline encoding of large datasets.
-                If 0, use all available cores.
-                If None, don't use data-parallel processing, use default onnxruntime threading instead.
-
+            documents: A single document or an iterable of documents to embed.
+            batch_size: Number of documents to process per batch.
+            parallel: Number of worker processes to use for parallel embedding. If 0, uses all available cores; if None, runs sequentially.
+        
         Returns:
-            List of embeddings, one per document
+            An iterable of SparseEmbedding objects, one per input document.
         """
         yield from self._embed_documents(
             model_name=self.model_name,
@@ -236,6 +264,11 @@ class Bm25(SparseTextEmbeddingBase):
         )
 
     def _stem(self, tokens: list[str]) -> list[str]:
+        """
+        Filters and stems a list of tokens by removing punctuation, stopwords, and overly long tokens.
+        
+        Tokens are lowercased, filtered, and optionally stemmed based on the model's configuration.
+        """
         stemmed_tokens: list[str] = []
         for token in tokens:
             lower_token = token.lower()

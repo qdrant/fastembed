@@ -57,24 +57,9 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
         **kwargs: Any,
     ):
         """
-        Args:
-            model_name (str): The name of the model to use.
-            cache_dir (str, optional): The path to the cache directory.
-                                       Can be set using the `FASTEMBED_CACHE_PATH` env variable.
-                                       Defaults to `fastembed_cache` in the system's temp directory.
-            threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
-            providers (Optional[Sequence[OnnxProvider]], optional): The list of onnxruntime providers to use.
-                Mutually exclusive with the `cuda` and `device_ids` arguments. Defaults to None.
-            cuda (bool, optional): Whether to use cuda for inference. Mutually exclusive with `providers`
-                Defaults to False.
-            device_ids (Optional[list[int]], optional): The list of device ids to use for data parallel processing in
-                workers. Should be used with `cuda=True`, mutually exclusive with `providers`. Defaults to None.
-            lazy_load (bool, optional): Whether to load the model during class initialization or on demand.
-                Should be set to True when using multiple-gpu and parallel encoding. Defaults to False.
-            device_id (Optional[int], optional): The device id to use for loading the model in the worker process.
-
-        Raises:
-            ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
+        Initializes the ColPali multimodal embedding model with specified configuration.
+        
+        Configures model loading, device and threading options, ONNX runtime providers, and cache directory. Supports lazy loading, CUDA acceleration, and custom model paths. Raises a ValueError if the model name format is invalid.
         """
 
         super().__init__(model_name, cache_dir, threads, **kwargs)
@@ -214,18 +199,15 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
         **kwargs: Any,
     ) -> Iterable[NumpyArray]:
         """
-        Encode a list of documents into list of embeddings.
-
+        Generates embeddings for one or more text documents.
+        
         Args:
-            documents: Iterator of documents or single document to embed
-            batch_size: Batch size for encoding -- higher values will use more memory, but be faster
-            parallel:
-                If > 1, data-parallel encoding will be used, recommended for offline encoding of large datasets.
-                If 0, use all available cores.
-                If None, don't use data-parallel processing, use default onnxruntime threading instead.
-
+            documents: A string or iterable of strings representing the documents to embed.
+            batch_size: Number of documents to process per batch.
+            parallel: Number of parallel workers to use for encoding. If 0, uses all available cores; if None, disables parallelism.
+        
         Returns:
-            List of embeddings, one per document
+            An iterable of NumPy arrays, each representing the embedding of a document.
         """
         yield from self._embed_documents(
             model_name=self.model_name,
@@ -249,18 +231,15 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
         **kwargs: Any,
     ) -> Iterable[NumpyArray]:
         """
-        Encode a list of images into list of embeddings.
-
+        Generates embeddings for one or more images.
+        
         Args:
-            images: Iterator of image paths or single image path to embed
-            batch_size: Batch size for encoding -- higher values will use more memory, but be faster
-            parallel:
-                If > 1, data-parallel encoding will be used, recommended for offline encoding of large datasets.
-                If 0, use all available cores.
-                If None, don't use data-parallel processing, use default onnxruntime threading instead.
-
+            images: A single image input or an iterable of image inputs to embed.
+            batch_size: Number of images to process per batch.
+            parallel: Number of parallel workers to use for encoding. If 0, uses all available cores; if None, disables parallel processing.
+        
         Returns:
-            List of embeddings, one per document
+            An iterable of NumPy arrays, each representing the embedding of an input image.
         """
         yield from self._embed_images(
             model_name=self.model_name,

@@ -124,6 +124,26 @@ class OnnxMultimodalModel(OnnxModel[T]):
         specific_model_path: Optional[str] = None,
         **kwargs: Any,
     ) -> Iterable[T]:
+        """
+        Embeds a collection of text documents using the ONNX model, with optional parallel processing.
+        
+        If the input is small or parallelism is not requested, processes documents in batches on the main process. Otherwise, distributes batches across parallel worker processes. Supports additional options for local file usage and specifying a model path.
+        
+        Args:
+            model_name: Name of the ONNX model to use.
+            cache_dir: Directory for model caching.
+            documents: Single string or iterable of text documents to embed.
+            batch_size: Number of documents per batch.
+            parallel: Number of parallel worker processes to use. If None or input is small, runs in the main process.
+            providers: Optional sequence of ONNX runtime providers.
+            cuda: Whether to use CUDA-enabled devices.
+            device_ids: Optional list of device IDs for parallel workers.
+            local_files_only: If True, restricts model loading to local files.
+            specific_model_path: Optional path to a specific model file.
+        
+        Yields:
+            Embeddings for each input document, in order.
+        """
         is_small = False
 
         if isinstance(documents, str):
@@ -191,6 +211,11 @@ class OnnxMultimodalModel(OnnxModel[T]):
         specific_model_path: Optional[str] = None,
         **kwargs: Any,
     ) -> Iterable[T]:
+        """
+        Embeds images using the ONNX model, with optional parallel processing.
+        
+        Processes a collection of images in batches, either sequentially or in parallel using worker processes. Supports loading models from local files only or a specific model path if specified. Yields post-processed embeddings for each image.
+        """
         is_small = False
 
         if isinstance(images, (str, Path, Image.Image)):
