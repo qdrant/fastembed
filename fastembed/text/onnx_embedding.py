@@ -107,6 +107,7 @@ supported_onnx_models: list[DenseModelDescription] = [
         size_in_GB=0.64,
         sources=ModelSource(hf="mixedbread-ai/mxbai-embed-large-v1"),
         model_file="onnx/model.onnx",
+        # Prefixes from https://huggingface.co/mixedbread-ai/mxbai-embed-large-v1#usage
         tasks={
             "query_prefix": "Represent this sentence for searching relevant passages: ",
             "passage_prefix": "",
@@ -123,6 +124,7 @@ supported_onnx_models: list[DenseModelDescription] = [
         size_in_GB=1.94,
         sources=ModelSource(hf="mixedbread-ai/deepset-mxbai-embed-de-large-v1"),
         model_file="onnx/model.onnx",
+        # Prefixes from https://huggingface.co/mixedbread-ai/deepset-mxbai-embed-de-large-v1#usage
         tasks={
             "query_prefix": "query: ",
             "passage_prefix": "passage: ",
