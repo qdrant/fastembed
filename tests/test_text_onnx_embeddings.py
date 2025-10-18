@@ -57,6 +57,9 @@ CANONICAL_VECTOR_VALUES = {
     "mixedbread-ai/mxbai-embed-large-v1": np.array(
         [0.02295546, 0.03196154, 0.016512, -0.04031524, -0.0219634]
     ),
+    "mixedbread-ai/deepset-mxbai-embed-de-large-v1": np.array(
+        [0.00574683, 0.00185086, 0.00910093, -0.03800965, 0.00805963]
+    ),
     "snowflake/snowflake-arctic-embed-xs": np.array([0.0092, 0.0619, 0.0196, 0.009, -0.0114]),
     "snowflake/snowflake-arctic-embed-s": np.array([-0.0416, -0.0867, 0.0209, 0.0554, -0.0272]),
     "snowflake/snowflake-arctic-embed-m": np.array([-0.0329, 0.0364, 0.0481, 0.0016, 0.0328]),

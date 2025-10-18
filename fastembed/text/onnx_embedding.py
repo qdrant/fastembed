@@ -109,6 +109,18 @@ supported_onnx_models: list[DenseModelDescription] = [
         model_file="onnx/model.onnx",
     ),
     DenseModelDescription(
+        model="mixedbread-ai/deepset-mxbai-embed-de-large-v1",
+        dim=1024,
+        description=(
+            "Text embeddings, Unimodal (text), German/English, 512 input tokens truncation, "
+            "Prefixes for queries/documents: necessary, 2024 year."
+        ),
+        license="apache-2.0",
+        size_in_GB=1.94,
+        sources=ModelSource(hf="mixedbread-ai/deepset-mxbai-embed-de-large-v1"),
+        model_file="onnx/model.onnx",
+    ),
+    DenseModelDescription(
         model="snowflake/snowflake-arctic-embed-xs",
         dim=384,
         description=(
