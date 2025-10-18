@@ -107,6 +107,10 @@ supported_onnx_models: list[DenseModelDescription] = [
         size_in_GB=0.64,
         sources=ModelSource(hf="mixedbread-ai/mxbai-embed-large-v1"),
         model_file="onnx/model.onnx",
+        tasks={
+            "query_prefix": "Represent this sentence for searching relevant passages: ",
+            "passage_prefix": "",
+        },
     ),
     DenseModelDescription(
         model="mixedbread-ai/deepset-mxbai-embed-de-large-v1",
@@ -119,6 +123,10 @@ supported_onnx_models: list[DenseModelDescription] = [
         size_in_GB=1.94,
         sources=ModelSource(hf="mixedbread-ai/deepset-mxbai-embed-de-large-v1"),
         model_file="onnx/model.onnx",
+        tasks={
+            "query_prefix": "query: ",
+            "passage_prefix": "passage: ",
+        },
     ),
     DenseModelDescription(
         model="snowflake/snowflake-arctic-embed-xs",
@@ -305,6 +313,50 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):
             specific_model_path=self._specific_model_path,
             **kwargs,
         )
+
+    def query_embed(self, query: Union[str, Iterable[str]], **kwargs: Any) -> Iterable[NumpyArray]:
+        """
+        Embeds queries with optional query prefix.
+
+        Args:
+            query (Union[str, Iterable[str]]): The query to embed, or an iterable e.g. list of queries.
+
+        Returns:
+            Iterable[NumpyArray]: The embeddings.
+        """
+        # Check if model has query prefix
+        query_prefix = self.model_description.tasks.get("query_prefix", "") if self.model_description.tasks else ""
+
+        # Apply prefix if specified
+        if query_prefix:
+            if isinstance(query, str):
+                query = [query_prefix + query]
+            else:
+                query = [query_prefix + q for q in query]
+        elif isinstance(query, str):
+            query = [query]
+
+        yield from self.embed(query, **kwargs)
+
+    def passage_embed(self, texts: Iterable[str], **kwargs: Any) -> Iterable[NumpyArray]:
+        """
+        Embeds passages with optional passage prefix.
+
+        Args:
+            texts (Iterable[str]): The list of texts to embed.
+            **kwargs: Additional keyword arguments to pass to the embed method.
+
+        Yields:
+            Iterable[NumpyArray]: The embeddings.
+        """
+        # Check if model has passage prefix
+        passage_prefix = self.model_description.tasks.get("passage_prefix", "") if self.model_description.tasks else ""
+
+        # Apply prefix if specified
+        if passage_prefix:
+            texts = [passage_prefix + text for text in texts]
+
+        yield from self.embed(texts, **kwargs)
 
     @classmethod
     def _get_worker_class(cls) -> Type["TextEmbeddingWorker[NumpyArray]"]:
