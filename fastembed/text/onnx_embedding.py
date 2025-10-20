@@ -291,7 +291,44 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):
         if config_path.exists():
             with open(config_path, "r") as f:
                 config = json.load(f)
-                self.lora_adaptations = config.get("lora_adaptations")
+                lora_adaptations = config.get("lora_adaptations")
+
+                # Validate lora_adaptations if present or required
+                if lora_adaptations is not None:
+                    # Validate it's a list
+                    if not isinstance(lora_adaptations, list):
+                        raise ValueError(
+                            f"Invalid config for model '{model_name}': "
+                            f"'lora_adaptations' must be a list, got {type(lora_adaptations).__name__}"
+                        )
+
+                    # Validate it's non-empty
+                    if len(lora_adaptations) == 0:
+                        raise ValueError(
+                            f"Invalid config for model '{model_name}': "
+                            f"'lora_adaptations' must be a non-empty list"
+                        )
+
+                    # Validate each item is a string
+                    for idx, item in enumerate(lora_adaptations):
+                        if not isinstance(item, str):
+                            raise ValueError(
+                                f"Invalid config for model '{model_name}': "
+                                f"'lora_adaptations[{idx}]' must be a string, got {type(item).__name__}"
+                            )
+
+                    self.lora_adaptations = lora_adaptations
+
+                # Check if model requires LoRA but config is missing or invalid
+                elif self.model_description.tasks and any(
+                    key in self.model_description.tasks
+                    for key in ["query_task", "passage_task", "available_tasks"]
+                ):
+                    raise ValueError(
+                        f"Model '{model_name}' requires task-specific LoRA adapters, "
+                        f"but 'lora_adaptations' is missing from config.json. "
+                        f"Expected a non-empty list of task names (e.g., ['retrieval.query', 'text-matching'])."
+                    )
 
         if not self.lazy_load:
             self.load_onnx_model()
