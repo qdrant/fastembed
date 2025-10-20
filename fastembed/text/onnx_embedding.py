@@ -169,7 +169,7 @@ supported_onnx_models: list[DenseModelDescription] = [
         model_file="onnx/model.onnx",
     ),
     DenseModelDescription(
-        model="Snowflake/snowflake-arctic-embed-l-v2.0",
+        model="snowflake/snowflake-arctic-embed-l-v2.0",
         dim=1024,
         tasks={
             "embedding": {
@@ -328,7 +328,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):
             Iterable[NumpyArray]: Query embeddings
         """
         # Check if model has task-specific prefixes configured
-        if hasattr(self.model_description, "tasks") and self.model_description.tasks:
+        if self.model_description.tasks:
             embedding_task = self.model_description.tasks.get("embedding", {})
             query_prefix = embedding_task.get("query_prefix", "")
 
@@ -357,7 +357,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):
             Iterable[NumpyArray]: Passage embeddings
         """
         # Check if model has task-specific prefixes configured
-        if hasattr(self.model_description, "tasks") and self.model_description.tasks:
+        if self.model_description.tasks:
             embedding_task = self.model_description.tasks.get("embedding", {})
             passage_prefix = embedding_task.get("passage_prefix", "")
 

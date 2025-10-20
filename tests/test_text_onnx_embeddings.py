@@ -64,7 +64,7 @@ CANONICAL_VECTOR_VALUES = {
         [0.0080, -0.0266, -0.0335, 0.0282, 0.0143]
     ),
     "snowflake/snowflake-arctic-embed-l": np.array([0.0189, -0.0673, 0.0183, 0.0124, 0.0146]),
-    "Snowflake/snowflake-arctic-embed-l-v2.0": np.array(
+    "snowflake/snowflake-arctic-embed-l-v2.0": np.array(
         [-0.0266, 0.0167, -0.0478, -0.0039, -0.0128]
     ),
     "Qdrant/clip-ViT-B-32-text": np.array([0.0083, 0.0103, -0.0138, 0.0199, -0.0069]),
@@ -175,6 +175,78 @@ def test_embedding_size() -> None:
     model_name = "sentence-transformers/all-minilm-l6-v2"
     model = TextEmbedding(model_name=model_name, lazy_load=True)
     assert model.embedding_size == 384
+
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
+
+
+def test_query_passage_prefix() -> None:
+    """Test that query/passage prefixes are applied correctly for models with prefix configuration."""
+    is_ci = os.getenv("CI")
+
+    # Test with Snowflake Arctic Embed L v2.0 which has query_prefix configured
+    model_name = "snowflake/snowflake-arctic-embed-l-v2.0"
+    model = TextEmbedding(model_name=model_name)
+
+    test_text = "what is fastembed?"
+
+    # Test query_embed (should apply "query: " prefix)
+    query_embedding = list(model.query_embed(test_text))
+    query_embedding_array = np.array(query_embedding)
+
+    # Test regular embed (should not apply prefix)
+    regular_embedding = list(model.embed([test_text]))
+    regular_embedding_array = np.array(regular_embedding)
+
+    # Query embeddings with prefix should differ from regular embeddings without prefix
+    assert not np.allclose(query_embedding_array, regular_embedding_array), (
+        "Query embeddings with prefix should differ from regular embeddings"
+    )
+
+    # Test passage_embed (should not apply prefix for this model)
+    passage_embedding = list(model.passage_embed([test_text]))
+    passage_embedding_array = np.array(passage_embedding)
+
+    # Passage embeddings should match regular embeddings (both without prefix)
+    assert np.allclose(passage_embedding_array, regular_embedding_array, atol=1e-5), (
+        "Passage embeddings should match regular embeddings when no passage prefix configured"
+    )
+
+    # Test with multiple queries
+    queries = ["query one", "query two"]
+    query_embeddings = list(model.query_embed(queries))
+    assert len(query_embeddings) == 2
+    assert query_embeddings[0].shape == (1024,)
+
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
+
+
+def test_prefix_backward_compatibility() -> None:
+    """Test that models without prefix configuration still work correctly."""
+    is_ci = os.getenv("CI")
+
+    # Test with a model that doesn't have prefix configuration
+    model_name = "BAAI/bge-small-en-v1.5"
+    model = TextEmbedding(model_name=model_name)
+
+    test_text = "hello world"
+
+    # All three methods should produce the same embeddings for models without prefix config
+    query_embedding = list(model.query_embed(test_text))
+    passage_embedding = list(model.passage_embed([test_text]))
+    regular_embedding = list(model.embed([test_text]))
+
+    query_array = np.array(query_embedding)
+    passage_array = np.array(passage_embedding)
+    regular_array = np.array(regular_embedding)
+
+    assert np.allclose(query_array, regular_array, atol=1e-5), (
+        "Query embed should match regular embed for models without prefix config"
+    )
+    assert np.allclose(passage_array, regular_array, atol=1e-5), (
+        "Passage embed should match regular embed for models without prefix config"
+    )
 
     if is_ci:
         delete_model_cache(model.model._model_dir)
