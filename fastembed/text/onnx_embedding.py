@@ -200,6 +200,14 @@ supported_onnx_models: list[DenseModelDescription] = [
         tasks={
             "query_task": "retrieval.query",
             "passage_task": "retrieval.passage",
+            "default_task": "text-matching",
+            "available_tasks": [
+                "retrieval.query",
+                "retrieval.passage",
+                "separation",
+                "classification",
+                "text-matching",
+            ],
         },
     ),
 ]
@@ -339,10 +347,14 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):
         if self.lora_adaptations:
             task_type = kwargs.get("task_type")
 
-            # If no task specified, use default (text-matching for general purpose)
+            # If no task specified, use default from model description or text-matching
             if not task_type:
-                # Default to text-matching if available, otherwise first task
-                task_type = "text-matching" if "text-matching" in self.lora_adaptations else self.lora_adaptations[0]
+                if self.model_description.tasks and "default_task" in self.model_description.tasks:
+                    task_type = self.model_description.tasks["default_task"]
+                elif "text-matching" in self.lora_adaptations:
+                    task_type = "text-matching"
+                else:
+                    task_type = self.lora_adaptations[0]
 
             if task_type in self.lora_adaptations:
                 task_id = np.array(self.lora_adaptations.index(task_type), dtype=np.int64)
