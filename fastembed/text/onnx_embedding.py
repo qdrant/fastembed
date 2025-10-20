@@ -1,4 +1,8 @@
+import json
+from pathlib import Path
 from typing import Any, Iterable, Optional, Sequence, Type, Union
+
+import numpy as np
 
 from fastembed.common.types import NumpyArray, OnnxProvider
 from fastembed.common.onnx_model import OnnxOutputContext
@@ -180,6 +184,24 @@ supported_onnx_models: list[DenseModelDescription] = [
         sources=ModelSource(hf="jinaai/jina-clip-v1"),
         model_file="onnx/text_model.onnx",
     ),
+    DenseModelDescription(
+        model="jinaai/jina-embeddings-v3",
+        dim=1024,
+        description=(
+            "Text embeddings, Unimodal (text), Multilingual (89+ languages), 8192 input tokens truncation, "
+            "Task-specific LoRA adapters (retrieval, classification, text-matching, clustering), "
+            "Matryoshka dimensions: 32-1024, 2024 year."
+        ),
+        license="apache-2.0",
+        size_in_GB=2.29,
+        sources=ModelSource(hf="jinaai/jina-embeddings-v3"),
+        model_file="onnx/model.onnx",
+        additional_files=["onnx/model.onnx_data"],
+        tasks={
+            "query_task": "retrieval.query",
+            "passage_task": "retrieval.passage",
+        },
+    ),
 ]
 
 
@@ -255,6 +277,14 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):
             specific_model_path=self._specific_model_path,
         )
 
+        # Load LoRA adaptations for models that support task-specific embeddings (e.g., Jina v3)
+        self.lora_adaptations: Optional[list[str]] = None
+        config_path = Path(self._model_dir) / "config.json"
+        if config_path.exists():
+            with open(config_path, "r") as f:
+                config = json.load(f)
+                self.lora_adaptations = config.get("lora_adaptations")
+
         if not self.lazy_load:
             self.load_onnx_model()
 
@@ -303,7 +333,20 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):
     ) -> dict[str, NumpyArray]:
         """
         Preprocess the onnx input.
+        Adds task_id for models with LoRA adapters (e.g., Jina v3).
         """
+        # Handle task-specific embeddings for models with LoRA adapters
+        if self.lora_adaptations:
+            task_type = kwargs.get("task_type")
+
+            # If no task specified, use default (text-matching for general purpose)
+            if not task_type:
+                # Default to text-matching if available, otherwise first task
+                task_type = "text-matching" if "text-matching" in self.lora_adaptations else self.lora_adaptations[0]
+
+            if task_type in self.lora_adaptations:
+                task_id = np.array(self.lora_adaptations.index(task_type), dtype=np.int64)
+                onnx_input["task_id"] = task_id
         return onnx_input
 
     def _post_process_onnx_output(
@@ -328,6 +371,46 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):
             cuda=self.cuda,
             device_id=self.device_id,
         )
+
+    def query_embed(self, query: Union[str, Iterable[str]], **kwargs: Any) -> Iterable[NumpyArray]:
+        """
+        Embeds queries with task-specific handling for models that support it.
+
+        Args:
+            query (Union[str, Iterable[str]]): The query to embed, or an iterable e.g. list of queries.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            Iterable[NumpyArray]: The embeddings.
+        """
+        # Use task-specific embedding for models with LoRA adapters
+        if self.model_description.tasks and "query_task" in self.model_description.tasks:
+            kwargs["task_type"] = self.model_description.tasks["query_task"]
+
+        if isinstance(query, str):
+            yield from self.embed([query], **kwargs)
+        else:
+            yield from self.embed(query, **kwargs)
+
+    def passage_embed(self, texts: Union[str, Iterable[str]], **kwargs: Any) -> Iterable[NumpyArray]:
+        """
+        Embeds passages with task-specific handling for models that support it.
+
+        Args:
+            texts (Union[str, Iterable[str]]): The text(s) to embed.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            Iterable[NumpyArray]: The embeddings.
+        """
+        # Use task-specific embedding for models with LoRA adapters
+        if self.model_description.tasks and "passage_task" in self.model_description.tasks:
+            kwargs["task_type"] = self.model_description.tasks["passage_task"]
+
+        if isinstance(texts, str):
+            yield from self.embed([texts], **kwargs)
+        else:
+            yield from self.embed(texts, **kwargs)
 
 
 class OnnxTextEmbeddingWorker(TextEmbeddingWorker[NumpyArray]):
