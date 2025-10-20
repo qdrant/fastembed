@@ -64,6 +64,9 @@ CANONICAL_VECTOR_VALUES = {
         [0.0080, -0.0266, -0.0335, 0.0282, 0.0143]
     ),
     "snowflake/snowflake-arctic-embed-l": np.array([0.0189, -0.0673, 0.0183, 0.0124, 0.0146]),
+    "Snowflake/snowflake-arctic-embed-l-v2.0": np.array(
+        [-0.0266, 0.0167, -0.0478, -0.0039, -0.0128]
+    ),
     "Qdrant/clip-ViT-B-32-text": np.array([0.0083, 0.0103, -0.0138, 0.0199, -0.0069]),
     "thenlper/gte-base": np.array([0.0038, 0.0355, 0.0181, 0.0092, 0.0654]),
     "jinaai/jina-clip-v1": np.array([-0.0862, -0.0101, -0.0056, 0.0375, -0.0472]),
