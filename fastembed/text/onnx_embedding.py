@@ -171,6 +171,12 @@ supported_onnx_models: list[DenseModelDescription] = [
     DenseModelDescription(
         model="Snowflake/snowflake-arctic-embed-l-v2.0",
         dim=1024,
+        tasks={
+            "embedding": {
+                "query_prefix": "query: ",
+                "passage_prefix": "",
+            }
+        },
         description=(
             "Text embeddings, Unimodal (text), Multilingual (74 languages), 8192 input tokens truncation, "
             "Based on XLM-RoBERTa, supports Matryoshka learning for dimension truncation, "
@@ -307,6 +313,60 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):
             specific_model_path=self._specific_model_path,
             **kwargs,
         )
+
+    def query_embed(
+        self, query: Union[str, Iterable[str]], **kwargs: Any
+    ) -> Iterable[NumpyArray]:
+        """
+        Embeds queries using the model-specific query prefix if configured.
+
+        Args:
+            query: The query or queries to embed
+            **kwargs: Additional arguments to pass to embed
+
+        Yields:
+            Iterable[NumpyArray]: Query embeddings
+        """
+        # Check if model has task-specific prefixes configured
+        if hasattr(self.model_description, "tasks") and self.model_description.tasks:
+            embedding_task = self.model_description.tasks.get("embedding", {})
+            query_prefix = embedding_task.get("query_prefix", "")
+
+            if query_prefix:
+                # Add prefix to queries
+                if isinstance(query, str):
+                    query = f"{query_prefix}{query}"
+                else:
+                    query = [f"{query_prefix}{q}" for q in query]
+
+        # Use parent implementation
+        if isinstance(query, str):
+            yield from self.embed([query], **kwargs)
+        else:
+            yield from self.embed(query, **kwargs)
+
+    def passage_embed(self, texts: Iterable[str], **kwargs: Any) -> Iterable[NumpyArray]:
+        """
+        Embeds passages using the model-specific passage prefix if configured.
+
+        Args:
+            texts: The passages to embed
+            **kwargs: Additional arguments to pass to embed
+
+        Yields:
+            Iterable[NumpyArray]: Passage embeddings
+        """
+        # Check if model has task-specific prefixes configured
+        if hasattr(self.model_description, "tasks") and self.model_description.tasks:
+            embedding_task = self.model_description.tasks.get("embedding", {})
+            passage_prefix = embedding_task.get("passage_prefix", "")
+
+            if passage_prefix:
+                # Add prefix to passages
+                texts = [f"{passage_prefix}{t}" for t in texts]
+
+        # Use parent implementation
+        yield from self.embed(texts, **kwargs)
 
     @classmethod
     def _get_worker_class(cls) -> Type["TextEmbeddingWorker[NumpyArray]"]:
