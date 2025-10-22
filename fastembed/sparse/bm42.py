@@ -16,6 +16,7 @@ from fastembed.sparse.sparse_embedding_base import (
 )
 from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
 from fastembed.common.model_description import SparseModelDescription, ModelSource
+from tokenizers import Encoding
 
 supported_bm42_models: list[SparseModelDescription] = [
     SparseModelDescription(
@@ -137,6 +138,9 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):  # type: ig
 
         if not self.lazy_load:
             self.load_onnx_model()
+
+    def tokenize(self, texts: list[str], **kwargs: Any) -> list[Encoding]:
+        return OnnxTextModel.tokenize(self, list(texts), **kwargs)
 
     def load_onnx_model(self) -> None:
         self._load_onnx_model(
