@@ -137,23 +137,20 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             device_id=self.device_id,
         )
 
-    def tokenize(self, texts: Union[str, Iterable[str]], **kwargs: Any) -> list[Encoding]:  # type: ignore[override]
+    def tokenize(self, texts: list[str], **kwargs: Any) -> list[Encoding]:  # type: ignore[override]
         """
         Tokenize input texts using the model's tokenizer.
 
         Args:
-            texts: String or list of strings to tokenize
+            texts: List of strings to tokenize
             **kwargs: Additional arguments passed to the tokenizer
 
         Returns:
             List of tokenizer Encodings
         """
-        if isinstance(texts, str):
-            texts = [texts]
-        if not isinstance(texts, list):
-            texts = list(texts)
-        assert self.tokenizer is not None
-        return self.tokenizer.encode_batch(texts)
+        if self.tokenizer is None:
+            raise RuntimeError("Tokenizer not initialized")
+        return self.tokenizer.encode_batch(texts, **kwargs)
 
     def embed(
         self,

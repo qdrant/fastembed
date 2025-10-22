@@ -93,19 +93,17 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
             "Please check the supported models using `SparseTextEmbedding.list_supported_models()`"
         )
 
-    def tokenize(self, texts: Union[str, Iterable[str]], **kwargs: Any) -> list[Encoding]:
+    def tokenize(self, texts: list[str], **kwargs: Any) -> list[Encoding]:
         """
         Tokenize input texts using the model's tokenizer.
 
         Args:
-            texts: String or list of strings to tokenize
+            texts: List of strings to tokenize
             **kwargs: Additional arguments passed to the tokenizer
 
         Returns:
             List of tokenizer Encodings
         """
-        if isinstance(texts, str):
-            texts = [texts]
         return self.model.tokenize(texts, **kwargs)
 
     def embed(

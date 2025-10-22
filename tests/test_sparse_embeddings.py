@@ -251,7 +251,7 @@ def test_tokenize(model_name: str) -> None:
     is_ci = os.getenv("CI")
     model = SparseTextEmbedding(model_name=model_name)
 
-    encodings = model.tokenize("hello world")
+    encodings = model.tokenize(["hello world"])
     assert len(encodings) == 1
     assert encodings[0].ids is not None
     assert len(encodings[0].ids) > 0
