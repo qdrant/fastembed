@@ -81,7 +81,9 @@ class OnnxMultimodalModel(OnnxModel[T]):
         raise NotImplementedError("Subclasses must implement this method")
 
     def tokenize(self, texts: list[str], **kwargs: Any) -> list[Encoding]:
-        return self.tokenizer.encode_batch(texts)  # type: ignore[union-attr]
+        if self.tokenizer is None:
+            raise RuntimeError("Tokenizer not initialized")
+        return self.tokenizer.encode_batch(texts, **kwargs)  # type: ignore[union-attr]
 
     def onnx_embed_text(
         self,

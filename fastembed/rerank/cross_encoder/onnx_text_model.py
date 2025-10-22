@@ -45,8 +45,10 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         self.tokenizer, _ = load_tokenizer(model_dir=model_dir)
         assert self.tokenizer is not None
 
-    def tokenize(self, pairs: list[tuple[str, str]], **_: Any) -> list[Encoding]:
-        return self.tokenizer.encode_batch(pairs)  # type: ignore[union-attr]
+    def tokenize(self, pairs: list[tuple[str, str]], **kwargs: Any) -> list[Encoding]:
+        if self.tokenizer is None:
+            raise RuntimeError("Tokenizer not initialized")
+        return self.tokenizer.encode_batch(pairs, **kwargs)  # type: ignore[union-attr]
 
     def _build_onnx_input(self, tokenized_input: list[Encoding]) -> dict[str, NumpyArray]:
         input_names: set[str] = {node.name for node in self.model.get_inputs()}  # type: ignore[union-attr]
