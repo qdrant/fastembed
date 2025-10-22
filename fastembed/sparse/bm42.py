@@ -44,7 +44,7 @@ def get_language_by_model_name(model_name: str) -> str:
     return MODEL_TO_LANGUAGE[model_name.lower()]
 
 
-class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
+class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):  # type: ignore[misc]
     """
     Bm42 is an extension of BM25, which tries to better evaluate importance of tokens in the documents,
     by extracting attention weights from the transformer model.

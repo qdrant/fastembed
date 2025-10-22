@@ -183,7 +183,7 @@ supported_onnx_models: list[DenseModelDescription] = [
 ]
 
 
-class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):
+class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):  # type: ignore[misc]
     """Implementation of the Flag Embedding model."""
 
     @classmethod
