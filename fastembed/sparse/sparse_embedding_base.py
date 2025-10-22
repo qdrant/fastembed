@@ -3,6 +3,7 @@ from typing import Iterable, Optional, Union, Any
 
 import numpy as np
 from numpy.typing import NDArray
+from tokenizers import Encoding
 
 from fastembed.common.model_description import SparseModelDescription
 from fastembed.common.types import NumpyArray
@@ -43,6 +44,9 @@ class SparseTextEmbeddingBase(ModelManagement[SparseModelDescription]):
         self.cache_dir = cache_dir
         self.threads = threads
         self._local_files_only = kwargs.pop("local_files_only", False)
+
+    def tokenize(self, texts: Union[str, Iterable[str]], **kwargs: Any) -> list[Encoding]:
+        raise NotImplementedError()
 
     def embed(
         self,

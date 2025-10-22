@@ -1,6 +1,8 @@
 from typing import Any, Iterable, Optional, Sequence, Type, Union
 from dataclasses import asdict
 
+from tokenizers import Encoding
+
 from fastembed.common import OnnxProvider
 from fastembed.sparse.bm25 import Bm25
 from fastembed.sparse.bm42 import Bm42
@@ -90,6 +92,21 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
             f"Model {model_name} is not supported in SparseTextEmbedding."
             "Please check the supported models using `SparseTextEmbedding.list_supported_models()`"
         )
+
+    def tokenize(self, texts: Union[str, Iterable[str]], **kwargs: Any) -> list[Encoding]:
+        """
+        Tokenize input texts using the model's tokenizer.
+
+        Args:
+            texts: String or list of strings to tokenize
+            **kwargs: Additional arguments passed to the tokenizer
+
+        Returns:
+            List of tokenizer Encodings
+        """
+        if isinstance(texts, str):
+            texts = [texts]
+        return self.model.tokenize(texts, **kwargs)
 
     def embed(
         self,

@@ -101,3 +101,23 @@ def test_embedding_size():
     model_name = "Qdrant/ColPali-v1.3-fp16"
     model = LateInteractionMultimodalEmbedding(model_name=model_name, lazy_load=True)
     assert model.embedding_size == 128
+
+
+@pytest.mark.parametrize("model_name", ["Qdrant/colpali-v1.3-fp16"])
+def test_tokenize(model_name: str) -> None:
+    if os.getenv("CI"):
+        pytest.skip("Colpali is too large to test in CI")
+
+    model = LateInteractionMultimodalEmbedding(model_name=model_name)
+
+    encodings = model.tokenize(["hello world"])
+    assert len(encodings) == 1
+    assert encodings[0].ids is not None
+    assert len(encodings[0].ids) > 0
+
+    texts = ["hello world", "flag embedding"]
+    encodings = model.tokenize(texts)
+    assert len(encodings) == 2
+    for encoding in encodings:
+        assert encoding.ids is not None
+        assert len(encoding.ids) > 0

@@ -193,3 +193,24 @@ def test_embedding_size() -> None:
 
     if is_ci:
         delete_model_cache(model.model._model_dir)
+
+
+@pytest.mark.parametrize("model_name", ["BAAI/bge-small-en-v1.5"])
+def test_tokenize(model_name: str) -> None:
+    is_ci = os.getenv("CI")
+    model = TextEmbedding(model_name=model_name)
+
+    encodings = model.tokenize("hello world")
+    assert len(encodings) == 1
+    assert encodings[0].ids is not None
+    assert len(encodings[0].ids) > 0
+
+    texts = ["hello world", "flag embedding"]
+    encodings = model.tokenize(texts)
+    assert len(encodings) == 2
+    for encoding in encodings:
+        assert encoding.ids is not None
+        assert len(encoding.ids) > 0
+
+    if is_ci:
+        delete_model_cache(model.model._model_dir)

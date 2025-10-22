@@ -1,6 +1,8 @@
 from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
+from tokenizers import Encoding
+
 from fastembed.common import OnnxProvider
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.utils import define_cache_dir
@@ -134,6 +136,21 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             cuda=self.cuda,
             device_id=self.device_id,
         )
+
+    def tokenize(self, texts: Union[str, Iterable[str]], **kwargs: Any) -> list[Encoding]:
+        """
+        Tokenize input texts using the model's tokenizer.
+
+        Args:
+            texts: String or list of strings to tokenize
+            **kwargs: Additional arguments passed to the tokenizer
+
+        Returns:
+            List of tokenizer Encodings
+        """
+        if isinstance(texts, str):
+            texts = [texts]
+        return self.tokenizer.encode_batch(texts)
 
     def embed(
         self,
