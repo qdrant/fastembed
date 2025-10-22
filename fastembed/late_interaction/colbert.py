@@ -80,7 +80,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
         )
         return onnx_input
 
-    def tokenize(self, documents: list[str], is_doc: bool = True, **kwargs: Any) -> list[Encoding]:
+    def tokenize(self, documents: list[str], is_doc: bool = True, **kwargs: Any) -> list[Encoding]:  # type: ignore[override]
         return (
             self._tokenize_documents(documents=documents)
             if is_doc
