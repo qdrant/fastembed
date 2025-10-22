@@ -51,7 +51,7 @@ MODEL_TO_LANGUAGE = {
 }
 
 
-class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
+class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):  # type: ignore[misc]
     """
         MiniCOIL is a sparse embedding model, that resolves semantic meaning of the words,
         while keeping exact keyword match behavior.

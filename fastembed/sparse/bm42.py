@@ -36,7 +36,7 @@ MODEL_TO_LANGUAGE = {
 }
 
 
-class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
+class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):  # type: ignore[misc]
     """
     Bm42 is an extension of BM25, which tries to better evaluate importance of tokens in the documents,
     by extracting attention weights from the transformer model.
