@@ -292,3 +292,24 @@ def test_embedding_size():
     assert model.embedding_size == 96
     if is_ci:
         delete_model_cache(model.model._model_dir)
+
+
+@pytest.mark.parametrize("model_name", ["colbert-ir/colbertv2.0"])
+def test_tokenize(model_name: str) -> None:
+    is_ci = os.getenv("CI")
+    model = LateInteractionTextEmbedding(model_name=model_name)
+
+    texts = ["hello world", "flag embedding"]
+    encodings = model.tokenize(texts, is_doc=True)
+    assert len(encodings) == 2
+    for encoding in encodings:
+        assert encoding.ids is not None
+        assert len(encoding.ids) > 0
+
+    encodings = model.tokenize(["hello world"], is_doc=False)
+    assert len(encodings) == 1
+    assert encodings[0].ids is not None
+    assert len(encodings[0].ids) > 0
+
+    if is_ci:
+        delete_model_cache(model.model._model_dir)

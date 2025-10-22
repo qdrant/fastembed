@@ -1,5 +1,6 @@
 from typing import Iterable, Optional, Union, Any
 
+from tokenizers import Encoding
 
 from fastembed.common import ImageInput
 from fastembed.common.model_description import DenseModelDescription
@@ -20,6 +21,9 @@ class LateInteractionMultimodalEmbeddingBase(ModelManagement[DenseModelDescripti
         self.threads = threads
         self._local_files_only = kwargs.pop("local_files_only", False)
         self._embedding_size: Optional[int] = None
+
+    def tokenize(self, texts: Union[str, Iterable[str]], **kwargs: Any) -> list[Encoding]:
+        raise NotImplementedError()
 
     def embed_text(
         self,
