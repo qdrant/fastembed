@@ -22,7 +22,7 @@ class LateInteractionMultimodalEmbeddingBase(ModelManagement[DenseModelDescripti
         self._local_files_only = kwargs.pop("local_files_only", False)
         self._embedding_size: Optional[int] = None
 
-    def tokenize(self, texts: Union[str, Iterable[str]], **kwargs: Any) -> list[Encoding]:
+    def tokenize(self, texts: list[str], **kwargs: Any) -> list[Encoding]:
         raise NotImplementedError()
 
     def embed_text(

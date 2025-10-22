@@ -321,19 +321,17 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):  # type: 
             raise ValueError(f"Unsupported embedding shape: {embeddings.shape}")
         return normalize(processed_embeddings)
 
-    def tokenize(self, texts: Union[str, Iterable[str]], **kwargs: Any) -> list[Encoding]:  # type: ignore[override]
+    def tokenize(self, texts: list[str], **kwargs: Any) -> list[Encoding]:
         """Tokenize the input texts.
 
         Args:
-            texts: A single string or an iterable of strings to tokenize.
+            texts: A list of strings to tokenize.
             **kwargs: Additional keyword arguments.
 
         Returns:
             list[Encoding]: List of tokenized encodings.
         """
-        if isinstance(texts, str):
-            texts = [texts]
-        return OnnxTextModel.tokenize(self, list(texts), **kwargs)
+        return OnnxTextModel.tokenize(self, texts, **kwargs)
 
     def load_onnx_model(self) -> None:
         self._load_onnx_model(
