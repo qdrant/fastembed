@@ -4,6 +4,8 @@ import pytest
 import numpy as np
 
 from fastembed.sparse.bm25 import Bm25
+from fastembed.sparse.bm42 import Bm42
+from fastembed.sparse.minicoil import MiniCOIL
 from fastembed.sparse.sparse_text_embedding import SparseTextEmbedding
 from tests.utils import delete_model_cache, should_test_model
 
@@ -265,3 +267,63 @@ def test_tokenize(model_name: str) -> None:
 
     if is_ci:
         delete_model_cache(model.model._model_dir)
+
+
+def test_tokenize_bm25() -> None:
+    is_ci = os.getenv("CI")
+    model = Bm25("Qdrant/bm25", language="english")
+
+    encodings = model.tokenize(["hello world"])
+    assert len(encodings) == 1
+    assert encodings[0].ids is not None
+    assert len(encodings[0].ids) > 0
+
+    texts = ["hello world", "flag embedding"]
+    encodings = model.tokenize(texts)
+    assert len(encodings) == 2
+    for encoding in encodings:
+        assert encoding.ids is not None
+        assert len(encoding.ids) > 0
+
+    if is_ci:
+        delete_model_cache(model._model_dir)
+
+
+def test_tokenize_bm42() -> None:
+    is_ci = os.getenv("CI")
+    model = Bm42("Qdrant/bm42-all-minilm-l6-v2-attentions")
+
+    encodings = model.tokenize(["hello world"])
+    assert len(encodings) == 1
+    assert encodings[0].ids is not None
+    assert len(encodings[0].ids) > 0
+
+    texts = ["hello world", "flag embedding"]
+    encodings = model.tokenize(texts)
+    assert len(encodings) == 2
+    for encoding in encodings:
+        assert encoding.ids is not None
+        assert len(encoding.ids) > 0
+
+    if is_ci:
+        delete_model_cache(model._model_dir)
+
+
+def test_tokenize_minicoil() -> None:
+    is_ci = os.getenv("CI")
+    model = MiniCOIL("Qdrant/minicoil-v1")
+
+    encodings = model.tokenize(["hello world"])
+    assert len(encodings) == 1
+    assert encodings[0].ids is not None
+    assert len(encodings[0].ids) > 0
+
+    texts = ["hello world", "flag embedding"]
+    encodings = model.tokenize(texts)
+    assert len(encodings) == 2
+    for encoding in encodings:
+        assert encoding.ids is not None
+        assert len(encoding.ids) > 0
+
+    if is_ci:
+        delete_model_cache(model._model_dir)
