@@ -185,7 +185,7 @@ supported_onnx_models: list[DenseModelDescription] = [
 ]
 
 
-class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):  # type: ignore[misc]
+class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):
     """Implementation of the Flag Embedding model."""
 
     @classmethod
@@ -321,17 +321,8 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):  # type: 
             raise ValueError(f"Unsupported embedding shape: {embeddings.shape}")
         return normalize(processed_embeddings)
 
-    def tokenize(self, texts: list[str], **kwargs: Any) -> list[Encoding]:
-        """Tokenize the input texts.
-
-        Args:
-            texts: A list of strings to tokenize.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            list[Encoding]: List of tokenized encodings.
-        """
-        return OnnxTextModel.tokenize(self, texts, **kwargs)
+    def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
+        return self._tokenize(documents, **kwargs)
 
     def load_onnx_model(self) -> None:
         self._load_onnx_model(

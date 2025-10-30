@@ -25,7 +25,7 @@ supported_token_embeddings_models = [
 ]
 
 
-class TokenEmbeddingsModel(OnnxTextEmbedding, LateInteractionTextEmbeddingBase):  # type: ignore[misc]
+class TokenEmbeddingsModel(OnnxTextEmbedding, LateInteractionTextEmbeddingBase):
     @classmethod
     def _list_supported_models(cls) -> list[DenseModelDescription]:
         """Lists the supported models.

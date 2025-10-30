@@ -58,7 +58,7 @@ def get_language_by_model_name(model_name: str) -> str:
     return MODEL_TO_LANGUAGE[model_name.lower()]
 
 
-class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):  # type: ignore[misc]
+class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
     """
         MiniCOIL is a sparse embedding model, that resolves semantic meaning of the words,
         while keeping exact keyword match behavior.
@@ -145,8 +145,8 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):  # type
         if not self.lazy_load:
             self.load_onnx_model()
 
-    def tokenize(self, texts: list[str], **kwargs: Any) -> list[Encoding]:
-        return OnnxTextModel.tokenize(self, list(texts), **kwargs)
+    def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
+        return self._tokenize(documents, **kwargs)
 
     def load_onnx_model(self) -> None:
         self._load_onnx_model(
