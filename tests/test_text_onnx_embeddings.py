@@ -177,10 +177,9 @@ def test_embedding_size() -> None:
         delete_model_cache(model.model._model_dir)
 
 
-@pytest.mark.parametrize("model_name", ["BAAI/bge-small-en-v1.5"])
-def test_tokenize(model_name: str) -> None:
+def test_tokenize() -> None:
     is_ci = os.getenv("CI")
-    model = TextEmbedding(model_name=model_name)
+    model = TextEmbedding()
 
     encodings = model.tokenize(["hello world"])
     assert len(encodings) == 1
