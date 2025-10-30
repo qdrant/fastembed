@@ -80,17 +80,17 @@ class OnnxMultimodalModel(OnnxModel[T]):
     def load_onnx_model(self) -> None:
         raise NotImplementedError("Subclasses must implement this method")
 
-    def tokenize(self, texts: list[str], **kwargs: Any) -> list[Encoding]:
+    def _tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
         if self.tokenizer is None:
             raise RuntimeError("Tokenizer not initialized")
-        return self.tokenizer.encode_batch(texts, **kwargs)  # type: ignore[union-attr]
+        return self.tokenizer.encode_batch(documents, **kwargs)  # type: ignore[union-attr]
 
     def onnx_embed_text(
         self,
         documents: list[str],
         **kwargs: Any,
     ) -> OnnxOutputContext:
-        encoded = self.tokenize(documents, **kwargs)
+        encoded = self._tokenize(documents, **kwargs)
         input_ids = np.array([e.ids for e in encoded])
         attention_mask = np.array([e.attention_mask for e in encoded])  # type: ignore[union-attr]
         input_names = {node.name for node in self.model.get_inputs()}  # type: ignore[union-attr]

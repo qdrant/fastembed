@@ -68,15 +68,15 @@ class OnnxTextModel(OnnxModel[T]):
     def load_onnx_model(self) -> None:
         raise NotImplementedError("Subclasses must implement this method")
 
-    def tokenize(self, texts: list[str], **kwargs: Any) -> list[Encoding]:
-        return self.tokenizer.encode_batch(texts)  # type: ignore[union-attr]
+    def _tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
+        return self.tokenizer.encode_batch(documents)  # type:ignore[union-attr]
 
     def onnx_embed(
         self,
         documents: list[str],
         **kwargs: Any,
     ) -> OnnxOutputContext:
-        encoded = self.tokenize(documents, **kwargs)
+        encoded = self._tokenize(documents, **kwargs)
         input_ids = np.array([e.ids for e in encoded])
         attention_mask = np.array([e.attention_mask for e in encoded])
         input_names = {node.name for node in self.model.get_inputs()}  # type: ignore[union-attr]

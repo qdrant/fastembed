@@ -37,7 +37,7 @@ MODEL_TO_LANGUAGE = {
 }
 
 
-class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):  # type: ignore[misc]
+class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
     """
     Bm42 is an extension of BM25, which tries to better evaluate importance of tokens in the documents,
     by extracting attention weights from the transformer model.
@@ -131,8 +131,8 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):  # type: ig
         if not self.lazy_load:
             self.load_onnx_model()
 
-    def tokenize(self, texts: list[str], **kwargs: Any) -> list[Encoding]:
-        return OnnxTextModel.tokenize(self, list(texts), **kwargs)
+    def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
+        return self._tokenize(documents, **kwargs)
 
     def load_onnx_model(self) -> None:
         self._load_onnx_model(
