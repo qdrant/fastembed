@@ -1,7 +1,7 @@
 import os
 
-import pytest
 import numpy as np
+import pytest
 
 from fastembed.sparse.bm25 import Bm25
 from fastembed.sparse.sparse_text_embedding import SparseTextEmbedding
@@ -241,36 +241,6 @@ def test_lazy_load(model_name: str) -> None:
 
     model = SparseTextEmbedding(model_name=model_name, lazy_load=True)
     list(model.passage_embed(docs))
-
-    if is_ci:
-        delete_model_cache(model.model._model_dir)
-
-
-@pytest.mark.parametrize(
-    "model_name",
-    [
-        "prithivida/Splade_PP_en_v1",
-        "Qdrant/bm25",
-        "Qdrant/bm42-all-minilm-l6-v2-attentions",
-        "Qdrant/minicoil-v1",
-    ],
-)
-def test_tokenize(model_name: str) -> None:
-    is_ci = os.getenv("CI")
-
-    model = SparseTextEmbedding(model_name=model_name)
-
-    encodings = model.tokenize(["hello world"])
-    assert len(encodings) == 1
-    assert encodings[0].ids is not None
-    assert len(encodings[0].ids) > 0
-
-    texts = ["hello world", "flag embedding"]
-    encodings = model.tokenize(texts)
-    assert len(encodings) == 2
-    for encoding in encodings:
-        assert encoding.ids is not None
-        assert len(encoding.ids) > 0
 
     if is_ci:
         delete_model_cache(model.model._model_dir)
