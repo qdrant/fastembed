@@ -132,7 +132,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             self.load_onnx_model()
 
     def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
-        return self._tokenize(documents, **kwargs)
+        raise NotImplementedError()
 
     def load_onnx_model(self) -> None:
         self._load_onnx_model(

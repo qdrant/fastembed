@@ -138,24 +138,7 @@ class Bm25(SparseTextEmbeddingBase):
         self.tokenizer = SimpleTokenizer
 
     def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
-        """Tokenize texts using SimpleTokenizer.
-
-        Returns a list of simple Encoding-like objects with token strings.
-        Note: BM25 uses a simple word tokenizer, not a learned tokenizer.
-        """
-        result = []
-
-        class SimpleEncoding:
-            def __init__(self, tokens: list[str]):
-                self.tokens = tokens
-                self.ids = tokens  # For BM25, tokens are the IDs
-                self.attention_mask = [1] * len(tokens)
-
-        for document in documents:
-            tokens = self.tokenizer.tokenize(document)
-            result.append(SimpleEncoding(tokens))
-
-        return result
+        raise NotImplementedError()
 
     @classmethod
     def _list_supported_models(cls) -> list[SparseModelDescription]:

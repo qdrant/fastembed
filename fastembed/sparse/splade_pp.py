@@ -138,17 +138,7 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         )
 
     def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
-        """
-        Tokenize input texts using the model's tokenizer.
-
-        Args:
-            documents: List of strings to tokenize
-            **kwargs: Additional arguments passed to the tokenizer
-
-        Returns:
-            List of tokenizer Encodings
-        """
-        return self._tokenize(documents, **kwargs)
+        raise NotImplementedError()
 
     def embed(
         self,
