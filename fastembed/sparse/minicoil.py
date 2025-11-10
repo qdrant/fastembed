@@ -5,7 +5,7 @@ from typing import Any, Optional, Sequence, Iterable, Union, Type
 import numpy as np
 from numpy.typing import NDArray
 from py_rust_stemmers import SnowballStemmer
-from tokenizers import Tokenizer, Encoding
+from tokenizers import Tokenizer
 
 from fastembed.common.model_description import SparseModelDescription, ModelSource
 from fastembed.common.onnx_model import OnnxOutputContext
@@ -145,8 +145,8 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         if not self.lazy_load:
             self.load_onnx_model()
 
-    def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
-        return self._tokenize(documents, **kwargs)
+    def tokenize(self, documents: list[str], **kwargs: Any) -> dict[str, Any]:
+        raise NotImplementedError("Tokenize method for sparse embeddings is not implemented yet.")
 
     def load_onnx_model(self) -> None:
         self._load_onnx_model(
