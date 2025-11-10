@@ -1,7 +1,6 @@
 from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
-from tokenizers import Encoding
 
 from fastembed.common import OnnxProvider
 from fastembed.common.onnx_model import OnnxOutputContext
@@ -137,18 +136,8 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             device_id=self.device_id,
         )
 
-    def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
-        """
-        Tokenize input texts using the model's tokenizer.
-
-        Args:
-            documents: List of strings to tokenize
-            **kwargs: Additional arguments passed to the tokenizer
-
-        Returns:
-            List of tokenizer Encodings
-        """
-        return self._tokenize(documents, **kwargs)
+    def tokenize(self, documents: list[str], **kwargs: Any) -> dict[str, Any]:
+        raise NotImplementedError("Tokenize method for sparse embeddings is not implemented yet.")
 
     def embed(
         self,

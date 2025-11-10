@@ -1,9 +1,10 @@
-from typing import Any, Iterable, Optional, Sequence, Type, Union
+import warnings
 from dataclasses import asdict
+from typing import Any, Iterable, Optional, Sequence, Type, Union
 
-from tokenizers import Encoding
 
 from fastembed.common import OnnxProvider
+from fastembed.common.model_description import SparseModelDescription
 from fastembed.sparse.bm25 import Bm25
 from fastembed.sparse.bm42 import Bm42
 from fastembed.sparse.minicoil import MiniCOIL
@@ -12,8 +13,6 @@ from fastembed.sparse.sparse_embedding_base import (
     SparseTextEmbeddingBase,
 )
 from fastembed.sparse.splade_pp import SpladePP
-import warnings
-from fastembed.common.model_description import SparseModelDescription
 
 
 class SparseTextEmbedding(SparseTextEmbeddingBase):
@@ -93,18 +92,8 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
             "Please check the supported models using `SparseTextEmbedding.list_supported_models()`"
         )
 
-    def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
-        """
-        Tokenize input texts using the model's tokenizer.
-
-        Args:
-            documents: List of strings to tokenize
-            **kwargs: Additional arguments passed to the tokenizer
-
-        Returns:
-            List of tokenizer Encodings
-        """
-        return self.model.tokenize(documents, **kwargs)
+    def tokenize(self, documents: list[str], **kwargs: Any) -> dict[str, Any]:
+        raise NotImplementedError("Tokenize method for sparse embeddings is not implemented yet.")
 
     def embed(
         self,
