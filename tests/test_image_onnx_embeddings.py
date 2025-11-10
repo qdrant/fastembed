@@ -1,4 +1,5 @@
 import os
+from contextlib import contextmanager
 from io import BytesIO
 
 import numpy as np
@@ -26,9 +27,36 @@ CANONICAL_VECTOR_VALUES = {
     ),
 }
 
+MODELS_TO_CACHE = ("Qdrant/clip-ViT-B-32-vision",)
+
+
+@pytest.fixture(scope="module")
+def model_cache():
+    is_ci = os.getenv("CI")
+    cache = {}
+
+    @contextmanager
+    def get_model(model_name: str):
+        if model_name not in cache:
+            cache[model_name] = ImageEmbedding(model_name)
+        yield cache[model_name]
+        if model_name not in MODELS_TO_CACHE:
+            print("deleting model")
+            model_inst = cache.pop(model_name)
+            if is_ci:
+                delete_model_cache(model_inst)
+            del model_inst
+
+    yield get_model
+
+    if is_ci:
+        for name, model in cache.items():
+            delete_model_cache(model.model._model_dir)
+    cache.clear()
+
 
 @pytest.mark.parametrize("model_name", ["Qdrant/clip-ViT-B-32-vision"])
-def test_embedding(model_name: str) -> None:
+def test_embedding(model_cache, model_name: str) -> None:
     is_ci = os.getenv("CI")
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
@@ -38,80 +66,69 @@ def test_embedding(model_name: str) -> None:
 
         dim = model_desc.dim
 
-        model = ImageEmbedding(model_name=model_desc.model)
+        with model_cache(model_desc.model) as model:
+            images = [
+                TEST_MISC_DIR / "image.jpeg",
+                str(TEST_MISC_DIR / "small_image.jpeg"),
+                Image.open((TEST_MISC_DIR / "small_image.jpeg")),
+                Image.open(BytesIO(requests.get("https://qdrant.tech/img/logo.png").content)),
+            ]
+            embeddings = list(model.embed(images))
+            embeddings = np.stack(embeddings, axis=0)
+            assert embeddings.shape == (len(images), dim)
 
-        images = [
+            canonical_vector = CANONICAL_VECTOR_VALUES[model_desc.model]
+
+            assert np.allclose(
+                embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3
+            ), model_desc.model
+
+            assert np.allclose(embeddings[1], embeddings[2]), model_desc.model
+
+
+@pytest.mark.parametrize("n_dims,model_name", [(512, "Qdrant/clip-ViT-B-32-vision")])
+def test_batch_embedding(model_cache, n_dims: int, model_name: str) -> None:
+    with model_cache(model_name) as model:
+        n_images = 32
+        test_images = [
             TEST_MISC_DIR / "image.jpeg",
             str(TEST_MISC_DIR / "small_image.jpeg"),
-            Image.open((TEST_MISC_DIR / "small_image.jpeg")),
-            Image.open(BytesIO(requests.get("https://qdrant.tech/img/logo.png").content)),
+            Image.open(TEST_MISC_DIR / "small_image.jpeg"),
         ]
-        embeddings = list(model.embed(images))
+        images = test_images * n_images
+
+        embeddings = list(model.embed(images, batch_size=10))
         embeddings = np.stack(embeddings, axis=0)
-        assert embeddings.shape == (len(images), dim)
+        assert np.allclose(embeddings[1], embeddings[2])
 
-        canonical_vector = CANONICAL_VECTOR_VALUES[model_desc.model]
+        canonical_vector = CANONICAL_VECTOR_VALUES[model_name]
 
-        assert np.allclose(
-            embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3
-        ), model_desc.model
-
-        assert np.allclose(embeddings[1], embeddings[2]), model_desc.model
-
-        if is_ci:
-            delete_model_cache(model.model._model_dir)
+        assert embeddings.shape == (len(test_images) * n_images, n_dims)
+        assert np.allclose(embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3)
 
 
 @pytest.mark.parametrize("n_dims,model_name", [(512, "Qdrant/clip-ViT-B-32-vision")])
-def test_batch_embedding(n_dims: int, model_name: str) -> None:
-    is_ci = os.getenv("CI")
-    model = ImageEmbedding(model_name=model_name)
-    n_images = 32
-    test_images = [
-        TEST_MISC_DIR / "image.jpeg",
-        str(TEST_MISC_DIR / "small_image.jpeg"),
-        Image.open(TEST_MISC_DIR / "small_image.jpeg"),
-    ]
-    images = test_images * n_images
+def test_parallel_processing(model_cache, n_dims: int, model_name: str) -> None:
+    with model_cache(model_name) as model:
+        n_images = 32
+        test_images = [
+            TEST_MISC_DIR / "image.jpeg",
+            str(TEST_MISC_DIR / "small_image.jpeg"),
+            Image.open(TEST_MISC_DIR / "small_image.jpeg"),
+        ]
+        images = test_images * n_images
+        embeddings = list(model.embed(images, batch_size=10, parallel=2))
+        embeddings = np.stack(embeddings, axis=0)
 
-    embeddings = list(model.embed(images, batch_size=10))
-    embeddings = np.stack(embeddings, axis=0)
-    assert np.allclose(embeddings[1], embeddings[2])
+        embeddings_2 = list(model.embed(images, batch_size=10, parallel=None))
+        embeddings_2 = np.stack(embeddings_2, axis=0)
 
-    canonical_vector = CANONICAL_VECTOR_VALUES[model_name]
+        embeddings_3 = list(model.embed(images, batch_size=10, parallel=0))
+        embeddings_3 = np.stack(embeddings_3, axis=0)
 
-    assert embeddings.shape == (len(test_images) * n_images, n_dims)
-    assert np.allclose(embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3)
-    if is_ci:
-        delete_model_cache(model.model._model_dir)
-
-
-@pytest.mark.parametrize("n_dims,model_name", [(512, "Qdrant/clip-ViT-B-32-vision")])
-def test_parallel_processing(n_dims: int, model_name: str) -> None:
-    is_ci = os.getenv("CI")
-    model = ImageEmbedding(model_name=model_name)
-
-    n_images = 32
-    test_images = [
-        TEST_MISC_DIR / "image.jpeg",
-        str(TEST_MISC_DIR / "small_image.jpeg"),
-        Image.open(TEST_MISC_DIR / "small_image.jpeg"),
-    ]
-    images = test_images * n_images
-    embeddings = list(model.embed(images, batch_size=10, parallel=2))
-    embeddings = np.stack(embeddings, axis=0)
-
-    embeddings_2 = list(model.embed(images, batch_size=10, parallel=None))
-    embeddings_2 = np.stack(embeddings_2, axis=0)
-
-    embeddings_3 = list(model.embed(images, batch_size=10, parallel=0))
-    embeddings_3 = np.stack(embeddings_3, axis=0)
-
-    assert embeddings.shape == (n_images * len(test_images), n_dims)
-    assert np.allclose(embeddings, embeddings_2, atol=1e-3)
-    assert np.allclose(embeddings, embeddings_3, atol=1e-3)
-    if is_ci:
-        delete_model_cache(model.model._model_dir)
+        assert embeddings.shape == (n_images * len(test_images), n_dims)
+        assert np.allclose(embeddings, embeddings_2, atol=1e-3)
+        assert np.allclose(embeddings, embeddings_3, atol=1e-3)
 
 
 @pytest.mark.parametrize("model_name", ["Qdrant/clip-ViT-B-32-vision"])

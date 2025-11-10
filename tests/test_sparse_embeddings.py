@@ -1,4 +1,5 @@
 import os
+from contextlib import contextmanager
 
 import pytest
 import numpy as np
@@ -76,6 +77,34 @@ CANONICAL_QUERY_VALUES = {
 }
 
 
+MODELS_TO_CACHE = ("prithivida/Splade_PP_en_v1", "Qdrant/minicoil-v1")
+
+
+@pytest.fixture(scope="module")
+def model_cache():
+    is_ci = os.getenv("CI")
+    cache = {}
+
+    @contextmanager
+    def get_model(model_name: str):
+        if model_name not in cache:
+            cache[model_name] = SparseTextEmbedding(model_name)
+        yield cache[model_name]
+        if model_name not in MODELS_TO_CACHE:
+            print("deleting model")
+            model_inst = cache.pop(model_name)
+            if is_ci:
+                delete_model_cache(model_inst)
+            del model_inst
+
+    yield get_model
+
+    if is_ci:
+        for name, model in cache.items():
+            delete_model_cache(model.model._model_dir)
+    cache.clear()
+
+
 docs = ["Hello World"]
 
 
@@ -83,23 +112,19 @@ docs = ["Hello World"]
     "model_name",
     ["prithivida/Splade_PP_en_v1", "Qdrant/minicoil-v1"],
 )
-def test_batch_embedding(model_name: str) -> None:
-    is_ci = os.getenv("CI")
+def test_batch_embedding(model_cache, model_name: str) -> None:
     docs_to_embed = docs * 10
 
-    model = SparseTextEmbedding(model_name=model_name)
-    result = next(iter(model.embed(docs_to_embed, batch_size=6)))
-    expected_result = CANONICAL_COLUMN_VALUES[model_name]
-    assert result.indices.tolist() == expected_result["indices"]
+    with model_cache(model_name) as model:
+        result = next(iter(model.embed(docs_to_embed, batch_size=6)))
+        expected_result = CANONICAL_COLUMN_VALUES[model_name]
+        assert result.indices.tolist() == expected_result["indices"]
 
-    for i, value in enumerate(result.values):
-        assert pytest.approx(value, abs=0.001) == expected_result["values"][i]
-    if is_ci:
-        delete_model_cache(model.model._model_dir)
+        for i, value in enumerate(result.values):
+            assert pytest.approx(value, abs=0.001) == expected_result["values"][i]
 
 
-@pytest.mark.parametrize("model_name", ["prithivida/Splade_PP_en_v1", "Qdrant/minicoil-v1"])
-def test_single_embedding(model_name: str) -> None:
+def test_single_embedding(model_cache) -> None:
     is_ci = os.getenv("CI")
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
@@ -109,59 +134,51 @@ def test_single_embedding(model_name: str) -> None:
         ):  # attention models and bm25 are also parts of
             # SparseTextEmbedding, however, they have their own tests
             continue
-        if not should_test_model(model_desc, model_name, is_ci, is_manual):
+        if not should_test_model(model_desc, model_desc.model, is_ci, is_manual):
             continue
 
-        model = SparseTextEmbedding(model_name=model_name)
+        with model_cache(model_desc.model) as model:
+            passage_result = next(iter(model.embed(docs, batch_size=6)))
+            query_result = next(iter(model.query_embed(docs)))
+            expected_result = CANONICAL_COLUMN_VALUES[model_desc.model]
+            expected_query_result = CANONICAL_QUERY_VALUES.get(model_desc.model, expected_result)
+            assert passage_result.indices.tolist() == expected_result["indices"]
+            for i, value in enumerate(passage_result.values):
+                assert pytest.approx(value, abs=0.001) == expected_result["values"][i]
 
-        passage_result = next(iter(model.embed(docs, batch_size=6)))
-        query_result = next(iter(model.query_embed(docs)))
-        expected_result = CANONICAL_COLUMN_VALUES[model_name]
-        expected_query_result = CANONICAL_QUERY_VALUES.get(model_name, expected_result)
-        assert passage_result.indices.tolist() == expected_result["indices"]
-        for i, value in enumerate(passage_result.values):
-            assert pytest.approx(value, abs=0.001) == expected_result["values"][i]
-
-        assert query_result.indices.tolist() == expected_query_result["indices"]
-        for i, value in enumerate(query_result.values):
-            assert pytest.approx(value, abs=0.001) == expected_query_result["values"][i]
-
-        if is_ci:
-            delete_model_cache(model.model._model_dir)
+            assert query_result.indices.tolist() == expected_query_result["indices"]
+            for i, value in enumerate(query_result.values):
+                assert pytest.approx(value, abs=0.001) == expected_query_result["values"][i]
 
 
 @pytest.mark.parametrize(
     "model_name",
     ["prithivida/Splade_PP_en_v1", "Qdrant/minicoil-v1"],
 )
-def test_parallel_processing(model_name: str) -> None:
-    is_ci = os.getenv("CI")
-    model = SparseTextEmbedding(model_name=model_name)
-    docs = ["hello world", "flag embedding"] * 30
-    sparse_embeddings_duo = list(model.embed(docs, batch_size=10, parallel=2))
-    sparse_embeddings_all = list(model.embed(docs, batch_size=10, parallel=0))
-    sparse_embeddings = list(model.embed(docs, batch_size=10, parallel=None))
+def test_parallel_processing(model_cache, model_name: str) -> None:
+    with model_cache(model_name) as model:
+        docs = ["hello world", "flag embedding"] * 30
+        sparse_embeddings_duo = list(model.embed(docs, batch_size=10, parallel=2))
+        sparse_embeddings_all = list(model.embed(docs, batch_size=10, parallel=0))
+        sparse_embeddings = list(model.embed(docs, batch_size=10, parallel=None))
 
-    assert (
-        len(sparse_embeddings)
-        == len(sparse_embeddings_duo)
-        == len(sparse_embeddings_all)
-        == len(docs)
-    )
-
-    for sparse_embedding, sparse_embedding_duo, sparse_embedding_all in zip(
-        sparse_embeddings, sparse_embeddings_duo, sparse_embeddings_all
-    ):
         assert (
-            sparse_embedding.indices.tolist()
-            == sparse_embedding_duo.indices.tolist()
-            == sparse_embedding_all.indices.tolist()
+            len(sparse_embeddings)
+            == len(sparse_embeddings_duo)
+            == len(sparse_embeddings_all)
+            == len(docs)
         )
-        assert np.allclose(sparse_embedding.values, sparse_embedding_duo.values, atol=1e-3)
-        assert np.allclose(sparse_embedding.values, sparse_embedding_all.values, atol=1e-3)
 
-    if is_ci:
-        delete_model_cache(model.model._model_dir)
+        for sparse_embedding, sparse_embedding_duo, sparse_embedding_all in zip(
+            sparse_embeddings, sparse_embeddings_duo, sparse_embeddings_all
+        ):
+            assert (
+                sparse_embedding.indices.tolist()
+                == sparse_embedding_duo.indices.tolist()
+                == sparse_embedding_all.indices.tolist()
+            )
+            assert np.allclose(sparse_embedding.values, sparse_embedding_duo.values, atol=1e-3)
+            assert np.allclose(sparse_embedding.values, sparse_embedding_all.values, atol=1e-3)
 
 
 @pytest.fixture

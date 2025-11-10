@@ -70,8 +70,12 @@ def test_text_custom_model():
     assert embeddings.shape == (2, dim)
 
     assert np.allclose(embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3)
+
     if is_ci:
         delete_model_cache(model.model._model_dir)
+
+    CustomTextEmbedding.SUPPORTED_MODELS.clear()
+    CustomTextEmbedding.POSTPROCESSING_MAPPING.clear()
 
 
 def test_cross_encoder_custom_model():
@@ -109,6 +113,8 @@ def test_cross_encoder_custom_model():
     assert np.allclose(embeddings, canonical_vector, atol=1e-3)
     if is_ci:
         delete_model_cache(model.model._model_dir)
+
+    CustomTextCrossEncoder.SUPPORTED_MODELS.clear()
 
 
 def test_mock_add_custom_models():
@@ -169,6 +175,9 @@ def test_mock_add_custom_models():
         )
         assert np.allclose(post_processed_output, expected_output[model_name], atol=1e-3)
 
+    CustomTextEmbedding.SUPPORTED_MODELS.clear()
+    CustomTextEmbedding.POSTPROCESSING_MAPPING.clear()
+
 
 def test_do_not_add_existing_model():
     existing_base_model = "sentence-transformers/all-MiniLM-L6-v2"
@@ -203,6 +212,9 @@ def test_do_not_add_existing_model():
             size_in_gb=0.47,
         )
 
+    CustomTextEmbedding.SUPPORTED_MODELS.clear()
+    CustomTextEmbedding.POSTPROCESSING_MAPPING.clear()
+
 
 def test_do_not_add_existing_cross_encoder():
     existing_base_model = "Xenova/ms-marco-MiniLM-L-6-v2"
@@ -227,3 +239,5 @@ def test_do_not_add_existing_cross_encoder():
             sources=ModelSource(hf=custom_model_name),
             size_in_gb=0.08,
         )
+
+    CustomTextCrossEncoder.SUPPORTED_MODELS.clear()

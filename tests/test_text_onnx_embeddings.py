@@ -1,5 +1,6 @@
 import os
 import platform
+from contextlib import contextmanager
 
 import numpy as np
 import pytest
@@ -71,9 +72,35 @@ CANONICAL_VECTOR_VALUES = {
 
 MULTI_TASK_MODELS = ["jinaai/jina-embeddings-v3"]
 
+MODELS_TO_CACHE = ("BAAI/bge-small-en-v1.5",)
+
+
+@pytest.fixture(scope="module")
+def model_cache():
+    is_ci = os.getenv("CI")
+    cache = {}
+
+    @contextmanager
+    def get_model(model_name: str):
+        if model_name not in cache:
+            cache[model_name] = TextEmbedding(model_name)
+        yield cache[model_name]
+        if model_name not in MODELS_TO_CACHE:
+            model_inst = cache.pop(model_name)
+            if is_ci:
+                delete_model_cache(model_inst)
+            del model_inst
+
+    yield get_model
+
+    if is_ci:
+        for name, model in cache.items():
+            delete_model_cache(model.model._model_dir)
+    cache.clear()
+
 
 @pytest.mark.parametrize("model_name", ["BAAI/bge-small-en-v1.5"])
-def test_embedding(model_name: str) -> None:
+def test_embedding(model_cache, model_name: str) -> None:
     is_ci = os.getenv("CI")
     is_mac = platform.system() == "Darwin"
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
@@ -88,55 +115,44 @@ def test_embedding(model_name: str) -> None:
 
         dim = model_desc.dim
 
-        model = TextEmbedding(model_name=model_desc.model)
-        docs = ["hello world", "flag embedding"]
-        embeddings = list(model.embed(docs))
+        with model_cache(model_desc.model) as model:
+            docs = ["hello world", "flag embedding"]
+            embeddings = list(model.embed(docs))
+            embeddings = np.stack(embeddings, axis=0)
+            assert embeddings.shape == (2, dim)
+
+            canonical_vector = CANONICAL_VECTOR_VALUES[model_desc.model]
+            assert np.allclose(
+                embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3
+            ), model_desc.model
+
+
+@pytest.mark.parametrize("n_dims,model_name", [(384, "BAAI/bge-small-en-v1.5")])
+def test_batch_embedding(model_cache, n_dims: int, model_name: str) -> None:
+    with model_cache(model_name) as model:
+        docs = ["hello world", "flag embedding"] * 100
+        embeddings = list(model.embed(docs, batch_size=10))
         embeddings = np.stack(embeddings, axis=0)
-        assert embeddings.shape == (2, dim)
 
-        canonical_vector = CANONICAL_VECTOR_VALUES[model_desc.model]
-        assert np.allclose(
-            embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3
-        ), model_desc.model
-        if is_ci:
-            delete_model_cache(model.model._model_dir)
+        assert embeddings.shape == (len(docs), n_dims)
 
 
 @pytest.mark.parametrize("n_dims,model_name", [(384, "BAAI/bge-small-en-v1.5")])
-def test_batch_embedding(n_dims: int, model_name: str) -> None:
-    is_ci = os.getenv("CI")
-    model = TextEmbedding(model_name=model_name)
+def test_parallel_processing(model_cache, n_dims: int, model_name: str) -> None:
+    with model_cache(model_name) as model:
+        docs = ["hello world", "flag embedding"] * 100
+        embeddings = list(model.embed(docs, batch_size=10, parallel=2))
+        embeddings = np.stack(embeddings, axis=0)
 
-    docs = ["hello world", "flag embedding"] * 100
-    embeddings = list(model.embed(docs, batch_size=10))
-    embeddings = np.stack(embeddings, axis=0)
+        embeddings_2 = list(model.embed(docs, batch_size=10, parallel=None))
+        embeddings_2 = np.stack(embeddings_2, axis=0)
 
-    assert embeddings.shape == (len(docs), n_dims)
-    if is_ci:
-        delete_model_cache(model.model._model_dir)
+        embeddings_3 = list(model.embed(docs, batch_size=10, parallel=0))
+        embeddings_3 = np.stack(embeddings_3, axis=0)
 
-
-@pytest.mark.parametrize("n_dims,model_name", [(384, "BAAI/bge-small-en-v1.5")])
-def test_parallel_processing(n_dims: int, model_name: str) -> None:
-    is_ci = os.getenv("CI")
-    model = TextEmbedding(model_name=model_name)
-
-    docs = ["hello world", "flag embedding"] * 100
-    embeddings = list(model.embed(docs, batch_size=10, parallel=2))
-    embeddings = np.stack(embeddings, axis=0)
-
-    embeddings_2 = list(model.embed(docs, batch_size=10, parallel=None))
-    embeddings_2 = np.stack(embeddings_2, axis=0)
-
-    embeddings_3 = list(model.embed(docs, batch_size=10, parallel=0))
-    embeddings_3 = np.stack(embeddings_3, axis=0)
-
-    assert embeddings.shape == (len(docs), n_dims)
-    assert np.allclose(embeddings, embeddings_2, atol=1e-3)
-    assert np.allclose(embeddings, embeddings_3, atol=1e-3)
-
-    if is_ci:
-        delete_model_cache(model.model._model_dir)
+        assert embeddings.shape == (len(docs), n_dims)
+        assert np.allclose(embeddings, embeddings_2, atol=1e-3)
+        assert np.allclose(embeddings, embeddings_3, atol=1e-3)
 
 
 @pytest.mark.parametrize("model_name", ["BAAI/bge-small-en-v1.5"])
