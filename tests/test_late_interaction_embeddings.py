@@ -232,6 +232,8 @@ def test_single_embedding_query(model_name: str):
 
 @pytest.mark.parametrize("token_dim,model_name", [(96, "answerdotai/answerai-colbert-small-v1")])
 def test_parallel_processing(token_dim: int, model_name: str):
+    # this test loads a copy of a model per process, might cause oom in parallel=0 on machines with
+    # an insufficient mem-to-cpus-ratio
     is_ci = os.getenv("CI")
     model = LateInteractionTextEmbedding(model_name=model_name)
 
@@ -290,5 +292,31 @@ def test_embedding_size():
     model_name = "answerdotai/answerai-ColBERT-small-v1"
     model = LateInteractionTextEmbedding(model_name=model_name, lazy_load=True)
     assert model.embedding_size == 96
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
+
+
+@pytest.mark.parametrize("model_name", ["answerdotai/answerai-colbert-small-v1"])
+def test_tokenize(model_name: str) -> None:
+    is_ci = os.getenv("CI")
+    model = LateInteractionTextEmbedding(model_name=model_name)
+
+    texts = ["hello world", "flag embedding"]
+    enc_doc = model.tokenize(texts, is_doc=True)
+    assert len(enc_doc) == 2
+    for encoding in enc_doc:
+        assert encoding.ids is not None
+        assert len(encoding.ids) > 0
+
+    enc_query = model.tokenize(["hello world"], is_doc=False)
+    assert len(enc_query) == 1
+    assert enc_query[0].ids is not None
+    assert len(enc_query[0].ids) == 31  # colbert requires query to be at least 32 tokens,
+    # padding is done during tokenization, the last token is added preprocess onnx input
+
+    doc_ids = list(enc_doc[0].ids)
+    query_ids = list(enc_query[0].ids)
+    assert doc_ids != query_ids
+
     if is_ci:
         delete_model_cache(model.model._model_dir)

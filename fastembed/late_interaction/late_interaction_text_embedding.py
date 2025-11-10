@@ -1,6 +1,8 @@
 from typing import Any, Iterable, Optional, Sequence, Type, Union
 from dataclasses import asdict
 
+from tokenizers import Encoding
+
 from fastembed.common.model_description import DenseModelDescription
 from fastembed.common.types import NumpyArray
 from fastembed.common import OnnxProvider
@@ -113,6 +115,19 @@ class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
                 f"Available model names: {model_names}"
             )
         return embedding_size
+
+    def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
+        """
+        Tokenize input texts using the model's tokenizer.
+
+        Args:
+            documents: List of strings to tokenize
+            **kwargs: Additional arguments passed to the tokenizer
+
+        Returns:
+            List of tokenizer Encodings
+        """
+        return self.model.tokenize(documents, **kwargs)
 
     def embed(
         self,

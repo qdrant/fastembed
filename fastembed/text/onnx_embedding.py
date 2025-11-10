@@ -1,5 +1,7 @@
 from typing import Any, Iterable, Optional, Sequence, Type, Union
 
+from tokenizers import Encoding
+
 from fastembed.common.types import NumpyArray, OnnxProvider
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.utils import define_cache_dir, normalize
@@ -318,6 +320,9 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):
         else:
             raise ValueError(f"Unsupported embedding shape: {embeddings.shape}")
         return normalize(processed_embeddings)
+
+    def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
+        return self._tokenize(documents, **kwargs)
 
     def load_onnx_model(self) -> None:
         self._load_onnx_model(
