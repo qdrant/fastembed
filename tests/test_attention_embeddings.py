@@ -25,7 +25,7 @@ def model_cache():
             print("deleting model")
             model_inst = cache.pop(model_name)
             if is_ci:
-                delete_model_cache(model_inst)
+                delete_model_cache(model_inst.model._model_dir)
             del model_inst
 
     yield get_model
