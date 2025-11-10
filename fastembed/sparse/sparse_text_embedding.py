@@ -2,7 +2,6 @@ import warnings
 from dataclasses import asdict
 from typing import Any, Iterable, Optional, Sequence, Type, Union
 
-from tokenizers import Encoding
 
 from fastembed.common import OnnxProvider
 from fastembed.common.model_description import SparseModelDescription
@@ -93,8 +92,8 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
             "Please check the supported models using `SparseTextEmbedding.list_supported_models()`"
         )
 
-    def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
-        raise NotImplementedError()
+    def tokenize(self, documents: list[str], **kwargs: Any) -> dict[str, Any]:
+        raise NotImplementedError("Tokenize method for sparse embeddings is not implemented yet.")
 
     def embed(
         self,

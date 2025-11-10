@@ -7,7 +7,6 @@ from typing import Any, Iterable, Optional, Type, Union
 import mmh3
 import numpy as np
 from py_rust_stemmers import SnowballStemmer
-from tokenizers import Encoding
 from fastembed.common.utils import (
     define_cache_dir,
     iter_batch,
@@ -137,8 +136,8 @@ class Bm25(SparseTextEmbeddingBase):
 
         self.tokenizer = SimpleTokenizer
 
-    def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
-        raise NotImplementedError()
+    def tokenize(self, documents: list[str], **kwargs: Any) -> dict[str, Any]:
+        raise NotImplementedError("Tokenize method for sparse embeddings is not implemented yet.")
 
     @classmethod
     def _list_supported_models(cls) -> list[SparseModelDescription]:
