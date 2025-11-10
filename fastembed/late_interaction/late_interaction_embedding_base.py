@@ -22,7 +22,7 @@ class LateInteractionTextEmbeddingBase(ModelManagement[DenseModelDescription]):
         self._embedding_size: Optional[int] = None
 
     def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
-        raise NotImplementedError()
+        raise NotImplementedError("Subclasses must implement this method.")
 
     def embed(
         self,
