@@ -72,7 +72,8 @@ CANONICAL_VECTOR_VALUES = {
 
 MULTI_TASK_MODELS = ["jinaai/jina-embeddings-v3"]
 
-MODELS_TO_CACHE = ("BAAI/bge-small-en-v1.5",)
+_MODELS_TO_CACHE = ("BAAI/bge-small-en-v1.5",)
+MODELS_TO_CACHE = tuple([x.lower() for x in _MODELS_TO_CACHE])
 
 
 @pytest.fixture(scope="module")

@@ -151,7 +151,8 @@ CANONICAL_QUERY_VALUES = {
     ),
 }
 
-MODELS_TO_CACHE = ("answerdotai/answerai-colbert-small-v1",)
+_MODELS_TO_CACHE = ("answerdotai/answerai-colbert-small-v1",)
+MODELS_TO_CACHE = tuple([x.lower() for x in _MODELS_TO_CACHE])
 
 
 @pytest.fixture(scope="module")
@@ -249,21 +250,22 @@ def test_single_embedding_query(model_cache, model_name: str):
 
 @pytest.mark.parametrize("token_dim,model_name", [(96, "answerdotai/answerai-colbert-small-v1")])
 def test_parallel_processing(model_cache, token_dim: int, model_name: str):
-    # this test loads a copy of a model per process, might cause oom in parallel=0 on machines with
-    # an insufficient mem-to-cpus-ratio
     with model_cache(model_name) as model:
         docs = ["hello world", "flag embedding"] * 100
         embeddings = list(model.embed(docs, batch_size=10, parallel=2))
 
         embeddings_2 = list(model.embed(docs, batch_size=10, parallel=None))
 
-        embeddings_3 = list(model.embed(docs, batch_size=10, parallel=0))
+        # embeddings_3 = list(model.embed(docs, batch_size=10, parallel=0))  # inherits OnnxTextModel which
+        #         # is tested in TextEmbedding, disabling it here to reduce number of requests to hf
+        #         # multiprocessing is enough to test with `parallel=2`, and `parallel=None` is okay to tests since it reuses
+        #         # model from cache
 
         assert len(embeddings) == len(docs) and embeddings[0].shape[-1] == token_dim
 
         for i in range(len(embeddings)):
             assert np.allclose(embeddings[i], embeddings_2[i], atol=1e-3)
-            assert np.allclose(embeddings[i], embeddings_3[i], atol=1e-3)
+            # assert np.allclose(embeddings[i], embeddings_3[i], atol=1e-3)
 
 
 @pytest.mark.parametrize("model_name", ["answerdotai/answerai-colbert-small-v1"])

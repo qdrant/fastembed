@@ -77,7 +77,8 @@ CANONICAL_QUERY_VALUES = {
 }
 
 
-MODELS_TO_CACHE = ("prithivida/Splade_PP_en_v1", "Qdrant/minicoil-v1", "Qdrant/bm25")
+_MODELS_TO_CACHE = ("prithivida/Splade_PP_en_v1", "Qdrant/minicoil-v1", "Qdrant/bm25")
+MODELS_TO_CACHE = tuple([x.lower() for x in _MODELS_TO_CACHE])
 
 
 @pytest.fixture(scope="module")
@@ -159,7 +160,7 @@ def test_parallel_processing(model_cache, model_name: str) -> None:
     with model_cache(model_name) as model:
         docs = ["hello world", "flag embedding"] * 30
         sparse_embeddings_duo = list(model.embed(docs, batch_size=10, parallel=2))
-        # sparse_embeddings_all = list(model.embed(docs, batch_size=10, parallel=0))  # inherites OnnxTextModel which
+        # sparse_embeddings_all = list(model.embed(docs, batch_size=10, parallel=0))  # inherits OnnxTextModel which
         # is tested in TextEmbedding, disabling it here to reduce number of requests to hf
         # multiprocessing is enough to test with `parallel=2`, and `parallel=None` is okay to tests since it reuses
         # model from cache

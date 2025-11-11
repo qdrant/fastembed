@@ -27,7 +27,8 @@ CANONICAL_VECTOR_VALUES = {
     ),
 }
 
-MODELS_TO_CACHE = ("Qdrant/clip-ViT-B-32-vision",)
+_MODELS_TO_CACHE = ("Qdrant/clip-ViT-B-32-vision",)
+MODELS_TO_CACHE = tuple([x.lower() for x in _MODELS_TO_CACHE])
 
 
 @pytest.fixture(scope="module")

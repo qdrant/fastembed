@@ -17,7 +17,8 @@ CANONICAL_SCORE_VALUES = {
 }
 
 
-MODELS_TO_CACHE = ("Xenova/ms-marco-MiniLM-L-6-v2",)
+_MODELS_TO_CACHE = ("Xenova/ms-marco-MiniLM-L-6-v2",)
+MODELS_TO_CACHE = tuple([x.lower() for x in _MODELS_TO_CACHE])
 
 
 @pytest.fixture(scope="module")
