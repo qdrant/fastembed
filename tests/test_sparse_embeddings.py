@@ -77,7 +77,7 @@ CANONICAL_QUERY_VALUES = {
 }
 
 
-MODELS_TO_CACHE = ("prithivida/Splade_PP_en_v1", "Qdrant/minicoil-v1")
+MODELS_TO_CACHE = ("prithivida/Splade_PP_en_v1", "Qdrant/minicoil-v1", "Qdrant/bm25")
 
 
 @pytest.fixture(scope="module")
@@ -87,11 +87,12 @@ def model_cache():
 
     @contextmanager
     def get_model(model_name: str):
-        if model_name not in cache:
-            cache[model_name] = SparseTextEmbedding(model_name)
-        yield cache[model_name]
-        if model_name not in MODELS_TO_CACHE:
-            model_inst = cache.pop(model_name)
+        lowercase_model_name = model_name.lower()
+        if lowercase_model_name not in cache:
+            cache[lowercase_model_name] = SparseTextEmbedding(lowercase_model_name)
+        yield cache[lowercase_model_name]
+        if lowercase_model_name not in MODELS_TO_CACHE:
+            model_inst = cache.pop(lowercase_model_name)
             if is_ci:
                 delete_model_cache(model_inst.model._model_dir)
             del model_inst
@@ -180,45 +181,51 @@ def test_parallel_processing(model_cache, model_name: str) -> None:
             assert np.allclose(sparse_embedding.values, sparse_embedding_all.values, atol=1e-3)
 
 
-@pytest.fixture
-def bm25_instance() -> None:
-    ci = os.getenv("CI", True)
-    model = Bm25("Qdrant/bm25", language="english")
-    yield model
-    if ci:
-        delete_model_cache(model._model_dir)
+def test_stem_with_stopwords_and_punctuation(model_cache) -> None:
+    with model_cache("Qdrant/bm25") as model:
+        bm25_instance = model.model
+        # Setup
+        original_stopwords = bm25_instance.stopwords.copy()
+        original_punctuation = bm25_instance.punctuation.copy()
+
+        bm25_instance.stopwords = {"the", "is", "a"}
+        bm25_instance.punctuation = {".", ",", "!"}
+
+        # Test data
+        tokens = ["The", "quick", "brown", "fox", "is", "a", "test", "sentence", ".", "!"]
+
+        # Execute
+        result = bm25_instance._stem(tokens)
+
+        # Assert
+        expected = ["quick", "brown", "fox", "test", "sentenc"]
+        assert result == expected, f"Expected {expected}, but got {result}"
+
+        bm25_instance.stopwords = original_stopwords
+        bm25_instance.punctuation = original_punctuation
 
 
-def test_stem_with_stopwords_and_punctuation(bm25_instance: Bm25) -> None:
-    # Setup
-    bm25_instance.stopwords = {"the", "is", "a"}
-    bm25_instance.punctuation = {".", ",", "!"}
+def test_stem_case_insensitive_stopwords(model_cache) -> None:
+    with model_cache("Qdrant/bm25") as model:
+        bm25_instance = model.model
+        original_stopwords = bm25_instance.stopwords.copy()
+        original_punctuation = bm25_instance.punctuation.copy()
 
-    # Test data
-    tokens = ["The", "quick", "brown", "fox", "is", "a", "test", "sentence", ".", "!"]
+        # Setup
+        bm25_instance.stopwords = {"the", "is", "a"}
+        bm25_instance.punctuation = {".", ",", "!"}
 
-    # Execute
-    result = bm25_instance._stem(tokens)
+        # Test data
+        tokens = ["THE", "Quick", "Brown", "Fox", "IS", "A", "Test", "Sentence", ".", "!"]
 
-    # Assert
-    expected = ["quick", "brown", "fox", "test", "sentenc"]
-    assert result == expected, f"Expected {expected}, but got {result}"
+        # Execute
+        result = bm25_instance._stem(tokens)
 
-
-def test_stem_case_insensitive_stopwords(bm25_instance: Bm25) -> None:
-    # Setup
-    bm25_instance.stopwords = {"the", "is", "a"}
-    bm25_instance.punctuation = {".", ",", "!"}
-
-    # Test data
-    tokens = ["THE", "Quick", "Brown", "Fox", "IS", "A", "Test", "Sentence", ".", "!"]
-
-    # Execute
-    result = bm25_instance._stem(tokens)
-
-    # Assert
-    expected = ["quick", "brown", "fox", "test", "sentenc"]
-    assert result == expected, f"Expected {expected}, but got {result}"
+        # Assert
+        expected = ["quick", "brown", "fox", "test", "sentenc"]
+        assert result == expected, f"Expected {expected}, but got {result}"
+        bm25_instance.stopwords = original_stopwords
+        bm25_instance.punctuation = original_punctuation
 
 
 @pytest.mark.parametrize("disable_stemmer", [True, False])

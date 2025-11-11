@@ -18,12 +18,13 @@ def model_cache():
 
     @contextmanager
     def get_model(model_name: str):
-        if model_name not in cache:
-            cache[model_name] = SparseTextEmbedding(model_name)
-        yield cache[model_name]
-        if model_name not in MODELS_TO_CACHE:
+        lowercase_model_name = model_name.lower()
+        if lowercase_model_name not in cache:
+            cache[lowercase_model_name] = SparseTextEmbedding(lowercase_model_name)
+        yield cache[lowercase_model_name]
+        if lowercase_model_name not in MODELS_TO_CACHE:
             print("deleting model")
-            model_inst = cache.pop(model_name)
+            model_inst = cache.pop(lowercase_model_name)
             if is_ci:
                 delete_model_cache(model_inst.model._model_dir)
             del model_inst
