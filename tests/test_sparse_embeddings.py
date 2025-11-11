@@ -173,7 +173,11 @@ def test_parallel_processing(model_cache, model_name: str) -> None:
             == len(docs)
         )
 
-        for sparse_embedding, sparse_embedding_duo, sparse_embedding_all in zip(
+        for (
+            sparse_embedding,
+            sparse_embedding_duo,
+            # sparse_embedding_all
+        ) in zip(
             sparse_embeddings,
             sparse_embeddings_duo,
             # sparse_embeddings_all
