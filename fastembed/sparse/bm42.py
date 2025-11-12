@@ -31,9 +31,17 @@ supported_bm42_models: list[SparseModelDescription] = [
     ),
 ]
 
-MODEL_TO_LANGUAGE = {
+
+_MODEL_TO_LANGUAGE = {
     "Qdrant/bm42-all-minilm-l6-v2-attentions": "english",
 }
+MODEL_TO_LANGUAGE = {
+    model_name.lower(): language for model_name, language in _MODEL_TO_LANGUAGE.items()
+}
+
+
+def get_language_by_model_name(model_name: str) -> str:
+    return MODEL_TO_LANGUAGE[model_name.lower()]
 
 
 class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
@@ -124,7 +132,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         self.special_tokens_ids: set[int] = set()
         self.punctuation = set(string.punctuation)
         self.stopwords = set(self._load_stopwords(self._model_dir))
-        self.stemmer = SnowballStemmer(MODEL_TO_LANGUAGE[model_name])
+        self.stemmer = SnowballStemmer(get_language_by_model_name(self.model_name))
         self.alpha = alpha
 
         if not self.lazy_load:

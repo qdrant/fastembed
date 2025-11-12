@@ -46,9 +46,16 @@ supported_minicoil_models: list[SparseModelDescription] = [
     ),
 ]
 
-MODEL_TO_LANGUAGE = {
+_MODEL_TO_LANGUAGE = {
     "Qdrant/minicoil-v1": "english",
 }
+MODEL_TO_LANGUAGE = {
+    model_name.lower(): language for model_name, language in _MODEL_TO_LANGUAGE.items()
+}
+
+
+def get_language_by_model_name(model_name: str) -> str:
+    return MODEL_TO_LANGUAGE[model_name.lower()]
 
 
 class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
@@ -156,7 +163,7 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         self.special_tokens_ids = set(self.special_token_to_id.values())
         self.stopwords = set(self._load_stopwords(self._model_dir))
 
-        stemmer = SnowballStemmer(MODEL_TO_LANGUAGE[self.model_name])
+        stemmer = SnowballStemmer(get_language_by_model_name(self.model_name))
 
         self.vocab_resolver = VocabResolver(
             tokenizer=VocabTokenizer(self.tokenizer),

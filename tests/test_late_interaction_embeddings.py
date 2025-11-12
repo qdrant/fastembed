@@ -1,4 +1,5 @@
 import os
+from contextlib import contextmanager
 
 import pytest
 import numpy as np
@@ -150,42 +151,65 @@ CANONICAL_QUERY_VALUES = {
     ),
 }
 
+_MODELS_TO_CACHE = ("answerdotai/answerai-colbert-small-v1",)
+MODELS_TO_CACHE = tuple([x.lower() for x in _MODELS_TO_CACHE])
+
+
+@pytest.fixture(scope="module")
+def model_cache():
+    is_ci = os.getenv("CI")
+    cache = {}
+
+    @contextmanager
+    def get_model(model_name: str):
+        lowercase_model_name = model_name.lower()
+        if lowercase_model_name not in cache:
+            cache[lowercase_model_name] = LateInteractionTextEmbedding(lowercase_model_name)
+        yield cache[lowercase_model_name]
+        if lowercase_model_name not in MODELS_TO_CACHE:
+            model_inst = cache.pop(lowercase_model_name)
+            if is_ci:
+                delete_model_cache(model_inst.model._model_dir)
+            del model_inst
+
+    yield get_model
+
+    if is_ci:
+        for name, model in cache.items():
+            delete_model_cache(model.model._model_dir)
+    cache.clear()
+
+
 docs = ["Hello World"]
 
 
 @pytest.mark.parametrize("model_name", ["answerdotai/answerai-colbert-small-v1"])
-def test_batch_embedding(model_name: str):
-    is_ci = os.getenv("CI")
+def test_batch_embedding(model_cache, model_name: str):
     docs_to_embed = docs * 10
 
-    model = LateInteractionTextEmbedding(model_name=model_name)
-    result = list(model.embed(docs_to_embed, batch_size=6))
-    expected_result = CANONICAL_COLUMN_VALUES[model_name]
+    with model_cache(model_name) as model:
+        result = list(model.embed(docs_to_embed, batch_size=6))
+        expected_result = CANONICAL_COLUMN_VALUES[model_name]
 
-    for value in result:
-        token_num, abridged_dim = expected_result.shape
-        assert np.allclose(value[:, :abridged_dim], expected_result, atol=2e-3)
-
-    if is_ci:
-        delete_model_cache(model.model._model_dir)
+        for value in result:
+            token_num, abridged_dim = expected_result.shape
+            assert np.allclose(value[:, :abridged_dim], expected_result, atol=2e-3)
 
 
 @pytest.mark.parametrize("model_name", ["answerdotai/answerai-colbert-small-v1"])
-def test_batch_inference_size_same_as_single_inference(model_name: str):
-    is_ci = os.getenv("CI")
-
-    model = LateInteractionTextEmbedding(model_name=model_name)
-    docs_to_embed = ["short document", "A bit longer document, which should not affect the size"]
-    result = list(model.embed(docs_to_embed, batch_size=1))
-    result_2 = list(model.embed(docs_to_embed, batch_size=2))
-    assert len(result[0]) == len(result_2[0])
-
-    if is_ci:
-        delete_model_cache(model.model._model_dir)
+def test_batch_inference_size_same_as_single_inference(model_cache, model_name: str):
+    with model_cache(model_name) as model:
+        docs_to_embed = [
+            "short document",
+            "A bit longer document, which should not affect the size",
+        ]
+        result = list(model.embed(docs_to_embed, batch_size=1))
+        result_2 = list(model.embed(docs_to_embed, batch_size=2))
+        assert len(result[0]) == len(result_2[0])
 
 
 @pytest.mark.parametrize("model_name", ["answerdotai/answerai-colbert-small-v1"])
-def test_single_embedding(model_name: str):
+def test_single_embedding(model_cache, model_name: str):
     is_ci = os.getenv("CI")
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
     docs_to_embed = docs
@@ -195,20 +219,17 @@ def test_single_embedding(model_name: str):
             continue
 
         print("evaluating", model_name)
-        model = LateInteractionTextEmbedding(model_name=model_name)
-        whole_result = list(model.embed(docs_to_embed, batch_size=6))
-        assert len(whole_result) == 1
-        result = whole_result[0]
-        expected_result = CANONICAL_COLUMN_VALUES[model_name]
-        token_num, abridged_dim = expected_result.shape
-        assert np.allclose(result[:, :abridged_dim], expected_result, atol=2e-3)
-
-        if is_ci:
-            delete_model_cache(model.model._model_dir)
+        with model_cache(model_desc.model) as model:
+            whole_result = list(model.embed(docs_to_embed, batch_size=6))
+            assert len(whole_result) == 1
+            result = whole_result[0]
+            expected_result = CANONICAL_COLUMN_VALUES[model_desc.model]
+            token_num, abridged_dim = expected_result.shape
+            assert np.allclose(result[:, :abridged_dim], expected_result, atol=2e-3)
 
 
 @pytest.mark.parametrize("model_name", ["answerdotai/answerai-colbert-small-v1"])
-def test_single_embedding_query(model_name: str):
+def test_single_embedding_query(model_cache, model_name: str):
     is_ci = os.getenv("CI")
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
     queries_to_embed = docs
@@ -217,39 +238,34 @@ def test_single_embedding_query(model_name: str):
         if not should_test_model(model_desc, model_name, is_ci, is_manual):
             continue
 
-        print("evaluating", model_name)
-        model = LateInteractionTextEmbedding(model_name=model_name)
-        whole_result = list(model.query_embed(queries_to_embed))
-        assert len(whole_result) == 1
-        result = whole_result[0]
-        expected_result = CANONICAL_QUERY_VALUES[model_name]
-        token_num, abridged_dim = expected_result.shape
-        assert np.allclose(result[:, :abridged_dim], expected_result, atol=2e-3)
-
-        if is_ci:
-            delete_model_cache(model.model._model_dir)
+        print("evaluating", model_desc.model)
+        with model_cache(model_desc.model) as model:
+            whole_result = list(model.query_embed(queries_to_embed))
+            assert len(whole_result) == 1
+            result = whole_result[0]
+            expected_result = CANONICAL_QUERY_VALUES[model_desc.model]
+            token_num, abridged_dim = expected_result.shape
+            assert np.allclose(result[:, :abridged_dim], expected_result, atol=2e-3)
 
 
 @pytest.mark.parametrize("token_dim,model_name", [(96, "answerdotai/answerai-colbert-small-v1")])
-def test_parallel_processing(token_dim: int, model_name: str):
-    is_ci = os.getenv("CI")
-    model = LateInteractionTextEmbedding(model_name=model_name)
+def test_parallel_processing(model_cache, token_dim: int, model_name: str):
+    with model_cache(model_name) as model:
+        docs = ["hello world", "flag embedding"] * 100
+        embeddings = list(model.embed(docs, batch_size=10, parallel=2))
 
-    docs = ["hello world", "flag embedding"] * 100
-    embeddings = list(model.embed(docs, batch_size=10, parallel=2))
+        embeddings_2 = list(model.embed(docs, batch_size=10, parallel=None))
 
-    embeddings_2 = list(model.embed(docs, batch_size=10, parallel=None))
+        # embeddings_3 = list(model.embed(docs, batch_size=10, parallel=0))  # inherits OnnxTextModel which
+        #         # is tested in TextEmbedding, disabling it here to reduce number of requests to hf
+        #         # multiprocessing is enough to test with `parallel=2`, and `parallel=None` is okay to tests since it reuses
+        #         # model from cache
 
-    embeddings_3 = list(model.embed(docs, batch_size=10, parallel=0))
+        assert len(embeddings) == len(docs) and embeddings[0].shape[-1] == token_dim
 
-    assert len(embeddings) == len(docs) and embeddings[0].shape[-1] == token_dim
-
-    for i in range(len(embeddings)):
-        assert np.allclose(embeddings[i], embeddings_2[i], atol=1e-3)
-        assert np.allclose(embeddings[i], embeddings_3[i], atol=1e-3)
-
-    if is_ci:
-        delete_model_cache(model.model._model_dir)
+        for i in range(len(embeddings)):
+            assert np.allclose(embeddings[i], embeddings_2[i], atol=1e-3)
+            # assert np.allclose(embeddings[i], embeddings_3[i], atol=1e-3)
 
 
 @pytest.mark.parametrize("model_name", ["answerdotai/answerai-colbert-small-v1"])

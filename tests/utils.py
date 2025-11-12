@@ -49,7 +49,7 @@ def should_test_model(
 
     Tests can be run either in ci or locally.
     Testing all models each time in ci is too long.
-    The testing scheme in ci and on a local machine are different, therefore, there are 3 possible scenarious.
+    The testing scheme in ci and on a local machine are different, therefore, there are 3 possible scenarios.
     1) Run lightweight tests in ci:
         - test only one model that has been manually chosen as a representative for a certain class family
     2) Run heavyweight (manual) tests in ci:
