@@ -8,7 +8,7 @@ from multiprocessing.context import BaseContext
 from multiprocessing.process import BaseProcess
 from multiprocessing.sharedctypes import Synchronized as BaseValue
 from queue import Empty
-from typing import Any, Iterable, Optional, Type
+from typing import Any, Iterable, Type
 
 
 # Single item should be processed in less than:
@@ -38,7 +38,7 @@ def _worker(
     output_queue: Queue,
     num_active_workers: BaseValue,
     worker_id: int,
-    kwargs: Optional[dict[str, Any]] = None,
+    kwargs: dict[str, Any] | None = None,
 ) -> None:
     """
     A worker that pulls data pints off the input queue, and places the execution result on the output queue.
@@ -93,21 +93,21 @@ class ParallelWorkerPool:
         self,
         num_workers: int,
         worker: Type[Worker],
-        start_method: Optional[str] = None,
-        device_ids: Optional[list[int]] = None,
+        start_method: str | None = None,
+        device_ids: list[int] | None = None,
         cuda: bool = False,
     ):
         self.worker_class = worker
         self.num_workers = num_workers
-        self.input_queue: Optional[Queue] = None
-        self.output_queue: Optional[Queue] = None
+        self.input_queue: Queue | None = None
+        self.output_queue: Queue | None = None
         self.ctx: BaseContext = get_context(start_method)
         self.processes: list[BaseProcess] = []
         self.queue_size = self.num_workers * max_internal_batch_size
         self.emergency_shutdown = False
         self.device_ids = device_ids
         self.cuda = cuda
-        self.num_active_workers: Optional[BaseValue] = None
+        self.num_active_workers: BaseValue | None = None
 
     def start(self, **kwargs: Any) -> None:
         self.input_queue = self.ctx.Queue(self.queue_size)
@@ -220,7 +220,7 @@ class ParallelWorkerPool:
                     f"Worker PID: {process.pid} terminated unexpectedly with code {process.exitcode}"
                 )
 
-    def join_or_terminate(self, timeout: Optional[int] = 1) -> None:
+    def join_or_terminate(self, timeout: int = 1) -> None:
         """
         Emergency shutdown
         @param timeout:
