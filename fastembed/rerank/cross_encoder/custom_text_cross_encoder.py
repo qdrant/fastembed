@@ -1,4 +1,4 @@
-from typing import Optional, Sequence, Any
+from typing import Sequence, Any
 
 from fastembed.common import OnnxProvider
 from fastembed.common.model_description import BaseModelDescription
@@ -11,14 +11,14 @@ class CustomTextCrossEncoder(OnnxTextCrossEncoder):
     def __init__(
         self,
         model_name: str,
-        cache_dir: Optional[str] = None,
-        threads: Optional[int] = None,
-        providers: Optional[Sequence[OnnxProvider]] = None,
+        cache_dir: str | None = None,
+        threads: int | None = None,
+        providers: Sequence[OnnxProvider] | None = None,
         cuda: bool = False,
-        device_ids: Optional[list[int]] = None,
+        device_ids: list[int] | None = None,
         lazy_load: bool = False,
-        device_id: Optional[int] = None,
-        specific_model_path: Optional[str] = None,
+        device_id: int | None = None,
+        specific_model_path: str | None = None,
         **kwargs: Any,
     ):
         super().__init__(

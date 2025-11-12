@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Iterable, Optional, Union, Any
+from typing import Iterable, Any, Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -35,8 +35,8 @@ class SparseTextEmbeddingBase(ModelManagement[SparseModelDescription]):
     def __init__(
         self,
         model_name: str,
-        cache_dir: Optional[str] = None,
-        threads: Optional[int] = None,
+        cache_dir: str | None = None,
+        threads: int | None = None,
         **kwargs: Any,
     ):
         self.model_name = model_name
@@ -46,9 +46,9 @@ class SparseTextEmbeddingBase(ModelManagement[SparseModelDescription]):
 
     def embed(
         self,
-        documents: Union[str, Iterable[str]],
+        documents: str | Iterable[str],
         batch_size: int = 256,
-        parallel: Optional[int] = None,
+        parallel: int | None = None,
         **kwargs: Any,
     ) -> Iterable[SparseEmbedding]:
         raise NotImplementedError()
@@ -68,9 +68,7 @@ class SparseTextEmbeddingBase(ModelManagement[SparseModelDescription]):
         # This is model-specific, so that different models can have specialized implementations
         yield from self.embed(texts, **kwargs)
 
-    def query_embed(
-        self, query: Union[str, Iterable[str]], **kwargs: Any
-    ) -> Iterable[SparseEmbedding]:
+    def query_embed(self, query: str | Iterable[str], **kwargs: Any) -> Iterable[SparseEmbedding]:
         """
         Embeds queries
 

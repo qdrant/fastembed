@@ -1,4 +1,4 @@
-from typing import Iterable, Optional, Union, Any
+from typing import Iterable, Any
 
 from fastembed.common.model_description import DenseModelDescription
 from fastembed.common.types import NumpyArray
@@ -9,21 +9,21 @@ class TextEmbeddingBase(ModelManagement[DenseModelDescription]):
     def __init__(
         self,
         model_name: str,
-        cache_dir: Optional[str] = None,
-        threads: Optional[int] = None,
+        cache_dir: str | None = None,
+        threads: int | None = None,
         **kwargs: Any,
     ):
         self.model_name = model_name
         self.cache_dir = cache_dir
         self.threads = threads
         self._local_files_only = kwargs.pop("local_files_only", False)
-        self._embedding_size: Optional[int] = None
+        self._embedding_size: int | None = None
 
     def embed(
         self,
-        documents: Union[str, Iterable[str]],
+        documents: str | Iterable[str],
         batch_size: int = 256,
-        parallel: Optional[int] = None,
+        parallel: int | None = None,
         **kwargs: Any,
     ) -> Iterable[NumpyArray]:
         raise NotImplementedError()
@@ -43,7 +43,7 @@ class TextEmbeddingBase(ModelManagement[DenseModelDescription]):
         # This is model-specific, so that different models can have specialized implementations
         yield from self.embed(texts, **kwargs)
 
-    def query_embed(self, query: Union[str, Iterable[str]], **kwargs: Any) -> Iterable[NumpyArray]:
+    def query_embed(self, query: str | Iterable[str], **kwargs: Any) -> Iterable[NumpyArray]:
         """
         Embeds queries
 

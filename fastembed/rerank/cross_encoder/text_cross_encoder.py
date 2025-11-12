@@ -1,4 +1,4 @@
-from typing import Any, Iterable, Optional, Sequence, Type
+from typing import Any, Iterable, Sequence, Type
 from dataclasses import asdict
 
 from fastembed.common import OnnxProvider
@@ -53,11 +53,11 @@ class TextCrossEncoder(TextCrossEncoderBase):
     def __init__(
         self,
         model_name: str,
-        cache_dir: Optional[str] = None,
-        threads: Optional[int] = None,
-        providers: Optional[Sequence[OnnxProvider]] = None,
+        cache_dir: str | None = None,
+        threads: int | None = None,
+        providers: Sequence[OnnxProvider] | None = None,
         cuda: bool = False,
-        device_ids: Optional[list[int]] = None,
+        device_ids: list[int] | None = None,
         lazy_load: bool = False,
         **kwargs: Any,
     ):
@@ -102,7 +102,7 @@ class TextCrossEncoder(TextCrossEncoderBase):
         self,
         pairs: Iterable[tuple[str, str]],
         batch_size: int = 64,
-        parallel: Optional[int] = None,
+        parallel: int | None = None,
         **kwargs: Any,
     ) -> Iterable[float]:
         """
@@ -140,7 +140,7 @@ class TextCrossEncoder(TextCrossEncoderBase):
         description: str = "",
         license: str = "",
         size_in_gb: float = 0.0,
-        additional_files: Optional[list[str]] = None,
+        additional_files: list[str] | None = None,
     ) -> None:
         registered_models = cls._list_supported_models()
         for registered_model in registered_models:

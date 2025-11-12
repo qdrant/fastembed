@@ -2,7 +2,7 @@ import contextlib
 import os
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Iterable, Optional, Sequence, Type, Union
+from typing import Any, Iterable, Sequence, Type
 
 import numpy as np
 from PIL import Image
@@ -37,7 +37,7 @@ class OnnxImageModel(OnnxModel[T]):
 
     def __init__(self) -> None:
         super().__init__()
-        self.processor: Optional[Compose] = None
+        self.processor: Compose | None = None
 
     def _preprocess_onnx_input(
         self, onnx_input: dict[str, NumpyArray], **kwargs: Any
@@ -51,10 +51,10 @@ class OnnxImageModel(OnnxModel[T]):
         self,
         model_dir: Path,
         model_file: str,
-        threads: Optional[int],
-        providers: Optional[Sequence[OnnxProvider]] = None,
+        threads: int | None,
+        providers: Sequence[OnnxProvider] | None = None,
         cuda: bool = False,
-        device_id: Optional[int] = None,
+        device_id: int | None = None,
     ) -> None:
         super()._load_onnx_model(
             model_dir=model_dir,
@@ -91,14 +91,14 @@ class OnnxImageModel(OnnxModel[T]):
         self,
         model_name: str,
         cache_dir: str,
-        images: Union[ImageInput, Iterable[ImageInput]],
+        images: ImageInput | Iterable[ImageInput],
         batch_size: int = 256,
-        parallel: Optional[int] = None,
-        providers: Optional[Sequence[OnnxProvider]] = None,
+        parallel: int | None = None,
+        providers: Sequence[OnnxProvider] | None = None,
         cuda: bool = False,
-        device_ids: Optional[list[int]] = None,
+        device_ids: list[int] | None = None,
         local_files_only: bool = False,
-        specific_model_path: Optional[str] = None,
+        specific_model_path: str | None = None,
         **kwargs: Any,
     ) -> Iterable[T]:
         is_small = False
