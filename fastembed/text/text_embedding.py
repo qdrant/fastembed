@@ -1,5 +1,5 @@
 import warnings
-from typing import Any, Iterable, Optional, Sequence, Type, Union
+from typing import Any, Iterable, Sequence, Type
 from dataclasses import asdict
 
 from fastembed.common.types import NumpyArray, OnnxProvider
@@ -51,7 +51,7 @@ class TextEmbedding(TextEmbeddingBase):
         description: str = "",
         license: str = "",
         size_in_gb: float = 0.0,
-        additional_files: Optional[list[str]] = None,
+        additional_files: list[str] | None = None,
     ) -> None:
         registered_models = cls._list_supported_models()
         for registered_model in registered_models:
@@ -79,11 +79,11 @@ class TextEmbedding(TextEmbeddingBase):
     def __init__(
         self,
         model_name: str = "BAAI/bge-small-en-v1.5",
-        cache_dir: Optional[str] = None,
-        threads: Optional[int] = None,
-        providers: Optional[Sequence[OnnxProvider]] = None,
+        cache_dir: str | None = None,
+        threads: int | None = None,
+        providers: Sequence[OnnxProvider] | None = None,
         cuda: bool = False,
-        device_ids: Optional[list[int]] = None,
+        device_ids: list[int] | None = None,
         lazy_load: bool = False,
         **kwargs: Any,
     ):
@@ -149,7 +149,7 @@ class TextEmbedding(TextEmbeddingBase):
             ValueError: If the model name is not found in the supported models.
         """
         descriptions = cls._list_supported_models()
-        embedding_size: Optional[int] = None
+        embedding_size: int | None = None
         for description in descriptions:
             if description.model.lower() == model_name.lower():
                 embedding_size = description.dim
@@ -164,9 +164,9 @@ class TextEmbedding(TextEmbeddingBase):
 
     def embed(
         self,
-        documents: Union[str, Iterable[str]],
+        documents: str | Iterable[str],
         batch_size: int = 256,
-        parallel: Optional[int] = None,
+        parallel: int | None = None,
         **kwargs: Any,
     ) -> Iterable[NumpyArray]:
         """
@@ -186,7 +186,7 @@ class TextEmbedding(TextEmbeddingBase):
         """
         yield from self.model.embed(documents, batch_size, parallel, **kwargs)
 
-    def query_embed(self, query: Union[str, Iterable[str]], **kwargs: Any) -> Iterable[NumpyArray]:
+    def query_embed(self, query: str | Iterable[str], **kwargs: Any) -> Iterable[NumpyArray]:
         """
         Embeds queries
 

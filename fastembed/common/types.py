@@ -1,21 +1,16 @@
 from pathlib import Path
-import sys
-from PIL import Image
-from typing import Any, Union
+
+from typing import Any, Union, TypeAlias
 import numpy as np
 from numpy.typing import NDArray
-
-if sys.version_info >= (3, 10):
-    from typing import TypeAlias
-else:
-    from typing_extensions import TypeAlias
+from PIL import Image
 
 
-PathInput: TypeAlias = Union[str, Path]
-ImageInput: TypeAlias = Union[PathInput, Image.Image]
+PathInput: TypeAlias = str | Path
+ImageInput: TypeAlias = PathInput | Image.Image
 
-OnnxProvider: TypeAlias = Union[str, tuple[str, dict[Any, Any]]]
-NumpyArray = Union[
+OnnxProvider: TypeAlias = str | tuple[str, dict[Any, Any]]
+NumpyArray = Union[  # can't be replaced with `|` yet
     NDArray[np.float64],
     NDArray[np.float32],
     NDArray[np.float16],

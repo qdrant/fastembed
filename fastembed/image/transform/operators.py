@@ -1,4 +1,4 @@
-from typing import Any, Union, Optional
+from typing import Any
 
 from PIL import Image
 
@@ -15,7 +15,7 @@ from fastembed.image.transform.functional import (
 
 
 class Transform:
-    def __call__(self, images: list[Any]) -> Union[list[Image.Image], list[NumpyArray]]:
+    def __call__(self, images: list[Any]) -> list[Image.Image] | list[NumpyArray]:
         raise NotImplementedError("Subclasses must implement this method")
 
 
@@ -33,7 +33,7 @@ class CenterCrop(Transform):
 
 
 class Normalize(Transform):
-    def __init__(self, mean: Union[float, list[float]], std: Union[float, list[float]]):
+    def __init__(self, mean: float | list[float], std: float | list[float]):
         self.mean = mean
         self.std = std
 
@@ -44,7 +44,7 @@ class Normalize(Transform):
 class Resize(Transform):
     def __init__(
         self,
-        size: Union[int, tuple[int, int]],
+        size: int | tuple[int, int],
         resample: Image.Resampling = Image.Resampling.BICUBIC,
     ):
         self.size = size
@@ -63,7 +63,7 @@ class Rescale(Transform):
 
 
 class PILtoNDarray(Transform):
-    def __call__(self, images: list[Union[Image.Image, NumpyArray]]) -> list[NumpyArray]:
+    def __call__(self, images: list[Image.Image | NumpyArray]) -> list[NumpyArray]:
         return [pil2ndarray(image) for image in images]
 
 
@@ -71,7 +71,7 @@ class PadtoSquare(Transform):
     def __init__(
         self,
         size: int,
-        fill_color: Union[str, int, tuple[int, ...]],
+        fill_color: str | int | tuple[int, ...],
     ):
         self.size = size
         self.fill_color = fill_color
@@ -87,8 +87,8 @@ class Compose:
         self.transforms = transforms
 
     def __call__(
-        self, images: Union[list[Image.Image], list[NumpyArray]]
-    ) -> Union[list[NumpyArray], list[Image.Image]]:
+        self, images: list[Image.Image] | list[NumpyArray]
+    ) -> list[NumpyArray] | list[Image.Image]:
         for transform in self.transforms:
             images = transform(images)
         return images
@@ -253,7 +253,7 @@ class Compose:
             )
 
     @staticmethod
-    def _interpolation_resolver(resample: Optional[str] = None) -> Image.Resampling:
+    def _interpolation_resolver(resample: str | None = None) -> Image.Resampling:
         interpolation_map = {
             "nearest": Image.Resampling.NEAREST,
             "lanczos": Image.Resampling.LANCZOS,

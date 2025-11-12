@@ -1,12 +1,11 @@
-from typing import Dict, List, Set
-from py_rust_stemmers import SnowballStemmer
-from fastembed.common.utils import get_all_punctuation, remove_non_alphanumeric
-import mmh3
 import copy
 from dataclasses import dataclass
 
+import mmh3
 import numpy as np
+from py_rust_stemmers import SnowballStemmer
 
+from fastembed.common.utils import get_all_punctuation, remove_non_alphanumeric
 from fastembed.sparse.sparse_embedding_base import SparseEmbedding
 
 GAP = 32000
@@ -16,16 +15,16 @@ INT32_MAX = 2**31 - 1
 @dataclass
 class WordEmbedding:
     word: str
-    forms: List[str]
+    forms: list[str]
     count: int
     word_id: int
-    embedding: List[float]
+    embedding: list[float]
 
 
 class SparseVectorConverter:
     def __init__(
         self,
-        stopwords: Set[str],
+        stopwords: set[str],
         stemmer: SnowballStemmer,
         k: float = 1.2,
         b: float = 0.75,
@@ -58,15 +57,15 @@ class SparseVectorConverter:
         return res
 
     @classmethod
-    def normalize_vector(cls, vector: List[float]) -> List[float]:
+    def normalize_vector(cls, vector: list[float]) -> list[float]:
         norm = sum([x**2 for x in vector]) ** 0.5
         if norm < 1e-8:
             return vector
         return [x / norm for x in vector]
 
     def clean_words(
-        self, sentence_embedding: Dict[str, WordEmbedding], token_max_length: int = 40
-    ) -> Dict[str, WordEmbedding]:
+        self, sentence_embedding: dict[str, WordEmbedding], token_max_length: int = 40
+    ) -> dict[str, WordEmbedding]:
         """
         Clean miniCOIL-produced sentence_embedding, as unknown to the miniCOIL's stemmer tokens should fully resemble
         our BM25 token representation.
@@ -85,7 +84,7 @@ class SparseVectorConverter:
                 }
         """
 
-        new_sentence_embedding: Dict[str, WordEmbedding] = {}
+        new_sentence_embedding: dict[str, WordEmbedding] = {}
 
         for word, embedding in sentence_embedding.items():
             # embedding = {
@@ -127,7 +126,7 @@ class SparseVectorConverter:
 
     def embedding_to_vector(
         self,
-        sentence_embedding: Dict[str, WordEmbedding],
+        sentence_embedding: dict[str, WordEmbedding],
         embedding_size: int,
         vocab_size: int,
     ) -> SparseEmbedding:
@@ -156,14 +155,14 @@ class SparseVectorConverter:
 
         """
 
-        indices: List[int] = []
-        values: List[float] = []
-        
+        indices: list[int] = []
+        values: list[float] = []
+
         # Example:
         # vocab_size = 10000
         # embedding_size = 4
         # GAP = 32000
-        # 
+        #
         # We want to start random words section from the bucket, that is guaranteed to not
         # include any vocab words.
         # We need (vocab_size * embedding_size) slots for vocab words.
@@ -171,9 +170,7 @@ class SparseVectorConverter:
         # Therefore, we can start random words from bucket (vocab_size * embedding_size) // GAP + 1 + 1
 
         # ID at which the scope of OOV words starts
-        unknown_words_shift = (
-            (vocab_size * embedding_size) // GAP + 2
-        ) * GAP
+        unknown_words_shift = ((vocab_size * embedding_size) // GAP + 2) * GAP
         sentence_embedding_cleaned = self.clean_words(sentence_embedding)
 
         # Calculate sentence length after cleaning
@@ -208,7 +205,7 @@ class SparseVectorConverter:
 
     def embedding_to_vector_query(
         self,
-        sentence_embedding: Dict[str, WordEmbedding],
+        sentence_embedding: dict[str, WordEmbedding],
         embedding_size: int,
         vocab_size: int,
     ) -> SparseEmbedding:
@@ -216,8 +213,8 @@ class SparseVectorConverter:
         Same as `embedding_to_vector`, but no TF
         """
 
-        indices: List[int] = []
-        values: List[float] = []
+        indices: list[int] = []
+        values: list[float] = []
 
         # ID at which the scope of OOV words starts
         unknown_words_shift = ((vocab_size * embedding_size) // GAP + 2) * GAP

@@ -1,7 +1,7 @@
 import os
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Iterable, Optional, Sequence, Type, Union
+from typing import Any, Iterable, Sequence, Type
 
 import numpy as np
 from numpy.typing import NDArray
@@ -15,7 +15,7 @@ from fastembed.parallel_processor import ParallelWorkerPool
 
 
 class OnnxTextModel(OnnxModel[T]):
-    ONNX_OUTPUT_NAMES: Optional[list[str]] = None
+    ONNX_OUTPUT_NAMES: list[str] | None = None
 
     @classmethod
     def _get_worker_class(cls) -> Type["TextEmbeddingWorker[T]"]:
@@ -35,12 +35,12 @@ class OnnxTextModel(OnnxModel[T]):
 
     def __init__(self) -> None:
         super().__init__()
-        self.tokenizer: Optional[Tokenizer] = None
+        self.tokenizer: Tokenizer | None = None
         self.special_token_to_id: dict[str, int] = {}
 
     def _preprocess_onnx_input(
         self, onnx_input: dict[str, NumpyArray], **kwargs: Any
-    ) -> dict[str, Union[NumpyArray, NDArray[np.int64]]]:
+    ) -> dict[str, NumpyArray | NDArray[np.int64]]:
         """
         Preprocess the onnx input.
         """
@@ -50,11 +50,11 @@ class OnnxTextModel(OnnxModel[T]):
         self,
         model_dir: Path,
         model_file: str,
-        threads: Optional[int],
-        providers: Optional[Sequence[OnnxProvider]] = None,
+        threads: int | None,
+        providers: Sequence[OnnxProvider] | None = None,
         cuda: bool = False,
-        device_id: Optional[int] = None,
-        extra_session_options: Optional[dict[str, Any]] = None,
+        device_id: int | None = None,
+        extra_session_options: dict[str, Any] | None = None,
     ) -> None:
         super()._load_onnx_model(
             model_dir=model_dir,
@@ -104,15 +104,15 @@ class OnnxTextModel(OnnxModel[T]):
         self,
         model_name: str,
         cache_dir: str,
-        documents: Union[str, Iterable[str]],
+        documents: str | Iterable[str],
         batch_size: int = 256,
-        parallel: Optional[int] = None,
-        providers: Optional[Sequence[OnnxProvider]] = None,
+        parallel: int | None = None,
+        providers: Sequence[OnnxProvider] | None = None,
         cuda: bool = False,
-        device_ids: Optional[list[int]] = None,
+        device_ids: list[int] | None = None,
         local_files_only: bool = False,
-        specific_model_path: Optional[str] = None,
-        extra_session_options: Optional[dict[str, Any]] = None,
+        specific_model_path: str | None = None,
+        extra_session_options: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> Iterable[T]:
         is_small = False

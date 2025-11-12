@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Type, Iterable, Union, Optional
+from typing import Any, Type, Iterable
 
 import numpy as np
 
@@ -45,11 +45,9 @@ class JinaEmbeddingV3(PooledNormalizedEmbedding):
     PASSAGE_TASK = Task.RETRIEVAL_PASSAGE
     QUERY_TASK = Task.RETRIEVAL_QUERY
 
-    def __init__(self, *args: Any, task_id: Optional[int] = None, **kwargs: Any):
+    def __init__(self, *args: Any, task_id: int | None = None, **kwargs: Any):
         super().__init__(*args, **kwargs)
-        self.default_task_id: Union[Task, int] = (
-            task_id if task_id is not None else self.PASSAGE_TASK
-        )
+        self.default_task_id: Task | int = task_id if task_id is not None else self.PASSAGE_TASK
 
     @classmethod
     def _get_worker_class(cls) -> Type[OnnxTextEmbeddingWorker]:
@@ -62,7 +60,7 @@ class JinaEmbeddingV3(PooledNormalizedEmbedding):
     def _preprocess_onnx_input(
         self,
         onnx_input: dict[str, NumpyArray],
-        task_id: Optional[Union[int, Task]] = None,
+        task_id: int | Task | None = None,
         **kwargs: Any,
     ) -> dict[str, NumpyArray]:
         if task_id is None:
@@ -72,10 +70,10 @@ class JinaEmbeddingV3(PooledNormalizedEmbedding):
 
     def embed(
         self,
-        documents: Union[str, Iterable[str]],
+        documents: str | Iterable[str],
         batch_size: int = 256,
-        parallel: Optional[int] = None,
-        task_id: Optional[int] = None,
+        parallel: int | None = None,
+        task_id: int | None = None,
         **kwargs: Any,
     ) -> Iterable[NumpyArray]:
         task_id = (
@@ -83,7 +81,7 @@ class JinaEmbeddingV3(PooledNormalizedEmbedding):
         )  # required for multiprocessing
         yield from super().embed(documents, batch_size, parallel, task_id=task_id, **kwargs)
 
-    def query_embed(self, query: Union[str, Iterable[str]], **kwargs: Any) -> Iterable[NumpyArray]:
+    def query_embed(self, query: str | Iterable[str], **kwargs: Any) -> Iterable[NumpyArray]:
         yield from super().embed(query, task_id=self.QUERY_TASK, **kwargs)
 
     def passage_embed(self, texts: Iterable[str], **kwargs: Any) -> Iterable[NumpyArray]:

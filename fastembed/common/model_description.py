@@ -33,8 +33,8 @@ class BaseModelDescription:
 
 @dataclass(frozen=True)
 class DenseModelDescription(BaseModelDescription):
-    dim: Optional[int] = None
-    tasks: Optional[dict[str, Any]] = field(default_factory=dict)
+    dim: int | None = None
+    tasks: dict[str, Any] | None = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         assert self.dim is not None, "dim is required for dense model description"

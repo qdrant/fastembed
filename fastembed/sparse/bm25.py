@@ -2,7 +2,7 @@ import os
 from collections import defaultdict
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Iterable, Optional, Type, Union
+from typing import Any, Iterable, Type
 
 import mmh3
 import numpy as np
@@ -91,14 +91,14 @@ class Bm25(SparseTextEmbeddingBase):
     def __init__(
         self,
         model_name: str,
-        cache_dir: Optional[str] = None,
+        cache_dir: str | None = None,
         k: float = 1.2,
         b: float = 0.75,
         avg_len: float = 256.0,
         language: str = "english",
         token_max_length: int = 40,
         disable_stemmer: bool = False,
-        specific_model_path: Optional[str] = None,
+        specific_model_path: str | None = None,
         **kwargs: Any,
     ):
         super().__init__(model_name, cache_dir, **kwargs)
@@ -158,11 +158,11 @@ class Bm25(SparseTextEmbeddingBase):
         self,
         model_name: str,
         cache_dir: str,
-        documents: Union[str, Iterable[str]],
+        documents: str | Iterable[str],
         batch_size: int = 256,
-        parallel: Optional[int] = None,
+        parallel: int | None = None,
         local_files_only: bool = False,
-        specific_model_path: Optional[str] = None,
+        specific_model_path: str | None = None,
     ) -> Iterable[SparseEmbedding]:
         is_small = False
 
@@ -205,9 +205,9 @@ class Bm25(SparseTextEmbeddingBase):
 
     def embed(
         self,
-        documents: Union[str, Iterable[str]],
+        documents: str | Iterable[str],
         batch_size: int = 256,
-        parallel: Optional[int] = None,
+        parallel: int | None = None,
         **kwargs: Any,
     ) -> Iterable[SparseEmbedding]:
         """
@@ -311,9 +311,7 @@ class Bm25(SparseTextEmbeddingBase):
     def compute_token_id(cls, token: str) -> int:
         return abs(mmh3.hash(token))
 
-    def query_embed(
-        self, query: Union[str, Iterable[str]], **kwargs: Any
-    ) -> Iterable[SparseEmbedding]:
+    def query_embed(self, query: str | Iterable[str], **kwargs: Any) -> Iterable[SparseEmbedding]:
         """To emulate BM25 behaviour, we don't need to use weights in the query, and
         it's enough to just hash the tokens and assign a weight of 1.0 to them.
         """
