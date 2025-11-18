@@ -324,6 +324,16 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):
     def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
         return self._tokenize(documents, **kwargs)
 
+    def token_count(self, documents: list[str], **kwargs: Any) -> list[int]:
+        encoded = self._tokenize(documents, **kwargs)
+        counts: list[int] = []
+        for e in encoded:
+            try:
+                counts.append(int(sum(e.attention_mask)))  # type: ignore[arg-type]
+            except Exception:
+                counts.append(len(e.ids))
+        return counts
+
     def load_onnx_model(self) -> None:
         self._load_onnx_model(
             model_dir=self._model_dir,
