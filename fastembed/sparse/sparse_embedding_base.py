@@ -44,6 +44,9 @@ class SparseTextEmbeddingBase(ModelManagement[SparseModelDescription]):
         self.threads = threads
         self._local_files_only = kwargs.pop("local_files_only", False)
 
+    def tokenize(self, documents: list[str], **kwargs: Any) -> dict[str, Any]:
+        raise NotImplementedError("Tokenize method for sparse embeddings is not implemented yet.")
+
     def embed(
         self,
         documents: Union[str, Iterable[str]],

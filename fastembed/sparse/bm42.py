@@ -138,6 +138,9 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         if not self.lazy_load:
             self.load_onnx_model()
 
+    def tokenize(self, documents: list[str], **kwargs: Any) -> dict[str, Any]:
+        raise NotImplementedError("Tokenize method for sparse embeddings is not implemented yet.")
+
     def load_onnx_model(self) -> None:
         self._load_onnx_model(
             model_dir=self._model_dir,

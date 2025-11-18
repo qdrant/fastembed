@@ -136,6 +136,9 @@ class Bm25(SparseTextEmbeddingBase):
 
         self.tokenizer = SimpleTokenizer
 
+    def tokenize(self, documents: list[str], **kwargs: Any) -> dict[str, Any]:
+        raise NotImplementedError("Tokenize method for sparse embeddings is not implemented yet.")
+
     @classmethod
     def _list_supported_models(cls) -> list[SparseModelDescription]:
         """Lists the supported models.

@@ -1,8 +1,8 @@
 import os
 from contextlib import contextmanager
 
-import pytest
 import numpy as np
+import pytest
 
 from fastembed.sparse.bm25 import Bm25
 from fastembed.sparse.sparse_text_embedding import SparseTextEmbedding
