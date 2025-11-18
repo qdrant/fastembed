@@ -132,9 +132,6 @@ class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase)
         """
         return self.model.tokenize(documents, **kwargs)
 
-    def token_count(self, documents: list[str], **kwargs: Any) -> list[int]:
-        return self.model.token_count(documents, **kwargs)
-
     def embed_text(
         self,
         documents: Union[str, Iterable[str]],

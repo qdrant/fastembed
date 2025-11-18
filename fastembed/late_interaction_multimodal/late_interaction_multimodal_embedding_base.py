@@ -25,9 +25,6 @@ class LateInteractionMultimodalEmbeddingBase(ModelManagement[DenseModelDescripti
     def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
         raise NotImplementedError("Subclasses must implement this method.")
 
-    def token_count(self, documents: list[str], **kwargs: Any) -> list[int]:
-        raise NotImplementedError("Subclasses must implement this method.")
-
     def embed_text(
         self,
         documents: Union[str, Iterable[str]],

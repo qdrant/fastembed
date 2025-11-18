@@ -163,16 +163,6 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
     def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
         return self._tokenize(documents, **kwargs)
 
-    def token_count(self, documents: list[str], **kwargs: Any) -> list[int]:
-        encoded = self._tokenize(documents, **kwargs)
-        counts: list[int] = []
-        for e in encoded:
-            try:
-                counts.append(int(sum(e.attention_mask)))  # type: ignore[arg-type]
-            except Exception:
-                counts.append(len(e.ids))
-        return counts
-
     def _tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
         texts_query: list[str] = []
         for query in documents:

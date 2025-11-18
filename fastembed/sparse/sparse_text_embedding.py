@@ -95,9 +95,6 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
     def tokenize(self, documents: list[str], **kwargs: Any) -> dict[str, Any]:
         raise NotImplementedError("Tokenize method for sparse embeddings is not implemented yet.")
 
-    def token_count(self, documents: list[str], **kwargs: Any) -> list[int]:
-        raise NotImplementedError("Token count for sparse embeddings is not implemented.")
-
     def embed(
         self,
         documents: Union[str, Iterable[str]],

@@ -83,29 +83,6 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
     def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
         return self._tokenize(documents, **kwargs)
 
-    def token_count(self, documents: list[str], is_doc: bool = True, **kwargs: Any) -> list[int]:
-        if not hasattr(self, "model") or self.model is None:
-            self.load_onnx_model()
-        counts: list[int] = []
-        if is_doc:
-            encoded = self._tokenize_documents(documents=documents)
-            assert self.pad_token_id is not None
-            for e in encoded:
-                counts.append(
-                    sum(
-                        1
-                        for tid in e.ids
-                        if tid not in self.skip_list and tid != self.pad_token_id
-                    )
-                )
-        else:
-            # query padding uses MASK token; exclude it from count
-            assert self.mask_token_id is not None
-            encoded = self._tokenize_query(query=next(iter(documents)))
-            for e in encoded:
-                counts.append(sum(1 for tid in e.ids if tid != self.mask_token_id))
-        return counts
-
     def _tokenize(
         self, documents: list[str], is_doc: bool = True, **kwargs: Any
     ) -> list[Encoding]:
