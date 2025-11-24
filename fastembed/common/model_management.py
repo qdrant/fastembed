@@ -3,6 +3,7 @@ import time
 import json
 import shutil
 import tarfile
+from copy import deepcopy
 from pathlib import Path
 from typing import Any, Optional, Union, TypeVar, Generic
 
@@ -224,11 +225,6 @@ class ModelManagement(Generic[T]):
                     logger.warning(
                         "Local file sizes do not match the metadata."
                     )  # do not raise, still make an attempt to load the model
-            else:
-                logger.warning(
-                    "Metadata file not found. Proceeding without checking local files."
-                )  # if users have downloaded models from hf manually, or they're updating from previous versions of
-                # fastembed
             result = snapshot_download(
                 repo_id=hf_source_repo,
                 allow_patterns=allow_patterns,
@@ -408,14 +404,32 @@ class ModelManagement(Generic[T]):
         hf_source = model.sources.hf
         url_source = model.sources.url
 
+        extra_patterns = [model.model_file]
+        extra_patterns.extend(model.additional_files)
+
+        if hf_source:
+            try:
+                cache_kwargs = deepcopy(kwargs)
+                cache_kwargs["local_files_only"] = True
+                return Path(
+                    cls.download_files_from_huggingface(
+                        hf_source,
+                        cache_dir=cache_dir,
+                        extra_patterns=extra_patterns,
+                        **cache_kwargs,
+                    )
+                )
+            except Exception:
+                pass
+            finally:
+                enable_progress_bars()
+
         sleep = 3.0
         while retries > 0:
             retries -= 1
 
-            if hf_source:
-                extra_patterns = [model.model_file]
-                extra_patterns.extend(model.additional_files)
-
+            if hf_source and not local_files_only:
+                # we have already tried loading with `local_files_only=True` via hf and we failed
                 try:
                     return Path(
                         cls.download_files_from_huggingface(
@@ -448,11 +462,12 @@ class ModelManagement(Generic[T]):
 
             if local_files_only:
                 logger.error("Could not find model in cache_dir")
+                break
             else:
                 logger.error(
                     f"Could not download model from either source, sleeping for {sleep} seconds, {retries} retries left."
                 )
-            time.sleep(sleep)
-            sleep *= 3
+                time.sleep(sleep)
+                sleep *= 3
 
         raise ValueError(f"Could not load model {model.model} from any source.")
