@@ -182,6 +182,7 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[NumpyArray]):
             device_ids=self.device_ids,
             local_files_only=self._local_files_only,
             specific_model_path=self._specific_model_path,
+            extra_session_options=self._extra_session_options,
             **kwargs,
         )
 

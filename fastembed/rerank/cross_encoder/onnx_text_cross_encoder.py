@@ -85,7 +85,6 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
         lazy_load: bool = False,
         device_id: Optional[int] = None,
         specific_model_path: Optional[str] = None,
-        extra_session_options: Optional[dict[str, Any]] = None,
         **kwargs: Any,
     ):
         """
