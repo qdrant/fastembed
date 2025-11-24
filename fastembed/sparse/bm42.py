@@ -103,6 +103,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         super().__init__(model_name, cache_dir, threads, **kwargs)
         self.providers = providers
         self.lazy_load = lazy_load
+        self._extra_session_options = self._select_exposed_session_options(kwargs)
 
         # List of device ids, that can be used for data parallel processing in workers
         self.device_ids = device_ids
@@ -146,6 +147,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             providers=self.providers,
             cuda=self.cuda,
             device_id=self.device_id,
+            extra_session_options=self._extra_session_options,
         )
 
         for token, idx in self.tokenizer.get_vocab().items():  # type: ignore[union-attr]
@@ -312,6 +314,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             alpha=self.alpha,
             local_files_only=self._local_files_only,
             specific_model_path=self._specific_model_path,
+            extra_session_options=self._extra_session_options,
         )
 
     @classmethod

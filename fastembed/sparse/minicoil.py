@@ -117,6 +117,8 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         self.device_ids = device_ids
         self.cuda = cuda
         self.device_id = device_id
+        self._extra_session_options = self._select_exposed_session_options(kwargs)
+
         self.k = k
         self.b = b
         self.avg_len = avg_len

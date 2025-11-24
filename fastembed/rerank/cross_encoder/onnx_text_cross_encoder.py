@@ -85,6 +85,7 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
         lazy_load: bool = False,
         device_id: Optional[int] = None,
         specific_model_path: Optional[str] = None,
+        extra_session_options: Optional[dict[str, Any]] = None,
         **kwargs: Any,
     ):
         """
@@ -111,6 +112,7 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
         super().__init__(model_name, cache_dir, threads, **kwargs)
         self.providers = providers
         self.lazy_load = lazy_load
+        self._extra_session_options = self._select_exposed_session_options(kwargs)
 
         # List of device ids, that can be used for data parallel processing in workers
         self.device_ids = device_ids
@@ -150,6 +152,7 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
             providers=self.providers,
             cuda=self.cuda,
             device_id=self.device_id,
+            extra_session_options=self._extra_session_options,
         )
 
     def rerank(
@@ -192,6 +195,7 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
             device_ids=self.device_ids,
             local_files_only=self._local_files_only,
             specific_model_path=self._specific_model_path,
+            extra_session_options=self._extra_session_options,
             **kwargs,
         )
 

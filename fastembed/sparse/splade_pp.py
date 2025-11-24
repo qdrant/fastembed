@@ -99,6 +99,7 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         super().__init__(model_name, cache_dir, threads, **kwargs)
         self.providers = providers
         self.lazy_load = lazy_load
+        self._extra_session_options = self._select_exposed_session_options(kwargs)
 
         # List of device ids, that can be used for data parallel processing in workers
         self.device_ids = device_ids
@@ -133,6 +134,7 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             providers=self.providers,
             cuda=self.cuda,
             device_id=self.device_id,
+            extra_session_options=self._extra_session_options,
         )
 
     def embed(
@@ -168,6 +170,7 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             device_ids=self.device_ids,
             local_files_only=self._local_files_only,
             specific_model_path=self._specific_model_path,
+            extra_session_options=self._extra_session_options,
             **kwargs,
         )
 

@@ -33,6 +33,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         providers: Optional[Sequence[OnnxProvider]] = None,
         cuda: bool = False,
         device_id: Optional[int] = None,
+        extra_session_options: Optional[dict[str, Any]] = None,
     ) -> None:
         super()._load_onnx_model(
             model_dir=model_dir,
@@ -41,6 +42,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
             providers=providers,
             cuda=cuda,
             device_id=device_id,
+            extra_session_options=extra_session_options,
         )
         self.tokenizer, _ = load_tokenizer(model_dir=model_dir)
         assert self.tokenizer is not None
@@ -96,6 +98,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         device_ids: Optional[list[int]] = None,
         local_files_only: bool = False,
         specific_model_path: Optional[str] = None,
+        extra_session_options: Optional[dict[str, Any]] = None,
         **kwargs: Any,
     ) -> Iterable[float]:
         is_small = False
@@ -124,6 +127,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
                 "providers": providers,
                 "local_files_only": local_files_only,
                 "specific_model_path": specific_model_path,
+                **extra_session_options,
                 **kwargs,
             }
 
