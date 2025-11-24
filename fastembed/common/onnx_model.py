@@ -102,7 +102,8 @@ class OnnxModel(Generic[T]):
             so.intra_op_num_threads = threads
             so.inter_op_num_threads = threads
 
-        self.add_extra_session_options(so, extra_session_options)
+        if extra_session_options is not None:
+            self.add_extra_session_options(so, extra_session_options)
 
         self.model = ort.InferenceSession(
             str(model_path), providers=onnx_providers, sess_options=so

@@ -127,9 +127,11 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
                 "providers": providers,
                 "local_files_only": local_files_only,
                 "specific_model_path": specific_model_path,
-                **extra_session_options,
                 **kwargs,
             }
+
+            if extra_session_options is not None:
+                params.update(extra_session_options)
 
             pool = ParallelWorkerPool(
                 num_workers=parallel or 1,
