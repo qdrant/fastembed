@@ -1,5 +1,6 @@
 import warnings
 from typing import Any, Iterable, Optional, Sequence, Type, Union
+from tokenizers import Encoding
 from dataclasses import asdict
 
 from fastembed.common.types import NumpyArray, OnnxProvider
@@ -161,6 +162,19 @@ class TextEmbedding(TextEmbeddingBase):
                 f"Available model names: {model_names}"
             )
         return embedding_size
+
+    def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
+        """
+        Tokenize input texts using the model's tokenizer.
+
+        Args:
+            documents: List of strings to tokenize
+            **kwargs: Additional arguments passed to the tokenizer
+
+        Returns:
+            List of tokenizer Encodings
+        """
+        return self.model.tokenize(documents, **kwargs)
 
     def embed(
         self,
