@@ -77,7 +77,12 @@ CANONICAL_QUERY_VALUES = {
 }
 
 
-_MODELS_TO_CACHE = ("prithivida/Splade_PP_en_v1", "Qdrant/minicoil-v1", "Qdrant/bm25")
+_MODELS_TO_CACHE = (
+    "prithivida/Splade_PP_en_v1",
+    "Qdrant/minicoil-v1",
+    "Qdrant/bm25",
+    "Qdrant/bm42-all-minilm-l6-v2-attentions",
+)
 MODELS_TO_CACHE = tuple([x.lower() for x in _MODELS_TO_CACHE])
 
 
@@ -276,3 +281,20 @@ def test_lazy_load(model_name: str) -> None:
 
     if is_ci:
         delete_model_cache(model.model._model_dir)
+
+
+@pytest.mark.parametrize(
+    "model_name",
+    [
+        "prithivida/Splade_PP_en_v1",
+        "Qdrant/minicoil-v1",
+        "Qdrant/bm42-all-minilm-l6-v2-attentions",
+    ],
+)
+def test_session_options(model_cache, model_name) -> None:
+    with model_cache(model_name) as default_model:
+        default_session_options = default_model.model.model.get_session_options()
+        assert default_session_options.enable_cpu_mem_arena is True
+        model = SparseTextEmbedding(model_name=model_name, enable_cpu_mem_arena=False)
+        session_options = model.model.model.get_session_options()
+        assert session_options.enable_cpu_mem_arena is False

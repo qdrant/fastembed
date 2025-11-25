@@ -122,3 +122,13 @@ def test_rerank_pairs_parallel(model_cache, model_name: str) -> None:
         assert np.allclose(
             scores_parallel[: len(canonical_scores)], canonical_scores, atol=1e-3
         ), f"Model: {model_name}, Scores (Parallel): {scores_parallel}, Expected: {canonical_scores}"
+
+
+@pytest.mark.parametrize("model_name", ["Xenova/ms-marco-MiniLM-L-6-v2"])
+def test_session_options(model_cache, model_name) -> None:
+    with model_cache(model_name) as default_model:
+        default_session_options = default_model.model.model.get_session_options()
+        assert default_session_options.enable_cpu_mem_arena is True
+        model = TextCrossEncoder(model_name=model_name, enable_cpu_mem_arena=False)
+        session_options = model.model.model.get_session_options()
+        assert session_options.enable_cpu_mem_arena is False
