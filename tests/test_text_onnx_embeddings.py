@@ -68,6 +68,7 @@ CANONICAL_VECTOR_VALUES = {
     "Qdrant/clip-ViT-B-32-text": np.array([0.0083, 0.0103, -0.0138, 0.0199, -0.0069]),
     "thenlper/gte-base": np.array([0.0038, 0.0355, 0.0181, 0.0092, 0.0654]),
     "jinaai/jina-clip-v1": np.array([-0.0862, -0.0101, -0.0056, 0.0375, -0.0472]),
+    "jinaai/jina-embeddings-v3": np.array([0.07257809, -0.08073004, 0.09241360, -0.01755937, 0.06534681]),
 }
 
 MULTI_TASK_MODELS = ["jinaai/jina-embeddings-v3"]
@@ -190,6 +191,67 @@ def test_embedding_size() -> None:
     model_name = "sentence-transformers/all-minilm-l6-v2"
     model = TextEmbedding(model_name=model_name, lazy_load=True)
     assert model.embedding_size == 384
+
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
+
+
+@pytest.mark.parametrize("model_name", MULTI_TASK_MODELS)
+def test_multi_task_embedding(model_name: str) -> None:
+    """Test models that support task-specific embeddings (query vs passage)."""
+    is_ci = os.getenv("CI")
+    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+
+    # Skip in CI unless manual
+    if is_ci and not is_manual:
+        pytest.skip("Skipping multi-task model tests in CI (large models)")
+
+    model_desc = None
+    for desc in TextEmbedding._list_supported_models():
+        if desc.model == model_name:
+            model_desc = desc
+            break
+
+    assert model_desc is not None, f"Model {model_name} not found in supported models"
+
+    dim = model_desc.dim
+    model = TextEmbedding(model_name=model_name)
+
+    # Test query embedding
+    queries = ["What is the capital of France?", "How does photosynthesis work?"]
+    query_embeddings = list(model.query_embed(queries))
+    query_embeddings = np.stack(query_embeddings, axis=0)
+    assert query_embeddings.shape == (2, dim), f"Query embeddings shape mismatch for {model_name}"
+
+    # Test passage embedding
+    passages = ["Paris is the capital of France.", "Photosynthesis is a process used by plants."]
+    passage_embeddings = list(model.passage_embed(passages))
+    passage_embeddings = np.stack(passage_embeddings, axis=0)
+    assert passage_embeddings.shape == (2, dim), f"Passage embeddings shape mismatch for {model_name}"
+
+    # Test regular embed (should work without task specification)
+    docs = ["hello world", "flag embedding"]
+    embeddings = list(model.embed(docs))
+    embeddings = np.stack(embeddings, axis=0)
+    assert embeddings.shape == (2, dim), f"Regular embeddings shape mismatch for {model_name}"
+
+    # Verify that query and passage embeddings are different (due to different LoRA adapters)
+    # Using the same text should produce different embeddings for query vs passage
+    test_text = "This is a test sentence"
+    query_emb = np.array(list(model.query_embed([test_text])))
+    passage_emb = np.array(list(model.passage_embed([test_text])))
+
+    # They should not be identical (different task adapters)
+    assert not np.allclose(query_emb, passage_emb, atol=1e-6), \
+        f"Query and passage embeddings should differ for {model_name}"
+
+    # Optional: Check canonical vectors if available
+    if model_name in CANONICAL_VECTOR_VALUES:
+        canonical_vector = CANONICAL_VECTOR_VALUES[model_name]
+        # Check against regular embeddings[0] which is "hello world"
+        assert np.allclose(
+            embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3
+        ), f"Canonical vector mismatch for {model_name}"
 
     if is_ci:
         delete_model_cache(model.model._model_dir)
