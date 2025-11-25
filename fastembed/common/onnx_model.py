@@ -24,6 +24,8 @@ class OnnxOutputContext:
 
 
 class OnnxModel(Generic[T]):
+    EXPOSED_SESSION_OPTIONS = ("enable_cpu_mem_arena",)
+
     @classmethod
     def _get_worker_class(cls) -> Type["EmbeddingWorker[T]"]:
         raise NotImplementedError("Subclasses must implement this method")
@@ -60,6 +62,7 @@ class OnnxModel(Generic[T]):
         providers: Optional[Sequence[OnnxProvider]] = None,
         cuda: bool = False,
         device_id: Optional[int] = None,
+        extra_session_options: Optional[dict[str, Any]] = None,
     ) -> None:
         model_path = model_dir / model_file
         # List of Execution Providers: https://onnxruntime.ai/docs/execution-providers
@@ -99,6 +102,9 @@ class OnnxModel(Generic[T]):
             so.intra_op_num_threads = threads
             so.inter_op_num_threads = threads
 
+        if extra_session_options is not None:
+            self.add_extra_session_options(so, extra_session_options)
+
         self.model = ort.InferenceSession(
             str(model_path), providers=onnx_providers, sess_options=so
         )
@@ -112,6 +118,38 @@ class OnnxModel(Generic[T]):
                     "`pip install onnxruntime-gpu --extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/`",
                     RuntimeWarning,
                 )
+
+    @classmethod
+    def _select_exposed_session_options(cls, model_kwargs: dict[str, Any]) -> dict[str, Any]:
+        """A convenience method to select the exposed session options in models
+
+        Args:
+            model_kwargs (dict[str, Any]): The model kwargs.
+
+        Returns:
+            dict[str, Any]: a dict with filtered exposed session options.
+        """
+        return {k: v for k, v in model_kwargs.items() if k in cls.EXPOSED_SESSION_OPTIONS}
+
+    @classmethod
+    def add_extra_session_options(
+        cls, session_options: ort.SessionOptions, extra_options: dict[str, Any]
+    ) -> None:
+        """Add extra session options to the existing options object in-place
+
+        Args:
+            session_options (ort.SessionOptions): The existing session options object.
+            extra_options (dict[str, Any]): The extra session options available in cls.EXPOSED_SESSION_OPTIONS.
+
+        Returns:
+            None
+        """
+        for option in extra_options:
+            assert (
+                option in cls.EXPOSED_SESSION_OPTIONS
+            ), f"{option} is unknown or not exposed (exposed options: {cls.EXPOSED_SESSION_OPTIONS})"
+        if "enable_cpu_mem_arena" in extra_options:
+            session_options.enable_cpu_mem_arena = extra_options["enable_cpu_mem_arena"]
 
     def load_onnx_model(self) -> None:
         raise NotImplementedError("Subclasses must implement this method")

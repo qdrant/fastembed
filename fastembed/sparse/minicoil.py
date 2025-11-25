@@ -117,6 +117,8 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         self.device_ids = device_ids
         self.cuda = cuda
         self.device_id = device_id
+        self._extra_session_options = self._select_exposed_session_options(kwargs)
+
         self.k = k
         self.b = b
         self.avg_len = avg_len
@@ -153,6 +155,7 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             providers=self.providers,
             cuda=self.cuda,
             device_id=self.device_id,
+            extra_session_options=self._extra_session_options,
         )
 
         assert self.tokenizer is not None
@@ -221,6 +224,7 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             is_query=False,
             local_files_only=self._local_files_only,
             specific_model_path=self._specific_model_path,
+            extra_session_options=self._extra_session_options,
             **kwargs,
         )
 

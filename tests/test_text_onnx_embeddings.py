@@ -193,3 +193,13 @@ def test_embedding_size() -> None:
 
     if is_ci:
         delete_model_cache(model.model._model_dir)
+
+
+@pytest.mark.parametrize("model_name", ["sentence-transformers/all-MiniLM-L6-v2"])
+def test_session_options(model_cache, model_name) -> None:
+    with model_cache(model_name) as default_model:
+        default_session_options = default_model.model.model.get_session_options()
+        assert default_session_options.enable_cpu_mem_arena is True
+        model = TextEmbedding(model_name=model_name, enable_cpu_mem_arena=False)
+        session_options = model.model.model.get_session_options()
+        assert session_options.enable_cpu_mem_arena is False
