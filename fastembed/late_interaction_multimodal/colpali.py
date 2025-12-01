@@ -177,9 +177,11 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
         texts: Union[str, Iterable[str]],
         batch_size: int = 1024,
         include_extension: bool = False,
+        **kwargs: Any,
     ) -> int:
         token_num = 0
-        texts = texts if isinstance(texts, list) else [texts]
+        texts = [texts] if isinstance(texts, str) else texts
+        assert self.tokenizer is not None
         tokenize_func = self.tokenize if include_extension else self.tokenizer.encode_batch
         for batch in iter_batch(texts, batch_size):
             token_num += sum([sum(encoding.attention_mask) for encoding in tokenize_func(batch)])

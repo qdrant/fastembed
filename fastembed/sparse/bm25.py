@@ -270,7 +270,7 @@ class Bm25(SparseTextEmbeddingBase):
 
     def token_count(self, texts: Union[str, Iterable[str]], **kwargs: Any) -> int:
         token_num = 0
-        texts = texts if isinstance(texts, list) else [texts]
+        texts = [texts] if isinstance(texts, str) else texts
         for text in texts:
             document = remove_non_alphanumeric(text)
             tokens = self.tokenizer.tokenize(document)

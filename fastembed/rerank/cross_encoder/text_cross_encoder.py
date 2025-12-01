@@ -162,7 +162,9 @@ class TextCrossEncoder(TextCrossEncoderBase):
             )
         )
 
-    def token_count(self, pairs: Iterable[tuple[str, str]], batch_size: int = 1024) -> int:
+    def token_count(
+        self, pairs: Iterable[tuple[str, str]], batch_size: int = 1024, **kwargs: Any
+    ) -> int:
         """Returns the number of tokens in the pairs.
 
         Args:
@@ -172,4 +174,4 @@ class TextCrossEncoder(TextCrossEncoderBase):
         Returns:
             token count: overall number of tokens in the pairs
         """
-        return self.model.token_count(pairs, batch_size=batch_size)
+        return self.model.token_count(pairs, batch_size=batch_size, **kwargs)

@@ -74,8 +74,7 @@ class LateInteractionTextEmbeddingBase(ModelManagement[DenseModelDescription]):
         self,
         texts: Union[str, Iterable[str]],
         batch_size: int = 1024,
-        is_doc: bool = True,
-        include_extension: bool = False,
+        **kwargs: Any,
     ) -> int:
         """Returns the number of tokens in the texts."""
         raise NotImplementedError("Subclasses must implement this method")

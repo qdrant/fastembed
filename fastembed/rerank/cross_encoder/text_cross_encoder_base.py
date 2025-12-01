@@ -58,6 +58,6 @@ class TextCrossEncoderBase(ModelManagement[BaseModelDescription]):
         """
         raise NotImplementedError("This method should be overridden by subclasses")
 
-    def token_count(self, pairs: Iterable[tuple[str, str]], batch_size: int = 1024) -> int:
+    def token_count(self, pairs: Iterable[tuple[str, str]], **kwargs: Any) -> int:
         """Returns the number of tokens in the pairs."""
         raise NotImplementedError("This method should be overridden by subclasses")

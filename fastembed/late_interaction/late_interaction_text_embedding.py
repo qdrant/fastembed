@@ -158,6 +158,7 @@ class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
         batch_size: int = 1024,
         is_doc: bool = True,
         include_extension: bool = False,
+        **kwargs: Any,
     ) -> int:
         """Returns the number of tokens in the texts.
 
@@ -171,5 +172,9 @@ class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
             int: Sum of number of tokens in the texts.
         """
         return self.model.token_count(
-            texts, batch_size=batch_size, is_doc=is_doc, include_extension=include_extension
+            texts,
+            batch_size=batch_size,
+            is_doc=is_doc,
+            include_extension=include_extension,
+            **kwargs,
         )

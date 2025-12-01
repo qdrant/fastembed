@@ -129,7 +129,9 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
         """
         yield from self.model.query_embed(query, **kwargs)
 
-    def token_count(self, texts: Union[str, Iterable[str]], batch_size: int = 1024) -> int:
+    def token_count(
+        self, texts: Union[str, Iterable[str]], batch_size: int = 1024, **kwargs: Any
+    ) -> int:
         """Returns the number of tokens in the texts.
 
         Args:
@@ -139,4 +141,4 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
         Returns:
             int: Sum of number of tokens in the texts.
         """
-        return self.model.token_count(texts, batch_size=batch_size)
+        return self.model.token_count(texts, batch_size=batch_size, **kwargs)

@@ -102,10 +102,12 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
         batch_size: int = 1024,
         is_doc: bool = True,
         include_extension: bool = False,
+        **kwargs: Any,
     ) -> int:
         token_num = 0
-        texts = texts if isinstance(texts, list) else [texts]
+        texts = [texts] if isinstance(texts, str) else texts
         tokenizer = self.tokenizer if is_doc else self.query_tokenizer
+        assert tokenizer is not None
         for batch in iter_batch(texts, batch_size):
             for tokens in tokenizer.encode_batch(batch):
                 if is_doc:

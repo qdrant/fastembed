@@ -187,8 +187,10 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             avg_len=self.avg_len,
         )
 
-    def token_count(self, texts: Union[str, Iterable[str]], batch_size: int = 1024) -> int:
-        return self._token_count(texts, batch_size=batch_size)
+    def token_count(
+        self, texts: Union[str, Iterable[str]], batch_size: int = 1024, **kwargs: Any
+    ) -> int:
+        return self._token_count(texts, batch_size=batch_size, **kwargs)
 
     def embed(
         self,

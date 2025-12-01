@@ -213,7 +213,9 @@ class TextEmbedding(TextEmbeddingBase):
         # This is model-specific, so that different models can have specialized implementations
         yield from self.model.passage_embed(texts, **kwargs)
 
-    def token_count(self, texts: Union[str, Iterable[str]], batch_size: int = 1024) -> int:
+    def token_count(
+        self, texts: Union[str, Iterable[str]], batch_size: int = 1024, **kwargs: Any
+    ) -> int:
         """Returns the number of tokens in the texts.
 
         Args:
@@ -223,4 +225,4 @@ class TextEmbedding(TextEmbeddingBase):
         Returns:
             int: Sum of number of tokens in the texts.
         """
-        return self.model.token_count(texts, batch_size=batch_size)
+        return self.model.token_count(texts, batch_size=batch_size, **kwargs)
