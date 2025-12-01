@@ -168,6 +168,9 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
     def _token_count(
         self, pairs: Iterable[tuple[str, str]], batch_size: int = 1024, **_: Any
     ) -> int:
+        if not hasattr(self, "model") or self.model is None:
+            self.load_onnx_model()  # loads the tokenizer as well
+
         token_num = 0
         assert self.tokenizer is not None
         for batch in iter_batch(pairs, batch_size):

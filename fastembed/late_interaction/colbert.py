@@ -104,6 +104,8 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
         include_extension: bool = False,
         **kwargs: Any,
     ) -> int:
+        if not hasattr(self, "model") or self.model is None:
+            self.load_onnx_model()  # loads the tokenizer as well
         token_num = 0
         texts = [texts] if isinstance(texts, str) else texts
         tokenizer = self.tokenizer if is_doc else self.query_tokenizer
