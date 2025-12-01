@@ -268,6 +268,15 @@ class Bm25(SparseTextEmbeddingBase):
             embeddings.append(SparseEmbedding.from_dict(token_id2value))
         return embeddings
 
+    def token_count(self, texts: Union[str, Iterable[str]], **kwargs: Any) -> int:
+        token_num = 0
+        texts = texts if isinstance(texts, list) else [texts]
+        for text in texts:
+            document = remove_non_alphanumeric(text)
+            tokens = self.tokenizer.tokenize(document)
+            token_num += len(tokens)
+        return token_num
+
     def _term_frequency(self, tokens: list[str]) -> dict[int, float]:
         """Calculate the term frequency part of the BM25 formula.
 

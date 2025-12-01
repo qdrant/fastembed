@@ -69,3 +69,13 @@ class LateInteractionTextEmbeddingBase(ModelManagement[DenseModelDescription]):
     def embedding_size(self) -> int:
         """Returns embedding size for the current model"""
         raise NotImplementedError("Subclasses must implement this method")
+
+    def token_count(
+        self,
+        texts: Union[str, Iterable[str]],
+        batch_size: int = 1024,
+        is_doc: bool = True,
+        include_extension: bool = False,
+    ) -> int:
+        """Returns the number of tokens in the texts."""
+        raise NotImplementedError("Subclasses must implement this method")

@@ -165,6 +165,15 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         """
         return onnx_input
 
+    def _token_count(self, pairs: Iterable[tuple[str, str]], batch_size: int = 1024) -> int:
+        token_num = 0
+
+        for batch in iter_batch(pairs, batch_size):
+            for tokens in self.tokenizer.encode_batch(batch):
+                token_num += sum(tokens.attention_mask)
+
+        return token_num
+
 
 class TextRerankerWorker(EmbeddingWorker[float]):
     def __init__(

@@ -125,6 +125,23 @@ def test_rerank_pairs_parallel(model_cache, model_name: str) -> None:
 
 
 @pytest.mark.parametrize("model_name", ["Xenova/ms-marco-MiniLM-L-6-v2"])
+def test_token_count(model_cache, model_name: str) -> None:
+    with model_cache(model_name) as model:
+        pairs = [
+            ("What is the capital of France?", "Paris is the capital of France."),
+            (
+                "Name me a couple of cities were the capitals of Germany?",
+                "Berlin is the current capital of Germany, Bonn is a former capital of Germany.",
+            ),
+        ]
+        first_pair_token_count = model.token_count([pairs[0]])
+        second_pair_token_count = model.token_count([pairs[1]])
+        pairs_token_count = model.token_count(pairs)
+        assert first_pair_token_count + second_pair_token_count == pairs_token_count
+        assert pairs_token_count == model.token_count(pairs, batch_size=1)
+
+
+@pytest.mark.parametrize("model_name", ["Xenova/ms-marco-MiniLM-L-6-v2"])
 def test_session_options(model_cache, model_name) -> None:
     with model_cache(model_name) as default_model:
         default_session_options = default_model.model.model.get_session_options()

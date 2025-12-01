@@ -8,7 +8,7 @@ from fastembed.common.preprocessor_utils import load_tokenizer
 from fastembed.common.types import NumpyArray
 from fastembed.common import OnnxProvider
 from fastembed.common.onnx_model import OnnxOutputContext
-from fastembed.common.utils import define_cache_dir
+from fastembed.common.utils import define_cache_dir, iter_batch
 from fastembed.late_interaction.late_interaction_embedding_base import (
     LateInteractionTextEmbeddingBase,
 )
@@ -95,6 +95,34 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
     def _tokenize_documents(self, documents: list[str]) -> list[Encoding]:
         encoded = self.tokenizer.encode_batch(documents)  # type: ignore[union-attr]
         return encoded
+
+    def token_count(
+        self,
+        texts: Union[str, Iterable[str]],
+        batch_size: int = 1024,
+        is_doc: bool = True,
+        include_extension: bool = False,
+    ) -> int:
+        token_num = 0
+        texts = texts if isinstance(texts, list) else [texts]
+        tokenizer = self.tokenizer if is_doc else self.query_tokenizer
+        for batch in iter_batch(texts, batch_size):
+            for tokens in tokenizer.encode_batch(batch):
+                if is_doc:
+                    token_num += sum(tokens.attention_mask)
+                else:
+                    attend_count = sum(tokens.attention_mask)
+                    if include_extension:
+                        token_num += max(attend_count, self.MIN_QUERY_LENGTH)
+
+                    else:
+                        token_num += attend_count
+            if include_extension:
+                token_num += len(
+                    batch
+                )  # add 1 for each cls.DOC_MARKER_TOKEN_ID or cls.QUERY_MARKER_TOKEN_ID
+
+        return token_num
 
     @classmethod
     def _list_supported_models(cls) -> list[DenseModelDescription]:
@@ -266,3 +294,37 @@ class ColbertEmbeddingWorker(TextEmbeddingWorker[NumpyArray]):
             threads=1,
             **kwargs,
         )
+
+
+if __name__ == "__main__":
+    te = Colbert("answerdotai/answerai-colbert-small-v1")
+
+    print(
+        te.token_count(
+            texts=[
+                "qwe",
+                "adsda ads qwe dasd dsad cxc czx as qw er tr y fg s a x  b h f d a s w e t y k,l; czcx asd ",
+            ]
+        )
+    )
+    print(
+        te.token_count(
+            texts=[
+                "qwe",
+                "adsda ads qwe dasd dsad cxc czx as qw er tr y fg s a x  b h f d a s w e t y k,l; czcx asd ",
+            ],
+            is_doc=False,
+        )
+    )
+    # data = []
+    # with open('../../training_data.csv', 'r') as f:
+    #     for i, line in enumerate(f):
+    #
+    #         if i == 0:
+    #             continue
+    #
+    #         data.append(line.rsplit(',', maxsplit=1)[0][1:-1])
+    # import time
+    # a = time.perf_counter()
+    # te.token_count(data, batch_size=1024)
+    # print(time.perf_counter() - a)

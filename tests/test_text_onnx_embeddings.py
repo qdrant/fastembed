@@ -203,3 +203,17 @@ def test_session_options(model_cache, model_name) -> None:
         model = TextEmbedding(model_name=model_name, enable_cpu_mem_arena=False)
         session_options = model.model.model.get_session_options()
         assert session_options.enable_cpu_mem_arena is False
+
+
+@pytest.mark.parametrize("model_name", ["sentence-transformers/all-MiniLM-L6-v2"])
+def test_token_count(model_cache, model_name) -> None:
+    with model_cache(model_name) as model:
+        documents = [
+            "Name me a couple of cities were the capitals of Germany?",
+            "Berlin is the current capital of Germany, Bonn is a former capital of Germany.",
+        ]
+        first_doc_token_count = model.token_count(documents[0])
+        second_doc_token_count = model.token_count(documents[1])
+        doc_token_count = model.token_count(documents)
+        assert first_doc_token_count + second_doc_token_count == doc_token_count
+        assert doc_token_count == model.token_count(documents, batch_size=1)

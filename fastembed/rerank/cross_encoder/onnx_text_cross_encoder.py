@@ -207,6 +207,18 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
     ) -> Iterable[float]:
         return (float(elem) for elem in output.model_output)
 
+    def token_count(self, pairs: Iterable[tuple[str, str]], batch_size: int = 1024) -> int:
+        """Returns the number of tokens in the pairs.
+
+        Args:
+            pairs: Iterable of tuples, where each tuple contains a query and a document to be tokenized
+            batch_size: Batch size for tokenizing
+
+        Returns:
+            token count: overall number of tokens in the pairs
+        """
+        return self._token_count(pairs, batch_size=batch_size)
+
 
 class TextCrossEncoderWorker(TextRerankerWorker):
     def init_embedding(

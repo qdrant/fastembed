@@ -162,3 +162,23 @@ class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase)
             List of embeddings, one per image
         """
         yield from self.model.embed_image(images, batch_size, parallel, **kwargs)
+
+    def token_count(
+        self,
+        texts: Union[str, Iterable[str]],
+        batch_size: int = 1024,
+        include_extension: bool = False,
+    ) -> int:
+        """Returns the number of tokens in the texts.
+
+        Args:
+            texts (str | Iterable[str]): The list of texts to embed.
+            batch_size (int): Batch size for encoding
+            include_extension (bool): Whether to include tokens added by preprocessing
+
+        Returns:
+            int: Sum of number of tokens in the texts.
+        """
+        return self.model.token_count(
+            texts, batch_size=batch_size, include_extension=include_extension
+        )
