@@ -298,37 +298,3 @@ class ColbertEmbeddingWorker(TextEmbeddingWorker[NumpyArray]):
             threads=1,
             **kwargs,
         )
-
-
-if __name__ == "__main__":
-    te = Colbert("answerdotai/answerai-colbert-small-v1")
-
-    print(
-        te.token_count(
-            texts=[
-                "qwe",
-                "adsda ads qwe dasd dsad cxc czx as qw er tr y fg s a x  b h f d a s w e t y k,l; czcx asd ",
-            ]
-        )
-    )
-    print(
-        te.token_count(
-            texts=[
-                "qwe",
-                "adsda ads qwe dasd dsad cxc czx as qw er tr y fg s a x  b h f d a s w e t y k,l; czcx asd ",
-            ],
-            is_doc=False,
-        )
-    )
-    # data = []
-    # with open('../../training_data.csv', 'r') as f:
-    #     for i, line in enumerate(f):
-    #
-    #         if i == 0:
-    #             continue
-    #
-    #         data.append(line.rsplit(',', maxsplit=1)[0][1:-1])
-    # import time
-    # a = time.perf_counter()
-    # te.token_count(data, batch_size=1024)
-    # print(time.perf_counter() - a)
