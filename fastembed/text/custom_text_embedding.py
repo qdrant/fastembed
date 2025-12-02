@@ -1,4 +1,4 @@
-from typing import Sequence, Any, Iterable, Optional
+from typing import Sequence, Any, Iterable
 
 from dataclasses import dataclass
 
@@ -64,7 +64,7 @@ class CustomTextEmbedding(OnnxTextEmbedding):
         return self._normalize(self._pool(output.model_output, output.attention_mask))
 
     def _pool(
-        self, embeddings: NumpyArray, attention_mask: Optional[NDArray[np.int64]] = None
+        self, embeddings: NumpyArray, attention_mask: NDArray[np.int64] | None = None
     ) -> NumpyArray:
         if self._pooling == PoolingType.CLS:
             return embeddings[:, 0]
