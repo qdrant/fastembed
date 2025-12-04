@@ -159,6 +159,21 @@ class OnnxTextModel(OnnxModel[T]):
             for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
                 yield from self._post_process_onnx_output(batch, **kwargs)  # type: ignore
 
+    def _token_count(
+        self, texts: Union[str, Iterable[str]], batch_size: int = 1024, **_: Any
+    ) -> int:
+        if not hasattr(self, "model") or self.model is None:
+            self.load_onnx_model()  # loads the tokenizer as well
+
+        token_num = 0
+        assert self.tokenizer is not None
+        texts = [texts] if isinstance(texts, str) else texts
+        for batch in iter_batch(texts, batch_size):
+            for tokens in self.tokenizer.encode_batch(batch):
+                token_num += sum(tokens.attention_mask)
+
+        return token_num
+
 
 class TextEmbeddingWorker(EmbeddingWorker[T]):
     def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, OnnxOutputContext]]:

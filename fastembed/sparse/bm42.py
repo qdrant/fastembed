@@ -352,6 +352,13 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
     def _get_worker_class(cls) -> Type[TextEmbeddingWorker[SparseEmbedding]]:
         return Bm42TextEmbeddingWorker
 
+    def token_count(
+        self, texts: Union[str, Iterable[str]], batch_size: int = 1024, **kwargs: Any
+    ) -> int:
+        if not hasattr(self, "model") or self.model is None:
+            self.load_onnx_model()  # loads the tokenizer as well
+        return self._token_count(texts, batch_size=batch_size, **kwargs)
+
 
 class Bm42TextEmbeddingWorker(TextEmbeddingWorker[SparseEmbedding]):
     def init_embedding(self, model_name: str, cache_dir: str, **kwargs: Any) -> Bm42:

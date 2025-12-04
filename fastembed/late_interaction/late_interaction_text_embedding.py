@@ -151,3 +151,30 @@ class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
 
         # This is model-specific, so that different models can have specialized implementations
         yield from self.model.query_embed(query, **kwargs)
+
+    def token_count(
+        self,
+        texts: Union[str, Iterable[str]],
+        batch_size: int = 1024,
+        is_doc: bool = True,
+        include_extension: bool = False,
+        **kwargs: Any,
+    ) -> int:
+        """Returns the number of tokens in the texts.
+
+        Args:
+            texts (str | Iterable[str]): The list of texts to embed.
+            batch_size (int): Batch size for encoding
+            is_doc (bool): Whether the texts are documents (disable embedding a query with include_mask=True).
+            include_extension (bool): Turn on to count DOC / QUERY marker tokens, and [MASK] token in query mode.
+
+        Returns:
+            int: Sum of number of tokens in the texts.
+        """
+        return self.model.token_count(
+            texts,
+            batch_size=batch_size,
+            is_doc=is_doc,
+            include_extension=include_extension,
+            **kwargs,
+        )

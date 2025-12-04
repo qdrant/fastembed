@@ -8,7 +8,7 @@ from fastembed.common.preprocessor_utils import load_tokenizer
 from fastembed.common.types import NumpyArray
 from fastembed.common import OnnxProvider
 from fastembed.common.onnx_model import OnnxOutputContext
-from fastembed.common.utils import define_cache_dir
+from fastembed.common.utils import define_cache_dir, iter_batch
 from fastembed.late_interaction.late_interaction_embedding_base import (
     LateInteractionTextEmbeddingBase,
 )
@@ -95,6 +95,38 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
     def _tokenize_documents(self, documents: list[str]) -> list[Encoding]:
         encoded = self.tokenizer.encode_batch(documents)  # type: ignore[union-attr]
         return encoded
+
+    def token_count(
+        self,
+        texts: Union[str, Iterable[str]],
+        batch_size: int = 1024,
+        is_doc: bool = True,
+        include_extension: bool = False,
+        **kwargs: Any,
+    ) -> int:
+        if not hasattr(self, "model") or self.model is None:
+            self.load_onnx_model()  # loads the tokenizer as well
+        token_num = 0
+        texts = [texts] if isinstance(texts, str) else texts
+        tokenizer = self.tokenizer if is_doc else self.query_tokenizer
+        assert tokenizer is not None
+        for batch in iter_batch(texts, batch_size):
+            for tokens in tokenizer.encode_batch(batch):
+                if is_doc:
+                    token_num += sum(tokens.attention_mask)
+                else:
+                    attend_count = sum(tokens.attention_mask)
+                    if include_extension:
+                        token_num += max(attend_count, self.MIN_QUERY_LENGTH)
+
+                    else:
+                        token_num += attend_count
+            if include_extension:
+                token_num += len(
+                    batch
+                )  # add 1 for each cls.DOC_MARKER_TOKEN_ID or cls.QUERY_MARKER_TOKEN_ID
+
+        return token_num
 
     @classmethod
     def _list_supported_models(cls) -> list[DenseModelDescription]:

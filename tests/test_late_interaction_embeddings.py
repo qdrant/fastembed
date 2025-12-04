@@ -318,3 +318,27 @@ def test_session_options(model_cache, model_name) -> None:
         model = LateInteractionTextEmbedding(model_name=model_name, enable_cpu_mem_arena=False)
         session_options = model.model.model.get_session_options()
         assert session_options.enable_cpu_mem_arena is False
+
+
+@pytest.mark.parametrize("model_name", ["answerdotai/answerai-colbert-small-v1"])
+def test_token_count(model_cache, model_name) -> None:
+    with model_cache(model_name) as model:
+        documents = ["short doc", "it is a long document to check attention mask for paddings"]
+        short_doc_token_count = model.token_count(documents[0])
+        long_doc_token_count = model.token_count(documents[1])
+        documents_token_count = model.token_count(documents)
+        assert short_doc_token_count + long_doc_token_count == documents_token_count
+        # 2 is 2*DOC_MARKER_TOKEN_ID for each document
+        assert short_doc_token_count + long_doc_token_count + 2 == model.token_count(
+            documents, include_extension=True
+        )
+        assert short_doc_token_count + long_doc_token_count == model.token_count(
+            documents, batch_size=1
+        )
+        assert short_doc_token_count + long_doc_token_count == model.token_count(
+            documents, is_doc=False
+        )
+        # query min length is 32
+        assert model.token_count(documents, is_doc=False, include_extension=True) == 64
+        very_long_query = "It's a very long query which definitely contains more than 32 tokens and we're using it to check whether the method can handle large query properly without cutting it to 32 tokens"
+        assert model.token_count(very_long_query, is_doc=False, include_extension=True) > 32

@@ -6,7 +6,7 @@ from tokenizers import Encoding
 from fastembed.common import OnnxProvider, ImageInput
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.types import NumpyArray
-from fastembed.common.utils import define_cache_dir
+from fastembed.common.utils import define_cache_dir, iter_batch
 from fastembed.late_interaction_multimodal.late_interaction_multimodal_embedding_base import (
     LateInteractionMultimodalEmbeddingBase,
 )
@@ -171,6 +171,23 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
             texts_query.append(query)
         encoded = self.tokenizer.encode_batch(texts_query)  # type: ignore[union-attr]
         return encoded
+
+    def token_count(
+        self,
+        texts: Union[str, Iterable[str]],
+        batch_size: int = 1024,
+        include_extension: bool = False,
+        **kwargs: Any,
+    ) -> int:
+        if not hasattr(self, "model") or self.model is None:
+            self.load_onnx_model()  # loads the tokenizer as well
+        token_num = 0
+        texts = [texts] if isinstance(texts, str) else texts
+        assert self.tokenizer is not None
+        tokenize_func = self.tokenize if include_extension else self.tokenizer.encode_batch
+        for batch in iter_batch(texts, batch_size):
+            token_num += sum([sum(encoding.attention_mask) for encoding in tokenize_func(batch)])
+        return token_num
 
     def _preprocess_onnx_text_input(
         self, onnx_input: dict[str, NumpyArray], **kwargs: Any
