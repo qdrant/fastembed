@@ -3,12 +3,12 @@ import traceback
 
 from pathlib import Path
 from types import TracebackType
-from typing import Union, Callable, Any, Type, Optional
+from typing import Callable, Any, Type
 
 from fastembed.common.model_description import BaseModelDescription
 
 
-def delete_model_cache(model_dir: Union[str, Path]) -> None:
+def delete_model_cache(model_dir: str | Path) -> None:
     """Delete the model cache directory.
 
     If a model was downloaded from the HuggingFace model hub, then _model_dir is the dir to snapshots, removing
@@ -42,7 +42,7 @@ def delete_model_cache(model_dir: Union[str, Path]) -> None:
 def should_test_model(
     model_desc: BaseModelDescription,
     autotest_model_name: str,
-    is_ci: Optional[str],
+    is_ci: str | None,
     is_manual: bool,
 ):
     """Determine if a model should be tested based on environment

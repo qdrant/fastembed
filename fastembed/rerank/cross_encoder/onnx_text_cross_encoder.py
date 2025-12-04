@@ -1,4 +1,4 @@
-from typing import Any, Iterable, Optional, Sequence, Type
+from typing import Any, Iterable, Sequence, Type
 
 from loguru import logger
 
@@ -77,14 +77,14 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
     def __init__(
         self,
         model_name: str,
-        cache_dir: Optional[str] = None,
-        threads: Optional[int] = None,
-        providers: Optional[Sequence[OnnxProvider]] = None,
+        cache_dir: str | None = None,
+        threads: int | None = None,
+        providers: Sequence[OnnxProvider] | None = None,
         cuda: bool = False,
-        device_ids: Optional[list[int]] = None,
+        device_ids: list[int] | None = None,
         lazy_load: bool = False,
-        device_id: Optional[int] = None,
-        specific_model_path: Optional[str] = None,
+        device_id: int | None = None,
+        specific_model_path: str | None = None,
         **kwargs: Any,
     ):
         """
@@ -124,7 +124,7 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
             )
 
         # This device_id will be used if we need to load model in current process
-        self.device_id: Optional[int] = None
+        self.device_id: int | None = None
         if device_id is not None:
             self.device_id = device_id
         elif self.device_ids is not None:
@@ -180,7 +180,7 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
         self,
         pairs: Iterable[tuple[str, str]],
         batch_size: int = 64,
-        parallel: Optional[int] = None,
+        parallel: int | None = None,
         **kwargs: Any,
     ) -> Iterable[float]:
         yield from self._rerank_pairs(

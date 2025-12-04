@@ -1,5 +1,3 @@
-from typing import Union
-
 import numpy as np
 
 from fastembed.common.types import NumpyArray
@@ -11,7 +9,7 @@ from fastembed.late_interaction_multimodal.late_interaction_multimodal_embedding
 )
 
 
-MultiVectorModel = Union[LateInteractionTextEmbeddingBase, LateInteractionMultimodalEmbeddingBase]
+MultiVectorModel = LateInteractionTextEmbeddingBase | LateInteractionMultimodalEmbeddingBase
 MAX_HAMMING_DISTANCE = 65  # 64 bits + 1
 POPCOUNT_LUT = np.array([bin(x).count("1") for x in range(256)], dtype=np.uint8)
 

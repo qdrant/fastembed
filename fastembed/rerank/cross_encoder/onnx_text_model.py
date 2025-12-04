@@ -1,7 +1,7 @@
 import os
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Iterable, Optional, Sequence, Type
+from typing import Any, Iterable, Sequence, Type
 
 import numpy as np
 from tokenizers import Encoding
@@ -19,7 +19,7 @@ from fastembed.parallel_processor import ParallelWorkerPool
 
 
 class OnnxCrossEncoderModel(OnnxModel[float]):
-    ONNX_OUTPUT_NAMES: Optional[list[str]] = None
+    ONNX_OUTPUT_NAMES: list[str] | None = None
 
     @classmethod
     def _get_worker_class(cls) -> Type["TextRerankerWorker"]:
@@ -29,11 +29,11 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         self,
         model_dir: Path,
         model_file: str,
-        threads: Optional[int],
-        providers: Optional[Sequence[OnnxProvider]] = None,
+        threads: int | None,
+        providers: Sequence[OnnxProvider] | None = None,
         cuda: bool = False,
-        device_id: Optional[int] = None,
-        extra_session_options: Optional[dict[str, Any]] = None,
+        device_id: int | None = None,
+        extra_session_options: dict[str, Any] | None = None,
     ) -> None:
         super()._load_onnx_model(
             model_dir=model_dir,
@@ -92,13 +92,13 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         cache_dir: str,
         pairs: Iterable[tuple[str, str]],
         batch_size: int,
-        parallel: Optional[int] = None,
-        providers: Optional[Sequence[OnnxProvider]] = None,
+        parallel: int | None = None,
+        providers: Sequence[OnnxProvider] | None = None,
         cuda: bool = False,
-        device_ids: Optional[list[int]] = None,
+        device_ids: list[int] | None = None,
         local_files_only: bool = False,
-        specific_model_path: Optional[str] = None,
-        extra_session_options: Optional[dict[str, Any]] = None,
+        specific_model_path: str | None = None,
+        extra_session_options: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> Iterable[float]:
         is_small = False

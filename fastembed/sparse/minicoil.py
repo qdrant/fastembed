@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from typing import Any, Optional, Sequence, Iterable, Union, Type
+from typing import Any, Sequence, Iterable, Type
 
 import numpy as np
 from numpy.typing import NDArray
@@ -72,17 +72,17 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
     def __init__(
         self,
         model_name: str,
-        cache_dir: Optional[str] = None,
-        threads: Optional[int] = None,
-        providers: Optional[Sequence[OnnxProvider]] = None,
+        cache_dir: str | None = None,
+        threads: int | None = None,
+        providers: Sequence[OnnxProvider] | None = None,
         k: float = 1.2,
         b: float = 0.75,
         avg_len: float = 150.0,
         cuda: bool = False,
-        device_ids: Optional[list[int]] = None,
+        device_ids: list[int] | None = None,
         lazy_load: bool = False,
-        device_id: Optional[int] = None,
-        specific_model_path: Optional[str] = None,
+        device_id: int | None = None,
+        specific_model_path: str | None = None,
         **kwargs: Any,
     ):
         """
@@ -124,15 +124,15 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         self.avg_len = avg_len
 
         # Initialize class attributes
-        self.tokenizer: Optional[Tokenizer] = None
+        self.tokenizer: Tokenizer | None = None
         self.invert_vocab: dict[int, str] = {}
         self.special_tokens: set[str] = set()
         self.special_tokens_ids: set[int] = set()
         self.stopwords: set[str] = set()
-        self.vocab_resolver: Optional[VocabResolver] = None
-        self.encoder: Optional[Encoder] = None
-        self.output_dim: Optional[int] = None
-        self.sparse_vector_converter: Optional[SparseVectorConverter] = None
+        self.vocab_resolver: VocabResolver | None = None
+        self.encoder: Encoder | None = None
+        self.output_dim: int | None = None
+        self.sparse_vector_converter: SparseVectorConverter | None = None
 
         self.model_description = self._get_model_description(model_name)
         self.cache_dir = str(define_cache_dir(cache_dir))
@@ -194,9 +194,9 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
     def embed(
         self,
-        documents: Union[str, Iterable[str]],
+        documents: str | Iterable[str],
         batch_size: int = 256,
-        parallel: Optional[int] = None,
+        parallel: int | None = None,
         **kwargs: Any,
     ) -> Iterable[SparseEmbedding]:
         """
@@ -233,9 +233,7 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             **kwargs,
         )
 
-    def query_embed(
-        self, query: Union[str, Iterable[str]], **kwargs: Any
-    ) -> Iterable[SparseEmbedding]:
+    def query_embed(self, query: str | Iterable[str], **kwargs: Any) -> Iterable[SparseEmbedding]:
         """
         Encode a list of queries into list of embeddings.
         """
