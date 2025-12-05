@@ -101,6 +101,7 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         self.pad_token_id = None
         self.image_seq_len: Optional[int] = None
         self.max_image_size: Optional[int] = None
+        self.image_size: Optional[int] = None
 
         if not self.lazy_load:
             self.load_onnx_model()
@@ -136,6 +137,13 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
             preprocessor_config = json.load(f)
             self.max_image_size = preprocessor_config.get("max_image_size", {}).get("longest_edge", 512)
 
+        # Load model configuration
+        config_path = self._model_dir / "config.json"
+        with open(config_path) as f:
+            model_config = json.load(f)
+            vision_config = model_config.get("vision_config", {})
+            self.image_size = vision_config.get("image_size", 512)
+
     def _preprocess_onnx_text_input(
         self, onnx_input: dict[str, NumpyArray], **kwargs: Any
     ) -> dict[str, NumpyArray]:
@@ -149,9 +157,8 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
             Iterable[NumpyArray]: Post-processed output as NumPy arrays.
         """
         batch_size, seq_length = onnx_input["input_ids"].shape
-        # TODO: use .json config, not 3, 512, 512
         empty_image_placeholder: NumpyArray = np.zeros(
-            (batch_size, seq_length, 3, 512, 512), dtype=np.float32
+            (batch_size, seq_length, 3, self.image_size, self.image_size), dtype=np.float32
         )
         onnx_input["pixel_values"] = empty_image_placeholder
         return onnx_input
