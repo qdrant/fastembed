@@ -212,7 +212,6 @@ class OnnxMultimodalModel(OnnxModel[T]):
                     encoded = encoded[:, np.newaxis, ...]  # Add num_patches=1 dimension
 
                 # All patches are real (no padding)
-                # TODO: attention_mask should be built
                 attention_mask = np.ones((len(images), encoded.shape[1]), dtype=np.int64)
                 metadata = {"patch_counts": [encoded.shape[1]] * len(images)}
 
