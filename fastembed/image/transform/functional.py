@@ -145,3 +145,77 @@ def pad2square(
     new_image = Image.new(mode="RGB", size=(size, size), color=fill_color)
     new_image.paste(image.crop((left, top, right, bottom)) if crop_required else image)
     return new_image
+
+
+def resize_longest_edge(
+    image: Image.Image,
+    max_size: int,
+    resample: Union[int, Image.Resampling] = Image.Resampling.LANCZOS,
+) -> Image.Image:
+    height, width = image.height, image.width
+    aspect_ratio = width / height
+
+    if width >= height:
+        # Width is longer
+        new_width = max_size
+        new_height = int(new_width / aspect_ratio)
+    else:
+        # Height is longer
+        new_height = max_size
+        new_width = int(new_height * aspect_ratio)
+
+    # Ensure even dimensions
+    if new_height % 2 != 0:
+        new_height += 1
+    if new_width % 2 != 0:
+        new_width += 1
+
+    return image.resize((new_width, new_height), resample)
+
+
+def crop_ndarray(
+    image: NumpyArray,
+    x1: int,
+    y1: int,
+    x2: int,
+    y2: int,
+    channel_first: bool = True,
+) -> NumpyArray:
+    if channel_first:
+        # (C, H, W) format
+        return image[:, y1:y2, x1:x2]
+    else:
+        # (H, W, C) format
+        return image[y1:y2, x1:x2, :]
+
+
+def resize_ndarray(
+    image: NumpyArray,
+    size: tuple[int, int],
+    resample: Union[int, Image.Resampling] = Image.Resampling.LANCZOS,
+    channel_first: bool = True,
+) -> NumpyArray:
+    # Convert to PIL-friendly format (H, W, C)
+    if channel_first:
+        img_hwc = image.transpose((1, 2, 0))
+    else:
+        img_hwc = image
+
+    # Handle different dtypes
+    if img_hwc.dtype == np.float32 or img_hwc.dtype == np.float64:
+        # Assume normalized, scale to 0-255 for PIL
+        img_hwc_scaled = (img_hwc * 255).astype(np.uint8)
+        pil_img = Image.fromarray(img_hwc_scaled, mode="RGB")
+        resized = pil_img.resize(size, resample)
+        result = np.array(resized).astype(np.float32) / 255.0
+    else:
+        # uint8 or similar
+        pil_img = Image.fromarray(img_hwc.astype(np.uint8), mode="RGB")
+        resized = pil_img.resize(size, resample)
+        result = np.array(resized)
+
+    # Convert back to original format
+    if channel_first:
+        result = result.transpose((2, 0, 1))
+
+    return result
