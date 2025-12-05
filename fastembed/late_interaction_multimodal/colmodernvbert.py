@@ -71,9 +71,6 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         Raises:
             ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
         """
-
-        # TODO: consider unifying ColPali and ColModernVBERT __init__ methods
-
         super().__init__(model_name, cache_dir, threads, **kwargs)
         self.providers = providers
         self.lazy_load = lazy_load
@@ -107,8 +104,6 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
 
         if not self.lazy_load:
             self.load_onnx_model()
-
-    # TODO: reproduce ColPali methods only
 
     @classmethod
     def _list_supported_models(cls) -> list[DenseModelDescription]:
