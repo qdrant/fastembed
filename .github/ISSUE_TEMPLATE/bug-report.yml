@@ -39,7 +39,7 @@ body:
     attributes:
       label: FastEmbed version
       description: What version of FastEmbed are you running? python -c "import fastembed; print(fastembed.__version__)". If you're not on the latest, please upgrade and see if the problem persists.
-      placeholder: v0.5.1
+      placeholder: v0.7.4
     validations:
       required: true
   - type: dropdown
