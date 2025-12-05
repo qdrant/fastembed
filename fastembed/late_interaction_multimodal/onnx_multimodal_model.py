@@ -176,12 +176,55 @@ class OnnxMultimodalModel(OnnxModel[T]):
                 for image in images
             ]
             assert self.processor is not None, "Processor is not initialized"
-            encoded = np.array(self.processor(image_files))
-        onnx_input = {"pixel_values": encoded}
+            processed = self.processor(image_files)
+
+            # Handle nested structure (with image splitting)
+            if isinstance(processed[0], list):
+                # processed = [[img1_patches], [img2_patches], ...]
+                # Need shape: (batch_size, max_patches, C, H, W)
+
+                patch_counts = [len(patches) for patches in processed]
+                max_patches = max(patch_counts)
+
+                # Get dimensions from first patch
+                C, H, W = processed[0][0].shape
+
+                # Create padded array
+                batch_size = len(processed)
+                encoded = np.zeros((batch_size, max_patches, C, H, W), dtype=processed[0][0].dtype)
+
+                # Create attention mask (1 for real patches, 0 for padding)
+                attention_mask = np.zeros((batch_size, max_patches), dtype=np.int64)
+
+                # Fill in patches and attention mask
+                for i, patches in enumerate(processed):
+                    for j, patch in enumerate(patches):
+                        encoded[i, j] = patch
+                        attention_mask[i, j] = 1
+
+                # Track actual patch counts for later use
+                metadata = {"patch_counts": patch_counts}
+            else:
+                # Flat structure (no splitting) - still need batch dimension
+                # Shape: (batch_size, 1, C, H, W)
+                encoded = np.array(processed)
+                if len(encoded.shape) == 4:  # (batch_size, C, H, W)
+                    encoded = encoded[:, np.newaxis, ...]  # Add num_patches=1 dimension
+
+                # All patches are real (no padding)
+                # TODO: attention_mask should be built
+                attention_mask = np.ones((len(images), encoded.shape[1]), dtype=np.int64)
+                metadata = {"patch_counts": [encoded.shape[1]] * len(images)}
+
+        onnx_input = {"pixel_values": encoded, "attention_mask": attention_mask}
         onnx_input = self._preprocess_onnx_image_input(onnx_input, **kwargs)
         model_output = self.model.run(None, onnx_input)  # type: ignore[union-attr]
-        embeddings = model_output[0].reshape(len(images), -1)
-        return OnnxOutputContext(model_output=embeddings)
+
+        return OnnxOutputContext(
+            model_output=model_output[0],
+            attention_mask=attention_mask,
+            metadata=metadata,
+        )
 
     def _embed_images(
         self,
