@@ -6,14 +6,17 @@ from tokenizers import Encoding
 
 from fastembed.common import ImageInput
 from fastembed.common.model_description import DenseModelDescription, ModelSource
-from fastembed.common.onnx_model import OnnxOutputContext, T
+from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.types import NumpyArray, OnnxProvider
 from fastembed.common.utils import define_cache_dir
 from fastembed.late_interaction_multimodal.late_interaction_multimodal_embedding_base import (
     LateInteractionMultimodalEmbeddingBase,
 )
-from fastembed.late_interaction_multimodal.onnx_multimodal_model import OnnxMultimodalModel, TextEmbeddingWorker, \
-    ImageEmbeddingWorker
+from fastembed.late_interaction_multimodal.onnx_multimodal_model import (
+    OnnxMultimodalModel,
+    TextEmbeddingWorker,
+    ImageEmbeddingWorker,
+)
 
 supported_colmodernvbert_models: list[DenseModelDescription] = [
     DenseModelDescription(
@@ -28,6 +31,7 @@ supported_colmodernvbert_models: list[DenseModelDescription] = [
     ),
 ]
 
+
 class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyArray]):
     """
     The ModernVBERT/colmodernvbert model implementation. This model uses
@@ -36,7 +40,9 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
     See: https://huggingface.co/ModernVBERT/colmodernvbert
     """
 
-    VISUAL_PROMPT_PREFIX = "<|begin_of_text|>User:<image>Describe the image.<end_of_utterance>\nAssistant:"
+    VISUAL_PROMPT_PREFIX = (
+        "<|begin_of_text|>User:<image>Describe the image.<end_of_utterance>\nAssistant:"
+    )
 
     def __init__(
         self,
@@ -135,7 +141,9 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         preprocessor_config_path = self._model_dir / "preprocessor_config.json"
         with open(preprocessor_config_path) as f:
             preprocessor_config = json.load(f)
-            self.max_image_size = preprocessor_config.get("max_image_size", {}).get("longest_edge", 512)
+            self.max_image_size = preprocessor_config.get("max_image_size", {}).get(
+                "longest_edge", 512
+            )
 
         # Load model configuration
         config_path = self._model_dir / "config.json"
@@ -255,7 +263,7 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         grid_patches = patch_count - 1
 
         # Find rows and cols (assume square or near-square grid)
-        rows = int(grid_patches ** 0.5)
+        rows = int(grid_patches**0.5)
         cols = grid_patches // rows
 
         # Verify the calculation
@@ -286,7 +294,7 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         for n_h in range(rows):
             for n_w in range(cols):
                 text_split_images += (
-                    f"<fake_token_around_image>"
+                    "<fake_token_around_image>"
                     + f"<row_{n_h + 1}_col_{n_w + 1}>"
                     + "<image>" * self.image_seq_len
                 )
@@ -294,7 +302,7 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
 
         # Add global image at the end
         text_split_images += (
-            f"\n<fake_token_around_image>"
+            "\n<fake_token_around_image>"
             + "<global-img>"
             + "<image>" * self.image_seq_len
             + "<fake_token_around_image>"
@@ -416,6 +424,7 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
     @classmethod
     def _get_image_worker_class(cls) -> Type[ImageEmbeddingWorker[NumpyArray]]:
         return ColModernVBERTmageEmbeddingWorker
+
 
 class ColModernVBERTTextEmbeddingWorker(TextEmbeddingWorker[NumpyArray]):
     def init_embedding(self, model_name: str, cache_dir: str, **kwargs: Any) -> ColModernVBERT:
