@@ -41,18 +41,18 @@ class Normalize(Transform):
         self.mean = mean
         self.std = std
 
-    def __call__(
+    def __call__(  # type: ignore[override]
         self, images: Union[list[NumpyArray], list[list[NumpyArray]]]
     ) -> Union[list[NumpyArray], list[list[NumpyArray]]]:
         if images and isinstance(images[0], list):
             # Nested structure from ImageSplitter
             return [
-                [normalize(image, mean=self.mean, std=self.std) for image in img_patches]
+                [normalize(image, mean=self.mean, std=self.std) for image in img_patches]  # type: ignore[arg-type]
                 for img_patches in images
             ]
         else:
             # Flat structure (backward compatibility)
-            return [normalize(image, mean=self.mean, std=self.std) for image in images]
+            return [normalize(image, mean=self.mean, std=self.std) for image in images]  # type: ignore[arg-type]
 
 
 class Resize(Transform):
@@ -72,18 +72,18 @@ class Rescale(Transform):
     def __init__(self, scale: float = 1 / 255):
         self.scale = scale
 
-    def __call__(
+    def __call__(  # type: ignore[override]
         self, images: Union[list[NumpyArray], list[list[NumpyArray]]]
     ) -> Union[list[NumpyArray], list[list[NumpyArray]]]:
         if images and isinstance(images[0], list):
             # Nested structure from ImageSplitter
             return [
-                [rescale(image, scale=self.scale) for image in img_patches]
+                [rescale(image, scale=self.scale) for image in img_patches]  # type: ignore[arg-type]
                 for img_patches in images
             ]
         else:
             # Flat structure (backward compatibility)
-            return [rescale(image, scale=self.scale) for image in images]
+            return [rescale(image, scale=self.scale) for image in images]  # type: ignore[arg-type]
 
 
 class PILtoNDarray(Transform):
@@ -190,7 +190,7 @@ class ImageSplitter(Transform):
         self.max_size = max_size
         self.resample = resample
 
-    def __call__(self, images: list[NumpyArray]) -> list[list[NumpyArray]]:
+    def __call__(self, images: list[NumpyArray]) -> list[list[NumpyArray]]:  # type: ignore[override]
         result = []
 
         for image in images:
@@ -256,7 +256,7 @@ class SquareResize(Transform):
         self.size = size
         self.resample = resample
 
-    def __call__(self, images: list[NumpyArray]) -> list[list[NumpyArray]]:
+    def __call__(self, images: list[NumpyArray]) -> list[list[NumpyArray]]:  # type: ignore[override]
         return [
             [
                 resize_ndarray(

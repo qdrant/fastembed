@@ -165,7 +165,7 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
             Iterable[NumpyArray]: Post-processed output as NumPy arrays.
         """
         batch_size, seq_length = onnx_input["input_ids"].shape
-        empty_image_placeholder: NumpyArray = np.zeros(
+        empty_image_placeholder: NumpyArray = np.zeros(  # type: ignore[type-var]
             (batch_size, seq_length, 3, self.image_size, self.image_size), dtype=np.float32
         )
         onnx_input["pixel_values"] = empty_image_placeholder
@@ -283,7 +283,7 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         return (
             "<fake_token_around_image>"
             + "<global-img>"
-            + "<image>" * self.image_seq_len
+            + "<image>" * self.image_seq_len  # type: ignore[operator]
             + "<fake_token_around_image>"
         )
 
@@ -296,7 +296,7 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
                 text_split_images += (
                     "<fake_token_around_image>"
                     + f"<row_{n_h + 1}_col_{n_w + 1}>"
-                    + "<image>" * self.image_seq_len
+                    + "<image>" * self.image_seq_len  # type: ignore[operator]
                 )
             text_split_images += "\n"
 
@@ -304,7 +304,7 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         text_split_images += (
             "\n<fake_token_around_image>"
             + "<global-img>"
-            + "<image>" * self.image_seq_len
+            + "<image>" * self.image_seq_len  # type: ignore[operator]
             + "<fake_token_around_image>"
         )
 
