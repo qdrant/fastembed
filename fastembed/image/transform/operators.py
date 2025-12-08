@@ -41,10 +41,15 @@ class Normalize(Transform):
         self.mean = mean
         self.std = std
 
-    def __call__(self, images: Union[list[NumpyArray], list[list[NumpyArray]]]) -> Union[list[NumpyArray], list[list[NumpyArray]]]:
+    def __call__(
+        self, images: Union[list[NumpyArray], list[list[NumpyArray]]]
+    ) -> Union[list[NumpyArray], list[list[NumpyArray]]]:
         if images and isinstance(images[0], list):
             # Nested structure from ImageSplitter
-            return [[normalize(image, mean=self.mean, std=self.std) for image in img_patches] for img_patches in images]
+            return [
+                [normalize(image, mean=self.mean, std=self.std) for image in img_patches]
+                for img_patches in images
+            ]
         else:
             # Flat structure (backward compatibility)
             return [normalize(image, mean=self.mean, std=self.std) for image in images]
@@ -67,10 +72,15 @@ class Rescale(Transform):
     def __init__(self, scale: float = 1 / 255):
         self.scale = scale
 
-    def __call__(self, images: Union[list[NumpyArray], list[list[NumpyArray]]]) -> Union[list[NumpyArray], list[list[NumpyArray]]]:
+    def __call__(
+        self, images: Union[list[NumpyArray], list[list[NumpyArray]]]
+    ) -> Union[list[NumpyArray], list[list[NumpyArray]]]:
         if images and isinstance(images[0], list):
             # Nested structure from ImageSplitter
-            return [[rescale(image, scale=self.scale) for image in img_patches] for img_patches in images]
+            return [
+                [rescale(image, scale=self.scale) for image in img_patches]
+                for img_patches in images
+            ]
         else:
             # Flat structure (backward compatibility)
             return [rescale(image, scale=self.scale) for image in images]
@@ -248,7 +258,11 @@ class SquareResize(Transform):
 
     def __call__(self, images: list[NumpyArray]) -> list[list[NumpyArray]]:
         return [
-            [resize_ndarray(image, size=(self.size, self.size), resample=self.resample, channel_first=True)]
+            [
+                resize_ndarray(
+                    image, size=(self.size, self.size), resample=self.resample, channel_first=True
+                )
+            ]
             for image in images
         ]
 

@@ -13,7 +13,10 @@ from fastembed.common.model_description import DenseModelDescription
 
 
 class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase):
-    EMBEDDINGS_REGISTRY: list[Type[LateInteractionMultimodalEmbeddingBase]] = [ColPali, ColModernVBERT]
+    EMBEDDINGS_REGISTRY: list[Type[LateInteractionMultimodalEmbeddingBase]] = [
+        ColPali,
+        ColModernVBERT,
+    ]
 
     @classmethod
     def list_supported_models(cls) -> list[dict[str, Any]]:
