@@ -6,7 +6,7 @@ from tokenizers import Encoding
 from fastembed.common import OnnxProvider, ImageInput
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.types import NumpyArray, Device
-from fastembed.common.utils import define_cache_dir
+from fastembed.common.utils import define_cache_dir, iter_batch
 from fastembed.late_interaction_multimodal.late_interaction_multimodal_embedding_base import (
     LateInteractionMultimodalEmbeddingBase,
 )
