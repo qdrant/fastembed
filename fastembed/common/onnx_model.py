@@ -74,7 +74,7 @@ class OnnxModel(Generic[T]):
             warnings.warn(
                 f"`cuda` and `providers` are mutually exclusive parameters, "
                 f"cuda: {cuda}, providers: {providers}. If you'd like to use providers, cuda should be one of "
-                f"[True, Device.CPU, Device.AUTO].",
+                f"[False, Device.CPU, Device.AUTO].",
                 category=UserWarning,
                 stacklevel=6,
             )
