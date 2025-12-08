@@ -165,8 +165,8 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
             Iterable[NumpyArray]: Post-processed output as NumPy arrays.
         """
         batch_size, seq_length = onnx_input["input_ids"].shape
-        empty_image_placeholder: NumpyArray = np.zeros(  # type: ignore[type-var,arg-type,assignment]
-            (batch_size, seq_length, 3, self.image_size, self.image_size), dtype=np.float32
+        empty_image_placeholder: NumpyArray = np.zeros(
+            (batch_size, seq_length, 3, self.image_size, self.image_size), dtype=np.float32  # type: ignore[type-var,arg-type,assignment]
         )
         onnx_input["pixel_values"] = empty_image_placeholder
         return onnx_input
