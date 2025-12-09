@@ -26,7 +26,7 @@ supported_colmodernvbert_models: list[DenseModelDescription] = [
         license="mit",
         size_in_GB=1.0,
         sources=ModelSource(hf="Qdrant/colmodernvbert"),
-        additional_files=["model.onnx_data"],
+        additional_files=["processor_config.json"],
         model_file="model.onnx",
     ),
 ]
