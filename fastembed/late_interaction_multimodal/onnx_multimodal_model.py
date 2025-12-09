@@ -185,7 +185,8 @@ class OnnxMultimodalModel(OnnxModel[T]):
                 encoded, attention_mask, metadata = self._process_nested_patches(processed)
             else:
                 encoded, attention_mask, metadata = self._process_flat_images(
-                    processed, len(images)  # type: ignore[arg-type]
+                    processed,  # type: ignore[arg-type]
+                    len(images),
                 )
 
         onnx_input = {"pixel_values": encoded, "attention_mask": attention_mask}
@@ -233,7 +234,7 @@ class OnnxMultimodalModel(OnnxModel[T]):
                 attention_mask[i, j] = 1
 
         metadata = {"patch_counts": patch_counts}
-        return encoded, attention_mask, metadata
+        return encoded, attention_mask, metadata  # type: ignore[return-value]
 
     def _process_flat_images(
         self, processed: list[NumpyArray], num_images: int
