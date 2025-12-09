@@ -423,7 +423,7 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
 
     @classmethod
     def _get_image_worker_class(cls) -> Type[ImageEmbeddingWorker[NumpyArray]]:
-        return ColModernVBERTmageEmbeddingWorker
+        return ColModernVBERTImageEmbeddingWorker
 
 
 class ColModernVBERTTextEmbeddingWorker(TextEmbeddingWorker[NumpyArray]):
@@ -436,7 +436,7 @@ class ColModernVBERTTextEmbeddingWorker(TextEmbeddingWorker[NumpyArray]):
         )
 
 
-class ColModernVBERTmageEmbeddingWorker(ImageEmbeddingWorker[NumpyArray]):
+class ColModernVBERTImageEmbeddingWorker(ImageEmbeddingWorker[NumpyArray]):
     def init_embedding(self, model_name: str, cache_dir: str, **kwargs: Any) -> ColModernVBERT:
         return ColModernVBERT(
             model_name=model_name,
