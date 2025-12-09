@@ -21,6 +21,17 @@ CANONICAL_IMAGE_VALUES = {
             [-0.1299, -0.0691, 0.1097, 0.0728, 0.0123, 0.0519, 0.0122],
         ]
     ),
+    "Qdrant/colmodernvbert": np.array(
+        [
+            [0.2256, -0.0503, 0.0254, -0.011, -0.0786, 0.2152, -0.0961],
+            [-0.0028, -0.0484, -0.0724, -0.0724, -0.0977, 0.0308, -0.0236],
+            [0.0035, -0.1075, -0.0877, -0.0207, -0.0828, -0.0294, -0.0253],
+            [0.0021, -0.0797, -0.0605, -0.0008, -0.0837, 0.0015, -0.0846],
+            [-0.0473, -0.0594, -0.0553, -0.0014, -0.0712, 0.0158, -0.0546],
+            [-0.1009, -0.082, -0.0684, -0.1385, -0.0469, -0.0606, -0.0323],
+            [-0.0624, 0.006, -0.0498, -0.0127, -0.1115, 0.0076, -0.0888],
+        ]
+    ),
 }
 
 CANONICAL_QUERY_VALUES = {
@@ -33,6 +44,14 @@ CANONICAL_QUERY_VALUES = {
             [-0.0274, 0.0098, 0.2106, -0.0634, 0.0616, -0.0021, 0.0708],
             [0.0074, 0.0025, 0.1631, -0.0802, 0.0418, -0.0219, 0.1022],
             [-0.0165, -0.0106, 0.1672, -0.0768, 0.0389, -0.0038, 0.1137],
+        ]
+    ),
+    "Qdrant/colmodernvbert": np.array(
+        [
+            [0.0541, 0.0677, 0.0392, 0.1494, 0.1855, 0.0275, -0.1835, -0.1025, -0.1204, -0.0835],
+            [-0.0515, -0.1328, 0.0298, -0.0574, 0.0829, -0.0836, 0.0888, 0.0138, 0.0741, 0.0293],
+            [-0.1114, -0.0506, 0.0666, -0.1064, -0.0229, -0.0486, -0.007, 0.0932, 0.0054, 0.1113],
+            [0.2317, -0.0518, 0.0248, -0.0075, -0.078, 0.2073, -0.0912, -0.0622, -0.0203, 0.093]
         ]
     ),
 }
@@ -90,6 +109,9 @@ def test_get_embedding_size():
     model_name = "Qdrant/ColPali-v1.3-fp16"
     assert LateInteractionMultimodalEmbedding.get_embedding_size(model_name) == 128
 
+    model_name = "Qdrant/colmodernvbert"
+    assert LateInteractionMultimodalEmbedding.get_embedding_size(model_name) == 128
+
 
 def test_embedding_size():
     if os.getenv("CI"):
@@ -99,6 +121,10 @@ def test_embedding_size():
     assert model.embedding_size == 128
 
     model_name = "Qdrant/ColPali-v1.3-fp16"
+    model = LateInteractionMultimodalEmbedding(model_name=model_name, lazy_load=True)
+    assert model.embedding_size == 128
+
+    model_name = "Qdrant/colmodernvbert"
     model = LateInteractionMultimodalEmbedding(model_name=model_name, lazy_load=True)
     assert model.embedding_size == 128
 

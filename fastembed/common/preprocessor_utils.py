@@ -50,9 +50,10 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
 
     tokenizer = Tokenizer.from_file(str(tokenizer_path))
     tokenizer.enable_truncation(max_length=max_context)
-    tokenizer.enable_padding(
-        pad_id=config.get("pad_token_id", 0), pad_token=tokenizer_config["pad_token"]
-    )
+    if not tokenizer.padding:
+        tokenizer.enable_padding(
+            pad_id=config.get("pad_token_id", 0), pad_token=tokenizer_config["pad_token"]
+        )
 
     for token in tokens_map.values():
         if isinstance(token, str):
