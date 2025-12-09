@@ -178,42 +178,15 @@ class OnnxMultimodalModel(OnnxModel[T]):
             assert self.processor is not None, "Processor is not initialized"
             processed = self.processor(image_files)
 
-            # Handle nested structure (with image splitting)
+            # Dispatch to appropriate handler based on structure.
+            # ColModernVBERT processors divides the original image into
+            # subimages and processes them separately.
             if isinstance(processed[0], list):
-                # processed = [[img1_patches], [img2_patches], ...]
-                # Need shape: (batch_size, max_patches, C, H, W)
-
-                patch_counts = [len(patches) for patches in processed]
-                max_patches = max(patch_counts)
-
-                # Get dimensions from first patch
-                C, H, W = processed[0][0].shape
-
-                # Create padded array
-                batch_size = len(processed)
-                encoded = np.zeros((batch_size, max_patches, C, H, W), dtype=processed[0][0].dtype)
-
-                # Create attention mask (1 for real patches, 0 for padding)
-                attention_mask = np.zeros((batch_size, max_patches), dtype=np.int64)
-
-                # Fill in patches and attention mask
-                for i, patches in enumerate(processed):
-                    for j, patch in enumerate(patches):
-                        encoded[i, j] = patch
-                        attention_mask[i, j] = 1
-
-                # Track actual patch counts for later use
-                metadata = {"patch_counts": patch_counts}
+                encoded, attention_mask, metadata = self._process_nested_patches(processed)
             else:
-                # Flat structure (no splitting) - still need batch dimension
-                # Shape: (batch_size, 1, C, H, W)
-                encoded = np.array(processed)
-                if len(encoded.shape) == 4:  # (batch_size, C, H, W)
-                    encoded = encoded[:, np.newaxis, ...]  # Add num_patches=1 dimension
-
-                # All patches are real (no padding)
-                attention_mask = np.ones((len(images), encoded.shape[1]), dtype=np.int64)
-                metadata = {"patch_counts": [encoded.shape[1]] * len(images)}
+                encoded, attention_mask, metadata = self._process_flat_images(
+                    processed, len(images)  # type: ignore[arg-type]
+                )
 
         onnx_input = {"pixel_values": encoded, "attention_mask": attention_mask}
         onnx_input = self._preprocess_onnx_image_input(onnx_input, **kwargs)
@@ -221,9 +194,108 @@ class OnnxMultimodalModel(OnnxModel[T]):
 
         return OnnxOutputContext(
             model_output=model_output[0],
-            attention_mask=attention_mask,
+            attention_mask=attention_mask,  # type: ignore[arg-type]
             metadata=metadata,
         )
+
+    def _process_nested_patches(
+        self, processed: list[list[NumpyArray]]
+    ) -> tuple[NumpyArray, NumpyArray, dict[str, Any]]:
+        """
+        Process nested image patches (from ImageSplitter).
+
+        Args:
+            processed: List of patch lists, one per image [[img1_patches], [img2_patches], ...]
+
+        Returns:
+            tuple: (encoded array, attention_mask, metadata)
+                - encoded: (batch_size, max_patches, C, H, W)
+                - attention_mask: (batch_size, max_patches) with 1 for real patches, 0 for padding
+                - metadata: Dict with 'patch_counts' key
+        """
+        patch_counts = [len(patches) for patches in processed]
+        max_patches = max(patch_counts)
+
+        # Get dimensions from first patch
+        C, H, W = processed[0][0].shape
+        batch_size = len(processed)
+
+        # Create padded array
+        encoded = np.zeros((batch_size, max_patches, C, H, W), dtype=processed[0][0].dtype)
+
+        # Create attention mask (1 for real patches, 0 for padding)
+        attention_mask = np.zeros((batch_size, max_patches), dtype=np.int64)
+
+        # Fill in patches and attention mask
+        for i, patches in enumerate(processed):
+            for j, patch in enumerate(patches):
+                encoded[i, j] = patch
+                attention_mask[i, j] = 1
+
+        metadata = {"patch_counts": patch_counts}
+        return encoded, attention_mask, metadata
+
+    def _process_flat_images(
+        self, processed: list[NumpyArray], num_images: int
+    ) -> tuple[NumpyArray, NumpyArray, dict[str, Any]]:
+        """
+        Process flat image arrays (from standard processors like SiglipImageProcessor).
+
+        For models expecting 5D input (Idefics3-based), adds patch dimension.
+        For models expecting 4D input, keeps original shape.
+
+        Args:
+            processed: List of image arrays
+            num_images: Number of images being processed
+
+        Returns:
+            tuple: (encoded array, attention_mask, metadata)
+                - encoded: (batch_size, C, H, W) for 4D models OR (batch_size, 1, C, H, W) for 5D models
+                - attention_mask: (batch_size, 1) with all ones
+                - metadata: Dict with 'patch_counts' key
+        """
+        encoded = np.array(processed)
+
+        # Check if model needs patch dimension based on ONNX signature
+        if len(encoded.shape) == 4 and self._needs_patch_dimension():
+            # Add patch dimension for Idefics3-based models: (batch, 1, C, H, W)
+            encoded = encoded[:, np.newaxis, ...]
+
+        # Determine attention mask shape based on final tensor shape
+        if len(encoded.shape) == 5:
+            # 5D tensor: attention_mask shape is (batch, num_patches)
+            attention_mask = np.ones((num_images, encoded.shape[1]), dtype=np.int64)
+            metadata = {"patch_counts": [encoded.shape[1]] * num_images}
+        else:
+            # 4D tensor: attention_mask shape is (batch, 1)
+            attention_mask = np.ones((num_images, 1), dtype=np.int64)
+            metadata = {"patch_counts": [1] * num_images}
+
+        return encoded, attention_mask, metadata  # type: ignore[return-value]
+
+    def _needs_patch_dimension(self) -> bool:
+        """
+        Determine if this model needs the patch dimension by checking ONNX input shape.
+
+        Idefics3-based models (like ColModernVBERT) need 5D tensors (batch_size, patch_count, C, H, W).
+        Earlier models (like ColPali v1.3) need 4D tensors (batch_size, C, H, W).
+
+        Returns:
+            bool: True if pixel_values input has 5 dimensions, False if 4 dimensions
+        """
+        if not hasattr(self, "model") or self.model is None:
+            return False
+
+        # Get pixel_values input metadata
+        for input_meta in self.model.get_inputs():
+            if input_meta.name == "pixel_values":
+                # input_meta.shape is a list like
+                #     ['batch_size', 'sequence_length', 'num_channels', 'height', 'width']
+                #  or ['batch_size', 'num_channels', 'height', 'width']
+                return len(input_meta.shape) == 5
+
+        # Default to False for backward compatibility
+        return False
 
     def _embed_images(
         self,
