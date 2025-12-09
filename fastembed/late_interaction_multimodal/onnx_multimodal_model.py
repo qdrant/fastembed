@@ -184,9 +184,7 @@ class OnnxMultimodalModel(OnnxModel[T]):
             if isinstance(processed[0], list):
                 encoded, attention_mask, metadata = self._process_nested_patches(processed)
             else:
-                encoded, attention_mask, metadata = self._process_flat_images(
-                    processed, len(images)  # type: ignore[arg-type]
-                )
+                encoded, attention_mask, metadata = self._process_flat_images(processed, len(images))
 
         onnx_input = {"pixel_values": encoded, "attention_mask": attention_mask}
         onnx_input = self._preprocess_onnx_image_input(onnx_input, **kwargs)
@@ -194,7 +192,7 @@ class OnnxMultimodalModel(OnnxModel[T]):
 
         return OnnxOutputContext(
             model_output=model_output[0],
-            attention_mask=attention_mask,  # type: ignore[arg-type]
+            attention_mask=attention_mask,
             metadata=metadata,
         )
 
@@ -271,7 +269,7 @@ class OnnxMultimodalModel(OnnxModel[T]):
             attention_mask = np.ones((num_images, 1), dtype=np.int64)
             metadata = {"patch_counts": [1] * num_images}
 
-        return encoded, attention_mask, metadata  # type: ignore[return-value]
+        return encoded, attention_mask, metadata
 
     def _needs_patch_dimension(self) -> bool:
         """
