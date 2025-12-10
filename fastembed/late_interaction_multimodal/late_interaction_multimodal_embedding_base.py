@@ -79,7 +79,7 @@ class LateInteractionMultimodalEmbeddingBase(ModelManagement[DenseModelDescripti
 
     def token_count(
         self,
-        texts: Union[str, Iterable[str]],
+        texts: str | Iterable[str],
         **kwargs: Any,
     ) -> int:
         """Returns the number of tokens in the texts."""

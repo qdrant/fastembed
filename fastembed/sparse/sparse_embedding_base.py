@@ -85,6 +85,6 @@ class SparseTextEmbeddingBase(ModelManagement[SparseModelDescription]):
         else:
             yield from self.embed(query, **kwargs)
 
-    def token_count(self, texts: Union[str, Iterable[str]], **kwargs: Any) -> int:
+    def token_count(self, texts: str | Iterable[str], **kwargs: Any) -> int:
         """Returns the number of tokens in the texts."""
         raise NotImplementedError("Subclasses must implement this method")

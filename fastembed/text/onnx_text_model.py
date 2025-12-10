@@ -159,9 +159,7 @@ class OnnxTextModel(OnnxModel[T]):
             for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
                 yield from self._post_process_onnx_output(batch, **kwargs)  # type: ignore
 
-    def _token_count(
-        self, texts: Union[str, Iterable[str]], batch_size: int = 1024, **_: Any
-    ) -> int:
+    def _token_count(self, texts: str | Iterable[str], batch_size: int = 1024, **_: Any) -> int:
         if not hasattr(self, "model") or self.model is None:
             self.load_onnx_model()  # loads the tokenizer as well
 

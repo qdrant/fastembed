@@ -54,7 +54,7 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             yield SparseEmbedding(values=scores, indices=indices)
 
     def token_count(
-        self, texts: Union[str, Iterable[str]], batch_size: int = 1024, **kwargs: Any
+        self, texts: str | Iterable[str], batch_size: int = 1024, **kwargs: Any
     ) -> int:
         return self._token_count(texts, batch_size=batch_size, **kwargs)
 
