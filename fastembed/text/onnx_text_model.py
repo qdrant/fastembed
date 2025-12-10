@@ -7,7 +7,7 @@ import numpy as np
 from numpy.typing import NDArray
 from tokenizers import Encoding, Tokenizer
 
-from fastembed.common.types import NumpyArray, OnnxProvider
+from fastembed.common.types import NumpyArray, OnnxProvider, Device
 from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
 from fastembed.common.preprocessor_utils import load_tokenizer
 from fastembed.common.utils import iter_batch
@@ -52,7 +52,7 @@ class OnnxTextModel(OnnxModel[T]):
         model_file: str,
         threads: int | None,
         providers: Sequence[OnnxProvider] | None = None,
-        cuda: bool = False,
+        cuda: bool | Device = Device.AUTO,
         device_id: int | None = None,
         extra_session_options: dict[str, Any] | None = None,
     ) -> None:
@@ -108,7 +108,7 @@ class OnnxTextModel(OnnxModel[T]):
         batch_size: int = 256,
         parallel: int | None = None,
         providers: Sequence[OnnxProvider] | None = None,
-        cuda: bool = False,
+        cuda: bool | Device = Device.AUTO,
         device_ids: list[int] | None = None,
         local_files_only: bool = False,
         specific_model_path: str | None = None,

@@ -2,6 +2,7 @@ from typing import Sequence, Any
 
 from fastembed.common import OnnxProvider
 from fastembed.common.model_description import BaseModelDescription
+from fastembed.common.types import Device
 from fastembed.rerank.cross_encoder.onnx_text_cross_encoder import OnnxTextCrossEncoder
 
 
@@ -14,7 +15,7 @@ class CustomTextCrossEncoder(OnnxTextCrossEncoder):
         cache_dir: str | None = None,
         threads: int | None = None,
         providers: Sequence[OnnxProvider] | None = None,
-        cuda: bool = False,
+        cuda: bool | Device = Device.AUTO,
         device_ids: list[int] | None = None,
         lazy_load: bool = False,
         device_id: int | None = None,

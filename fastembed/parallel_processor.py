@@ -10,6 +10,7 @@ from multiprocessing.sharedctypes import Synchronized as BaseValue
 from queue import Empty
 from typing import Any, Iterable, Type
 
+from fastembed.common.types import Device
 
 # Single item should be processed in less than:
 processing_timeout = 10 * 60  # seconds
@@ -95,7 +96,7 @@ class ParallelWorkerPool:
         worker: Type[Worker],
         start_method: str | None = None,
         device_ids: list[int] | None = None,
-        cuda: bool = False,
+        cuda: bool | Device = Device.AUTO,
     ):
         self.worker_class = worker
         self.num_workers = num_workers

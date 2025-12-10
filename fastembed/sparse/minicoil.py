@@ -10,6 +10,7 @@ from tokenizers import Tokenizer
 from fastembed.common.model_description import SparseModelDescription, ModelSource
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common import OnnxProvider
+from fastembed.common.types import Device
 from fastembed.common.utils import define_cache_dir
 from fastembed.sparse.sparse_embedding_base import (
     SparseEmbedding,
@@ -78,7 +79,7 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         k: float = 1.2,
         b: float = 0.75,
         avg_len: float = 150.0,
-        cuda: bool = False,
+        cuda: bool | Device = Device.AUTO,
         device_ids: list[int] | None = None,
         lazy_load: bool = False,
         device_id: int | None = None,
@@ -98,10 +99,11 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             b (float, optional): The b parameter in the BM25 formula. Defines the importance of the document length.
                 Defaults to 0.75.
             avg_len (float, optional): The average length of the documents in the corpus. Defaults to 150.0.
-            cuda (bool, optional): Whether to use cuda for inference. Mutually exclusive with `providers`
-                Defaults to False.
+            cuda (Union[bool, Device], optional): Whether to use cuda for inference. Mutually exclusive with `providers`
+                Defaults to Device.AUTO.
             device_ids (Optional[list[int]], optional): The list of device ids to use for data parallel processing in
-                workers. Should be used with `cuda=True`, mutually exclusive with `providers`. Defaults to None.
+                workers. Should be used with `cuda` equals to `True`, `Device.AUTO` or `Device.CUDA`, mutually exclusive
+                with `providers`. Defaults to None.
             lazy_load (bool, optional): Whether to load the model during class initialization or on demand.
                 Should be set to True when using multiple-gpu and parallel encoding. Defaults to False.
             device_id (Optional[int], optional): The device id to use for loading the model in the worker process.

@@ -12,7 +12,7 @@ from fastembed.common.onnx_model import (
     OnnxOutputContext,
     OnnxProvider,
 )
-from fastembed.common.types import NumpyArray
+from fastembed.common.types import NumpyArray, Device
 from fastembed.common.preprocessor_utils import load_tokenizer
 from fastembed.common.utils import iter_batch
 from fastembed.parallel_processor import ParallelWorkerPool
@@ -31,7 +31,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         model_file: str,
         threads: int | None,
         providers: Sequence[OnnxProvider] | None = None,
-        cuda: bool = False,
+        cuda: bool | Device = Device.AUTO,
         device_id: int | None = None,
         extra_session_options: dict[str, Any] | None = None,
     ) -> None:
@@ -94,7 +94,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         batch_size: int,
         parallel: int | None = None,
         providers: Sequence[OnnxProvider] | None = None,
-        cuda: bool = False,
+        cuda: bool | Device = Device.AUTO,
         device_ids: list[int] | None = None,
         local_files_only: bool = False,
         specific_model_path: str | None = None,

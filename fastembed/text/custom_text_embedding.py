@@ -1,5 +1,4 @@
 from typing import Sequence, Any, Iterable
-
 from dataclasses import dataclass
 
 import numpy as np
@@ -11,7 +10,7 @@ from fastembed.common.model_description import (
     DenseModelDescription,
 )
 from fastembed.common.onnx_model import OnnxOutputContext
-from fastembed.common.types import NumpyArray
+from fastembed.common.types import NumpyArray, Device
 from fastembed.common.utils import normalize, mean_pooling
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
 
@@ -32,7 +31,7 @@ class CustomTextEmbedding(OnnxTextEmbedding):
         cache_dir: str | None = None,
         threads: int | None = None,
         providers: Sequence[OnnxProvider] | None = None,
-        cuda: bool = False,
+        cuda: bool | Device = Device.AUTO,
         device_ids: list[int] | None = None,
         lazy_load: bool = False,
         device_id: int | None = None,
