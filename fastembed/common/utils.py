@@ -5,7 +5,7 @@ import tempfile
 import unicodedata
 from pathlib import Path
 from itertools import islice
-from typing import Iterable, Optional, TypeVar
+from typing import Iterable, TypeVar
 
 import numpy as np
 from numpy.typing import NDArray
@@ -45,7 +45,7 @@ def iter_batch(iterable: Iterable[T], size: int) -> Iterable[list[T]]:
         yield b
 
 
-def define_cache_dir(cache_dir: Optional[str] = None) -> Path:
+def define_cache_dir(cache_dir: str | None = None) -> Path:
     """
     Define the cache directory for fastembed
     """

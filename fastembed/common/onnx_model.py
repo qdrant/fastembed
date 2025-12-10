@@ -1,7 +1,7 @@
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Generic, Iterable, Optional, Sequence, Type, TypeVar
+from typing import Any, Generic, Iterable, Sequence, Type, TypeVar
 
 import numpy as np
 import onnxruntime as ort
@@ -19,8 +19,8 @@ T = TypeVar("T")
 @dataclass
 class OnnxOutputContext:
     model_output: NumpyArray
-    attention_mask: Optional[NDArray[np.int64]] = None
-    input_ids: Optional[NDArray[np.int64]] = None
+    attention_mask: NDArray[np.int64] | None = None
+    input_ids: NDArray[np.int64] | None = None
 
 
 class OnnxModel(Generic[T]):
@@ -43,8 +43,8 @@ class OnnxModel(Generic[T]):
         raise NotImplementedError("Subclasses must implement this method")
 
     def __init__(self) -> None:
-        self.model: Optional[ort.InferenceSession] = None
-        self.tokenizer: Optional[Tokenizer] = None
+        self.model: ort.InferenceSession | None = None
+        self.tokenizer: Tokenizer | None = None
 
     def _preprocess_onnx_input(
         self, onnx_input: dict[str, NumpyArray], **kwargs: Any
@@ -58,11 +58,11 @@ class OnnxModel(Generic[T]):
         self,
         model_dir: Path,
         model_file: str,
-        threads: Optional[int],
-        providers: Optional[Sequence[OnnxProvider]] = None,
+        threads: int | None,
+        providers: Sequence[OnnxProvider] | None = None,
         cuda: bool = False,
-        device_id: Optional[int] = None,
-        extra_session_options: Optional[dict[str, Any]] = None,
+        device_id: int | None = None,
+        extra_session_options: dict[str, Any] | None = None,
     ) -> None:
         model_path = model_dir / model_file
         # List of Execution Providers: https://onnxruntime.ai/docs/execution-providers

@@ -1,4 +1,4 @@
-from typing import Any, Iterable, Optional
+from typing import Any, Iterable
 
 from fastembed.common.model_description import BaseModelDescription
 from fastembed.common.model_management import ModelManagement
@@ -8,8 +8,8 @@ class TextCrossEncoderBase(ModelManagement[BaseModelDescription]):
     def __init__(
         self,
         model_name: str,
-        cache_dir: Optional[str] = None,
-        threads: Optional[int] = None,
+        cache_dir: str | None = None,
+        threads: int | None = None,
         **kwargs: Any,
     ):
         self.model_name = model_name
@@ -41,7 +41,7 @@ class TextCrossEncoderBase(ModelManagement[BaseModelDescription]):
         self,
         pairs: Iterable[tuple[str, str]],
         batch_size: int = 64,
-        parallel: Optional[int] = None,
+        parallel: int | None = None,
         **kwargs: Any,
     ) -> Iterable[float]:
         """Rerank query-document pairs.

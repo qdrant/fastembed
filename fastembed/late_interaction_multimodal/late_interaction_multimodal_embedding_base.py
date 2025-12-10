@@ -1,4 +1,4 @@
-from typing import Iterable, Optional, Union, Any
+from typing import Iterable, Any
 
 
 from fastembed.common import ImageInput
@@ -11,21 +11,21 @@ class LateInteractionMultimodalEmbeddingBase(ModelManagement[DenseModelDescripti
     def __init__(
         self,
         model_name: str,
-        cache_dir: Optional[str] = None,
-        threads: Optional[int] = None,
+        cache_dir: str | None = None,
+        threads: int | None = None,
         **kwargs: Any,
     ):
         self.model_name = model_name
         self.cache_dir = cache_dir
         self.threads = threads
         self._local_files_only = kwargs.pop("local_files_only", False)
-        self._embedding_size: Optional[int] = None
+        self._embedding_size: int | None = None
 
     def embed_text(
         self,
-        documents: Union[str, Iterable[str]],
+        documents: str | Iterable[str],
         batch_size: int = 256,
-        parallel: Optional[int] = None,
+        parallel: int | None = None,
         **kwargs: Any,
     ) -> Iterable[NumpyArray]:
         """
@@ -47,9 +47,9 @@ class LateInteractionMultimodalEmbeddingBase(ModelManagement[DenseModelDescripti
 
     def embed_image(
         self,
-        images: Union[ImageInput, Iterable[ImageInput]],
+        images: ImageInput | Iterable[ImageInput],
         batch_size: int = 16,
-        parallel: Optional[int] = None,
+        parallel: int | None = None,
         **kwargs: Any,
     ) -> Iterable[NumpyArray]:
         """
@@ -79,7 +79,7 @@ class LateInteractionMultimodalEmbeddingBase(ModelManagement[DenseModelDescripti
 
     def token_count(
         self,
-        texts: Union[str, Iterable[str]],
+        texts: str | Iterable[str],
         **kwargs: Any,
     ) -> int:
         """Returns the number of tokens in the texts."""

@@ -1,12 +1,12 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional, Any
+from typing import Any
 
 
 @dataclass(frozen=True)
 class ModelSource:
-    hf: Optional[str] = None
-    url: Optional[str] = None
+    hf: str | None = None
+    url: str | None = None
     _deprecated_tar_struct: bool = False
 
     @property
@@ -33,8 +33,8 @@ class BaseModelDescription:
 
 @dataclass(frozen=True)
 class DenseModelDescription(BaseModelDescription):
-    dim: Optional[int] = None
-    tasks: Optional[dict[str, Any]] = field(default_factory=dict)
+    dim: int | None = None
+    tasks: dict[str, Any] | None = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         assert self.dim is not None, "dim is required for dense model description"
@@ -42,8 +42,8 @@ class DenseModelDescription(BaseModelDescription):
 
 @dataclass(frozen=True)
 class SparseModelDescription(BaseModelDescription):
-    requires_idf: Optional[bool] = None
-    vocab_size: Optional[int] = None
+    requires_idf: bool | None = None
+    vocab_size: int | None = None
 
 
 class PoolingType(str, Enum):
