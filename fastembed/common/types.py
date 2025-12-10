@@ -10,7 +10,7 @@ PathInput: TypeAlias = str | Path
 ImageInput: TypeAlias = PathInput | Image.Image
 
 OnnxProvider: TypeAlias = str | tuple[str, dict[Any, Any]]
-NumpyArray = (
+NumpyArray: TypeAlias = (
     NDArray[np.float64]
     | NDArray[np.float32]
     | NDArray[np.float16]
