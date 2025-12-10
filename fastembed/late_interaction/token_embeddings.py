@@ -1,5 +1,5 @@
 from dataclasses import asdict
-from typing import Union, Iterable, Any, Type
+from typing import Iterable, Any, Type
 
 from fastembed.common.model_description import DenseModelDescription, ModelSource
 from fastembed.common.onnx_model import OnnxOutputContext
@@ -63,7 +63,7 @@ class TokenEmbeddingsModel(OnnxTextEmbedding, LateInteractionTextEmbeddingBase):
 
     def embed(
         self,
-        documents: Union[str, Iterable[str]],
+        documents: str | Iterable[str],
         batch_size: int = 256,
         parallel: int | None = None,
         **kwargs: Any,

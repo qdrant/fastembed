@@ -1,12 +1,12 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional, Any
+from typing import Any
 
 
 @dataclass(frozen=True)
 class ModelSource:
-    hf: Optional[str] = None
-    url: Optional[str] = None
+    hf: str | None = None
+    url: str | None = None
     _deprecated_tar_struct: bool = False
 
     @property
@@ -42,8 +42,8 @@ class DenseModelDescription(BaseModelDescription):
 
 @dataclass(frozen=True)
 class SparseModelDescription(BaseModelDescription):
-    requires_idf: Optional[bool] = None
-    vocab_size: Optional[int] = None
+    requires_idf: bool | None = None
+    vocab_size: int | None = None
 
 
 class PoolingType(str, Enum):

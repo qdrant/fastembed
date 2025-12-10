@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Iterable, Any, Union
+from typing import Iterable, Any
 
 import numpy as np
 from numpy.typing import NDArray
@@ -12,7 +12,7 @@ from fastembed.common.model_management import ModelManagement
 @dataclass
 class SparseEmbedding:
     values: NumpyArray
-    indices: Union[NDArray[np.int64], NDArray[np.int32]]
+    indices: NDArray[np.int64] | NDArray[np.int32]
 
     def as_object(self) -> dict[str, NumpyArray]:
         return {

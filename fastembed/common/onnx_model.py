@@ -1,7 +1,7 @@
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Generic, Iterable, Sequence, Type, TypeVar, Optional
+from typing import Any, Generic, Iterable, Sequence, Type, TypeVar
 
 import numpy as np
 import onnxruntime as ort
@@ -19,10 +19,8 @@ T = TypeVar("T")
 @dataclass
 class OnnxOutputContext:
     model_output: NumpyArray
-    attention_mask: Optional[NDArray[np.int64]] = (
-        None  #  dataclasses can't handle `|` as a replacement for Optional
-    )
-    input_ids: Optional[NDArray[np.int64]] = None
+    attention_mask: NDArray[np.int64] | None = None
+    input_ids: NDArray[np.int64] | None = None
 
 
 class OnnxModel(Generic[T]):
