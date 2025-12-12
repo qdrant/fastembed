@@ -13,6 +13,7 @@ copyright: |
 theme:
   name: material
   logo: assets/favicon.png
+  favicon: assets/favicon.png
   custom_dir: docs/overrides
   icon:
     repo: fontawesome/brands/github
