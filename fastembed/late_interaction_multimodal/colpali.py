@@ -302,7 +302,6 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
     def get_image_mask(
         self,
         images: ImageInput | Iterable[ImageInput],
-        batch_size: int = 16,
         **kwargs: Any,
     ) -> list[NumpyArray]:
         """
@@ -314,8 +313,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
 
         Args:
             images: Single image or iterable of images
-            batch_size: Batch size for processing
-            **kwargs: Additional processing arguments
+            **kwargs: Additional processing arguments (reserved for future use)
 
         Returns:
             List of binary masks (dtype=bool) where True = image token (ID 257152), False = other tokens.
@@ -326,17 +324,11 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
         is_single = isinstance(images, (str, bytes, Path)) or hasattr(images, "read")
         images_to_process: Iterable[ImageInput] = [images] if is_single else images  # type: ignore[assignment, list-item]
 
-        # Process images in batches to get input_ids
+        # Generate masks - all images get the same mask based on fixed tokenization pattern
         masks: list[NumpyArray] = []
-        images_list = list(images_to_process)
-        for batch_start in range(0, len(images_list), batch_size):
-            batch = images_list[batch_start : batch_start + batch_size]
-
-            # For ColPali images, input_ids follow EMPTY_TEXT_PLACEHOLDER pattern
-            # Generate mask: True for image tokens (ID 257152), False for others
-            for _ in batch:
-                mask: NumpyArray = self.EMPTY_TEXT_PLACEHOLDER == self.IMAGE_TOKEN_ID
-                masks.append(mask)
+        for _ in images_to_process:
+            mask: NumpyArray = self.EMPTY_TEXT_PLACEHOLDER == self.IMAGE_TOKEN_ID
+            masks.append(mask)
 
         return masks
 

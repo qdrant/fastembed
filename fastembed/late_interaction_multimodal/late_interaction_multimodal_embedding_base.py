@@ -88,7 +88,6 @@ class LateInteractionMultimodalEmbeddingBase(ModelManagement[DenseModelDescripti
     def get_image_mask(
         self,
         images: ImageInput | Iterable[ImageInput],
-        batch_size: int = 16,
         **kwargs: Any,
     ) -> list[NumpyArray]:
         """
@@ -99,8 +98,7 @@ class LateInteractionMultimodalEmbeddingBase(ModelManagement[DenseModelDescripti
 
         Args:
             images: Single image or iterable of images (file paths, bytes, or PIL Image objects)
-            batch_size: Number of images to process in each batch. Defaults to 16.
-            **kwargs: Additional keyword arguments for image processing.
+            **kwargs: Additional keyword arguments (reserved for future use)
 
         Returns:
             List of binary masks (numpy arrays with dtype=bool), one per image. Each mask has shape (sequence_length,)
@@ -112,7 +110,7 @@ class LateInteractionMultimodalEmbeddingBase(ModelManagement[DenseModelDescripti
 
         Example:
             ```python
-            model = ColPali.load("Qdrant/colpali-v1.3-fp16")
+            model = ColPali(model_name="Qdrant/colpali-v1.3-fp16")
             masks = model.get_image_mask(["image1.jpg", "image2.jpg"])
             # masks[0] is a numpy array of shape (1030,) with dtype=bool for ColPali
             # First 1024 values are True (image tokens), last 6 are False (text tokens)

@@ -187,7 +187,6 @@ class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase)
     def get_image_mask(
         self,
         images: ImageInput | Iterable[ImageInput],
-        batch_size: int = 16,
         **kwargs: Any,
     ) -> list[NumpyArray]:
         """
@@ -198,8 +197,7 @@ class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase)
 
         Args:
             images: Single image or iterable of images (file paths, bytes, or PIL Image objects)
-            batch_size: Number of images to process in each batch. Defaults to 16.
-            **kwargs: Additional keyword arguments for image processing.
+            **kwargs: Additional keyword arguments (reserved for future use)
 
         Returns:
             List of binary masks (numpy arrays with dtype=bool), one per image. Each mask has shape (sequence_length,)
@@ -217,4 +215,4 @@ class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase)
             # First 1024 values are True (image tokens), last 6 are False (text tokens)
             ```
         """
-        return self.model.get_image_mask(images, batch_size, **kwargs)
+        return self.model.get_image_mask(images, **kwargs)
