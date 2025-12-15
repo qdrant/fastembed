@@ -101,3 +101,64 @@ def test_embedding_size():
     model_name = "Qdrant/ColPali-v1.3-fp16"
     model = LateInteractionMultimodalEmbedding(model_name=model_name, lazy_load=True)
     assert model.embedding_size == 128
+
+
+def test_colpali_image_mask():
+    """Test that get_image_mask returns correct masks for image tokens."""
+    if os.getenv("CI"):
+        pytest.skip("Colpali is too large to test in CI")
+
+    model = LateInteractionMultimodalEmbedding(model_name="Qdrant/colpali-v1.3-fp16")
+
+    # Get mask for single image
+    masks = model.get_image_mask([images[0]])
+
+    assert len(masks) == 1, "Should return one mask per image"
+    mask = masks[0]
+
+    # ColPali uses 1030 tokens total: 1024 image + 6 text
+    assert mask.shape == (1030,), f"Expected shape (1030,), got {mask.shape}"
+    assert mask.dtype == np.bool_, f"Expected bool dtype, got {mask.dtype}"
+
+    # First 1024 tokens should be image tokens (value=True)
+    assert np.all(mask[:1024]), "First 1024 tokens should be image tokens (True)"
+
+    # Last 6 tokens should be text tokens (value=False)
+    assert np.all(~mask[1024:]), "Last 6 tokens should be text tokens (False)"
+
+    # Test with multiple images
+    masks = model.get_image_mask([images[0], images[1]])
+    assert len(masks) == 2, "Should return two masks for two images"
+    assert all(m.shape == (1030,) for m in masks), "All masks should have same shape"
+
+
+def test_colpali_image_mask_single_image():
+    """Test get_image_mask with a single image (not in a list)."""
+    if os.getenv("CI"):
+        pytest.skip("Colpali is too large to test in CI")
+
+    model = LateInteractionMultimodalEmbedding(model_name="Qdrant/colpali-v1.3-fp16")
+
+    # Pass single image without list
+    masks = model.get_image_mask(images[0])
+
+    assert len(masks) == 1, "Should return one mask for single image"
+    assert masks[0].shape == (1030,), "Mask should have correct shape"
+
+
+def test_base_class_raises_not_implemented():
+    """Test that base class raises NotImplementedError."""
+    from fastembed.late_interaction_multimodal.late_interaction_multimodal_embedding_base import (
+        LateInteractionMultimodalEmbeddingBase,
+    )
+
+    # Create a minimal subclass that doesn't implement get_image_mask
+    class MinimalModel(LateInteractionMultimodalEmbeddingBase):
+        pass
+
+    model = MinimalModel(model_name="test", cache_dir="/tmp")
+
+    with pytest.raises(NotImplementedError) as exc_info:
+        model.get_image_mask(["dummy.jpg"])
+
+    assert "does not support image mask generation" in str(exc_info.value)

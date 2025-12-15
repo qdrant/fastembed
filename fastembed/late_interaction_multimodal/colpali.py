@@ -36,9 +36,10 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
     BOS_TOKEN = "<s>"
     PAD_TOKEN = "<pad>"
     QUERY_MARKER_TOKEN_ID = [2, 5098]
+    IMAGE_TOKEN_ID = 257152  # The '<image>' special token
     IMAGE_PLACEHOLDER_SIZE = (3, 448, 448)
     EMPTY_TEXT_PLACEHOLDER = np.array(
-        [257152] * 1024 + [2, 50721, 573, 2416, 235265, 108]
+        [IMAGE_TOKEN_ID] * 1024 + [2, 50721, 573, 2416, 235265, 108]
     )  # This is a tokenization of '<image>' * 1024 + '<bos>Describe the image.\n' line which is used as placeholder
     # while processing an image
     EVEN_ATTENTION_MASK = np.array([1] * 1030)
@@ -275,6 +276,51 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
             specific_model_path=self._specific_model_path,
             **kwargs,
         )
+
+    def get_image_mask(
+        self,
+        images: Union[ImageInput, Iterable[ImageInput]],
+        batch_size: int = 16,
+        **kwargs: Any,
+    ) -> list[NumpyArray]:
+        """
+        Generate image token masks for ColPali embeddings.
+
+        For ColPali, image embeddings use 1030 tokens:
+        - Tokens 0-1023: Image tokens (token ID 257152)
+        - Tokens 1024-1029: Text tokens from prompt "Describe the image.\\n"
+
+        Args:
+            images: Single image or iterable of images
+            batch_size: Batch size for processing
+            **kwargs: Additional processing arguments
+
+        Returns:
+            List of binary masks (dtype=bool) where True = image token (ID 257152), False = other tokens.
+        """
+        from pathlib import Path
+
+        # Ensure images is iterable
+        is_single = isinstance(images, (str, bytes, Path)) or hasattr(images, "read")
+        images_to_process: Iterable[ImageInput] = [images] if is_single else images  # type: ignore[list-item]
+
+        # Process images in batches to get input_ids
+        masks: list[NumpyArray] = []
+        images_list = list(images_to_process)
+        for batch_start in range(0, len(images_list), batch_size):
+            batch = images_list[batch_start : batch_start + batch_size]
+
+            # Load the model if not already loaded
+            if self.model is None:
+                self.load_onnx_model()
+
+            # For ColPali images, input_ids follow EMPTY_TEXT_PLACEHOLDER pattern
+            # Generate mask: True for image tokens (ID 257152), False for others
+            for _ in batch:
+                mask: NumpyArray = self.EMPTY_TEXT_PLACEHOLDER == self.IMAGE_TOKEN_ID
+                masks.append(mask)
+
+        return masks
 
     @classmethod
     def _get_text_worker_class(cls) -> Type[TextEmbeddingWorker[NumpyArray]]:
