@@ -3,12 +3,11 @@ from typing import Any, Iterable, Type
 
 from fastembed.common.types import NumpyArray
 from fastembed.common.onnx_model import OnnxOutputContext
-from fastembed.common.utils import normalize
 from fastembed.text.onnx_embedding import OnnxTextEmbedding, OnnxTextEmbeddingWorker
 from fastembed.common.model_description import DenseModelDescription, ModelSource
 
 
-supported_builtin_pooling_normalized_models: list[DenseModelDescription] = [
+supported_builtin_sentence_embedding_models: list[DenseModelDescription] = [
     DenseModelDescription(
         model="google/embeddinggemma-300m",
         dim=768,
@@ -28,10 +27,12 @@ supported_builtin_pooling_normalized_models: list[DenseModelDescription] = [
 ]
 
 
-class BuiltinPoolingNormalizedEmbedding(OnnxTextEmbedding):
+class BuiltinSentenceEmbedding(OnnxTextEmbedding):
+    """Builtin Sentence Embedding uses built-in pooling and normalization of underlying onnx models"""
+
     @classmethod
     def _get_worker_class(cls) -> Type[OnnxTextEmbeddingWorker]:
-        return BuiltinPoolingNormalizedEmbeddingWorker
+        return BuiltinSentenceEmbeddingWorker
 
     @classmethod
     def _list_supported_models(cls) -> list[DenseModelDescription]:
@@ -40,12 +41,12 @@ class BuiltinPoolingNormalizedEmbedding(OnnxTextEmbedding):
         Returns:
             list[DenseModelDescription]: A list of DenseModelDescription objects containing the model information.
         """
-        return supported_builtin_pooling_normalized_models
+        return supported_builtin_sentence_embedding_models
 
     def _post_process_onnx_output(
         self, output: OnnxOutputContext, **kwargs: Any
     ) -> Iterable[NumpyArray]:
-        return normalize(output.model_output)
+        return output.model_output
 
     def _run_model(
         self, onnx_input: dict[str, Any], onnx_output_names: list[str] | None = None
@@ -53,14 +54,14 @@ class BuiltinPoolingNormalizedEmbedding(OnnxTextEmbedding):
         return self.model.run(onnx_output_names, onnx_input)[1]  # type: ignore[union-attr]
 
 
-class BuiltinPoolingNormalizedEmbeddingWorker(OnnxTextEmbeddingWorker):
+class BuiltinSentenceEmbeddingWorker(OnnxTextEmbeddingWorker):
     def init_embedding(
         self,
         model_name: str,
         cache_dir: str,
         **kwargs: Any,
     ) -> OnnxTextEmbedding:
-        return BuiltinPoolingNormalizedEmbedding(
+        return BuiltinSentenceEmbedding(
             model_name=model_name,
             cache_dir=cache_dir,
             threads=1,
