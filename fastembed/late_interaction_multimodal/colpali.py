@@ -310,10 +310,6 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
         for batch_start in range(0, len(images_list), batch_size):
             batch = images_list[batch_start : batch_start + batch_size]
 
-            # Load the model if not already loaded
-            if self.model is None:
-                self.load_onnx_model()
-
             # For ColPali images, input_ids follow EMPTY_TEXT_PLACEHOLDER pattern
             # Generate mask: True for image tokens (ID 257152), False for others
             for _ in batch:
