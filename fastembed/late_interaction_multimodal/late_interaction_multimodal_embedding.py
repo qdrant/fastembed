@@ -183,3 +183,38 @@ class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase)
         return self.model.token_count(
             texts, batch_size=batch_size, include_extension=include_extension, **kwargs
         )
+
+    def get_image_mask(
+        self,
+        images: Union[ImageInput, Iterable[ImageInput]],
+        batch_size: int = 16,
+        **kwargs: Any,
+    ) -> list[NumpyArray]:
+        """
+        Generate binary masks identifying image tokens in processed image sequences.
+
+        This method processes images and returns masks indicating which tokens in the
+        resulting sequence correspond to image content (value=1) vs text/special tokens (value=0).
+
+        Args:
+            images: Single image or iterable of images (file paths, bytes, or PIL Image objects)
+            batch_size: Number of images to process in each batch. Defaults to 16.
+            **kwargs: Additional keyword arguments for image processing.
+
+        Returns:
+            List of binary masks (numpy arrays with dtype=bool), one per image. Each mask has shape (sequence_length,)
+            where sequence_length is the number of tokens in the processed image representation.
+            Values are True for image tokens, False for non-image tokens (text, special tokens, etc.).
+
+        Raises:
+            NotImplementedError: If the underlying model doesn't support image mask generation.
+
+        Example:
+            ```python
+            model = LateInteractionMultimodalEmbedding("Qdrant/colpali-v1.3-fp16")
+            masks = model.get_image_mask(["image1.jpg", "image2.jpg"])
+            # masks[0] is a numpy array of shape (1030,) with dtype=bool for ColPali
+            # First 1024 values are True (image tokens), last 6 are False (text tokens)
+            ```
+        """
+        return self.model.get_image_mask(images, batch_size, **kwargs)
