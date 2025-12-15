@@ -324,7 +324,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
 
         # Ensure images is iterable
         is_single = isinstance(images, (str, bytes, Path)) or hasattr(images, "read")
-        images_to_process: Iterable[ImageInput] = [images] if is_single else images  # type: ignore[list-item]
+        images_to_process: Iterable[ImageInput] = [images] if is_single else images  # type: ignore[assignment, list-item]
 
         # Process images in batches to get input_ids
         masks: list[NumpyArray] = []
