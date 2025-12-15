@@ -87,7 +87,7 @@ class LateInteractionMultimodalEmbeddingBase(ModelManagement[DenseModelDescripti
 
     def get_image_mask(
         self,
-        images: Union[ImageInput, Iterable[ImageInput]],
+        images: ImageInput | Iterable[ImageInput],
         batch_size: int = 16,
         **kwargs: Any,
     ) -> list[NumpyArray]:
