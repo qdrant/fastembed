@@ -1,7 +1,8 @@
 import json
 from typing import Any
 from pathlib import Path
-
+import sys
+import warnings
 from tokenizers import AddedToken, Tokenizer
 
 from fastembed.image.transform.operators import Compose
@@ -49,7 +50,15 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
     tokens_map = load_special_tokens(model_dir)
 
     tokenizer = Tokenizer.from_file(str(tokenizer_path))
-    tokenizer.enable_truncation(max_length=max_context)
+
+    max_safe_length = min(max_context, sys.maxsize)
+    if max_context > sys.maxsize:
+        warnings.warn(
+            f"Requested max_context ({max_context}) exceeds system maximum integer size. "
+            f"Truncating to {sys.maxsize}.",
+            RuntimeWarning,
+        )
+    tokenizer.enable_truncation(max_length=max_safe_length)
     tokenizer.enable_padding(
         pad_id=config.get("pad_token_id", 0), pad_token=tokenizer_config["pad_token"]
     )
