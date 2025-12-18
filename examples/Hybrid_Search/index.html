@@ -1,0 +1,2377 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+        <meta name="author" content="Nirant Kasliwal">
+      
+      
+        <link rel="canonical" href="https://qdrant.github.io/fastembed/examples/Hybrid_Search/">
+      
+      
+        <link rel="prev" href="../Hindi_Tamil_RAG_with_Navarasa7B/">
+      
+      
+        <link rel="next" href="../Image_Embedding/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>Hybrid Search - FastEmbed</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../css/ansi-colours.css">
+    
+      <link rel="stylesheet" href="../../css/jupyter-cells.css">
+    
+      <link rel="stylesheet" href="../../css/pandas-dataframe.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#hybrid-search-with-fastembed-qdrant" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+        <aside class="md-banner">
+          <div class="md-banner__inner md-grid md-typeset">
+            
+              <button class="md-banner__button md-icon" aria-label="Don't show this again">
+                
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+              </button>
+            
+            
+<div style="text-align: center">
+    If you're using FastEmbed from Qdrant, join the
+    <a rel="me" href="https://discord.gg/Qy6HCJK9Dc">
+        <span class="twemoji mastodon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M492.5 69.8c-.2-.3-.4-.6-.8-.7-38.1-17.5-78.4-30-119.7-37.1-.4-.1-.8 0-1.1.1s-.6.4-.8.8c-5.5 9.9-10.5 20.2-14.9 30.6-44.6-6.8-89.9-6.8-134.4 0-4.5-10.5-9.5-20.7-15.1-30.6-.2-.3-.5-.6-.8-.8s-.7-.2-1.1-.2C162.5 39 122.2 51.5 84.1 69c-.3.1-.6.4-.8.7C7.1 183.5-13.8 294.6-3.6 404.2c0 .3.1.5.2.8s.3.4.5.6c44.4 32.9 94 58 146.8 74.2.4.1.8.1 1.1 0s.7-.4.9-.7c11.3-15.4 21.4-31.8 30-48.8.1-.2.2-.5.2-.8s0-.5-.1-.8-.2-.5-.4-.6-.4-.3-.7-.4c-15.8-6.1-31.2-13.4-45.9-21.9-.3-.2-.5-.4-.7-.6s-.3-.6-.3-.9 0-.6.2-.9.3-.5.6-.7c3.1-2.3 6.2-4.7 9.1-7.1.3-.2.6-.4.9-.4s.7 0 1 .1c96.2 43.9 200.4 43.9 295.5 0 .3-.1.7-.2 1-.2s.7.2.9.4c2.9 2.4 6 4.9 9.1 7.2.2.2.4.4.6.7s.2.6.2.9-.1.6-.3.9-.4.5-.6.6c-14.7 8.6-30 15.9-45.9 21.8-.2.1-.5.2-.7.4s-.3.4-.4.7-.1.5-.1.8.1.5.2.8c8.8 17 18.8 33.3 30 48.8.2.3.6.6.9.7s.8.1 1.1 0c52.9-16.2 102.6-41.3 147.1-74.2.2-.2.4-.4.5-.6s.2-.5.2-.8c12.3-126.8-20.5-236.9-86.9-334.5zm-302 267.7c-29 0-52.8-26.6-52.8-59.2s23.4-59.2 52.8-59.2c29.7 0 53.3 26.8 52.8 59.2 0 32.7-23.4 59.2-52.8 59.2m195.4 0c-29 0-52.8-26.6-52.8-59.2s23.4-59.2 52.8-59.2c29.7 0 53.3 26.8 52.8 59.2 0 32.7-23.2 59.2-52.8 59.2"/></svg>
+        </span>
+        <strong>Qdrant Discord server</strong>
+    </a>
+    to get help and share your work! Or check out <a rel="me"
+        href="https://cloud.qdrant.io?utm_source=twitter&utm_medium=website&utm_campaign=fastembed">Qdrant Cloud</a> to
+    get started with vector search!
+</div>
+
+          </div>
+          
+            <script>var el=document.querySelector("[data-md-component=announce]");if(el){var content=el.querySelector(".md-typeset");__md_hash(content.innerHTML)===__md_get("__announce")&&(el.hidden=!0)}</script>
+          
+        </aside>
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="FastEmbed" class="md-header__button md-logo" aria-label="FastEmbed" data-md-component="logo">
+      
+  <img src="../../assets/favicon.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            FastEmbed
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Hybrid Search
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/qdrant/fastembed/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    qdrant/fastembed
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="FastEmbed" class="md-nav__button md-logo" aria-label="FastEmbed" data-md-component="logo">
+      
+  <img src="../../assets/favicon.png" alt="logo">
+
+    </a>
+    FastEmbed
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/qdrant/fastembed/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    qdrant/fastembed
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ⚡️ What is FastEmbed?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Getting%20Started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ColBERT_with_FastEmbed/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ColBERT with FastEmbed
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../FastEmbed_GPU/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FastEmbed GPU
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../FastEmbed_Multi_GPU/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FastEmbed Multi GPU
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../FastEmbed_vs_HF_Comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FastEmbed vs HF Comparison
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Hindi_Tamil_RAG_with_Navarasa7B/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hindi Tamil RAG with Navarasa7B
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hybrid Search
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hybrid Search
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-will-we-do" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What will we do?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#preview-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Preview Data
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-sparse-embeddings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Create Sparse Embeddings
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-dense-embeddings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Create Dense Embeddings
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#indexing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Indexing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Indexing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#about-qdrant" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        About Qdrant
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#search" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Search
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ranking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ranking
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conclusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conclusion
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Image_Embedding/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image Embedding
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../SPLADE_with_FastEmbed/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SPLADE with FastEmbed
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Supported_Models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Supported Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Experimental
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Experimental
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../experimental/Binary%20Quantization%20from%20Scratch/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Binary Quantization from Scratch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Qdrant
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Qdrant
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../qdrant/Binary_Quantization_with_Qdrant/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Binary Quantization with Qdrant
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../qdrant/Retrieval_with_FastEmbed/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retrieval with FastEmbed
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../qdrant/Usage_With_Qdrant/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage With Qdrant
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-will-we-do" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What will we do?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#preview-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Preview Data
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-sparse-embeddings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Create Sparse Embeddings
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-dense-embeddings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Create Dense Embeddings
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#indexing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Indexing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Indexing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#about-qdrant" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        About Qdrant
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#search" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Search
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ranking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ranking
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conclusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conclusion
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+
+
+
+                  
+
+
+  
+  
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script>
+(function() {
+  function addWidgetsRenderer() {
+    var requireJsScript = document.createElement('script');
+    requireJsScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js';
+
+    var mimeElement = document.querySelector('script[type="application/vnd.jupyter.widget-view+json"]');
+    var jupyterWidgetsScript = document.createElement('script');
+    var widgetRendererSrc = 'https://unpkg.com/@jupyter-widgets/html-manager@*/dist/embed-amd.js';
+    var widgetState;
+
+    // Fallback for older version:
+    try {
+      widgetState = mimeElement && JSON.parse(mimeElement.innerHTML);
+
+      if (widgetState && (widgetState.version_major < 2 || !widgetState.version_major)) {
+        widgetRendererSrc = 'jupyter-js-widgets@*/dist/embed.js';
+      }
+    } catch(e) {}
+
+    jupyterWidgetsScript.src = widgetRendererSrc;
+
+    document.body.appendChild(requireJsScript);
+    document.body.appendChild(jupyterWidgetsScript);
+  }
+
+  document.addEventListener('DOMContentLoaded', addWidgetsRenderer);
+}());
+</script>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h1 id="hybrid-search-with-fastembed-qdrant">Hybrid Search with FastEmbed &amp; Qdrant</h1>
+<p>Author: <a href="https://twitter.com/nirantk">Nirant Kasliwal</a></p>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="what-will-we-do">What will we do?</h2>
+<p>This notebook demonstrates the usage of Hybrid Search with FastEmbed &amp; Qdrant. </p>
+<ol>
+<li>Setup: Download and install the required dependencies</li>
+<li>Preview data: Load and preview the data</li>
+<li>Create Sparse Embeddings: Create SPLADE++ embeddings for the data</li>
+<li>Create Dense Embeddings: Create BGE-Large-en-v1.5 embeddings for the data</li>
+<li>Indexing: Index the embeddings using Qdrant</li>
+<li>Search: Perform Hybrid Search using FastEmbed &amp; Qdrant</li>
+<li>Ranking: Rank the search results with Reciprocal Rank Fusion (RRF)</li>
+</ol>
+<h2 id="setup">Setup</h2>
+<p>In order to get started, you need a few dependencies, and we'll install them next:</p>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="err">!</span><span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">qU</span> <span class="n">qdrant</span><span class="o">-</span><span class="n">client</span> <span class="n">fastembed</span> <span class="n">datasets</span> <span class="n">transformers</span>
+</code></pre></div>
+
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">qdrant_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">QdrantClient</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">qdrant_client.models</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Distance</span><span class="p">,</span>
+    <span class="n">NamedSparseVector</span><span class="p">,</span>
+    <span class="n">NamedVector</span><span class="p">,</span>
+    <span class="n">SparseVector</span><span class="p">,</span>
+    <span class="n">PointStruct</span><span class="p">,</span>
+    <span class="n">SearchRequest</span><span class="p">,</span>
+    <span class="n">SparseIndexParams</span><span class="p">,</span>
+    <span class="n">SparseVectorParams</span><span class="p">,</span>
+    <span class="n">VectorParams</span><span class="p">,</span>
+    <span class="n">ScoredPoint</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">fastembed</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastembed</span><span class="w"> </span><span class="kn">import</span> <span class="n">SparseEmbedding</span><span class="p">,</span> <span class="n">SparseTextEmbedding</span><span class="p">,</span> <span class="n">TextEmbedding</span>
+</code></pre></div>
+
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="n">fastembed</span><span class="o">.</span><span class="n">__version__</span>  <span class="c1"># 0.2.5</span>
+</code></pre></div>
+
+</div>
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area">
+<div class="output_text output_subarea output_execute_result">
+<pre>
+<code>'0.2.5'</code>
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="n">dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">&quot;tasksource/esci&quot;</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">)</span>
+<span class="c1"># We&#39;ll select the first 1000 examples for this demo</span>
+<span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1000</span><span class="p">))</span>
+<span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="s2">&quot;product_locale&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;us&quot;</span><span class="p">)</span>
+<span class="n">dataset</span>
+</code></pre></div>
+
+</div>
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area">
+<div class="output_text output_subarea output_execute_result">
+<pre>
+<code>Dataset({
+    features: ['example_id', 'query', 'query_id', 'product_id', 'product_locale', 'esci_label', 'small_version', 'large_version', 'product_title', 'product_description', 'product_bullet_point', 'product_brand', 'product_color', 'product_text'],
+    num_rows: 919
+})</code>
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="preview-data">Preview Data</h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="n">source_df</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">to_pandas</span><span class="p">()</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">source_df</span><span class="o">.</span><span class="n">drop_duplicates</span><span class="p">(</span>
+    <span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;product_text&quot;</span><span class="p">,</span> <span class="s2">&quot;product_title&quot;</span><span class="p">,</span> <span class="s2">&quot;product_bullet_point&quot;</span><span class="p">,</span> <span class="s2">&quot;product_brand&quot;</span><span class="p">]</span>
+<span class="p">)</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;product_text&quot;</span><span class="p">,</span> <span class="s2">&quot;product_title&quot;</span><span class="p">,</span> <span class="s2">&quot;product_bullet_point&quot;</span><span class="p">,</span> <span class="s2">&quot;product_brand&quot;</span><span class="p">])</span>
+<span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</code></pre></div>
+
+</div>
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area">
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+<thead>
+<tr style="text-align: right;">
+<th></th>
+<th>example_id</th>
+<th>query</th>
+<th>query_id</th>
+<th>product_id</th>
+<th>product_locale</th>
+<th>esci_label</th>
+<th>small_version</th>
+<th>large_version</th>
+<th>product_title</th>
+<th>product_description</th>
+<th>product_bullet_point</th>
+<th>product_brand</th>
+<th>product_color</th>
+<th>product_text</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>0</td>
+<td>revent 80 cfm</td>
+<td>0</td>
+<td>B000MOO21W</td>
+<td>us</td>
+<td>Irrelevant</td>
+<td>0</td>
+<td>1</td>
+<td>Panasonic FV-20VQ3 WhisperCeiling 190 CFM Ceil...</td>
+<td>None</td>
+<td>WhisperCeiling fans feature a totally enclosed...</td>
+<td>Panasonic</td>
+<td>White</td>
+<td>Panasonic FV-20VQ3 WhisperCeiling 190 CFM Ceil...</td>
+</tr>
+<tr>
+<th>2</th>
+<td>1</td>
+<td>revent 80 cfm</td>
+<td>0</td>
+<td>B07X3Y6B1V</td>
+<td>us</td>
+<td>Exact</td>
+<td>0</td>
+<td>1</td>
+<td>Homewerks 7141-80 Bathroom Fan Integrated LED ...</td>
+<td>None</td>
+<td>OUTSTANDING PERFORMANCE: This Homewerk's bath ...</td>
+<td>Homewerks</td>
+<td>80 CFM</td>
+<td>Homewerks 7141-80 Bathroom Fan Integrated LED ...</td>
+</tr>
+<tr>
+<th>3</th>
+<td>2</td>
+<td>revent 80 cfm</td>
+<td>0</td>
+<td>B07WDM7MQQ</td>
+<td>us</td>
+<td>Exact</td>
+<td>0</td>
+<td>1</td>
+<td>Homewerks 7140-80 Bathroom Fan Ceiling Mount E...</td>
+<td>None</td>
+<td>OUTSTANDING PERFORMANCE: This Homewerk's bath ...</td>
+<td>Homewerks</td>
+<td>White</td>
+<td>Homewerks 7140-80 Bathroom Fan Ceiling Mount E...</td>
+</tr>
+<tr>
+<th>4</th>
+<td>3</td>
+<td>revent 80 cfm</td>
+<td>0</td>
+<td>B07RH6Z8KW</td>
+<td>us</td>
+<td>Exact</td>
+<td>0</td>
+<td>1</td>
+<td>Delta Electronics RAD80L BreezRadiance 80 CFM ...</td>
+<td>This pre-owned or refurbished product has been...</td>
+<td>Quiet operation at 1.5 sones\nBuilt-in thermos...</td>
+<td>DELTA ELECTRONICS (AMERICAS) LTD.</td>
+<td>White</td>
+<td>Delta Electronics RAD80L BreezRadiance 80 CFM ...</td>
+</tr>
+<tr>
+<th>5</th>
+<td>4</td>
+<td>revent 80 cfm</td>
+<td>0</td>
+<td>B07QJ7WYFQ</td>
+<td>us</td>
+<td>Exact</td>
+<td>0</td>
+<td>1</td>
+<td>Panasonic FV-08VRE2 Ventilation Fan with Reces...</td>
+<td>None</td>
+<td>The design solution for Fan/light combinations...</td>
+<td>Panasonic</td>
+<td>White</td>
+<td>Panasonic FV-08VRE2 Ventilation Fan with Reces...</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Catalog Item Count: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s2">Queries: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">source_df</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+</div>
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area">
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>
+<code>Catalog Item Count: 176
+Queries: 919
+</code>
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="n">df</span><span class="p">[</span><span class="s2">&quot;combined_text&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;product_title&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;product_text&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;product_bullet_point&quot;</span><span class="p">]</span>
+<span class="p">)</span>
+</code></pre></div>
+
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+</code></pre></div>
+
+</div>
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area">
+<div class="output_text output_subarea output_execute_result">
+<pre>
+<code>176</code>
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="create-sparse-embeddings">Create Sparse Embeddings</h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="n">sparse_model_name</span> <span class="o">=</span> <span class="s2">&quot;prithvida/Splade_PP_en_v1&quot;</span>
+<span class="n">dense_model_name</span> <span class="o">=</span> <span class="s2">&quot;BAAI/bge-large-en-v1.5&quot;</span>
+<span class="c1"># This triggers the model download</span>
+<span class="n">sparse_model</span> <span class="o">=</span> <span class="n">SparseTextEmbedding</span><span class="p">(</span><span class="n">model_name</span><span class="o">=</span><span class="n">sparse_model_name</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span>
+<span class="n">dense_model</span> <span class="o">=</span> <span class="n">TextEmbedding</span><span class="p">(</span><span class="n">model_name</span><span class="o">=</span><span class="n">dense_model_name</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span>
+</code></pre></div>
+
+</div>
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area">
+<div class="output_text output_subarea">
+<pre>
+<code>Fetching 9 files:   0%|          | 0/9 [00:00&lt;?, ?it/s]</code>
+</pre>
+</div>
+</div>
+<div class="output_area">
+<div class="output_text output_subarea">
+<pre>
+<code>Fetching 7 files:   0%|          | 0/7 [00:00&lt;?, ?it/s]</code>
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">make_sparse_embedding</span><span class="p">(</span><span class="n">texts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SparseEmbedding</span><span class="p">]:</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">sparse_model</span><span class="o">.</span><span class="n">embed</span><span class="p">(</span><span class="n">texts</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">))</span>
+
+
+<span class="n">sparse_embedding</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">SparseEmbedding</span><span class="p">]</span> <span class="o">=</span> <span class="n">make_sparse_embedding</span><span class="p">(</span>
+    <span class="p">[</span><span class="s2">&quot;Fastembed is a great library for text embeddings!&quot;</span><span class="p">]</span>
+<span class="p">)</span>
+<span class="n">sparse_embedding</span>
+</code></pre></div>
+
+</div>
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area">
+<div class="output_text output_subarea output_execute_result">
+<pre>
+<code>[SparseEmbedding(values=array([0.17295611, 0.80484658, 0.41356239, 0.38512513, 0.90825951,
+        0.61373132, 0.18313883, 0.18546289, 0.04257777, 1.20476401,
+        1.48403311, 0.17008089, 0.06487759, 0.16780744, 0.23214206,
+        2.5722568 , 1.87174428, 0.2541669 , 0.20749982, 0.16315481,
+        0.70712435, 0.26381177, 0.49152234, 0.67282563, 0.19267203,
+        0.29127747, 0.09682107, 1.21251154, 0.19741221, 0.44512141,
+        0.44369081, 0.21676107, 0.36704862, 0.06706504, 1.97674787,
+        0.00856015, 0.51626593, 0.21145488, 0.09790635, 0.26357391,
+        1.6925323 , 2.10766435, 0.05584541, 0.05150893, 0.24062614,
+        0.90479541, 0.1198509 , 0.10030396]), indices=array([ 1037,  2003,  2005,  2190,  2204,  2307,  2338,  2497,  2565,
+         2793,  3075,  3177,  3274,  3286,  3430,  3435,  3793,  3819,
+         3835,  3989,  4007,  4118,  4248,  4289,  4294,  4322,  4434,
+         4667,  4773,  5080,  5371,  5527,  6028,  6581,  6633,  6919,
+         6981,  6994,  7809,  7812,  7861,  8270,  9262,  9896, 10472,
+        13850, 16602, 23924]))]</code>
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The previous output is a SparseEmbedding object for the first document in our list.</p>
+<p>It contains two arrays: values and indices. 
+- The 'values' array represents the weights of the features (tokens) in the document.
+- The 'indices' array represents the indices of these features in the model's vocabulary.</p>
+<p>Each pair of corresponding values and indices represents a token and its weight in the document.</p>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>This is still a little abstract, so let's use the tokenizer vocab to make sense of these indices.</p>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="n">SparseTextEmbedding</span><span class="o">.</span><span class="n">list_supported_models</span><span class="p">()</span>
+</code></pre></div>
+
+</div>
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area">
+<div class="output_text output_subarea output_execute_result">
+<pre>
+<code>[{'model': 'prithvida/Splade_PP_en_v1',
+  'vocab_size': 30522,
+  'description': 'Misspelled version of the model. Retained for backward compatibility. Independent Implementation of SPLADE++ Model for English',
+  'size_in_GB': 0.532,
+  'sources': {'hf': 'Qdrant/SPLADE_PP_en_v1'}},
+ {'model': 'prithivida/Splade_PP_en_v1',
+  'vocab_size': 30522,
+  'description': 'Independent Implementation of SPLADE++ Model for English',
+  'size_in_GB': 0.532,
+  'sources': {'hf': 'Qdrant/SPLADE_PP_en_v1'}}]</code>
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_tokens_and_weights</span><span class="p">(</span><span class="n">sparse_embedding</span><span class="p">,</span> <span class="n">model_name</span><span class="p">)</span> <span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+    <span class="c1"># Find the tokenizer for the model</span>
+    <span class="n">tokenizer_source</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">for</span> <span class="n">model_info</span> <span class="ow">in</span> <span class="n">SparseTextEmbedding</span><span class="o">.</span><span class="n">list_supported_models</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">model_info</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="n">model_name</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+            <span class="n">tokenizer_source</span> <span class="o">=</span> <span class="n">model_info</span><span class="p">[</span><span class="s2">&quot;sources&quot;</span><span class="p">][</span><span class="s2">&quot;hf&quot;</span><span class="p">]</span>
+            <span class="k">break</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Model </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> not found in the supported models.&quot;</span><span class="p">)</span>
+
+    <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">tokenizer_source</span><span class="p">)</span>
+    <span class="n">token_weight_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sparse_embedding</span><span class="o">.</span><span class="n">indices</span><span class="p">)):</span>
+        <span class="n">token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">([</span><span class="n">sparse_embedding</span><span class="o">.</span><span class="n">indices</span><span class="p">[</span><span class="n">i</span><span class="p">]])</span>
+        <span class="n">weight</span> <span class="o">=</span> <span class="n">sparse_embedding</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">token_weight_dict</span><span class="p">[</span><span class="n">token</span><span class="p">]</span> <span class="o">=</span> <span class="n">weight</span>
+
+    <span class="c1"># Sort the dictionary by weights</span>
+    <span class="n">token_weight_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="nb">sorted</span><span class="p">(</span><span class="n">token_weight_dict</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">item</span><span class="p">:</span> <span class="n">item</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">token_weight_dict</span>
+
+
+<span class="c1"># Test the function with the first SparseEmbedding</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">get_tokens_and_weights</span><span class="p">(</span><span class="n">sparse_embedding</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">sparse_model_name</span><span class="p">),</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">))</span>
+</code></pre></div>
+
+</div>
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area">
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>
+<code>{
+    "fast": 2.5722568035125732,
+    "##bed": 2.1076643466949463,
+    "##em": 1.9767478704452515,
+    "text": 1.8717442750930786,
+    "em": 1.6925323009490967,
+    "library": 1.4840331077575684,
+    "##ding": 1.2125115394592285,
+    "bed": 1.2047640085220337,
+    "good": 0.9082595109939575,
+    "librarian": 0.9047954082489014,
+    "is": 0.8048465847969055,
+    "software": 0.7071243524551392,
+    "format": 0.6728256344795227,
+    "great": 0.613731324672699,
+    "texts": 0.5162659287452698,
+    "quick": 0.49152234196662903,
+    "device": 0.4451214075088501,
+    "file": 0.44369080662727356,
+    "for": 0.4135623872280121,
+    "best": 0.38512513041496277,
+    "technique": 0.36704862117767334,
+    "facility": 0.2912774682044983,
+    "method": 0.26381176710128784,
+    "ideal": 0.26357391476631165,
+    "perfect": 0.2541669011116028,
+    "##bing": 0.24062614142894745,
+    "material": 0.23214206099510193,
+    "storage": 0.21676106750965118,
+    "tool": 0.21145488321781158,
+    "nice": 0.20749981701374054,
+    "web": 0.19741220772266388,
+    "architecture": 0.1926720291376114,
+    "##b": 0.18546289205551147,
+    "book": 0.18313883244991302,
+    "a": 0.17295610904693604,
+    "speed": 0.17008088529109955,
+    "##am": 0.1678074449300766,
+    "##ization": 0.16315481066703796,
+    "browser": 0.11985089629888535,
+    "##ogen": 0.10030396282672882,
+    "database": 0.09790635108947754,
+    "connection": 0.09682106971740723,
+    "excellent": 0.0670650377869606,
+    "computer": 0.06487759202718735,
+    "java": 0.055845409631729126,
+    "algorithm": 0.051508933305740356,
+    "program": 0.04257776960730553,
+    "wonderful": 0.00856015458703041
+}
+</code>
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="create-dense-embeddings">Create Dense Embeddings</h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">make_dense_embedding</span><span class="p">(</span><span class="n">texts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">dense_model</span><span class="o">.</span><span class="n">embed</span><span class="p">(</span><span class="n">texts</span><span class="p">))</span>
+
+
+<span class="n">dense_embedding</span> <span class="o">=</span> <span class="n">make_dense_embedding</span><span class="p">([</span><span class="s2">&quot;Fastembed is a great library for text embeddings!&quot;</span><span class="p">])</span>
+</code></pre></div>
+
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="n">dense_embedding</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span>
+</code></pre></div>
+
+</div>
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area">
+<div class="output_text output_subarea output_execute_result">
+<pre>
+<code>(1024,)</code>
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="n">product_texts</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;combined_text&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+</code></pre></div>
+
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="o">%%</span><span class="n">time</span>
+<span class="n">df</span><span class="p">[</span><span class="s2">&quot;sparse_embedding&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">make_sparse_embedding</span><span class="p">(</span><span class="n">product_texts</span><span class="p">)</span>
+</code></pre></div>
+
+</div>
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area">
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>
+<code>CPU times: user 5min 57s, sys: 22 s, total: 6min 19s
+Wall time: 1min 37s
+</code>
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Notice that FastEmbed uses data parallelism to speed up the embedding generation process. </p>
+<p>This improves throughput and reduces the time it takes to generate embeddings for large datasets. </p>
+<p>For our small dataset here, on my local machine -- it reduces the time from user's 6 min 15 seconds to a wall time of about 3 min 6 seconds, or about 2x faster. This is a function of the number of CPU cores available on the machine, CPU usage and other factors -- so your mileage may vary.</p>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="n">df</span><span class="p">[</span><span class="s2">&quot;sparse_embedding&quot;</span><span class="p">]</span>
+</code></pre></div>
+
+</div>
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area">
+<div class="output_text output_subarea output_execute_result">
+<pre>
+<code>0      SparseEmbedding(values=array([0.06509431, 0.57...
+2      SparseEmbedding(values=array([0.10595927, 0.20...
+3      SparseEmbedding(values=array([0.1140037 , 0.02...
+4      SparseEmbedding(values=array([6.13510251e-01, ...
+5      SparseEmbedding(values=array([0.90058267, 0.12...
+                             ...                        
+780    SparseEmbedding(values=array([5.56782305e-01, ...
+809    SparseEmbedding(values=array([0.38585788, 0.44...
+828    SparseEmbedding(values=array([3.27695787e-01, ...
+867    SparseEmbedding(values=array([0.36255798, 0.74...
+870    SparseEmbedding(values=array([3.74321818e-01, ...
+Name: sparse_embedding, Length: 176, dtype: object</code>
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="o">%%</span><span class="n">time</span>
+<span class="n">df</span><span class="p">[</span><span class="s2">&quot;dense_embedding&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">make_dense_embedding</span><span class="p">(</span><span class="n">product_texts</span><span class="p">)</span>
+</code></pre></div>
+
+</div>
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area">
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>
+<code>CPU times: user 15min 51s, sys: 31.7 s, total: 16min 23s
+Wall time: 3min
+</code>
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="indexing">Indexing</h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="n">client</span> <span class="o">=</span> <span class="n">QdrantClient</span><span class="p">(</span><span class="s2">&quot;:memory:&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="about-qdrant">About Qdrant</h3>
+<p>Qdrant is a vector similarity search engine that allows you to index and search high-dimensional vectors. It supports both sparse and dense embeddings, and it's a great tool for building search engines. </p>
+<p>Here, we use the memory mode which is Numpy under the hood for demonstration purposes. In production, you can use the Docker or Cloud for full DB support.</p>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="n">collection_name</span> <span class="o">=</span> <span class="s2">&quot;esci&quot;</span>
+<span class="n">client</span><span class="o">.</span><span class="n">create_collection</span><span class="p">(</span>
+    <span class="n">collection_name</span><span class="p">,</span>
+    <span class="n">vectors_config</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;text-dense&quot;</span><span class="p">:</span> <span class="n">VectorParams</span><span class="p">(</span>
+            <span class="n">size</span><span class="o">=</span><span class="mi">1024</span><span class="p">,</span>  <span class="c1"># OpenAI Embeddings</span>
+            <span class="n">distance</span><span class="o">=</span><span class="n">Distance</span><span class="o">.</span><span class="n">COSINE</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">},</span>
+    <span class="n">sparse_vectors_config</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;text-sparse&quot;</span><span class="p">:</span> <span class="n">SparseVectorParams</span><span class="p">(</span>
+            <span class="n">index</span><span class="o">=</span><span class="n">SparseIndexParams</span><span class="p">(</span>
+                <span class="n">on_disk</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="p">},</span>
+<span class="p">)</span>
+</code></pre></div>
+
+</div>
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area">
+<div class="output_text output_subarea output_execute_result">
+<pre>
+<code>True</code>
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">make_points</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span> <span class="nb">list</span><span class="p">[</span><span class="n">PointStruct</span><span class="p">]:</span>
+    <span class="n">sparse_vectors</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;sparse_embedding&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">product_texts</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;combined_text&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">dense_vectors</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;dense_embedding&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">orient</span><span class="o">=</span><span class="s2">&quot;records&quot;</span><span class="p">)</span>
+    <span class="n">points</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">sparse_vector</span><span class="p">,</span> <span class="n">dense_vector</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
+        <span class="nb">zip</span><span class="p">(</span><span class="n">product_texts</span><span class="p">,</span> <span class="n">sparse_vectors</span><span class="p">,</span> <span class="n">dense_vectors</span><span class="p">)</span>
+    <span class="p">):</span>
+        <span class="n">sparse_vector</span> <span class="o">=</span> <span class="n">SparseVector</span><span class="p">(</span>
+            <span class="n">indices</span><span class="o">=</span><span class="n">sparse_vector</span><span class="o">.</span><span class="n">indices</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span> <span class="n">values</span><span class="o">=</span><span class="n">sparse_vector</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="n">point</span> <span class="o">=</span> <span class="n">PointStruct</span><span class="p">(</span>
+            <span class="nb">id</span><span class="o">=</span><span class="n">idx</span><span class="p">,</span>
+            <span class="n">payload</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">text</span><span class="p">,</span>
+                <span class="s2">&quot;product_id&quot;</span><span class="p">:</span> <span class="n">rows</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s2">&quot;product_id&quot;</span><span class="p">],</span>
+            <span class="p">},</span>  <span class="c1"># Add any additional payload if necessary</span>
+            <span class="n">vector</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;text-sparse&quot;</span><span class="p">:</span> <span class="n">sparse_vector</span><span class="p">,</span>
+                <span class="s2">&quot;text-dense&quot;</span><span class="p">:</span> <span class="n">dense_vector</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+            <span class="p">},</span>
+        <span class="p">)</span>
+        <span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">point</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">points</span>
+
+
+<span class="n">points</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">PointStruct</span><span class="p">]</span> <span class="o">=</span> <span class="n">make_points</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+</code></pre></div>
+
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="n">client</span><span class="o">.</span><span class="n">upsert</span><span class="p">(</span><span class="n">collection_name</span><span class="p">,</span> <span class="n">points</span><span class="p">)</span>
+</code></pre></div>
+
+</div>
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area">
+<div class="output_text output_subarea output_execute_result">
+<pre>
+<code>UpdateResult(operation_id=0, status=&lt;UpdateStatus.COMPLETED: 'completed'&gt;)</code>
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="search">Search</h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="n">query_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="c1"># # Compute sparse and dense vectors</span>
+    <span class="n">query_sparse_vectors</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">SparseEmbedding</span><span class="p">]</span> <span class="o">=</span> <span class="n">make_sparse_embedding</span><span class="p">([</span><span class="n">query_text</span><span class="p">])</span>
+    <span class="n">query_dense_vector</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="n">make_dense_embedding</span><span class="p">([</span><span class="n">query_text</span><span class="p">])</span>
+
+    <span class="n">search_results</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">search_batch</span><span class="p">(</span>
+        <span class="n">collection_name</span><span class="o">=</span><span class="n">collection_name</span><span class="p">,</span>
+        <span class="n">requests</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">SearchRequest</span><span class="p">(</span>
+                <span class="n">vector</span><span class="o">=</span><span class="n">NamedVector</span><span class="p">(</span>
+                    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;text-dense&quot;</span><span class="p">,</span>
+                    <span class="n">vector</span><span class="o">=</span><span class="n">query_dense_vector</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+                <span class="p">),</span>
+                <span class="n">limit</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+                <span class="n">with_payload</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">SearchRequest</span><span class="p">(</span>
+                <span class="n">vector</span><span class="o">=</span><span class="n">NamedSparseVector</span><span class="p">(</span>
+                    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;text-sparse&quot;</span><span class="p">,</span>
+                    <span class="n">vector</span><span class="o">=</span><span class="n">SparseVector</span><span class="p">(</span>
+                        <span class="n">indices</span><span class="o">=</span><span class="n">query_sparse_vectors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">indices</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+                        <span class="n">values</span><span class="o">=</span><span class="n">query_sparse_vectors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+                    <span class="p">),</span>
+                <span class="p">),</span>
+                <span class="n">limit</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+                <span class="n">with_payload</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">],</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">search_results</span>
+
+
+<span class="n">query_text</span> <span class="o">=</span> <span class="s2">&quot; revent 80 cfm&quot;</span>
+<span class="n">search_results</span> <span class="o">=</span> <span class="n">search</span><span class="p">(</span><span class="n">query_text</span><span class="p">)</span>
+</code></pre></div>
+
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="ranking">Ranking</h2>
+<p>We'll combine the results from the two models using Reciprocal Rank Fusion (RRF). You can read more about RRF <a href="https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf">here</a>.</p>
+<p>We select RRF for this task because:
+1. It is a simple and effective method for combining search results.
+2. It is robust to the differences in the ranking scores of the two or more ranking lists.
+3. It is easy to implement and requires minimal tuning (only one parameter: alpha, which we don't tune here).</p>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">rrf</span><span class="p">(</span><span class="n">rank_lists</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">default_rank</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Optimized Reciprocal Rank Fusion (RRF) using NumPy for large rank lists.</span>
+
+<span class="sd">    :param rank_lists: A list of rank lists. Each rank list should be a list of (item, rank) tuples.</span>
+<span class="sd">    :param alpha: The parameter alpha used in the RRF formula. Default is 60.</span>
+<span class="sd">    :param default_rank: The default rank assigned to items not present in a rank list. Default is 1000.</span>
+<span class="sd">    :return: Sorted list of items based on their RRF scores.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Consolidate all unique items from all rank lists</span>
+    <span class="n">all_items</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">item</span> <span class="k">for</span> <span class="n">rank_list</span> <span class="ow">in</span> <span class="n">rank_lists</span> <span class="k">for</span> <span class="n">item</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">rank_list</span><span class="p">)</span>
+
+    <span class="c1"># Create a mapping of items to indices</span>
+    <span class="n">item_to_index</span> <span class="o">=</span> <span class="p">{</span><span class="n">item</span><span class="p">:</span> <span class="n">idx</span> <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">all_items</span><span class="p">)}</span>
+
+    <span class="c1"># Initialize a matrix to hold the ranks, filled with the default rank</span>
+    <span class="n">rank_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">all_items</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">rank_lists</span><span class="p">)),</span> <span class="n">default_rank</span><span class="p">)</span>
+
+    <span class="c1"># Fill in the actual ranks from the rank lists</span>
+    <span class="k">for</span> <span class="n">list_idx</span><span class="p">,</span> <span class="n">rank_list</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">rank_lists</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">item</span><span class="p">,</span> <span class="n">rank</span> <span class="ow">in</span> <span class="n">rank_list</span><span class="p">:</span>
+            <span class="n">rank_matrix</span><span class="p">[</span><span class="n">item_to_index</span><span class="p">[</span><span class="n">item</span><span class="p">],</span> <span class="n">list_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">rank</span>
+
+    <span class="c1"># Calculate RRF scores using NumPy operations</span>
+    <span class="n">rrf_scores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">alpha</span> <span class="o">+</span> <span class="n">rank_matrix</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Sort items based on RRF scores</span>
+    <span class="n">sorted_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="o">-</span><span class="n">rrf_scores</span><span class="p">)</span>  <span class="c1"># Negative for descending order</span>
+
+    <span class="c1"># Retrieve sorted items</span>
+    <span class="n">sorted_items</span> <span class="o">=</span> <span class="p">[(</span><span class="nb">list</span><span class="p">(</span><span class="n">item_to_index</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="n">idx</span><span class="p">],</span> <span class="n">rrf_scores</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">sorted_indices</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">sorted_items</span>
+
+
+<span class="c1"># Example usage</span>
+<span class="n">rank_list1</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;C&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)]</span>
+<span class="n">rank_list2</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;C&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;D&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)]</span>
+<span class="n">rank_list3</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;D&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;E&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)]</span>
+
+<span class="c1"># Combine the rank lists</span>
+<span class="n">sorted_items</span> <span class="o">=</span> <span class="n">rrf</span><span class="p">([</span><span class="n">rank_list1</span><span class="p">,</span> <span class="n">rank_list2</span><span class="p">,</span> <span class="n">rank_list3</span><span class="p">])</span>
+<span class="n">sorted_items</span>
+</code></pre></div>
+
+</div>
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area">
+<div class="output_text output_subarea output_execute_result">
+<pre>
+<code>[('A', 0.033465871107430434),
+ ('B', 0.033465871107430434),
+ ('D', 0.03320985472238179),
+ ('C', 0.03294544435749548),
+ ('E', 0.01775980832584606)]</code>
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Based on this, let's convert our sparse and dense results into rank lists. And then, we'll use the Reciprocal Rank Fusion (RRF) algorithm to combine them.</p>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">rank_list</span><span class="p">(</span><span class="n">search_result</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ScoredPoint</span><span class="p">]):</span>
+    <span class="k">return</span> <span class="p">[(</span><span class="n">point</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">rank</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">rank</span><span class="p">,</span> <span class="n">point</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">search_result</span><span class="p">)]</span>
+
+
+<span class="n">dense_rank_list</span><span class="p">,</span> <span class="n">sparse_rank_list</span> <span class="o">=</span> <span class="n">rank_list</span><span class="p">(</span><span class="n">search_results</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">rank_list</span><span class="p">(</span><span class="n">search_results</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+</code></pre></div>
+
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="n">rrf_rank_list</span> <span class="o">=</span> <span class="n">rrf</span><span class="p">([</span><span class="n">dense_rank_list</span><span class="p">,</span> <span class="n">sparse_rank_list</span><span class="p">])</span>
+</code></pre></div>
+
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="n">rrf_rank_list</span>
+</code></pre></div>
+
+</div>
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area">
+<div class="output_text output_subarea output_execute_result">
+<pre>
+<code>[(3, 0.032018442622950824),
+ (8, 0.03149801587301587),
+ (1, 0.03131881575727918),
+ (13, 0.030834914611005692),
+ (15, 0.030536130536130537),
+ (9, 0.030309988518943745),
+ (12, 0.030158730158730156),
+ (14, 0.029437229437229435),
+ (11, 0.028985507246376812),
+ (2, 0.01707242848447961),
+ (4, 0.01564927857935627)]</code>
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">find_point_by_id</span><span class="p">(</span>
+    <span class="n">client</span><span class="p">:</span> <span class="n">QdrantClient</span><span class="p">,</span> <span class="n">collection_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">rrf_rank_list</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span>
+<span class="p">):</span>
+    <span class="k">return</span> <span class="n">client</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span>
+        <span class="n">collection_name</span><span class="o">=</span><span class="n">collection_name</span><span class="p">,</span> <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="n">item</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">rrf_rank_list</span><span class="p">]</span>
+    <span class="p">)</span>
+
+
+<span class="n">find_point_by_id</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">collection_name</span><span class="p">,</span> <span class="n">rrf_rank_list</span><span class="p">)</span>
+</code></pre></div>
+
+</div>
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area">
+<div class="output_text output_subarea output_execute_result">
+<pre>
+<code>[Record(id=3, payload={'text': 'Delta Electronics RAD80L BreezRadiance 80 CFM Heater/Fan/Light Combo White (Renewed)\nDelta Electronics RAD80L BreezRadiance 80 CFM Heater/Fan/Light Combo White (Renewed)\nDELTA ELECTRONICS (AMERICAS) LTD.\nWhite\nThis pre-owned or refurbished product has been professionally inspected and tested to work and look like new. How a product becomes part of Amazon Renewed, your destination for pre-owned, refurbished products: A customer buys a new product and returns it or trades it in for a newer or different model. That product is inspected and tested to work and look like new by Amazon-qualified suppliers. Then, the product is sold as an Amazon Renewed product on Amazon. If not satisfied with the purchase, renewed products are eligible for replacement or refund under the Amazon Renewed Guarantee.\nQuiet operation at 1.5 sones\nBuilt-in thermostat regulates temperature. Energy efficiency at 7.6 CFM/Watt\nPrecision engineered with DC brushless motor for extended reliability, this fan will outlast many household appliances\nGalvanized steel construction resists corrosion\nDuct: Detachable 4-inch Plastic Duct Adapter\nQuiet operation at 1.5 sones\nBuilt-in thermostat regulates temperature. Energy efficiency at 7.6 CFM/Watt\nPrecision engineered with DC brushless motor for extended reliability, this fan will outlast many household appliances\nGalvanized steel construction resists corrosion\nDuct: Detachable 4-inch Plastic Duct Adapter', 'product_id': 'B07RH6Z8KW'}, vector=None, shard_key=None),
+ Record(id=8, payload={'text': 'Aero Pure ABF80 L5 W ABF80L5 Ceiling Mount 80 CFM w/LED Light/Nightlight, Energy Star Certified, White Quiet Bathroom Ventilation Fan\nAero Pure ABF80 L5 W ABF80L5 Ceiling Mount 80 CFM w/LED Light/Nightlight, Energy Star Certified, White Quiet Bathroom Ventilation Fan\nAero Pure\nWhite\nNone\nQuiet 0.3 Sones, 80 CFM fan with choice of three designer grilles in White, Satin Nickel, or Oil Rubbed Bronze; Full 6 year warranty\n10W 3000K 800 Lumens LED Light with 0.7W Nightlight included\nInstallation friendly- Quick-mount adjustable metal bracket for new construction and retrofit; 4”, 5: and 6” metal duct adaptor included\nMeets today’s demanding building specifications- ETL Listed for wet application, ENERGY STAR certified, CALGreen, JA-8 Compliant for CA Title 24, and ASHRAE 62.2 compliant\nHousing dimensions- 10 2/5”x10 2/5”x 7 ½”; Grille dimensions- 13”x13”; Fits 2"x8" joists\nQuiet 0.3 Sones, 80 CFM fan with choice of three designer grilles in White, Satin Nickel, or Oil Rubbed Bronze; Full 6 year warranty\n10W 3000K 800 Lumens LED Light with 0.7W Nightlight included\nInstallation friendly- Quick-mount adjustable metal bracket for new construction and retrofit; 4”, 5: and 6” metal duct adaptor included\nMeets today’s demanding building specifications- ETL Listed for wet application, ENERGY STAR certified, CALGreen, JA-8 Compliant for CA Title 24, and ASHRAE 62.2 compliant\nHousing dimensions- 10 2/5”x10 2/5”x 7 ½”; Grille dimensions- 13”x13”; Fits 2"x8" joists', 'product_id': 'B07JY1PQNT'}, vector=None, shard_key=None),
+ Record(id=1, payload={'text': "Homewerks 7141-80 Bathroom Fan Integrated LED Light Ceiling Mount Exhaust Ventilation, 1.1 Sones, 80 CFM\nHomewerks 7141-80 Bathroom Fan Integrated LED Light Ceiling Mount Exhaust Ventilation, 1.1 Sones, 80 CFM\nHomewerks\n80 CFM\nNone\nOUTSTANDING PERFORMANCE: This Homewerk's bath fan ensures comfort in your home by quietly eliminating moisture and humidity in the bathroom. This exhaust fan is 1.1 sones at 80 CFM which means it’s able to manage spaces up to 80 square feet and is very quiet..\nBATH FANS HELPS REMOVE HARSH ODOR: When cleaning the bathroom or toilet, harsh chemicals are used and they can leave an obnoxious odor behind. Homewerk’s bathroom fans can help remove this odor with its powerful ventilation\nBUILD QUALITY: Designed to be corrosion resistant with its galvanized steel construction featuring a modern style round shape and has an 4000K Cool White Light LED Light. AC motor.\nEASY INSTALLATION: This exhaust bath fan is easy to install with its no-cut design and ceiling mount ventilation. Ceiling Opening (L) 7-1/2 in x Ceiling Opening (W) 7-1/4 x Ceiling Opening (H) 5-3/4 in. 13 in round grill and 4 in round duct connector.\nHOMEWERKS TRUSTED QUALITY: Be confident in the quality and construction of each and every one of our products. We ensure that all of our products are produced and certified to regional, national and international industry standards. We are proud of the products we sell, you will be too. 3 Year Limited\nOUTSTANDING PERFORMANCE: This Homewerk's bath fan ensures comfort in your home by quietly eliminating moisture and humidity in the bathroom. This exhaust fan is 1.1 sones at 80 CFM which means it’s able to manage spaces up to 80 square feet and is very quiet..\nBATH FANS HELPS REMOVE HARSH ODOR: When cleaning the bathroom or toilet, harsh chemicals are used and they can leave an obnoxious odor behind. Homewerk’s bathroom fans can help remove this odor with its powerful ventilation\nBUILD QUALITY: Designed to be corrosion resistant with its galvanized steel construction featuring a modern style round shape and has an 4000K Cool White Light LED Light. AC motor.\nEASY INSTALLATION: This exhaust bath fan is easy to install with its no-cut design and ceiling mount ventilation. Ceiling Opening (L) 7-1/2 in x Ceiling Opening (W) 7-1/4 x Ceiling Opening (H) 5-3/4 in. 13 in round grill and 4 in round duct connector.\nHOMEWERKS TRUSTED QUALITY: Be confident in the quality and construction of each and every one of our products. We ensure that all of our products are produced and certified to regional, national and international industry standards. We are proud of the products we sell, you will be too. 3 Year Limited", 'product_id': 'B07X3Y6B1V'}, vector=None, shard_key=None),
+ Record(id=13, payload={'text': 'Delta BreezSignature VFB25ACH 80 CFM Exhaust Bath Fan with Humidity Sensor\nDelta BreezSignature VFB25ACH 80 CFM Exhaust Bath Fan with Humidity Sensor\nDELTA ELECTRONICS (AMERICAS) LTD.\nWhite\nNone\nVirtually silent at less than 0.3 sones\nPrecision engineered with DC brushless motor for extended reliability\nEasily switch in and out of humidity sensing mode by toggling wall switch\nENERGY STAR qualified for efficient cost-saving operation\nPrecision engineered with DC brushless motor for extended reliability, this fan will outlast many household appliances\nVirtually silent at less than 0.3 sones\nPrecision engineered with DC brushless motor for extended reliability\nEasily switch in and out of humidity sensing mode by toggling wall switch\nENERGY STAR qualified for efficient cost-saving operation\nPrecision engineered with DC brushless motor for extended reliability, this fan will outlast many household appliances', 'product_id': 'B003O0MNGC'}, vector=None, shard_key=None),
+ Record(id=15, payload={'text': 'Delta Electronics (Americas) Ltd. GBR80HLED Delta BreezGreenBuilder Series 80 CFM Fan/Dimmable H, LED Light, Dual Speed &amp; Humidity Sensor\nDelta Electronics (Americas) Ltd. GBR80HLED Delta BreezGreenBuilder Series 80 CFM Fan/Dimmable H, LED Light, Dual Speed &amp; Humidity Sensor\nDELTA ELECTRONICS (AMERICAS) LTD.\nWith LED Light, Dual Speed &amp; Humidity Sensor\nNone\nUltra energy-efficient LED module (11-watt equivalent to 60-watt incandescent light) included. Main light output-850 Lumens, 3000K\nExtracts air at a rate of 80 CFM to properly ventilate bathrooms up to 80 sq. Ft., quiet operation at 0.8 sones\nPrecision engineered with DC brushless motor for extended reliability, this Fan will outlast many household appliances\nEnergy Star qualified for efficient cost-saving operation, galvanized steel construction resists corrosion\nFan impeller Stops If obstructed, for safe worry-free operation, attractive grille gives your bathroom a fresh look\nUltra energy-efficient LED module (11-watt equivalent to 60-watt incandescent light) included. Main light output-850 Lumens, 3000K\nExtracts air at a rate of 80 CFM to properly ventilate bathrooms up to 80 sq. Ft., quiet operation at 0.8 sones\nPrecision engineered with DC brushless motor for extended reliability, this Fan will outlast many household appliances\nEnergy Star qualified for efficient cost-saving operation, galvanized steel construction resists corrosion\nFan impeller Stops If obstructed, for safe worry-free operation, attractive grille gives your bathroom a fresh look', 'product_id': 'B01N5Y6002'}, vector=None, shard_key=None),
+ Record(id=9, payload={'text': "Delta Electronics (Americas) Ltd. RAD80 Delta BreezRadiance Series 80 CFM Fan with Heater, 10.5W, 1.5 Sones\nDelta Electronics (Americas) Ltd. RAD80 Delta BreezRadiance Series 80 CFM Fan with Heater, 10.5W, 1.5 Sones\nDELTA ELECTRONICS (AMERICAS) LTD.\nWith Heater\nNone\nQuiet operation at 1.5 Sones\nPrecision engineered with DC brushless motor for extended reliability, this Fan will outlast many household appliances\nGalvanized steel construction resists corrosion, equipped with metal duct adapter\nFan impeller Stops If obstructed, for safe worry-free operation\nPeace of mind quality, performance and reliability from the world's largest DC brushless Fan Manufacturer\nQuiet operation at 1.5 Sones\nPrecision engineered with DC brushless motor for extended reliability, this Fan will outlast many household appliances\nGalvanized steel construction resists corrosion, equipped with metal duct adapter\nFan impeller Stops If obstructed, for safe worry-free operation\nPeace of mind quality, performance and reliability from the world's largest DC brushless Fan Manufacturer", 'product_id': 'B01MZIK0PI'}, vector=None, shard_key=None),
+ Record(id=12, payload={'text': 'Aero Pure AP80RVLW Super Quiet 80 CFM Recessed Fan/Light Bathroom Ventilation Fan with White Trim Ring\nAero Pure AP80RVLW Super Quiet 80 CFM Recessed Fan/Light Bathroom Ventilation Fan with White Trim Ring\nAero Pure\nWhite\nNone\nSuper quiet 80CFM energy efficient fan virtually disappears into the ceiling leaving only a recessed light in view\nMay be installed over shower when wired to a GFCI breaker and used with a PAR30L 75W (max) CFL\nBulb not included. Accepts any of the following bulbs: 75W Max. PAR30, 14W Max. BR30 LED, or 75W Max. PAR30L (for use over tub/shower.)\nSuper quiet 80CFM energy efficient fan virtually disappears into the ceiling leaving only a recessed light in view\nMay be installed over shower when wired to a GFCI breaker and used with a PAR30L 75W (max) CFL\nBulb not included. Accepts any of the following bulbs: 75W Max. PAR30, 14W Max. BR30 LED, or 75W Max. PAR30L (for use over tub/shower.)', 'product_id': 'B00MARNO5Y'}, vector=None, shard_key=None),
+ Record(id=14, payload={'text': 'Broan Very Quiet Ceiling Bathroom Exhaust Fan, ENERGY STAR Certified, 0.3 Sones, 80 CFM\nBroan Very Quiet Ceiling Bathroom Exhaust Fan, ENERGY STAR Certified, 0.3 Sones, 80 CFM\nBroan-NuTone\nWhite\nNone\nHIGH-QUALITY FAN: Very quiet, energy efficient exhaust fan runs on 0. 3 Sones and is motor engineered for continuous operation\nEFFICIENT: Operates at 80 CFM in bathrooms up to 75 sq. ft. for a high-quality performance. Dimmable Capability: Non Dimmable\nEASY INSTALLATION: Fan is easy to install and/or replace existing product for DIY\'ers and needs only 2" x 8" construction space. Can be used over bathtubs or showers when connected to a GFCI protected branch circuit\nFEATURES: Includes hanger bar system for fast, flexible installation for all types of construction and a 6" ducting for superior performance\nCERTIFIED: ENERGY STAR qualified and HVI Certified to ensure the best quality for your home\nHIGH-QUALITY FAN: Very quiet, energy efficient exhaust fan runs on 0. 3 Sones and is motor engineered for continuous operation\nEFFICIENT: Operates at 80 CFM in bathrooms up to 75 sq. ft. for a high-quality performance. Dimmable Capability: Non Dimmable\nEASY INSTALLATION: Fan is easy to install and/or replace existing product for DIY\'ers and needs only 2" x 8" construction space. Can be used over bathtubs or showers when connected to a GFCI protected branch circuit\nFEATURES: Includes hanger bar system for fast, flexible installation for all types of construction and a 6" ducting for superior performance\nCERTIFIED: ENERGY STAR qualified and HVI Certified to ensure the best quality for your home', 'product_id': 'B001E6DMKY'}, vector=None, shard_key=None),
+ Record(id=11, payload={'text': 'Panasonic FV-0811VF5 WhisperFit EZ Retrofit Ventilation Fan, 80 or 110 CFM\nPanasonic FV-0811VF5 WhisperFit EZ Retrofit Ventilation Fan, 80 or 110 CFM\nPanasonic\nWhite\nNone\nRetrofit Solution: Ideal for residential remodeling, hotel construction or renovations\nLow Profile: 5-5/8-Inch housing depth fits in a 2 x 6 construction\nPick-A-Flow Speed Selector: Allows you to pick desired airflow from 80 or 110 CFM\nFlexible Installation: Comes with Flex-Z Fast bracket for easy, fast and trouble-free installation\nEnergy Star Rated: Delivers powerful airflow without wasting energy\nRetrofit Solution: Ideal for residential remodeling, hotel construction or renovations\nLow Profile: 5-5/8-Inch housing depth fits in a 2 x 6 construction\nPick-A-Flow Speed Selector: Allows you to pick desired airflow from 80 or 110 CFM\nFlexible Installation: Comes with Flex-Z Fast bracket for easy, fast and trouble-free installation\nEnergy Star Rated: Delivers powerful airflow without wasting energy', 'product_id': 'B00XBZFWWM'}, vector=None, shard_key=None),
+ Record(id=2, payload={'text': 'Homewerks 7140-80 Bathroom Fan Ceiling Mount Exhaust Ventilation, 1.5 Sones, 80 CFM, White\nHomewerks 7140-80 Bathroom Fan Ceiling Mount Exhaust Ventilation, 1.5 Sones, 80 CFM, White\nHomewerks\nWhite\nNone\nOUTSTANDING PERFORMANCE: This Homewerk\'s bath fan ensures comfort in your home by quietly eliminating moisture and humidity in the bathroom. This exhaust fan is 1. 5 sone at 110 CFM which means it’s able to manage spaces up to 110 square feet\nBATH FANS HELPS REMOVE HARSH ODOR: When cleaning the bathroom or toilet, harsh chemicals are used and they can leave an obnoxious odor behind. Homewerk’s bathroom fans can help remove this odor with its powerful ventilation\nBUILD QUALITY: Designed to be corrosion resistant with its galvanized steel construction featuring a grille modern style.\nEASY INSTALLATION: This exhaust bath fan is easy to install with its no-cut design and ceiling mount ventilation. Ceiling Opening (L) 7-1/2 in x Ceiling Opening (W) 7-1/4 x Ceiling Opening (H) 5-3/4 in and a 4" round duct connector.\nHOMEWERKS TRUSTED QUALITY: Be confident in the quality and construction of each and every one of our products. We ensure that all of our products are produced and certified to regional, national and international industry standards. We are proud of the products we sell, you will be too. 3 Year Limited\nOUTSTANDING PERFORMANCE: This Homewerk\'s bath fan ensures comfort in your home by quietly eliminating moisture and humidity in the bathroom. This exhaust fan is 1. 5 sone at 110 CFM which means it’s able to manage spaces up to 110 square feet\nBATH FANS HELPS REMOVE HARSH ODOR: When cleaning the bathroom or toilet, harsh chemicals are used and they can leave an obnoxious odor behind. Homewerk’s bathroom fans can help remove this odor with its powerful ventilation\nBUILD QUALITY: Designed to be corrosion resistant with its galvanized steel construction featuring a grille modern style.\nEASY INSTALLATION: This exhaust bath fan is easy to install with its no-cut design and ceiling mount ventilation. Ceiling Opening (L) 7-1/2 in x Ceiling Opening (W) 7-1/4 x Ceiling Opening (H) 5-3/4 in and a 4" round duct connector.\nHOMEWERKS TRUSTED QUALITY: Be confident in the quality and construction of each and every one of our products. We ensure that all of our products are produced and certified to regional, national and international industry standards. We are proud of the products we sell, you will be too. 3 Year Limited', 'product_id': 'B07WDM7MQQ'}, vector=None, shard_key=None),
+ Record(id=4, payload={'text': 'Panasonic FV-08VRE2 Ventilation Fan with Recessed LED (Renewed)\nPanasonic FV-08VRE2 Ventilation Fan with Recessed LED (Renewed)\nPanasonic\nWhite\nNone\nThe design solution for Fan/light combinations\nEnergy Star rated architectural grade recessed Fan/LED light\nQuiet, energy efficient and powerful 80 CFM ventilation hidden above the Ceiling\nLED lamp is dimmable\nBeautiful Lighting with 6-1/2”aperture and advanced luminaire design\nThe design solution for Fan/light combinations\nEnergy Star rated architectural grade recessed Fan/LED light\nQuiet, energy efficient and powerful 80 CFM ventilation hidden above the Ceiling\nLED lamp is dimmable\nBeautiful Lighting with 6-1/2”aperture and advanced luminaire design', 'product_id': 'B07QJ7WYFQ'}, vector=None, shard_key=None)]</code>
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Next, let's check the ESCI (Exact, Substitute, Compliment, and Irrelvant) label for the results against the source data.</p>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="n">ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">rrf_rank_list</span><span class="p">]</span>
+<span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;query&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">query_text</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">ids</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s2">&quot;esci_label&quot;</span><span class="p">])</span>
+</code></pre></div>
+
+</div>
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area">
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>
+<code>Exact
+Exact
+Exact
+Exact
+Exact
+Exact
+Exact
+Exact
+Exact
+Exact
+Exact
+</code>
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>This was amazing! We pulled only Exact results with k=10. This is a great result for a small dataset like this with out of the box vectors which are not even fine-tuned for e-Commerce.</p>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="nb">len</span><span class="p">(</span><span class="n">rrf_rank_list</span><span class="p">)</span>
+</code></pre></div>
+
+</div>
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area">
+<div class="output_text output_subarea output_execute_result">
+<pre>
+<code>11</code>
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="conclusion">Conclusion</h2>
+<p>In this notebook, we demonstrated the usage of Hybrid Search with FastEmbed &amp; Qdrant. We used FastEmbed to create Sparse and Dense embeddings for the data and indexed them using Qdrant. We then performed Hybrid Search using FastEmbed &amp; Qdrant and ranked the search results using Reciprocal Rank Fusion (RRF).</p>
+</div>
+</div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+
+
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Maintained by <a href="https://github.com/qdrant">Qdrant</a>. Originally created by <a href="https://nirantk.com/about">Nirant Kasliwal</a>.
+
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.instant", "navigation.tracking", "navigation.expand", "navigation.sections", "content.code.annotate", "toc.follow", "header.autohide", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
