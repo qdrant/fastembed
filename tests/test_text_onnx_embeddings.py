@@ -68,6 +68,22 @@ CANONICAL_VECTOR_VALUES = {
     "Qdrant/clip-ViT-B-32-text": np.array([0.0083, 0.0103, -0.0138, 0.0199, -0.0069]),
     "thenlper/gte-base": np.array([0.0038, 0.0355, 0.0181, 0.0092, 0.0654]),
     "jinaai/jina-clip-v1": np.array([-0.0862, -0.0101, -0.0056, 0.0375, -0.0472]),
+    "google/embeddinggemma-300m": np.array(
+        [-0.08181356, 0.0214127, 0.05120273, -0.03690156, -0.0254504]
+    ),
+}
+
+
+DOC_PREFIXES = {
+    "google/embeddinggemma-300m": "title: none | text: ",
+}
+QUERY_PREFIXES = {
+    "google/embeddinggemma-300m": "task: search result | query: ",
+}
+CANONICAL_QUERY_VECTOR_VALUES = {
+    "google/embeddinggemma-300m": np.array(
+        [-0.22990295, 0.03311195, 0.04290345, -0.03558498, -0.01399477]
+    )
 }
 
 MULTI_TASK_MODELS = ["jinaai/jina-embeddings-v3"]
@@ -119,11 +135,47 @@ def test_embedding(model_cache, model_name: str) -> None:
 
         with model_cache(model_desc.model) as model:
             docs = ["hello world", "flag embedding"]
+            if model_desc.model in DOC_PREFIXES:
+                docs = [DOC_PREFIXES[model_desc.model] + doc for doc in docs]
+
             embeddings = list(model.embed(docs))
             embeddings = np.stack(embeddings, axis=0)
             assert embeddings.shape == (2, dim)
 
             canonical_vector = CANONICAL_VECTOR_VALUES[model_desc.model]
+            assert np.allclose(
+                embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3
+            ), model_desc.model
+
+
+def test_query_embedding(model_cache) -> None:
+    is_ci = os.getenv("CI")
+    is_mac = platform.system() == "Darwin"
+    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+
+    for model_desc in TextEmbedding._list_supported_models():
+        if model_desc.model in MULTI_TASK_MODELS or (
+            is_mac and model_desc.model == "nomic-ai/nomic-embed-text-v1.5-Q"
+        ):
+            continue
+
+        if model_desc.model not in CANONICAL_QUERY_VECTOR_VALUES:
+            continue
+
+        if not should_test_model(model_desc, "", is_ci, is_manual):
+            continue
+
+        dim = model_desc.dim
+        with model_cache(model_desc.model) as model:
+            queries = ["hello world", "flag embedding"]
+            if model_desc.model in QUERY_PREFIXES:
+                queries = [QUERY_PREFIXES[model_desc.model] + query for query in queries]
+
+            embeddings = list(model.query_embed(queries))
+            embeddings = np.stack(embeddings, axis=0)
+            assert embeddings.shape == (2, dim)
+
+            canonical_vector = CANONICAL_QUERY_VECTOR_VALUES[model_desc.model]
             assert np.allclose(
                 embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3
             ), model_desc.model
