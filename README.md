@@ -33,7 +33,7 @@ from fastembed import TextEmbedding
 # Example list of documents
 documents: list[str] = [
     "This is built to be faster and lighter than other embedding libraries e.g. Transformers, Sentence-Transformers, etc.",
-    "fastembed is supported by and maintained by Qdrant.",
+    "FastEmbed is supported by and maintained by Qdrant.",
 ]
 
 # This will trigger the model download and initialization
@@ -46,7 +46,7 @@ embeddings_list = list(embedding_model.embed(documents))
 len(embeddings_list[0]) # Vector of 384 dimensions
 ```
 
-Fastembed supports a variety of models for different tasks and modalities.
+FastEmbed supports a variety of models for different tasks and modalities.
 The list of all the available models can be found [here](https://qdrant.github.io/fastembed/examples/Supported_Models/)
 ### 🎒 Dense text embeddings
 
@@ -182,7 +182,7 @@ from fastembed.rerank.cross_encoder import TextCrossEncoder
 query = "Who is maintaining Qdrant?"
 documents: list[str] = [
     "This is built to be faster and lighter than other embedding libraries e.g. Transformers, Sentence-Transformers, etc.",
-    "fastembed is supported by and maintained by Qdrant.",
+    "FastEmbed is supported by and maintained by Qdrant.",
 ]
 encoder = TextCrossEncoder(model_name="Xenova/ms-marco-MiniLM-L-6-v2")
 scores = list(encoder.rerank(query, documents))
@@ -254,8 +254,8 @@ client = QdrantClient("localhost", port=6333) # For production
 
 model_name = "sentence-transformers/all-MiniLM-L6-v2"
 payload = [
-    {"document": "Qdrant has Langchain integrations", "source": "Langchain-docs", },
-    {"document": "Qdrant also has Llama Index integrations", "source": "LlamaIndex-docs"},
+    {"document": "Qdrant has LangChain integrations", "source": "LangChain-docs", },
+    {"document": "Qdrant also has LlamaIndex integrations", "source": "LlamaIndex-docs"},
 ]
 docs = [models.Document(text=data["document"], model=model_name) for data in payload]
 ids = [42, 2]
