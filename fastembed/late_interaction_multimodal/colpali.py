@@ -36,9 +36,10 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
     BOS_TOKEN = "<s>"
     PAD_TOKEN = "<pad>"
     QUERY_MARKER_TOKEN_ID = [2, 5098]
+    IMAGE_TOKEN_ID = 257152  # The '<image>' special token
     IMAGE_PLACEHOLDER_SIZE = (3, 448, 448)
     EMPTY_TEXT_PLACEHOLDER = np.array(
-        [257152] * 1024 + [2, 50721, 573, 2416, 235265, 108]
+        [IMAGE_TOKEN_ID] * 1024 + [2, 50721, 573, 2416, 235265, 108]
     )  # This is a tokenization of '<image>' * 1024 + '<bos>Describe the image.\n' line which is used as placeholder
     # while processing an image
     EVEN_ATTENTION_MASK = np.array([1] * 1030)
@@ -297,6 +298,39 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
             extra_session_options=self._extra_session_options,
             **kwargs,
         )
+
+    def get_image_mask(
+        self,
+        images: ImageInput | Iterable[ImageInput],
+        **kwargs: Any,
+    ) -> list[NumpyArray]:
+        """
+        Generate image token masks for ColPali embeddings.
+
+        For ColPali, image embeddings use 1030 tokens:
+        - Tokens 0-1023: Image tokens (token ID 257152)
+        - Tokens 1024-1029: Text tokens from prompt "Describe the image.\\n"
+
+        Args:
+            images: Single image or iterable of images
+            **kwargs: Additional processing arguments (reserved for future use)
+
+        Returns:
+            List of binary masks (dtype=bool) where True = image token (ID 257152), False = other tokens.
+        """
+        from pathlib import Path
+
+        # Ensure images is iterable
+        is_single = isinstance(images, (str, bytes, Path)) or hasattr(images, "read")
+        images_to_process: Iterable[ImageInput] = [images] if is_single else images  # type: ignore[assignment, list-item]
+
+        # Generate masks - all images get the same mask based on fixed tokenization pattern
+        masks: list[NumpyArray] = []
+        for _ in images_to_process:
+            mask: NumpyArray = self.EMPTY_TEXT_PLACEHOLDER == self.IMAGE_TOKEN_ID
+            masks.append(mask)
+
+        return masks
 
     @classmethod
     def _get_text_worker_class(cls) -> Type[TextEmbeddingWorker[NumpyArray]]:
