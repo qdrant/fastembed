@@ -150,7 +150,7 @@ def pad2square(
 def resize_longest_edge(
     image: Image.Image,
     max_size: int,
-    resample: Union[int, Image.Resampling] = Image.Resampling.LANCZOS,
+    resample: int | Image.Resampling = Image.Resampling.LANCZOS,
 ) -> Image.Image:
     height, width = image.height, image.width
     aspect_ratio = width / height
@@ -192,7 +192,7 @@ def crop_ndarray(
 def resize_ndarray(
     image: NumpyArray,
     size: tuple[int, int],
-    resample: Union[int, Image.Resampling] = Image.Resampling.LANCZOS,
+    resample: int | Image.Resampling = Image.Resampling.LANCZOS,
     channel_first: bool = True,
 ) -> NumpyArray:
     # Convert to PIL-friendly format (H, W, C)

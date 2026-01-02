@@ -42,8 +42,8 @@ class Normalize(Transform):
         self.std = std
 
     def __call__(  # type: ignore[override]
-        self, images: Union[list[NumpyArray], list[list[NumpyArray]]]
-    ) -> Union[list[NumpyArray], list[list[NumpyArray]]]:
+        self, images: list[NumpyArray] | list[list[NumpyArray]]
+    ) -> list[NumpyArray] | list[list[NumpyArray]]:
         if images and isinstance(images[0], list):
             # Nested structure from ImageSplitter
             return [
@@ -73,8 +73,8 @@ class Rescale(Transform):
         self.scale = scale
 
     def __call__(  # type: ignore[override]
-        self, images: Union[list[NumpyArray], list[list[NumpyArray]]]
-    ) -> Union[list[NumpyArray], list[list[NumpyArray]]]:
+        self, images: list[NumpyArray] | list[list[NumpyArray]]
+    ) -> list[NumpyArray] | list[list[NumpyArray]]:
         if images and isinstance(images[0], list):
             # Nested structure from ImageSplitter
             return [
