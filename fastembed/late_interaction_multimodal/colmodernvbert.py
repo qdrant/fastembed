@@ -43,6 +43,7 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
     VISUAL_PROMPT_PREFIX = (
         "<|begin_of_text|>User:<image>Describe the image.<end_of_utterance>\nAssistant:"
     )
+    QUERY_AUGMENTATION_TOKEN = "<end_of_utterance>"
 
     def __init__(
         self,
@@ -187,7 +188,9 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         return output.model_output
 
     def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
-        encoded = self.tokenizer.encode_batch(documents)  # type: ignore[union-attr]
+        # Add query augmentation tokens (matching process_queries logic from colpali-engine)
+        augmented_queries = [doc + self.QUERY_AUGMENTATION_TOKEN * 10 for doc in documents]
+        encoded = self.tokenizer.encode_batch(augmented_queries)  # type: ignore[union-attr]
         return encoded
 
     def _preprocess_onnx_image_input(
