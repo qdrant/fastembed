@@ -1,4 +1,4 @@
-from typing import Any, Iterable, Type, Union, Optional, Sequence
+from typing import Any, Iterable, Type, Optional, Sequence
 import json
 
 import numpy as np
@@ -8,7 +8,7 @@ from fastembed.common import ImageInput
 from fastembed.common.model_description import DenseModelDescription, ModelSource
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.types import NumpyArray, OnnxProvider
-from fastembed.common.utils import define_cache_dir
+from fastembed.common.utils import define_cache_dir, iter_batch
 from fastembed.late_interaction_multimodal.late_interaction_multimodal_embedding_base import (
     LateInteractionMultimodalEmbeddingBase,
 )
@@ -167,7 +167,8 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         """
         batch_size, seq_length = onnx_input["input_ids"].shape
         empty_image_placeholder: NumpyArray = np.zeros(
-            (batch_size, seq_length, 3, self.image_size, self.image_size), dtype=np.float32  # type: ignore[type-var,arg-type,assignment]
+            (batch_size, seq_length, 3, self.image_size, self.image_size),
+            dtype=np.float32,  # type: ignore[type-var,arg-type,assignment]
         )
         onnx_input["pixel_values"] = empty_image_placeholder
         return onnx_input
@@ -192,6 +193,23 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         augmented_queries = [doc + self.QUERY_AUGMENTATION_TOKEN * 10 for doc in documents]
         encoded = self.tokenizer.encode_batch(augmented_queries)  # type: ignore[union-attr]
         return encoded
+
+    def token_count(
+        self,
+        texts: str | Iterable[str],
+        batch_size: int = 1024,
+        include_extension: bool = False,
+        **kwargs: Any,
+    ) -> int:
+        if not hasattr(self, "model") or self.model is None:
+            self.load_onnx_model()  # loads the tokenizer as well
+        token_num = 0
+        texts = [texts] if isinstance(texts, str) else texts
+        assert self.tokenizer is not None
+        tokenize_func = self.tokenize if include_extension else self.tokenizer.encode_batch
+        for batch in iter_batch(texts, batch_size):
+            token_num += sum([sum(encoding.attention_mask) for encoding in tokenize_func(batch)])
+        return token_num
 
     def _preprocess_onnx_image_input(
         self, onnx_input: dict[str, np.ndarray], **kwargs: Any
@@ -258,7 +276,8 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         onnx_input["attention_mask"] = attention_mask
         return onnx_input
 
-    def _compute_rows_cols_from_patches(self, patch_count: int) -> tuple[int, int]:
+    @staticmethod
+    def _compute_rows_cols_from_patches(patch_count: int) -> tuple[int, int]:
         if patch_count <= 1:
             return 0, 0
 
@@ -350,7 +369,7 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
 
     def embed_text(
         self,
-        documents: Union[str, Iterable[str]],
+        documents: str | Iterable[str],
         batch_size: int = 256,
         parallel: Optional[int] = None,
         **kwargs: Any,
@@ -386,7 +405,7 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
 
     def embed_image(
         self,
-        images: Union[ImageInput, Iterable[ImageInput]],
+        images: ImageInput | Iterable[ImageInput],
         batch_size: int = 16,
         parallel: Optional[int] = None,
         **kwargs: Any,
