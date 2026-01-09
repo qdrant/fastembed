@@ -21,6 +21,7 @@ class OnnxOutputContext:
     model_output: NumpyArray
     attention_mask: NDArray[np.int64] | None = None
     input_ids: NDArray[np.int64] | None = None
+    metadata: dict[str, Any] | None = None
 
 
 class OnnxModel(Generic[T]):

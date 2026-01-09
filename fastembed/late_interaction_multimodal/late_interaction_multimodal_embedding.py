@@ -4,6 +4,7 @@ from dataclasses import asdict
 from fastembed.common import OnnxProvider, ImageInput
 from fastembed.common.types import NumpyArray, Device
 from fastembed.late_interaction_multimodal.colpali import ColPali
+from fastembed.late_interaction_multimodal.colmodernvbert import ColModernVBERT
 
 from fastembed.late_interaction_multimodal.late_interaction_multimodal_embedding_base import (
     LateInteractionMultimodalEmbeddingBase,
@@ -12,7 +13,10 @@ from fastembed.common.model_description import DenseModelDescription
 
 
 class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase):
-    EMBEDDINGS_REGISTRY: list[Type[LateInteractionMultimodalEmbeddingBase]] = [ColPali]
+    EMBEDDINGS_REGISTRY: list[Type[LateInteractionMultimodalEmbeddingBase]] = [
+        ColPali,
+        ColModernVBERT,
+    ]
 
     @classmethod
     def list_supported_models(cls) -> list[dict[str, Any]]:

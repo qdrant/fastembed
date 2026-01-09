@@ -170,9 +170,11 @@ class OnnxMultimodalModel(OnnxModel[T]):
                 yield from self._post_process_onnx_text_output(batch)  # type: ignore
 
     def onnx_embed_image(self, images: list[ImageInput], **kwargs: Any) -> OnnxOutputContext:
-        with contextlib.ExitStack():
+        with contextlib.ExitStack() as stack:
             image_files = [
-                Image.open(image) if not isinstance(image, Image.Image) else image
+                stack.enter_context(Image.open(image))
+                if not isinstance(image, Image.Image)
+                else image
                 for image in images
             ]
             assert self.processor is not None, "Processor is not initialized"
