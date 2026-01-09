@@ -1,8 +1,10 @@
+import contextlib
 from typing import Any, Iterable, Type, Optional, Sequence
 import json
 
 import numpy as np
 from tokenizers import Encoding
+from PIL import Image
 
 from fastembed.common import ImageInput
 from fastembed.common.model_description import DenseModelDescription, ModelSource
@@ -210,6 +212,68 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         for batch in iter_batch(texts, batch_size):
             token_num += sum([sum(encoding.attention_mask) for encoding in tokenize_func(batch)])
         return token_num
+
+    def onnx_embed_image(self, images: list[ImageInput], **kwargs: Any) -> OnnxOutputContext:
+        with contextlib.ExitStack() as stack:
+            image_files = [
+                stack.enter_context(Image.open(image))
+                if not isinstance(image, Image.Image)
+                else image
+                for image in images
+            ]
+            assert self.processor is not None, "Processor is not initialized"
+            processed = self.processor(image_files)
+            encoded, attention_mask, metadata = self._process_nested_patches(processed)  # type: ignore[arg-type]
+
+        onnx_input = {"pixel_values": encoded, "attention_mask": attention_mask}
+        onnx_input = self._preprocess_onnx_image_input(onnx_input, **kwargs)
+        model_output = self.model.run(None, onnx_input)  # type: ignore[union-attr]
+
+        return OnnxOutputContext(
+            model_output=model_output[0],
+            attention_mask=attention_mask,  # type: ignore[arg-type]
+            metadata=metadata,
+        )
+
+    @staticmethod
+    def _process_nested_patches(
+        processed: list[list[NumpyArray]],
+    ) -> tuple[NumpyArray, NumpyArray, dict[str, Any]]:
+        """
+        Process nested image patches (from ImageSplitter).
+
+        Args:
+            processed: List of patch lists, one per image [[img1_patches], [img2_patches], ...]
+
+        Returns:
+            tuple: (encoded array, attention_mask, metadata)
+                - encoded: (batch_size, max_patches, C, H, W)
+                - attention_mask: (batch_size, max_patches) with 1 for real patches, 0 for padding
+                - metadata: Dict with 'patch_counts' key
+        """
+        patch_counts = [len(patches) for patches in processed]
+        max_patches = max(patch_counts)
+
+        # Get dimensions from first patch
+        channels, height, width = processed[0][0].shape
+        batch_size = len(processed)
+
+        # Create padded array
+        encoded = np.zeros(
+            (batch_size, max_patches, channels, height, width), dtype=processed[0][0].dtype
+        )
+
+        # Create attention mask (1 for real patches, 0 for padding)
+        attention_mask = np.zeros((batch_size, max_patches), dtype=np.int64)
+
+        # Fill in patches and attention mask
+        for i, patches in enumerate(processed):
+            for j, patch in enumerate(patches):
+                encoded[i, j] = patch
+                attention_mask[i, j] = 1
+
+        metadata = {"patch_counts": patch_counts}
+        return encoded, attention_mask, metadata  # type: ignore[return-value]
 
     def _preprocess_onnx_image_input(
         self, onnx_input: dict[str, np.ndarray], **kwargs: Any
