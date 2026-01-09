@@ -67,7 +67,8 @@ images = [
     Image.open((TEST_MISC_DIR / "image.jpeg")),
 ]
 
-MODELS_TO_CACHE = ("Qdrant/colmodernvbert",)
+_MODELS_TO_CACHE = ("Qdrant/colmodernvbert",)
+MODELS_TO_CACHE = (model_name.lower() for model_name in _MODELS_TO_CACHE)
 
 
 @pytest.fixture(scope="module")
@@ -90,7 +91,7 @@ def model_cache():
     yield get_model
 
     if is_ci:
-        for name, model in cache.items():
+        for _, model in cache.items():
             delete_model_cache(model.model._model_dir)
     cache.clear()
 
