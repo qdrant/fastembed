@@ -68,7 +68,7 @@ images = [
 ]
 
 _MODELS_TO_CACHE = ("Qdrant/colmodernvbert",)
-MODELS_TO_CACHE = (model_name.lower() for model_name in _MODELS_TO_CACHE)
+MODELS_TO_CACHE = tuple(model_name.lower() for model_name in _MODELS_TO_CACHE)
 
 
 @pytest.fixture(scope="module")
