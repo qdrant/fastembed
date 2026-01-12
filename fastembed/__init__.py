@@ -1,5 +1,6 @@
 import importlib.metadata
 
+from fastembed.bio import ProteinEmbedding
 from fastembed.image import ImageEmbedding
 from fastembed.late_interaction import LateInteractionTextEmbedding
 from fastembed.late_interaction_multimodal import LateInteractionMultimodalEmbedding
@@ -19,4 +20,5 @@ __all__ = [
     "ImageEmbedding",
     "LateInteractionTextEmbedding",
     "LateInteractionMultimodalEmbedding",
+    "ProteinEmbedding",
 ]
