@@ -180,6 +180,20 @@ supported_onnx_models: list[DenseModelDescription] = [
         sources=ModelSource(hf="jinaai/jina-clip-v1"),
         model_file="onnx/text_model.onnx",
     ),
+    DenseModelDescription(
+        model="BAAI/bge-m3",
+        dim=1024,
+        description=(
+            "Text embeddings, Unimodal (text), Multilingual (100+ languages), "
+            "8192 input tokens truncation, "
+            "versatility in Multi-Functionality, Multi-Linguality, and Multi-Granularity."
+        ),
+        license="mit",
+        size_in_GB=2.27,
+        sources=ModelSource(hf="BAAI/bge-m3"),
+        model_file="onnx/model.onnx",
+        additional_files=["onnx/model.onnx_data", "onnx/sentencepiece.bpe.model"],
+    ),
 ]
 
 
