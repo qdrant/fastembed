@@ -68,6 +68,9 @@ CANONICAL_VECTOR_VALUES = {
     "Qdrant/clip-ViT-B-32-text": np.array([0.0083, 0.0103, -0.0138, 0.0199, -0.0069]),
     "thenlper/gte-base": np.array([0.0038, 0.0355, 0.0181, 0.0092, 0.0654]),
     "jinaai/jina-clip-v1": np.array([-0.0862, -0.0101, -0.0056, 0.0375, -0.0472]),
+    "Qwen/Qwen3-Embedding-0.6B": np.array(
+        [-0.02225659, 0.01872586, -0.01449341, -0.08536665, 0.01223033]
+    ),
 }
 
 MULTI_TASK_MODELS = ["jinaai/jina-embeddings-v3"]

@@ -15,6 +15,28 @@ from fastembed.common.types import NumpyArray
 T = TypeVar("T")
 
 
+def last_token_pool(input_array: NumpyArray, attention_mask: NDArray[np.int64]) -> NumpyArray:
+    """Extract embedding from the last non-padding token position.
+
+    Qwen3-Embedding uses last-token pooling (NOT CLS/mean pooling).
+    Handles both left-padding and right-padding.
+
+    Args:
+        input_array: Model output, shape (batch_size, seq_len, hidden_dim).
+        attention_mask: Attention mask, shape (batch_size, seq_len).
+
+    Returns:
+        Pooled embeddings, shape (batch_size, hidden_dim).
+    """
+    left_padding = bool(attention_mask[:, -1].sum() == attention_mask.shape[0])
+    if left_padding:
+        return input_array[:, -1]
+
+    sequence_lengths = attention_mask.sum(axis=1).astype(np.int64) - 1
+    batch_size = input_array.shape[0]
+    return input_array[np.arange(batch_size), sequence_lengths]
+
+
 def normalize(input_array: NumpyArray, p: int = 2, dim: int = 1, eps: float = 1e-12) -> NumpyArray:
     # Calculate the Lp norm along the specified dimension
     norm = np.linalg.norm(input_array, ord=p, axis=dim, keepdims=True)

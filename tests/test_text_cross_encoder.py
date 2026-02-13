@@ -14,6 +14,7 @@ CANONICAL_SCORE_VALUES = {
     "jinaai/jina-reranker-v1-tiny-en": np.array([2.5911, 0.1122]),
     "jinaai/jina-reranker-v1-turbo-en": np.array([1.8295, -2.8908]),
     "jinaai/jina-reranker-v2-base-multilingual": np.array([1.6533, -1.6455]),
+    "Qwen/Qwen3-Reranker-0.6B": np.array([0.99449426, 0.01638701]),
 }
 
 

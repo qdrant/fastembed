@@ -5,6 +5,7 @@ from fastembed.common import OnnxProvider
 from fastembed.common.types import Device
 from fastembed.rerank.cross_encoder.onnx_text_cross_encoder import OnnxTextCrossEncoder
 from fastembed.rerank.cross_encoder.custom_text_cross_encoder import CustomTextCrossEncoder
+from fastembed.rerank.cross_encoder.qwen3_cross_encoder import Qwen3CrossEncoder
 
 from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
 from fastembed.common.model_description import (
@@ -16,6 +17,7 @@ from fastembed.common.model_description import (
 class TextCrossEncoder(TextCrossEncoderBase):
     CROSS_ENCODER_REGISTRY: list[Type[TextCrossEncoderBase]] = [
         OnnxTextCrossEncoder,
+        Qwen3CrossEncoder,
         CustomTextCrossEncoder,
     ]
 

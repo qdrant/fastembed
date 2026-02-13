@@ -9,6 +9,7 @@ from fastembed.text.pooled_normalized_embedding import PooledNormalizedEmbedding
 from fastembed.text.pooled_embedding import PooledEmbedding
 from fastembed.text.multitask_embedding import JinaEmbeddingV3
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
+from fastembed.text.qwen3_embedding import Qwen3TextEmbedding
 from fastembed.text.text_embedding_base import TextEmbeddingBase
 from fastembed.common.model_description import DenseModelDescription, ModelSource, PoolingType
 
@@ -20,6 +21,7 @@ class TextEmbedding(TextEmbeddingBase):
         PooledNormalizedEmbedding,
         PooledEmbedding,
         JinaEmbeddingV3,
+        Qwen3TextEmbedding,
         CustomTextEmbedding,
     ]
 
