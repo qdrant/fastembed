@@ -90,6 +90,7 @@ class Qwen3CrossEncoder(OnnxTextCrossEncoder):
 
     @classmethod
     def _list_supported_models(cls) -> list[BaseModelDescription]:
+        """Return the list of supported Qwen3 reranker models."""
         return supported_qwen3_reranker_models
 
     # ------------------------------------------------------------------
@@ -157,11 +158,10 @@ class Qwen3CrossEncoder(OnnxTextCrossEncoder):
         then concatenate the yes/no scores."""
         assert self.tokenizer is not None, "Tokenizer not loaded. Call load_onnx_model() first."
 
+        input_names: set[str] = {node.name for node in self.model.get_inputs()}  # type: ignore[union-attr]
         all_scores: list[NumpyArray] = []
         for text in texts:
             tokenized = self.tokenizer.encode_batch([text])
-
-            input_names: set[str] = {node.name for node in self.model.get_inputs()}  # type: ignore[union-attr]
             onnx_input: dict[str, NumpyArray] = {
                 "input_ids": np.array([tokenized[0].ids], dtype=np.int64),
             }
@@ -187,16 +187,20 @@ class Qwen3CrossEncoder(OnnxTextCrossEncoder):
     # ------------------------------------------------------------------
     @classmethod
     def _get_worker_class(cls) -> type[TextRerankerWorker]:
+        """Return the worker class for parallel processing."""
         return Qwen3CrossEncoderWorker
 
 
 class Qwen3CrossEncoderWorker(TextCrossEncoderWorker):
+    """Worker for parallel Qwen3 reranker inference."""
+
     def init_embedding(
         self,
         model_name: str,
         cache_dir: str,
         **kwargs: Any,
     ) -> OnnxTextCrossEncoder:
+        """Initialise a Qwen3CrossEncoder instance for the worker."""
         return Qwen3CrossEncoder(
             model_name=model_name,
             cache_dir=cache_dir,

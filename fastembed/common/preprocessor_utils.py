@@ -1,10 +1,13 @@
 import json
+import logging
 from typing import Any
 from pathlib import Path
 
 from tokenizers import AddedToken, Tokenizer
 
 from fastembed.image.transform.operators import Compose
+
+logger = logging.getLogger(__name__)
 
 
 def load_special_tokens(model_dir: Path) -> dict[str, Any]:
@@ -53,6 +56,10 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
     if not tokenizer.padding:
         pad_token_id = config.get("pad_token_id")
         if pad_token_id is None:
+            logger.warning(
+                "pad_token_id not found in config.json for %s, defaulting to 0",
+                model_dir.name,
+            )
             pad_token_id = 0
         pad_token = tokenizer_config.get("pad_token", "")
         if isinstance(pad_token, dict):

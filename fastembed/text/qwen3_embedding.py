@@ -12,6 +12,7 @@ Key differences from standard text embedding models:
   - MRL: pass ``dim=256`` (or any value 32-1024) to ``embed()`` / ``query_embed()``
 """
 
+import logging
 from collections.abc import Iterable
 from typing import Any
 
@@ -46,6 +47,8 @@ supported_qwen3_models: list[DenseModelDescription] = [
 DEFAULT_TASK = "Given a query, retrieve relevant documents that answer the query"
 QUERY_INSTRUCTION_TEMPLATE = "Instruct: {task}\nQuery: {text}"
 
+logger = logging.getLogger(__name__)
+
 
 # ---------------------------------------------------------------------------
 # Qwen3 embedding implementation
@@ -69,11 +72,13 @@ class Qwen3TextEmbedding(OnnxTextEmbedding):
 
     @classmethod
     def _list_supported_models(cls) -> list[DenseModelDescription]:
+        """Return the list of supported Qwen3 embedding models."""
         return supported_qwen3_models
 
     def _post_process_onnx_output(
         self, output: OnnxOutputContext, **kwargs: Any
     ) -> Iterable[NumpyArray]:
+        """Apply last-token pooling, optional MRL truncation, and L2 normalisation."""
         if output.attention_mask is None:
             raise ValueError("attention_mask must be provided for last-token pooling")
 
@@ -82,6 +87,9 @@ class Qwen3TextEmbedding(OnnxTextEmbedding):
         # MRL: optionally truncate to requested dimension
         dim: int | None = kwargs.get("dim")
         if dim is not None:
+            max_dim = embeddings.shape[-1]
+            if not (1 <= dim <= max_dim):
+                raise ValueError(f"dim must be between 1 and {max_dim}, got {dim}")
             embeddings = embeddings[:, :dim]
 
         return normalize(embeddings)
@@ -109,6 +117,11 @@ class Qwen3TextEmbedding(OnnxTextEmbedding):
         Yields:
             NumpyArray: L2-normalised embeddings, one per document.
         """
+        if batch_size != 1:
+            logger.warning(
+                "batch_size=%d ignored for Qwen3; causal-LM ONNX graph requires batch_size=1",
+                batch_size,
+            )
         yield from self._embed_documents(
             model_name=self.model_name,
             cache_dir=str(self.cache_dir),
@@ -164,16 +177,20 @@ class Qwen3TextEmbedding(OnnxTextEmbedding):
     # ------------------------------------------------------------------
     @classmethod
     def _get_worker_class(cls) -> type[OnnxTextEmbeddingWorker]:
+        """Return the worker class for parallel processing."""
         return Qwen3TextEmbeddingWorker
 
 
 class Qwen3TextEmbeddingWorker(OnnxTextEmbeddingWorker):
+    """Worker for parallel Qwen3 embedding inference."""
+
     def init_embedding(
         self,
         model_name: str,
         cache_dir: str,
         **kwargs: Any,
     ) -> OnnxTextEmbedding:
+        """Initialise a Qwen3TextEmbedding instance for the worker."""
         return Qwen3TextEmbedding(
             model_name=model_name,
             cache_dir=cache_dir,
