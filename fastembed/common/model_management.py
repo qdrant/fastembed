@@ -409,7 +409,7 @@ class ModelManagement(Generic[T]):
             try:
                 cache_kwargs = deepcopy(kwargs)
                 cache_kwargs["local_files_only"] = True
-                return Path(
+                cached_dir = Path(
                     cls.download_files_from_huggingface(
                         hf_source,
                         cache_dir=cache_dir,
@@ -417,6 +417,13 @@ class ModelManagement(Generic[T]):
                         **cache_kwargs,
                     )
                 )
+                # Verify all required files exist in cache before returning
+                missing = [p for p in extra_patterns if not (cached_dir / p).exists()]
+                if missing:
+                    raise FileNotFoundError(
+                        f"Cached snapshot missing files: {missing}"
+                    )
+                return cached_dir
             except Exception:
                 pass
             finally:

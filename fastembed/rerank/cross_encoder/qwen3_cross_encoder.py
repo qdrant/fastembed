@@ -57,12 +57,25 @@ supported_qwen3_reranker_models: list[BaseModelDescription] = [
         model="Qwen/Qwen3-Reranker-0.6B",
         description=(
             "Qwen3 reranker (0.6B) using causal LM yes/no scoring. "
-            "Multilingual, 40960 input tokens, instruction-aware, 2025 year."
+            "INT8 dynamic quantized. Multilingual, 40960 input tokens, "
+            "instruction-aware, 2025 year."
         ),
         license="apache-2.0",
         size_in_GB=0.57,
         sources=ModelSource(hf="n24q02m/Qwen3-Reranker-0.6B-ONNX"),
-        model_file="onnx/model.onnx",
+        model_file="onnx/model_quantized.onnx",
+    ),
+    BaseModelDescription(
+        model="Qwen/Qwen3-Reranker-0.6B-Q4F16",
+        description=(
+            "Qwen3 reranker (0.6B) using causal LM yes/no scoring. "
+            "INT4 weights + FP16 activations (Q4F16). Multilingual, "
+            "40960 input tokens, instruction-aware, 2025 year."
+        ),
+        license="apache-2.0",
+        size_in_GB=0.57,
+        sources=ModelSource(hf="n24q02m/Qwen3-Reranker-0.6B-ONNX"),
+        model_file="onnx/model_q4f16.onnx",
     ),
 ]
 
@@ -176,7 +189,10 @@ class Qwen3CrossEncoder(OnnxTextCrossEncoder):
 
             onnx_input = self._preprocess_onnx_input(onnx_input, **kwargs)
             outputs = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)  # type: ignore[union-attr]
-            scores = self._compute_yes_no_scores(outputs[0])
+            model_output = outputs[0]
+            if model_output.dtype == np.float16:
+                model_output = model_output.astype(np.float32)
+            scores = self._compute_yes_no_scores(model_output)
             all_scores.append(scores)
 
         concatenated = np.concatenate(all_scores).astype(np.float32)

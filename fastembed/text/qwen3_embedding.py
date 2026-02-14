@@ -31,13 +31,26 @@ supported_qwen3_models: list[DenseModelDescription] = [
         dim=1024,
         description=(
             "Qwen3 text embedding (0.6B) with last-token pooling and MRL support "
-            "(32-1024 dims). Multilingual, 32768 input tokens, instruction-aware, "
-            "2025 year."
+            "(32-1024 dims). INT8 dynamic quantized. Multilingual, 32768 input tokens, "
+            "instruction-aware, 2025 year."
         ),
         license="apache-2.0",
         size_in_GB=0.57,
         sources=ModelSource(hf="n24q02m/Qwen3-Embedding-0.6B-ONNX"),
-        model_file="onnx/model.onnx",
+        model_file="onnx/model_quantized.onnx",
+    ),
+    DenseModelDescription(
+        model="Qwen/Qwen3-Embedding-0.6B-Q4F16",
+        dim=1024,
+        description=(
+            "Qwen3 text embedding (0.6B) with last-token pooling and MRL support "
+            "(32-1024 dims). INT4 weights + FP16 activations (Q4F16). Multilingual, "
+            "32768 input tokens, instruction-aware, 2025 year."
+        ),
+        license="apache-2.0",
+        size_in_GB=0.57,
+        sources=ModelSource(hf="n24q02m/Qwen3-Embedding-0.6B-ONNX"),
+        model_file="onnx/model_q4f16.onnx",
     ),
 ]
 
