@@ -1,4 +1,5 @@
 from typing import Any
+import math
 
 from PIL import Image
 
@@ -6,10 +7,13 @@ from fastembed.common.types import NumpyArray
 from fastembed.image.transform.functional import (
     center_crop,
     convert_to_rgb,
+    crop_ndarray,
     normalize,
     pil2ndarray,
     rescale,
     resize,
+    resize_longest_edge,
+    resize_ndarray,
     pad2square,
 )
 
@@ -37,8 +41,18 @@ class Normalize(Transform):
         self.mean = mean
         self.std = std
 
-    def __call__(self, images: list[NumpyArray]) -> list[NumpyArray]:
-        return [normalize(image, mean=self.mean, std=self.std) for image in images]
+    def __call__(  # type: ignore[override]
+        self, images: list[NumpyArray] | list[list[NumpyArray]]
+    ) -> list[NumpyArray] | list[list[NumpyArray]]:
+        if images and isinstance(images[0], list):
+            # Nested structure from ImageSplitter
+            return [
+                [normalize(image, mean=self.mean, std=self.std) for image in img_patches]  # type: ignore[arg-type]
+                for img_patches in images
+            ]
+        else:
+            # Flat structure (backward compatibility)
+            return [normalize(image, mean=self.mean, std=self.std) for image in images]  # type: ignore[arg-type]
 
 
 class Resize(Transform):
@@ -58,8 +72,18 @@ class Rescale(Transform):
     def __init__(self, scale: float = 1 / 255):
         self.scale = scale
 
-    def __call__(self, images: list[NumpyArray]) -> list[NumpyArray]:
-        return [rescale(image, scale=self.scale) for image in images]
+    def __call__(  # type: ignore[override]
+        self, images: list[NumpyArray] | list[list[NumpyArray]]
+    ) -> list[NumpyArray] | list[list[NumpyArray]]:
+        if images and isinstance(images[0], list):
+            # Nested structure from ImageSplitter
+            return [
+                [rescale(image, scale=self.scale) for image in img_patches]  # type: ignore[arg-type]
+                for img_patches in images
+            ]
+        else:
+            # Flat structure (backward compatibility)
+            return [rescale(image, scale=self.scale) for image in images]  # type: ignore[arg-type]
 
 
 class PILtoNDarray(Transform):
@@ -79,6 +103,167 @@ class PadtoSquare(Transform):
     def __call__(self, images: list[Image.Image]) -> list[Image.Image]:
         return [
             pad2square(image=image, size=self.size, fill_color=self.fill_color) for image in images
+        ]
+
+
+class ResizeLongestEdge(Transform):
+    """Resize images so the longest edge equals target size, preserving aspect ratio."""
+
+    def __init__(
+        self,
+        size: int,
+        resample: Image.Resampling = Image.Resampling.LANCZOS,
+    ):
+        self.size = size
+        self.resample = resample
+
+    def __call__(self, images: list[Image.Image]) -> list[Image.Image]:
+        return [resize_longest_edge(image, self.size, self.resample) for image in images]
+
+
+class ResizeForVisionEncoder(Transform):
+    """
+    Resize both dimensions to be multiples of vision_encoder_max_size.
+    Preserves aspect ratio approximately.
+    Works on numpy arrays in (C, H, W) format.
+    """
+
+    def __init__(
+        self,
+        max_size: int,
+        resample: Image.Resampling = Image.Resampling.LANCZOS,
+    ):
+        self.max_size = max_size
+        self.resample = resample
+
+    def __call__(self, images: list[NumpyArray]) -> list[NumpyArray]:
+        result = []
+        for image in images:
+            # Assume (C, H, W) format
+            _, height, width = image.shape
+
+            aspect_ratio = width / height
+
+            if width >= height:
+                # Calculate new width as multiple of max_size
+                new_width = math.ceil(width / self.max_size) * self.max_size
+                new_height = int(new_width / aspect_ratio)
+                new_height = math.ceil(new_height / self.max_size) * self.max_size
+            else:
+                # Calculate new height as multiple of max_size
+                new_height = math.ceil(height / self.max_size) * self.max_size
+                new_width = int(new_height * aspect_ratio)
+                new_width = math.ceil(new_width / self.max_size) * self.max_size
+
+            # Resize using the ndarray resize function
+            resized = resize_ndarray(
+                image,
+                size=(new_width, new_height),  # PIL expects (width, height)
+                resample=self.resample,
+                channel_first=True,
+            )
+            result.append(resized)
+
+        return result
+
+
+class ImageSplitter(Transform):
+    """
+    Split images into grid of patches plus a global view.
+
+    If image dimensions exceed max_size:
+    - Divide into ceil(H/max_size) x ceil(W/max_size) patches
+    - Each patch is cropped from the image
+    - Add a global view (original resized to max_size x max_size)
+
+    If image is smaller than max_size:
+    - Return single image unchanged
+
+    Works on numpy arrays in (C, H, W) format.
+    """
+
+    def __init__(
+        self,
+        max_size: int,
+        resample: Image.Resampling = Image.Resampling.LANCZOS,
+    ):
+        self.max_size = max_size
+        self.resample = resample
+
+    def __call__(self, images: list[NumpyArray]) -> list[list[NumpyArray]]:  # type: ignore[override]
+        result = []
+
+        for image in images:
+            # Assume (C, H, W) format
+            _, height, width = image.shape
+            max_height = max_width = self.max_size
+
+            frames = []
+
+            if height > max_height or width > max_width:
+                # Calculate the number of splits needed
+                num_splits_h = math.ceil(height / max_height)
+                num_splits_w = math.ceil(width / max_width)
+
+                # Calculate optimal patch dimensions
+                optimal_height = math.ceil(height / num_splits_h)
+                optimal_width = math.ceil(width / num_splits_w)
+
+                # Generate patches in grid order (row by row)
+                for r in range(num_splits_h):
+                    for c in range(num_splits_w):
+                        # Calculate crop coordinates
+                        start_x = c * optimal_width
+                        start_y = r * optimal_height
+                        end_x = min(start_x + optimal_width, width)
+                        end_y = min(start_y + optimal_height, height)
+
+                        # Crop the patch
+                        cropped = crop_ndarray(
+                            image, x1=start_x, y1=start_y, x2=end_x, y2=end_y, channel_first=True
+                        )
+                        frames.append(cropped)
+
+                # Add global view (resized to max_size x max_size)
+                global_view = resize_ndarray(
+                    image,
+                    size=(max_width, max_height),  # PIL expects (width, height)
+                    resample=self.resample,
+                    channel_first=True,
+                )
+                frames.append(global_view)
+            else:
+                # Image is small enough, no splitting needed
+                frames.append(image)
+
+            # Append (not extend) to preserve per-image grouping
+            result.append(frames)
+
+        return result
+
+
+class SquareResize(Transform):
+    """
+    Resize images to square dimensions (max_size x max_size).
+    Works on numpy arrays in (C, H, W) format.
+    """
+
+    def __init__(
+        self,
+        size: int,
+        resample: Image.Resampling = Image.Resampling.LANCZOS,
+    ):
+        self.size = size
+        self.resample = resample
+
+    def __call__(self, images: list[NumpyArray]) -> list[list[NumpyArray]]:  # type: ignore[override]
+        return [
+            [
+                resize_ndarray(
+                    image, size=(self.size, self.size), resample=self.resample, channel_first=True
+                )
+            ]
+            for image in images
         ]
 
 
@@ -118,6 +303,7 @@ class Compose:
                 Valid size keys (nested):
                     - {"height", "width"}
                     - {"shortest_edge"}
+                    - {"longest_edge"}
 
         Returns:
             Compose: Image processor.
@@ -128,6 +314,7 @@ class Compose:
         cls._get_pad2square(transforms, config)
         cls._get_center_crop(transforms, config)
         cls._get_pil2ndarray(transforms, config)
+        cls._get_image_splitting(transforms, config)
         cls._get_rescale(transforms, config)
         cls._get_normalize(transforms, config)
         return cls(transforms=transforms)
@@ -196,6 +383,25 @@ class Compose:
                             resample=resample,
                         )
                     )
+        elif mode == "Idefics3ImageProcessor":
+            if config.get("do_resize", False):
+                size = config.get("size", {})
+                if "longest_edge" not in size:
+                    raise ValueError(
+                        "Size dictionary must contain 'longest_edge' key for Idefics3ImageProcessor"
+                    )
+
+                # Handle resample parameter - can be int enum or PIL.Image.Resampling
+                resample = config.get("resample", Image.Resampling.LANCZOS)
+                if isinstance(resample, int):
+                    resample = Image.Resampling(resample)
+
+                transforms.append(
+                    ResizeLongestEdge(
+                        size=size["longest_edge"],
+                        resample=resample,
+                    )
+                )
         else:
             raise ValueError(f"Preprocessor {mode} is not supported")
 
@@ -217,12 +423,36 @@ class Compose:
             pass
         elif mode == "JinaCLIPImageProcessor":
             pass
+        elif mode == "Idefics3ImageProcessor":
+            pass
         else:
             raise ValueError(f"Preprocessor {mode} is not supported")
 
     @staticmethod
     def _get_pil2ndarray(transforms: list[Transform], config: dict[str, Any]) -> None:
         transforms.append(PILtoNDarray())
+
+    @classmethod
+    def _get_image_splitting(cls, transforms: list[Transform], config: dict[str, Any]) -> None:
+        """
+        Add image splitting transforms for Idefics3.
+        Handles conditional logic: splitting vs square resize.
+        Must be called AFTER PILtoNDarray.
+        """
+        mode = config.get("image_processor_type", "CLIPImageProcessor")
+
+        if mode == "Idefics3ImageProcessor":
+            do_splitting = config.get("do_image_splitting", False)
+            max_size = config.get("max_image_size", {}).get("longest_edge", 512)
+            resample = config.get("resample", Image.Resampling.LANCZOS)
+            if isinstance(resample, int):
+                resample = Image.Resampling(resample)
+
+            if do_splitting:
+                transforms.append(ResizeForVisionEncoder(max_size, resample))
+                transforms.append(ImageSplitter(max_size, resample))
+            else:
+                transforms.append(SquareResize(max_size, resample))
 
     @staticmethod
     def _get_rescale(transforms: list[Transform], config: dict[str, Any]) -> None:
