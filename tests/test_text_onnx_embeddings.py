@@ -220,3 +220,22 @@ def test_token_count(model_cache, model_name) -> None:
         doc_token_count = model.token_count(documents)
         assert first_doc_token_count + second_doc_token_count == doc_token_count
         assert doc_token_count == model.token_count(documents, batch_size=1)
+
+
+def test_qwen3_left_padding_batch(model_cache) -> None:
+    '''Test to ensure causal LMs like Qwen3 properly pool from the last actual token when using left padding in a batch'''
+    model_name = "Qwen/Qwen3-Embedding-0.6B"
+    short_text = "Hello."
+    long_text = "This is a significantly longer string that will force the shorter string to be padded with `<pad>` tokens on the left side during the tokenization phase. The embedding pooling must ignore these left padding tokens."
+    
+    with model_cache(model_name) as model:
+        # Infer short string alone
+        single_result = list(model.embed([short_text]))[0]
+        
+        # Infer short string mixed in a batch with a very long string
+        batch_results = list(model.embed([long_text, short_text]))
+        batch_result_short = batch_results[1]
+        
+        # Ensure the vector is exactly the same, proving left-padding last-token pooling is precise
+        import numpy as np
+        assert np.allclose(single_result, batch_result_short, atol=1e-4)

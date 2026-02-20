@@ -150,3 +150,23 @@ def test_session_options(model_cache, model_name) -> None:
         model = TextCrossEncoder(model_name=model_name, enable_cpu_mem_arena=False)
         session_options = model.model.model.get_session_options()
         assert session_options.enable_cpu_mem_arena is False
+
+
+def test_qwen3_reranker_left_padding_batch(model_cache) -> None:
+    '''Test to ensure Qwen3 causal logit cross encoder works reliably when left-padded in batch.'''
+    model_name = "Qwen/Qwen3-Reranker-0.6B"
+    query = "Testing Qwen"
+    short_doc = "This is a short doc."
+    long_doc = "This is a significantly longer string that will force the shorter string to be padded with `<pad>` tokens on the left side during the tokenization phase. The embedding pooling must ignore these left padding tokens."
+    
+    with model_cache(model_name) as model:
+        # Infer short string alone
+        single_result = list(model.rerank(query, [short_doc]))[0].score
+        
+        # Infer short string mixed in a batch with a very long string
+        batch_results = list(model.rerank(query, [long_doc, short_doc]))
+        batch_result_short = batch_results[1].score
+        
+        # Ensure the score is exactly the same, proving causal LM logit selection is precise
+        import numpy as np
+        assert np.allclose(single_result, batch_result_short, atol=1e-4)
