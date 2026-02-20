@@ -161,12 +161,11 @@ def test_qwen3_reranker_left_padding_batch(model_cache) -> None:
     
     with model_cache(model_name) as model:
         # Infer short string alone
-        single_result = list(model.rerank(query, [short_doc]))[0].score
+        single_result = next(iter(model.rerank(query, [short_doc])))
         
         # Infer short string mixed in a batch with a very long string
         batch_results = list(model.rerank(query, [long_doc, short_doc]))
         batch_result_short = batch_results[1].score
         
         # Ensure the score is exactly the same, proving causal LM logit selection is precise
-        import numpy as np
         assert np.allclose(single_result, batch_result_short, atol=1e-4)

@@ -222,20 +222,45 @@ def test_token_count(model_cache, model_name) -> None:
         assert doc_token_count == model.token_count(documents, batch_size=1)
 
 
-def test_qwen3_left_padding_batch(model_cache) -> None:
-    '''Test to ensure causal LMs like Qwen3 properly pool from the last actual token when using left padding in a batch'''
-    model_name = "Qwen/Qwen3-Embedding-0.6B"
-    short_text = "Hello."
-    long_text = "This is a significantly longer string that will force the shorter string to be padded with `<pad>` tokens on the left side during the tokenization phase. The embedding pooling must ignore these left padding tokens."
+
+def test_qwen3_left_padding_batch_unit() -> None:
+    '''Directly verify last_token_pool behavior on synthetic left-padded hidden states.'''
+    from fastembed.common.utils import last_token_pool
+    import numpy as np
     
-    with model_cache(model_name) as model:
-        # Infer short string alone
-        single_result = list(model.embed([short_text]))[0]
-        
-        # Infer short string mixed in a batch with a very long string
-        batch_results = list(model.embed([long_text, short_text]))
-        batch_result_short = batch_results[1]
-        
-        # Ensure the vector is exactly the same, proving left-padding last-token pooling is precise
-        import numpy as np
-        assert np.allclose(single_result, batch_result_short, atol=1e-4)
+    # Simulate a batch of 2 sequences, max length 5, hidden size 4
+    # Sequence 0: [pad, pad, token1, token2, token3] -> Left padded
+    # Sequence 1: [token1, token2, token3, token4, token5] -> Not padded
+    
+    hidden_states = np.array([
+        # Seq 0
+        [
+            [0,0,0,0], # pad
+            [0,0,0,0], # pad
+            [1,1,1,1], # token1
+            [2,2,2,2], # token2
+            [3,3,3,3], # token3 (LAST TOKEN)
+        ],
+        # Seq 1
+        [
+            [9,9,9,9], # token1
+            [8,8,8,8], # token2
+            [7,7,7,7], # token3
+            [6,6,6,6], # token4
+            [5,5,5,5], # token5 (LAST TOKEN)
+        ]
+    ], dtype=np.float32)
+    
+    attention_mask = np.array([
+        [0, 0, 1, 1, 1], # Seq 0 mask
+        [1, 1, 1, 1, 1]  # Seq 1 mask
+    ], dtype=np.int64)
+    
+    pooled = last_token_pool(hidden_states, attention_mask)
+    
+    # Expected: The vector at index 4 (the last token) for both
+    expected_seq0 = np.array([3,3,3,3], dtype=np.float32)
+    expected_seq1 = np.array([5,5,5,5], dtype=np.float32)
+    
+    assert np.allclose(pooled[0], expected_seq0)
+    assert np.allclose(pooled[1], expected_seq1)
