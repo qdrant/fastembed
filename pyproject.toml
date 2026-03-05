@@ -20,8 +20,9 @@ numpy = [
     { version = ">=2.3.0", python = ">=3.14" },
 ]
 onnxruntime = [
-    { version = ">1.20.0", python = ">=3.13" },
-    { version = ">=1.17.0,!=1.20.0", python = ">=3.10,<3.13" },
+    { version = ">=1.24.2", python = ">=3.14" },
+    { version = ">1.20.0,!=1.24.0,!=1.24.1", python = ">=3.13" },
+    { version = ">=1.17.0,!=1.20.0,!=1.24.0,!=1.24.1", python = ">=3.10,<3.13" },
 ]
 tqdm = "^4.66"
 requests = "^2.31"
@@ -29,9 +30,9 @@ tokenizers = ">=0.15,<1.0"
 huggingface-hub = ">=0.20,<2.0"
 loguru = "^0.7.2"
 pillow = [
-    { version = ">=10.3.0,<11.0", python = "<3.10" },
-    { version = ">=10.3.0,<12.0", python = ">=3.10,<3.13" },
-    { version = ">=11.0.0,<12.0", python = ">=3.13" },
+    { version = ">=10.3.0,<13.0", python = ">=3.10,<3.13" },
+    { version = ">=11.0.0,<13.0", python = ">=3.13,<3.14" },
+    { version = ">=12.0.0,<13.0", python = ">=3.14" },
 ]
 mmh3 = ">=4.1.0,<6.0.0"
 py-rust-stemmers = "^0.1.0"
