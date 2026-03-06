@@ -226,8 +226,7 @@ def test_token_count(model_cache, model_name) -> None:
 def test_qwen3_left_padding_batch_unit() -> None:
     '''Directly verify last_token_pool behavior on synthetic left-padded hidden states.'''
     from fastembed.common.utils import last_token_pool
-    import numpy as np
-    
+
     # Simulate a batch of 2 sequences, max length 5, hidden size 4
     # Sequence 0: [pad, pad, token1, token2, token3] -> Left padded
     # Sequence 1: [token1, token2, token3, token4, token5] -> Not padded

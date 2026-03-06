@@ -154,7 +154,16 @@ def test_session_options(model_cache, model_name) -> None:
 
 def test_qwen3_reranker_left_padding_batch(model_cache) -> None:
     '''Test to ensure Qwen3 causal logit cross encoder works reliably when left-padded in batch.'''
+    is_ci = os.getenv("CI")
+    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
     model_name = "Qwen/Qwen3-Reranker-0.6B"
+
+    for model_desc in TextCrossEncoder._list_supported_models():
+        if model_desc.model != model_name:
+            continue
+        if not should_test_model(model_desc, model_name, is_ci, is_manual):
+            pytest.skip(f"Skipping {model_name} (not selected for this CI run)")
+
     query = "Testing Qwen"
     short_doc = "This is a short doc."
     long_doc = "This is a significantly longer string that will force the shorter string to be padded with `<pad>` tokens on the left side during the tokenization phase. The embedding pooling must ignore these left padding tokens."
