@@ -72,6 +72,13 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
             )
             model_name = "prithivida/Splade_PP_en_v1"
 
+        if model_name.lower() == "Qdrant/bm25".lower():
+            warnings.warn(
+                "Fastembed 'Qdrant/bm25' has been deprecated and is no longer under active development. Bm25 is now builtin into Qdrant, raw data can be sent directly to Qdrant via qdrant-client and its models.Document structure.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
             supported_models = EMBEDDING_MODEL_TYPE._list_supported_models()
             if any(model_name.lower() == model.model.lower() for model in supported_models):
