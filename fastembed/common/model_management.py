@@ -395,6 +395,10 @@ class ModelManagement(Generic[T]):
             Path: The path to the downloaded model directory.
         """
         local_files_only = kwargs.get("local_files_only", False)
+        hf_offline = os.environ.get("HF_HUB_OFFLINE", "").strip().upper()
+        if not local_files_only and hf_offline in {"1", "TRUE", "YES", "ON"}:
+            local_files_only = True
+            kwargs["local_files_only"] = True
         specific_model_path: str | None = kwargs.pop("specific_model_path", None)
         if specific_model_path:
             return Path(specific_model_path)
