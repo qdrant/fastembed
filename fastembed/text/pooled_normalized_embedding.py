@@ -57,7 +57,7 @@ supported_pooled_normalized_models: list[DenseModelDescription] = [
             "Prefixes for queries/documents: not necessary, 2024 year."
         ),
         license="apache-2.0",
-        size_in_GB=0.32,
+        size_in_GB=0.64,
         sources=ModelSource(hf="jinaai/jina-embeddings-v2-base-de"),
         model_file="onnx/model.onnx",
     ),
