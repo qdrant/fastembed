@@ -90,23 +90,9 @@ class TextEmbedding(TextEmbeddingBase):
         **kwargs: Any,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
-        if model_name.lower() == "nomic-ai/nomic-embed-text-v1.5-Q".lower():
+        if model_name.lower() == "jinaai/jina-embeddings-v2-base-de":
             warnings.warn(
-                "The model 'nomic-ai/nomic-embed-text-v1.5-Q' has been updated on HuggingFace. Please review "
-                "the latest documentation on HF and release notes to ensure compatibility with your workflow. ",
-                UserWarning,
-                stacklevel=2,
-            )
-        if model_name.lower() in {
-            "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2".lower(),
-            "thenlper/gte-large".lower(),
-            "intfloat/multilingual-e5-large".lower(),
-            "sentence-transformers/paraphrase-multilingual-mpnet-base-v2".lower(),
-        }:
-            warnings.warn(
-                f"The model {model_name} now uses mean pooling instead of CLS embedding. "
-                f"In order to preserve the previous behaviour, consider either pinning fastembed version to 0.5.1 or "
-                "using `add_custom_model` functionality.",
+                "The model 'jinaai/jina-embeddings-v2-base-de' used to run with fp16 model, but due to onnxruntime updates, now it runs with the original fp32 model.",
                 UserWarning,
                 stacklevel=2,
             )

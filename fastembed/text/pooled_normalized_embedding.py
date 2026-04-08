@@ -59,7 +59,7 @@ supported_pooled_normalized_models: list[DenseModelDescription] = [
         license="apache-2.0",
         size_in_GB=0.32,
         sources=ModelSource(hf="jinaai/jina-embeddings-v2-base-de"),
-        model_file="onnx/model_fp16.onnx",
+        model_file="onnx/model.onnx",
     ),
     DenseModelDescription(
         model="jinaai/jina-embeddings-v2-base-code",
