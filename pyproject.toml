@@ -3,7 +3,7 @@ name = "fastembed"
 version = "0.8.0"
 description = "Fast, light, accurate library built for retrieval embedding generation"
 authors = ["Qdrant Team <info@qdrant.tech>", "NirantK <nirant.bits@gmail.com>"]
-license = "Apache License"
+license = "Apache-2.0"
 readme = "README.md"
 packages = [{include = "fastembed"}]
 homepage = "https://github.com/qdrant/fastembed"
