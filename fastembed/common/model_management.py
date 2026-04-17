@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import json
 import shutil
@@ -302,12 +303,19 @@ class ModelManagement(Generic[T]):
             raise ValueError(f"{targz_path} is not a .tar.gz file.")
 
         try:
-            # Open the tar.gz file
             with tarfile.open(targz_path, "r:gz") as tar:
-                # Extract all files into the cache directory
-                tar.extractall(
-                    path=cache_dir,
-                )
+                # Python 3.12+: use filter='data' to block traversal
+                if sys.version_info >= (3, 12):
+                    tar.extractall(path=cache_dir, filter="data")
+                    print("wow")
+                else:
+                    # Python < 3.12 fallback
+                    for member in tar.getmembers():
+                        print(member.name)
+                        member_path = os.path.realpath(os.path.join(cache_dir, member.name))
+                        if not member_path.startswith(os.path.realpath(cache_dir) + os.sep):
+                            raise ValueError(f"Unsafe tar member path: {member.name}")
+                    tar.extractall(path=cache_dir)
         except tarfile.TarError as e:
             # If any error occurs while opening or extracting the tar.gz file,
             # delete the cache directory (if it was created in this function)
