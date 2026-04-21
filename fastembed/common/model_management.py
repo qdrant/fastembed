@@ -99,7 +99,7 @@ class ModelManagement(Generic[T]):
 
         if os.path.exists(output_path):
             return output_path
-        response = requests.get(url, stream=True)
+        response = requests.get(url, stream=True, timeout=(10, 120))
 
         # Handle HTTP errors
         if response.status_code == 403:
