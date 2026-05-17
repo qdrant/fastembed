@@ -279,3 +279,15 @@ search_result = client.query_points(
 ).points
 print(search_result)
 ```
+
+## Kubernetes Deployment
+
+A community Helm chart is available for production deployments with Dense, Sparse, and Reranker services:
+
+```bash
+helm repo add fastembed https://athithya-sakthivel.github.io/fastembed-inference-helm
+helm repo update
+helm install fastembed fastembed/fastembed-inference -n fastembed --create-namespace
+```
+
+For full documentation and configuration options, see the [FastEmbed Inference Helm Chart](https://github.com/Athithya-Sakthivel/fastembed-inference-helm) repository.
