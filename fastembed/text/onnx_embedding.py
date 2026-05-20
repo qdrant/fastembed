@@ -34,7 +34,7 @@ supported_onnx_models: list[DenseModelDescription] = [
         license="mit",
         size_in_GB=0.21,
         sources=ModelSource(
-            hf="qdrant/bge-base-en-v1.5-onnx-q",
+            hf="Qdrant/bge-base-en-v1.5-onnx-Q",
             url="https://storage.googleapis.com/qdrant-fastembed/fast-bge-base-en-v1.5.tar.gz",
             _deprecated_tar_struct=True,
         ),
