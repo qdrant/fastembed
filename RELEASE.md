@@ -1,6 +1,6 @@
 # Releasing FastEmbed
 
-This is a guide how to release `fastembed` and `fastembed-gpu` packages.
+This is a guide on how to release `fastembed` and `fastembed-gpu` packages.
 
 ## How to
 
