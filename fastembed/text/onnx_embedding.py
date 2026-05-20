@@ -180,6 +180,19 @@ supported_onnx_models: list[DenseModelDescription] = [
         sources=ModelSource(hf="jinaai/jina-clip-v1"),
         model_file="onnx/text_model.onnx",
     ),
+    DenseModelDescription(
+        model="intfloat/multilingual-e5-large-instruct",
+        dim=1024,
+        description=(
+            "Text embeddings, Unimodal (text), Multilingual, 512 input tokens truncation, "
+            "Prefixes for queries/documents: necessary, 2024 year."
+        ),
+        license="mit",
+        size_in_GB=2.25,
+        sources=ModelSource(hf="intfloat/multilingual-e5-large-instruct"),
+        model_file="onnx/model.onnx",
+        additional_files=["onnx/model.onnx_data"]
+    )
 ]
 
 
