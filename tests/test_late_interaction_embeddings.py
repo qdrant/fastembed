@@ -276,6 +276,8 @@ def test_lazy_load(model_name: str):
     assert not hasattr(model.model, "model")
 
     docs = ["hello world", "flag embedding"]
+    assert model.token_count(docs, is_doc=False, include_extension=True) > 0
+    assert not hasattr(model.model, "model")
     list(model.embed(docs))
     assert hasattr(model.model, "model")
 
