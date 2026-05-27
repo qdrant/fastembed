@@ -75,9 +75,12 @@ class OnnxMultimodalModel(OnnxModel[T]):
             device_id=device_id,
             extra_session_options=extra_session_options,
         )
-        self.tokenizer, self.special_token_to_id = load_tokenizer(model_dir=model_dir)
+        self._load_tokenizer(model_dir=model_dir)
         assert self.tokenizer is not None
         self.processor = load_preprocessor(model_dir=model_dir)
+
+    def _load_tokenizer(self, model_dir: Path) -> None:
+        self.tokenizer, self.special_token_to_id = load_tokenizer(model_dir=model_dir)
 
     def load_onnx_model(self) -> None:
         raise NotImplementedError("Subclasses must implement this method")
