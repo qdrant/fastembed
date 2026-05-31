@@ -215,6 +215,15 @@ class ModelManagement(Generic[T]):
             Path: The path to the model directory.
         """
 
+        def _repo_relative_path(relative_path: Path) -> str:
+            # Cached files are stored under `snapshots/<revision>/<repo_path>`. Strip that
+            # prefix so the remainder matches a repo file's path, which may itself be nested
+            # (e.g. `onnx/model.onnx`).
+            parts = relative_path.parts
+            if len(parts) > 2 and parts[0] == "snapshots":
+                return "/".join(parts[2:])
+            return relative_path.as_posix()
+
         def _verify_files_from_metadata(
             model_dir: Path, stored_metadata: dict[str, Any], repo_files: list[RepoFile]
         ) -> bool:
@@ -226,7 +235,8 @@ class ModelManagement(Generic[T]):
                         return False
 
                     if repo_files:  # online verification
-                        file_info = next((f for f in repo_files if f.path == file_path.name), None)
+                        repo_path = _repo_relative_path(Path(rel_path))
+                        file_info = next((f for f in repo_files if f.path == repo_path), None)
                         if (
                             not file_info
                             or file_info.size != meta["size"]
@@ -249,9 +259,10 @@ class ModelManagement(Generic[T]):
             file_info_map = {f.path: f for f in repo_files}
             for file_path in model_dir.rglob("*"):
                 if file_path.is_file() and file_path.name != cls.METADATA_FILE:
-                    repo_file = file_info_map.get(file_path.name)
+                    relative_path = file_path.relative_to(model_dir)
+                    repo_file = file_info_map.get(_repo_relative_path(relative_path))
                     if repo_file:
-                        meta[str(file_path.relative_to(model_dir))] = {
+                        meta[str(relative_path)] = {
                             "size": repo_file.size,
                             "blob_id": repo_file.blob_id,
                         }
@@ -297,11 +308,26 @@ class ModelManagement(Generic[T]):
                 metadata_file = snapshot_dir / cls.METADATA_FILE
                 if metadata_file.exists():
                     metadata = json.loads(metadata_file.read_text())
-                    verified = _verify_files_from_metadata(snapshot_dir, metadata, repo_files=[])
-                    if not verified:
-                        logger.warning(
-                            "Local file sizes do not match the metadata."
-                        )  # do not raise, still make an attempt to load the model
+                    if not _verify_files_from_metadata(snapshot_dir, metadata, repo_files=[]):
+                        # A size mismatch on a model file means ONNX Runtime would later fail
+                        # with a cryptic protobuf error. Raise so download_model's offline probe
+                        # (which wraps this call in `except Exception`) falls through to a forced
+                        # online re-download instead of returning a corrupt cached path. A
+                        # mismatch limited to an auxiliary file (e.g. a config) is left to
+                        # best-effort loading, preserving the previous behavior.
+                        model_files = set(extra_patterns)
+                        model_file_corrupt = any(
+                            _repo_relative_path(Path(rel_path)) in model_files
+                            and (snapshot_dir / rel_path).is_file()
+                            and (snapshot_dir / rel_path).stat().st_size != meta["size"]
+                            for rel_path, meta in metadata.items()
+                        )
+                        if model_file_corrupt:
+                            raise ValueError(
+                                "Cached model files do not match the stored metadata; "
+                                "the cache appears corrupted."
+                            )
+                        logger.warning("Local file sizes do not match the metadata.")
                 try:
                     # a legacy source is only ever resolved against the cache: sending it
                     # to the hub would ask for the very redirect this casing avoids
@@ -326,9 +352,13 @@ class ModelManagement(Generic[T]):
         # retry or fall back to another source. list_repo_tree and snapshot_download's own
         # metadata requests can't be given one, but a silent endpoint now fails here first.
         repo_revision = model_info(hf_source_repo, timeout=constants.HF_HUB_ETAG_TIMEOUT).sha
-        repo_tree = list(list_repo_tree(hf_source_repo, revision=repo_revision, repo_type="model"))
+        repo_tree = list(
+            list_repo_tree(
+                hf_source_repo, revision=repo_revision, repo_type="model", recursive=True
+            )
+        )
 
-        allowed_extensions = {".json", ".onnx", ".txt"}
+        allowed_extensions = {".json", ".onnx", ".txt", ".onnx_data", ".npy", ".vocab"}
         repo_files = (
             [
                 f
@@ -600,6 +630,10 @@ class ModelManagement(Generic[T]):
                             hf_source,
                             cache_dir=cache_dir,
                             extra_patterns=extra_patterns,
+                            # The local probe failed (cache missing or corrupt). force_download so
+                            # huggingface_hub re-fetches a present-but-truncated blob instead of
+                            # trusting it (its cache short-circuit is existence-only).
+                            force_download=True,
                             **kwargs,
                         )
                     )
