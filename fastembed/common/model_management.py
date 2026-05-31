@@ -474,9 +474,10 @@ class ModelManagement(Generic[T]):
                             extra_patterns=extra_patterns,
                             # The local probe failed (cache missing or corrupt). force_download so
                             # huggingface_hub re-fetches a present-but-truncated blob instead of
-                            # trusting it (its cache short-circuit is existence-only).
-                            force_download=True,
-                            **kwargs,
+                            # trusting it (its cache short-circuit is existence-only). Merge into
+                            # kwargs so a caller-supplied force_download can't raise a duplicate
+                            # keyword error.
+                            **{**kwargs, "force_download": True},
                         )
                     )
                 except (EnvironmentError, RepositoryNotFoundError, ValueError) as e:
