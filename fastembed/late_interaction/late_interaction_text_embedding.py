@@ -6,13 +6,14 @@ from fastembed.common.types import NumpyArray, Device
 from fastembed.common import OnnxProvider
 from fastembed.late_interaction.colbert import Colbert
 from fastembed.late_interaction.jina_colbert import JinaColbert
+from fastembed.late_interaction.lateon import LateOn
 from fastembed.late_interaction.late_interaction_embedding_base import (
     LateInteractionTextEmbeddingBase,
 )
 
 
 class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
-    EMBEDDINGS_REGISTRY: list[Type[LateInteractionTextEmbeddingBase]] = [Colbert, JinaColbert]
+    EMBEDDINGS_REGISTRY: list[Type[LateInteractionTextEmbeddingBase]] = [Colbert, JinaColbert, LateOn]
 
     @classmethod
     def list_supported_models(cls) -> list[dict[str, Any]]:
