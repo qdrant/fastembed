@@ -38,6 +38,15 @@ CANONICAL_COLUMN_VALUES = {
             [0.0766, 0.0452, -0.2343, -0.183, 0.0058],
         ]
     ),
+    "lightonai/LateOn": np.array(
+        [
+            [0.00039, 0.00651, 0.0146, 0.00346, 0.00244],
+            [-0.0029, 0.00423, 0.00042, 0.02236, 0.00981],
+            [-0.0287, 0.01159, 0.02401, -0.00312, -0.04338],
+            [-0.04709, 0.00209, 0.02174, -0.00381, -0.00608],
+            [-0.02461, -0.02876, 0.03014, -0.0035, -0.00431],
+        ]
+    ),
 }
 
 CANONICAL_QUERY_VALUES = {
@@ -147,6 +156,15 @@ CANONICAL_QUERY_VALUES = {
             [0.058, 0.048, -0.0527, -0.0607, 0.0568],
             [0.0561, 0.0447, -0.0661, -0.0702, 0.0764],
             [0.0204, -0.0856, -0.0386, -0.1232, -0.0332],
+        ]
+    ),
+    "lightonai/LateOn": np.array(
+        [
+            [0.00202, -0.02634, 0.00685, 0.00993, 0.03093],
+            [-0.02321, -0.0226, 0.00356, 0.02836, 0.01729],
+            [-0.01066, 0.00595, 0.02884, 0.00267, -0.10405],
+            [-0.10359, -0.06927, 0.03218, 0.05037, -0.03338],
+            [-0.02992, -0.03874, 0.10582, 0.06303, 0.05831],
         ]
     ),
 }
@@ -295,6 +313,9 @@ def test_get_embedding_size():
 
     model_name = "answerdotai/answerai-ColBERT-small-v1"
     assert LateInteractionTextEmbedding.get_embedding_size(model_name) == 96
+
+    model_name = "lightonai/LateOn"
+    assert LateInteractionTextEmbedding.get_embedding_size(model_name) == 128
 
 
 def test_embedding_size():
