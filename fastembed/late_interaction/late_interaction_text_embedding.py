@@ -13,7 +13,11 @@ from fastembed.late_interaction.late_interaction_embedding_base import (
 
 
 class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
-    EMBEDDINGS_REGISTRY: list[Type[LateInteractionTextEmbeddingBase]] = [Colbert, JinaColbert, LateOn]
+    EMBEDDINGS_REGISTRY: list[Type[LateInteractionTextEmbeddingBase]] = [
+        Colbert,
+        JinaColbert,
+        LateOn,
+    ]
 
     @classmethod
     def list_supported_models(cls) -> list[dict[str, Any]]:
