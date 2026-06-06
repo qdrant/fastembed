@@ -98,7 +98,8 @@ def resize(
     resample: int | Image.Resampling = Image.Resampling.BILINEAR,
 ) -> Image.Image:
     if isinstance(size, tuple):
-        return image.resize(size, resample)
+        height, width = size
+        return image.resize((width, height), resample)  
 
     height, width = image.height, image.width
     short, long = (width, height) if width <= height else (height, width)
