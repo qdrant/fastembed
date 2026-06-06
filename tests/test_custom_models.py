@@ -179,6 +179,25 @@ def test_mock_add_custom_models():
     CustomTextEmbedding.POSTPROCESSING_MAPPING.clear()
 
 
+def test_custom_text_model_lookup_is_case_insensitive():
+    model_name = "Org/Model"
+
+    TextEmbedding.add_custom_model(
+        model_name,
+        pooling=PoolingType.MEAN,
+        normalization=True,
+        sources=ModelSource(hf="artificial"),
+        dim=5,
+        size_in_gb=0.1,
+    )
+
+    model = TextEmbedding("org/model", lazy_load=True, specific_model_path="./")
+
+    assert isinstance(model.model, CustomTextEmbedding)
+    assert model.model._pooling == PoolingType.MEAN
+    assert model.model._normalization is True
+
+
 def test_do_not_add_existing_model():
     existing_base_model = "sentence-transformers/all-MiniLM-L6-v2"
     custom_model_name = "intfloat/multilingual-e5-small"
