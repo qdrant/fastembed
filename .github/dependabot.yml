@@ -17,6 +17,8 @@ updates:
           - "patch"
         patterns:
           - "*"
+    cooldown:
+      default-days: 7
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -34,3 +36,5 @@ updates:
           - "patch"
         patterns:
           - "*"
+    cooldown:
+      default-days: 7
