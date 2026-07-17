@@ -1,4 +1,5 @@
 import os
+import platform
 from contextlib import contextmanager
 from io import BytesIO
 
@@ -24,6 +25,12 @@ CANONICAL_VECTOR_VALUES = {
     ),
     "jinaai/jina-clip-v1": np.array(
         [-0.029, 0.0216, 0.0396, 0.0283, -0.0023, 0.0151, 0.011, -0.0235, 0.0251, -0.0343]
+    ),
+    "nomic-ai/nomic-embed-vision-v1.5": np.array(
+        [0.0048, -0.0254, 0.0067, -0.0296, -0.0435, -0.0123, 0.0024, -0.0361, -0.0703, -0.0186]
+    ),
+    "nomic-ai/nomic-embed-vision-v1.5-Q": np.array(
+        [-0.0011, -0.0477, 0.0024, -0.049, -0.0458, -0.0314, 0.017, -0.0383, -0.0537, -0.021]
     ),
 }
 
@@ -59,9 +66,13 @@ def model_cache():
 @pytest.mark.parametrize("model_name", ["Qdrant/clip-ViT-B-32-vision"])
 def test_embedding(model_cache, model_name: str) -> None:
     is_ci = os.getenv("CI")
+    is_mac = platform.system() == "Darwin"
     is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
     for model_desc in ImageEmbedding._list_supported_models():
+        # quantized int8 ops diverge on macOS; canonical vector is generated on linux/amd64 (CI)
+        if is_mac and model_desc.model == "nomic-ai/nomic-embed-vision-v1.5-Q":
+            continue
         if not should_test_model(model_desc, model_name, is_ci, is_manual):
             continue
 
