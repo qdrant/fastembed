@@ -92,13 +92,20 @@ class OnnxTextModel(OnnxModel[T]):
                 [np.zeros(len(e), dtype=np.int64) for e in input_ids], dtype=np.int64
             )
         onnx_input = self._preprocess_onnx_input(onnx_input, **kwargs)
+        model_output = self._run_model(
+            onnx_input=onnx_input, onnx_output_names=self.ONNX_OUTPUT_NAMES
+        )
 
-        model_output = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)  # type: ignore[union-attr]
         return OnnxOutputContext(
-            model_output=model_output[0],
+            model_output=model_output,
             attention_mask=onnx_input.get("attention_mask", attention_mask),
             input_ids=onnx_input.get("input_ids", input_ids),
         )
+
+    def _run_model(
+        self, onnx_input: dict[str, Any], onnx_output_names: list[str] | None = None
+    ) -> NumpyArray:
+        return self.model.run(onnx_output_names, onnx_input)[0]  # type: ignore[union-attr]
 
     def _embed_documents(
         self,

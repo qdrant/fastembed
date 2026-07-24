@@ -5,6 +5,7 @@ from fastembed.common import OnnxProvider
 from fastembed.common.types import Device
 from fastembed.sparse.bm25 import Bm25
 from fastembed.sparse.bm42 import Bm42
+from fastembed.sparse.if_splade import IfSplade
 from fastembed.sparse.minicoil import MiniCOIL
 from fastembed.sparse.sparse_embedding_base import (
     SparseEmbedding,
@@ -16,7 +17,13 @@ from fastembed.common.model_description import SparseModelDescription
 
 
 class SparseTextEmbedding(SparseTextEmbeddingBase):
-    EMBEDDINGS_REGISTRY: list[Type[SparseTextEmbeddingBase]] = [SpladePP, Bm42, Bm25, MiniCOIL]
+    EMBEDDINGS_REGISTRY: list[Type[SparseTextEmbeddingBase]] = [
+        SpladePP,
+        Bm42,
+        Bm25,
+        MiniCOIL,
+        IfSplade,
+    ]
 
     @classmethod
     def list_supported_models(cls) -> list[dict[str, Any]]:

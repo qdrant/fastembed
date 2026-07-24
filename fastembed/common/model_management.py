@@ -99,7 +99,7 @@ class ModelManagement(Generic[T]):
 
         if os.path.exists(output_path):
             return output_path
-        response = requests.get(url, stream=True)
+        response = requests.get(url, stream=True, timeout=(10, 120))
 
         # Handle HTTP errors
         if response.status_code == 403:
@@ -395,6 +395,10 @@ class ModelManagement(Generic[T]):
             Path: The path to the downloaded model directory.
         """
         local_files_only = kwargs.get("local_files_only", False)
+        hf_offline = os.environ.get("HF_HUB_OFFLINE", "").strip().upper()
+        if not local_files_only and hf_offline in {"1", "TRUE", "YES", "ON"}:
+            local_files_only = True
+            kwargs["local_files_only"] = True
         specific_model_path: str | None = kwargs.pop("specific_model_path", None)
         if specific_model_path:
             return Path(specific_model_path)
@@ -409,7 +413,7 @@ class ModelManagement(Generic[T]):
             try:
                 cache_kwargs = deepcopy(kwargs)
                 cache_kwargs["local_files_only"] = True
-                return Path(
+                resolved_path = Path(
                     cls.download_files_from_huggingface(
                         hf_source,
                         cache_dir=cache_dir,
@@ -417,6 +421,10 @@ class ModelManagement(Generic[T]):
                         **cache_kwargs,
                     )
                 )
+                if (resolved_path / model.model_file).exists() and all(
+                    (resolved_path / file).exists() for file in extra_patterns
+                ):
+                    return resolved_path
             except Exception:
                 pass
             finally:

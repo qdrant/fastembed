@@ -63,7 +63,6 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[NumpyArray]):
     def __init__(
         self,
         model_name: str,
-
         cache_dir: str | None = None,
         threads: int | None = None,
         providers: Sequence[OnnxProvider] | None = None,

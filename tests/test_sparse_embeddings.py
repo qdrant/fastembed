@@ -8,6 +8,7 @@ from fastembed.sparse.bm25 import Bm25
 from fastembed.sparse.sparse_text_embedding import SparseTextEmbedding
 from tests.utils import delete_model_cache, should_test_model
 
+
 CANONICAL_COLUMN_VALUES = {
     "prithivida/Splade_PP_en_v1": {
         "indices": [
@@ -58,9 +59,50 @@ CANONICAL_COLUMN_VALUES = {
             -0.12508166,
         ],
     },
+    # first 15 non-zero dimensions of the embedding
+    "opensearch-project/opensearch-neural-sparse-encoding-doc-v3-gte": {
+        "indices": [
+            999,
+            1010,
+            1011,
+            1024,
+            1028,
+            1029,
+            1045,
+            1074,
+            1993,
+            2017,
+            2033,
+            2054,
+            2073,
+            2080,
+            2088,
+        ],
+        "values": [
+            0.16544909,
+            0.00529129,
+            0.0392109,
+            0.12337475,
+            0.09640586,
+            0.05325737,
+            0.09611791,
+            0.03159865,
+            0.01349991,
+            0.09392473,
+            0.01928805,
+            0.05238346,
+            0.05515401,
+            0.03156782,
+            0.98263124,
+        ],
+    },
 }
 
 CANONICAL_QUERY_VALUES = {
+    "opensearch-project/opensearch-neural-sparse-encoding-doc-v3-gte": {
+        "indices": [2088, 7592],
+        "values": [3.42086864, 6.93775654],
+    },
     "Qdrant/minicoil-v1": {
         "indices": [80, 81, 82, 83, 6664, 6665, 6666, 6667],
         "values": [
@@ -82,6 +124,7 @@ _MODELS_TO_CACHE = (
     "Qdrant/minicoil-v1",
     "Qdrant/bm25",
     "Qdrant/bm42-all-minilm-l6-v2-attentions",
+    "opensearch-project/opensearch-neural-sparse-encoding-doc-v3-gte",
 )
 MODELS_TO_CACHE = tuple([x.lower() for x in _MODELS_TO_CACHE])
 
@@ -142,18 +185,23 @@ def test_single_embedding(model_cache) -> None:
             continue
         if not should_test_model(model_desc, model_desc.model, is_ci, is_manual):
             continue
-
         with model_cache(model_desc.model) as model:
             passage_result = next(iter(model.embed(docs, batch_size=6)))
             query_result = next(iter(model.query_embed(docs)))
             expected_result = CANONICAL_COLUMN_VALUES[model_desc.model]
             expected_query_result = CANONICAL_QUERY_VALUES.get(model_desc.model, expected_result)
-            assert passage_result.indices.tolist() == expected_result["indices"]
-            for i, value in enumerate(passage_result.values):
+
+            # canonical values might contain only a prefix of the non-zero dimensions
+            num_dims = len(expected_result["indices"])
+            assert passage_result.indices.tolist()[:num_dims] == expected_result["indices"]
+            for i, value in enumerate(passage_result.values[:num_dims]):
                 assert pytest.approx(value, abs=0.001) == expected_result["values"][i]
 
-            assert query_result.indices.tolist() == expected_query_result["indices"]
-            for i, value in enumerate(query_result.values):
+            num_query_dims = len(expected_query_result["indices"])
+            assert (
+                query_result.indices.tolist()[:num_query_dims] == expected_query_result["indices"]
+            )
+            for i, value in enumerate(query_result.values[:num_query_dims]):
                 assert pytest.approx(value, abs=0.001) == expected_query_result["values"][i]
 
 
@@ -261,6 +309,22 @@ def test_disable_stemmer_behavior(disable_stemmer: bool) -> None:
     else:
         expected = ["quick", "brown", "fox", "test", "sentenc"]
     assert result == expected, f"Expected {expected}, but got {result}"
+
+
+def test_if_splade_query_embed_is_inference_free() -> None:
+    is_ci = os.getenv("CI")
+    model = SparseTextEmbedding(
+        model_name="opensearch-project/opensearch-neural-sparse-encoding-doc-v3-gte",
+        lazy_load=True,
+    )
+    embeddings = list(model.query_embed(["hello world", "flag embedding"]))
+    # queries are embedded with a tokenizer and an idf lookup table only,
+    # the onnx model must stay unloaded
+    assert not hasattr(model.model, "model")
+    assert all(len(embedding.indices) > 0 for embedding in embeddings)
+
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
 
 
 @pytest.mark.parametrize("model_name", ["prithivida/Splade_PP_en_v1"])
