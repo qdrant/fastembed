@@ -311,6 +311,64 @@ def test_disable_stemmer_behavior(disable_stemmer: bool) -> None:
     assert result == expected, f"Expected {expected}, but got {result}"
 
 
+class _TruncatingStemmer:
+    """A trivial fake stemmer that truncates words to their first three characters."""
+
+    def stem_word(self, word: str) -> str:
+        return word[:3]
+
+
+def test_custom_stemmer_is_used() -> None:
+    model = Bm25("Qdrant/bm25", language="english", stemmer=_TruncatingStemmer())
+
+    result = model._stem(["running", "jumped", "documents"])
+
+    assert result == ["run", "jum", "doc"], f"Custom stemmer was not applied, got {result}"
+
+
+def test_default_stemmer_path_unchanged() -> None:
+    model = Bm25("Qdrant/bm25", language="english")
+
+    result = model._stem(["running", "jumped", "documents"])
+
+    assert result == ["run", "jump", "document"], f"Default Snowball path changed, got {result}"
+
+
+def test_custom_stemmer_enables_unsupported_language() -> None:
+    class _FakePolishStemmer:
+        def stem_word(self, word: str) -> str:
+            for suffix in ("ami", "ach"):
+                if word.endswith(suffix):
+                    return word[: -len(suffix)]
+            return word
+
+    # without a custom stemmer, unsupported languages are still rejected
+    with pytest.raises(ValueError):
+        Bm25("Qdrant/bm25", language="polish")
+
+    model = Bm25(
+        "Qdrant/bm25",
+        language="polish",
+        stemmer=_FakePolishStemmer(),
+        stopwords=["i", "w"],
+    )
+
+    assert model.stopwords == {"i", "w"}
+
+    result = model._stem(["kotami", "domach", "w"])
+
+    assert result == ["kot", "dom"], f"Expected ['kot', 'dom'], but got {result}"
+
+
+def test_inline_stopwords_override_file_stopwords() -> None:
+    model = Bm25("Qdrant/bm25", language="english", stopwords=["fox"])
+
+    result = model._stem(["the", "fox"])
+
+    # "the" is no longer a stopword, "fox" is
+    assert result == ["the"], f"Inline stopwords were not applied, got {result}"
+
+
 def test_if_splade_query_embed_is_inference_free() -> None:
     is_ci = os.getenv("CI")
     model = SparseTextEmbedding(
