@@ -2,7 +2,7 @@ import os
 from collections import defaultdict
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Iterable, Type
+from typing import Any, Iterable, Protocol, Type, runtime_checkable
 
 import mmh3
 import numpy as np
@@ -20,6 +20,17 @@ from fastembed.sparse.sparse_embedding_base import (
 )
 from fastembed.sparse.utils.tokenizer import SimpleTokenizer
 from fastembed.common.model_description import SparseModelDescription, ModelSource
+
+
+@runtime_checkable
+class Stemmer(Protocol):
+    """Protocol for custom stemmers pluggable into Bm25.
+
+    Any object exposing a `stem_word` method, e.g. `py_rust_stemmers.SnowballStemmer`,
+    satisfies this protocol.
+    """
+
+    def stem_word(self, word: str) -> str: ...
 
 
 supported_languages = [
@@ -84,6 +95,12 @@ class Bm25(SparseTextEmbeddingBase):
         avg_len (float, optional): The average length of the documents in the corpus. Defaults to 256.0.
         language (str): Specifies the language for the stemmer.
         disable_stemmer (bool): Disable the stemmer.
+        stemmer (Stemmer, optional): A custom stemmer to use instead of the default SnowballStemmer.
+            Any object with a `stem_word(word: str) -> str` method. When provided, the `language`
+            is not required to be in the list of supported languages, which enables languages
+            without a Snowball algorithm (e.g. Polish). Defaults to None.
+        stopwords (Iterable[str], optional): Inline stopwords to use instead of the stopwords file
+            shipped with the model for the chosen language. Defaults to None.
     Raises:
         ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
     """
@@ -99,14 +116,19 @@ class Bm25(SparseTextEmbeddingBase):
         token_max_length: int = 40,
         disable_stemmer: bool = False,
         specific_model_path: str | None = None,
+        stemmer: Stemmer | None = None,
+        stopwords: Iterable[str] | None = None,
         **kwargs: Any,
     ):
         super().__init__(model_name, cache_dir, **kwargs)
 
-        if language not in supported_languages:
+        if stemmer is None and language not in supported_languages:
             raise ValueError(f"{language} language is not supported")
         else:
             self.language = language
+
+        self._custom_stemmer = stemmer
+        self._custom_stopwords = set(stopwords) if stopwords is not None else None
 
         self.k = k
         self.b = b
@@ -128,11 +150,17 @@ class Bm25(SparseTextEmbeddingBase):
         self.disable_stemmer = disable_stemmer
 
         if disable_stemmer:
-            self.stopwords: set[str] = set()
-            self.stemmer = None
+            self.stopwords: set[str] = (
+                self._custom_stopwords if self._custom_stopwords is not None else set()
+            )
+            self.stemmer: Stemmer | None = None
         else:
-            self.stopwords = set(self._load_stopwords(self._model_dir, self.language))
-            self.stemmer = SnowballStemmer(language)
+            self.stopwords = (
+                self._custom_stopwords
+                if self._custom_stopwords is not None
+                else set(self._load_stopwords(self._model_dir, self.language))
+            )
+            self.stemmer = stemmer if stemmer is not None else SnowballStemmer(language)
 
         self.tokenizer = SimpleTokenizer
 
@@ -191,6 +219,8 @@ class Bm25(SparseTextEmbeddingBase):
                 "language": self.language,
                 "token_max_length": self.token_max_length,
                 "disable_stemmer": self.disable_stemmer,
+                "stemmer": self._custom_stemmer,
+                "stopwords": self._custom_stopwords,
                 "local_files_only": local_files_only,
                 "specific_model_path": specific_model_path,
             }
