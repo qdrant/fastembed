@@ -172,9 +172,9 @@ supported_onnx_models: list[DenseModelDescription] = [
         model="Snowflake/snowflake-arctic-embed-m-v2.0",
         dim=768,
         description=(
-            "Text embeddings, Unimodal (text), Multilingual (100+ languages), "
+            "Text embeddings, Unimodal (text), Multilingual (74 languages), "
             "8192 input tokens truncation, "
-            "Prefixes for queries/documents: not necessary, 2025 year."
+            "Prefixes for queries/documents: query: prefix recommended for retrieval queries, 2025 year."
         ),
         license="apache-2.0",
         size_in_GB=1.14,
@@ -185,14 +185,15 @@ supported_onnx_models: list[DenseModelDescription] = [
         model="Snowflake/snowflake-arctic-embed-l-v2.0",
         dim=1024,
         description=(
-            "Text embeddings, Unimodal (text), Multilingual (100+ languages), "
+            "Text embeddings, Unimodal (text), Multilingual (74 languages), "
             "8192 input tokens truncation, "
-            "Prefixes for queries/documents: not necessary, 2025 year."
+            "Prefixes for queries/documents: query: prefix recommended for retrieval queries, 2025 year."
         ),
         license="apache-2.0",
         size_in_GB=2.11,
         sources=ModelSource(hf="Snowflake/snowflake-arctic-embed-l-v2.0"),
         model_file="onnx/model.onnx",
+        additional_files=["onnx/model.onnx_data"],
     ),
     DenseModelDescription(
         model="jinaai/jina-clip-v1",
