@@ -174,7 +174,7 @@ supported_onnx_models: list[DenseModelDescription] = [
         description=(
             "Text embeddings, Unimodal (text), Multilingual (74 languages), "
             "8192 input tokens truncation, "
-            "Prefixes for queries/documents: query: prefix recommended for retrieval queries, 2025 year."
+            "Prefixes for queries/documents: `query: ` prefix should be prepended to retrieval queries by the caller, 2025 year."
         ),
         license="apache-2.0",
         size_in_GB=1.14,
@@ -187,7 +187,7 @@ supported_onnx_models: list[DenseModelDescription] = [
         description=(
             "Text embeddings, Unimodal (text), Multilingual (74 languages), "
             "8192 input tokens truncation, "
-            "Prefixes for queries/documents: query: prefix recommended for retrieval queries, 2025 year."
+            "Prefixes for queries/documents: `query: ` prefix should be prepended to retrieval queries by the caller, 2025 year."
         ),
         license="apache-2.0",
         size_in_GB=2.11,
