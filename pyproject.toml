@@ -44,7 +44,7 @@ ruff = ">=0.3.1,<1.0"
 
 [tool.poetry.group.dev.dependencies]
 notebook = ">=7.0.2"
-pre-commit = "^3.6.2"
+pre-commit = ">=3.6.2,<5.0.0"
 onnx = [
     { version = ">=1.15.0", python = ">=3.10,<3.13" },
     { version = ">=1.18.0", python = "3.13" },
