@@ -35,16 +35,27 @@ def test_text_list_supported_models():
 
 
 def _run_download_with_mocks(tmp_path, extra_env):
-    """Helper: run download_files_from_huggingface with all network calls mocked out."""
-    mock_model_info = MagicMock()
-    mock_model_info.sha = "abc123"
+    """Run download_files_from_huggingface with all network calls mocked out.
+
+    Uses autospec=True so mocks are checked against the real huggingface_hub
+    signatures - a kwarg that the real API doesn't accept (e.g. passing
+    `endpoint` to a bound HfApi method instead of its constructor) raises a
+    TypeError here, the same as it would against the real library.
+    """
+    mock_hf_api_instance = MagicMock()
+    mock_hf_api_instance.model_info.return_value = MagicMock(sha="abc123")
+    mock_hf_api_instance.list_repo_tree.return_value = []
 
     with (
         patch.dict(os.environ, extra_env),
-        patch("fastembed.common.model_management.model_info", return_value=mock_model_info) as mock_mi,
-        patch("fastembed.common.model_management.list_repo_tree", return_value=[]) as mock_lrt,
+        patch(
+            "fastembed.common.model_management.HfApi",
+            autospec=True,
+            return_value=mock_hf_api_instance,
+        ) as mock_hf_api_cls,
         patch(
             "fastembed.common.model_management.snapshot_download",
+            autospec=True,
             return_value=str(tmp_path),
         ) as mock_sd,
         # skip post-download metadata verification so the function completes cleanly
@@ -55,23 +66,22 @@ def _run_download_with_mocks(tmp_path, extra_env):
             cache_dir=str(tmp_path),
             extra_patterns=["*.onnx"],
         )
-        return mock_mi, mock_lrt, mock_sd
+        return mock_hf_api_cls, mock_hf_api_instance, mock_sd
 
 
 def test_hf_endpoint_forwarded_to_hub_calls(tmp_path):
-    """HF_ENDPOINT env var must be forwarded to model_info, list_repo_tree, and snapshot_download."""
+    """HF_ENDPOINT env var must be forwarded to HfApi and snapshot_download."""
     custom_endpoint = "https://hf-mirror.example.com"
-    mock_mi, mock_lrt, mock_sd = _run_download_with_mocks(tmp_path, {"HF_ENDPOINT": custom_endpoint})
-
-    _, mi_kwargs = mock_mi.call_args
-    assert mi_kwargs.get("endpoint") == custom_endpoint, (
-        f"model_info should receive endpoint={custom_endpoint!r}, got {mi_kwargs}"
+    mock_hf_api_cls, mock_hf_api_instance, mock_sd = _run_download_with_mocks(
+        tmp_path, {"HF_ENDPOINT": custom_endpoint}
     )
 
-    _, lrt_kwargs = mock_lrt.call_args
-    assert lrt_kwargs.get("endpoint") == custom_endpoint, (
-        f"list_repo_tree should receive endpoint={custom_endpoint!r}, got {lrt_kwargs}"
+    _, api_kwargs = mock_hf_api_cls.call_args
+    assert api_kwargs.get("endpoint") == custom_endpoint, (
+        f"HfApi should be constructed with endpoint={custom_endpoint!r}, got {api_kwargs}"
     )
+    mock_hf_api_instance.model_info.assert_called_once()
+    mock_hf_api_instance.list_repo_tree.assert_called_once()
 
     _, sd_kwargs = mock_sd.call_args
     assert sd_kwargs.get("endpoint") == custom_endpoint, (
@@ -80,16 +90,17 @@ def test_hf_endpoint_forwarded_to_hub_calls(tmp_path):
 
 
 def test_no_hf_endpoint_no_extra_kwarg(tmp_path):
-    """When HF_ENDPOINT is not set, endpoint kwarg must NOT be passed to hub calls."""
+    """When HF_ENDPOINT is not set, endpoint must be None for HfApi and snapshot_download."""
     env_without_hf_endpoint = {k: v for k, v in os.environ.items() if k != "HF_ENDPOINT"}
     with patch.dict(os.environ, env_without_hf_endpoint, clear=True):
-        mock_mi, mock_lrt, mock_sd = _run_download_with_mocks(tmp_path, {})
+        mock_hf_api_cls, _, mock_sd = _run_download_with_mocks(tmp_path, {})
 
-    _, mi_kwargs = mock_mi.call_args
-    assert "endpoint" not in mi_kwargs, "endpoint kwarg should not be present when HF_ENDPOINT is unset"
-
-    _, lrt_kwargs = mock_lrt.call_args
-    assert "endpoint" not in lrt_kwargs, "endpoint kwarg should not be present when HF_ENDPOINT is unset"
+    _, api_kwargs = mock_hf_api_cls.call_args
+    assert api_kwargs.get("endpoint") is None, (
+        f"HfApi endpoint should be None when HF_ENDPOINT is unset, got {api_kwargs}"
+    )
 
     _, sd_kwargs = mock_sd.call_args
-    assert "endpoint" not in sd_kwargs, "endpoint kwarg should not be present when HF_ENDPOINT is unset"
+    assert sd_kwargs.get("endpoint") is None, (
+        f"snapshot_download endpoint should be None when HF_ENDPOINT is unset, got {sd_kwargs}"
+    )

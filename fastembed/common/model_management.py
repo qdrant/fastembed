@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Generic, TypeVar
 
 import requests
-from huggingface_hub import list_repo_tree, model_info, snapshot_download
+from huggingface_hub import HfApi, snapshot_download
 from huggingface_hub.hf_api import RepoFile
 from huggingface_hub.utils import (
     RepositoryNotFoundError,
@@ -216,7 +216,7 @@ class ModelManagement(Generic[T]):
         metadata_file = snapshot_dir / cls.METADATA_FILE
 
         hf_endpoint = os.environ.get("HF_ENDPOINT")
-        endpoint_kwargs: dict[str, Any] = {"endpoint": hf_endpoint} if hf_endpoint else {}
+        hf_api = HfApi(endpoint=hf_endpoint)
 
         if local_files_only:
             disable_progress_bars()
@@ -232,13 +232,15 @@ class ModelManagement(Generic[T]):
                 allow_patterns=allow_patterns,
                 cache_dir=cache_dir,
                 local_files_only=local_files_only,
-                **endpoint_kwargs,
+                endpoint=hf_endpoint,
                 **kwargs,
             )
             return result
 
-        repo_revision = model_info(hf_source_repo, **endpoint_kwargs).sha
-        repo_tree = list(list_repo_tree(hf_source_repo, revision=repo_revision, repo_type="model", **endpoint_kwargs))
+        repo_revision = hf_api.model_info(hf_source_repo).sha
+        repo_tree = list(
+            hf_api.list_repo_tree(hf_source_repo, revision=repo_revision, repo_type="model")
+        )
 
         allowed_extensions = {".json", ".onnx", ".txt"}
         repo_files = (
@@ -265,7 +267,7 @@ class ModelManagement(Generic[T]):
             allow_patterns=allow_patterns,
             cache_dir=cache_dir,
             local_files_only=local_files_only,
-            **endpoint_kwargs,
+            endpoint=hf_endpoint,
             **kwargs,
         )
 
