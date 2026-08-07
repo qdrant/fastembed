@@ -1,14 +1,14 @@
-import os
-import time
 import json
+import os
 import shutil
 import tarfile
+import time
 from copy import deepcopy
 from pathlib import Path
-from typing import Any, TypeVar, Generic
+from typing import Any, Generic, TypeVar
 
 import requests
-from huggingface_hub import snapshot_download, model_info, list_repo_tree
+from huggingface_hub import list_repo_tree, model_info, snapshot_download
 from huggingface_hub.hf_api import RepoFile
 from huggingface_hub.utils import (
     RepositoryNotFoundError,
@@ -17,6 +17,7 @@ from huggingface_hub.utils import (
 )
 from loguru import logger
 from tqdm import tqdm
+
 from fastembed.common.model_description import BaseModelDescription
 
 T = TypeVar("T", bound=BaseModelDescription)
