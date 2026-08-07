@@ -55,6 +55,8 @@ def _run_download_with_mocks(tmp_path, extra_env, local_files_only=False, downlo
         # skip post-download metadata verification so the function completes cleanly
         patch.object(ModelManagement, "METADATA_FILE", "__nonexistent__"),
     ):
+        if "HF_ENDPOINT" not in extra_env:
+            os.environ.pop("HF_ENDPOINT", None)
         mock_hf_api_instance = mock_hf_api_cls.return_value
         mock_hf_api_instance.model_info.return_value = MagicMock(sha="abc123")
         mock_hf_api_instance.list_repo_tree.return_value = []
