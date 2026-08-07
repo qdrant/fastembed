@@ -215,7 +215,7 @@ class ModelManagement(Generic[T]):
         snapshot_dir = Path(cache_dir) / f"models--{hf_source_repo.replace('/', '--')}"
         metadata_file = snapshot_dir / cls.METADATA_FILE
 
-        hf_endpoint = os.environ.get("HF_ENDPOINT")
+        hf_endpoint = kwargs.pop("endpoint", None) or os.environ.get("HF_ENDPOINT") or None
         hf_api = HfApi(endpoint=hf_endpoint)
 
         if local_files_only:
