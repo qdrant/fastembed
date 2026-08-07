@@ -214,6 +214,9 @@ class ModelManagement(Generic[T]):
         snapshot_dir = Path(cache_dir) / f"models--{hf_source_repo.replace('/', '--')}"
         metadata_file = snapshot_dir / cls.METADATA_FILE
 
+        hf_endpoint = os.environ.get("HF_ENDPOINT")
+        endpoint_kwargs: dict[str, Any] = {"endpoint": hf_endpoint} if hf_endpoint else {}
+
         if local_files_only:
             disable_progress_bars()
             if metadata_file.exists():
@@ -228,12 +231,13 @@ class ModelManagement(Generic[T]):
                 allow_patterns=allow_patterns,
                 cache_dir=cache_dir,
                 local_files_only=local_files_only,
+                **endpoint_kwargs,
                 **kwargs,
             )
             return result
 
-        repo_revision = model_info(hf_source_repo).sha
-        repo_tree = list(list_repo_tree(hf_source_repo, revision=repo_revision, repo_type="model"))
+        repo_revision = model_info(hf_source_repo, **endpoint_kwargs).sha
+        repo_tree = list(list_repo_tree(hf_source_repo, revision=repo_revision, repo_type="model", **endpoint_kwargs))
 
         allowed_extensions = {".json", ".onnx", ".txt"}
         repo_files = (
@@ -260,6 +264,7 @@ class ModelManagement(Generic[T]):
             allow_patterns=allow_patterns,
             cache_dir=cache_dir,
             local_files_only=local_files_only,
+            **endpoint_kwargs,
             **kwargs,
         )
 
