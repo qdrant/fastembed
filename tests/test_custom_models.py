@@ -179,6 +179,34 @@ def test_mock_add_custom_models():
     CustomTextEmbedding.POSTPROCESSING_MAPPING.clear()
 
 
+def test_custom_model_case_insensitive_postprocessing():
+    registered_name = "Org/Model"
+    source = ModelSource(hf="artificial")
+
+    TextEmbedding.add_custom_model(
+        registered_name,
+        pooling=PoolingType.MEAN,
+        normalization=True,
+        sources=source,
+        dim=5,
+        size_in_gb=0.1,
+    )
+
+    # Registering with one casing and instantiating with another must not raise
+    # KeyError: postprocessing is looked up by the canonical resolved name.
+    custom_text_embedding = CustomTextEmbedding(
+        registered_name.lower(),
+        lazy_load=True,
+        specific_model_path="./",  # disable model downloading and loading
+    )
+
+    assert custom_text_embedding._pooling == PoolingType.MEAN
+    assert custom_text_embedding._normalization is True
+
+    CustomTextEmbedding.SUPPORTED_MODELS.clear()
+    CustomTextEmbedding.POSTPROCESSING_MAPPING.clear()
+
+
 def test_do_not_add_existing_model():
     existing_base_model = "sentence-transformers/all-MiniLM-L6-v2"
     custom_model_name = "intfloat/multilingual-e5-small"
