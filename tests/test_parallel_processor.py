@@ -106,6 +106,8 @@ def test_reused_pool_returns_to_graceful_queue_cleanup():
     first_results.close()
 
     assert pool.emergency_shutdown is True
+    assert first_process.join.call_args_list == [call(timeout=1), call(timeout=1)]
+    first_process.terminate.assert_called_once_with()
     first_input_queue.cancel_join_thread.assert_called_once_with()
     first_output_queue.cancel_join_thread.assert_called_once_with()
 
