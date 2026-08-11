@@ -1,3 +1,9 @@
+import io
+import os
+import tarfile
+
+import pytest
+
 from fastembed import (
     TextEmbedding,
     SparseTextEmbedding,
@@ -5,6 +11,7 @@ from fastembed import (
     LateInteractionMultimodalEmbedding,
     LateInteractionTextEmbedding,
 )
+from fastembed.common.model_management import ModelManagement
 
 
 def test_text_list_supported_models():
@@ -28,3 +35,34 @@ def test_text_list_supported_models():
         assert "model_file" in description and description["model_file"]
         assert "sources" in description and description["sources"]
         assert "hf" in description["sources"] or "url" in description["sources"]
+
+
+def test_decompress_to_cache_blocks_path_traversal(tmp_path):
+    targz_path = tmp_path / "evil.tar.gz"
+    escape_target = tmp_path / "escaped.txt"
+    with tarfile.open(targz_path, "w:gz") as tar:
+        payload = b"PWNED"
+        info = tarfile.TarInfo(name=f"../{escape_target.name}")
+        info.size = len(payload)
+        tar.addfile(info, io.BytesIO(payload))
+
+    cache_dir = tmp_path / "cache"
+    cache_dir.mkdir()
+    with pytest.raises(ValueError):
+        ModelManagement.decompress_to_cache(str(targz_path), str(cache_dir))
+    assert not escape_target.exists()
+
+
+def test_decompress_to_cache_extracts_safe_archive(tmp_path):
+    targz_path = tmp_path / "safe.tar.gz"
+    with tarfile.open(targz_path, "w:gz") as tar:
+        payload = b"model bytes"
+        info = tarfile.TarInfo(name="model/config.json")
+        info.size = len(payload)
+        tar.addfile(info, io.BytesIO(payload))
+
+    cache_dir = tmp_path / "cache"
+    cache_dir.mkdir()
+    ModelManagement.decompress_to_cache(str(targz_path), str(cache_dir))
+    assert (cache_dir / "model" / "config.json").read_bytes() == b"model bytes"
+    assert os.path.isdir(cache_dir)
