@@ -111,6 +111,7 @@ class ParallelWorkerPool:
         self.num_active_workers: BaseValue | None = None
 
     def start(self, **kwargs: Any) -> None:
+        self.emergency_shutdown = False
         self.input_queue = self.ctx.Queue(self.queue_size)
         self.output_queue = self.ctx.Queue(self.queue_size)
 
@@ -241,6 +242,7 @@ class ParallelWorkerPool:
             process.join(timeout=timeout)
             if process.is_alive():
                 process.terminate()
+                process.join(timeout=timeout)
         self.processes.clear()
 
     def join(self) -> None:

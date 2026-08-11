@@ -1,5 +1,6 @@
+from multiprocessing import get_context
 from queue import Empty
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, call
 
 import pytest
 
@@ -40,7 +41,7 @@ def test_closing_partial_parallel_iterator_terminates_workers(monkeypatch):
     assert next(results) == "result"
     results.close()
 
-    process.join.assert_called_once_with(timeout=1)
+    assert process.join.call_args_list == [call(timeout=1), call(timeout=1)]
     process.terminate.assert_called_once_with()
     input_queue.cancel_join_thread.assert_called_once_with()
     output_queue.cancel_join_thread.assert_called_once_with()
@@ -56,7 +57,7 @@ def test_parallel_iterator_terminates_workers_when_input_raises(monkeypatch):
     with pytest.raises(RuntimeError, match="stream failed"):
         list(pool.semi_ordered_map(failing_stream()))
 
-    process.join.assert_called_once_with(timeout=1)
+    assert process.join.call_args_list == [call(timeout=1), call(timeout=1)]
     process.terminate.assert_called_once_with()
     input_queue.cancel_join_thread.assert_called_once_with()
     output_queue.cancel_join_thread.assert_called_once_with()
@@ -71,3 +72,47 @@ def test_exhausted_parallel_iterator_joins_workers_gracefully(monkeypatch):
     process.terminate.assert_not_called()
     input_queue.join_thread.assert_called_once_with()
     output_queue.join_thread.assert_called_once_with()
+
+
+def test_reused_pool_returns_to_graceful_queue_cleanup():
+    pool = ParallelWorkerPool(1, EchoWorker)
+    ctx = MagicMock()
+    pool.ctx = ctx
+
+    first_input_queue = MagicMock()
+    first_output_queue = MagicMock()
+    first_output_queue.get_nowait.return_value = (0, "first result")
+    second_input_queue = MagicMock()
+    second_output_queue = MagicMock()
+    second_output_queue.get_nowait.return_value = (0, "second result")
+    first_process = MagicMock()
+    first_process.is_alive.return_value = True
+    second_process = MagicMock()
+
+    ctx.Queue.side_effect = [
+        first_input_queue,
+        first_output_queue,
+        second_input_queue,
+        second_output_queue,
+    ]
+    ctx.Value.side_effect = [
+        get_context().Value("i", 1),
+        get_context().Value("i", 1),
+    ]
+    ctx.Process.side_effect = [first_process, second_process]
+
+    first_results = pool.ordered_map(["first input"])
+    assert next(first_results) == "first result"
+    first_results.close()
+
+    assert pool.emergency_shutdown is True
+    first_input_queue.cancel_join_thread.assert_called_once_with()
+    first_output_queue.cancel_join_thread.assert_called_once_with()
+
+    assert list(pool.semi_ordered_map(["second input"])) == [(0, "second result")]
+
+    assert pool.emergency_shutdown is False
+    second_input_queue.join_thread.assert_called_once_with()
+    second_output_queue.join_thread.assert_called_once_with()
+    second_input_queue.cancel_join_thread.assert_not_called()
+    second_output_queue.cancel_join_thread.assert_not_called()
