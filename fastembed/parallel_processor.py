@@ -153,6 +153,7 @@ class ParallelWorkerPool:
     def semi_ordered_map(
         self, stream: Iterable[Any], *args: Any, **kwargs: Any
     ) -> Iterable[tuple[int, Any]]:
+        completed = False
         try:
             self.start(**kwargs)
 
@@ -196,10 +197,19 @@ class ParallelWorkerPool:
                     raise RuntimeError("Thread unexpectedly terminated")
                 yield out_item
                 read += 1
+            completed = True
         finally:
             assert self.input_queue is not None, "Input queue is None"
             assert self.output_queue is not None, "Output queue is None"
-            self.join()
+            if completed:
+                self.join()
+            else:
+                # The generator may be closed before the input stream is exhausted (for
+                # example, when a caller only consumes a prefix of the embeddings). In that
+                # case workers have not necessarily received their stop signals and a normal
+                # join would wait forever for processes blocked on the input queue.
+                self.emergency_shutdown = True
+                self.join_or_terminate()
             self.input_queue.close()
             self.output_queue.close()
             if self.emergency_shutdown:
