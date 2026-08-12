@@ -60,7 +60,7 @@ mknotebooks = "^0.8.0"
 
 [tool.poetry.group.types.dependencies]
 pyright = ">=1.1.293"
-mypy = "^1.0.0"
+mypy = ">=1,<3"
 
 [build-system]
 requires = ["poetry-core"]
