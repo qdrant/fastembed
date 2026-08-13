@@ -184,3 +184,24 @@ def test_session_options(model_cache, model_name) -> None:
         model = ImageEmbedding(model_name=model_name, enable_cpu_mem_arena=False)
         session_options = model.model.model.get_session_options()
         assert session_options.enable_cpu_mem_arena is False
+
+def test_resize_dimension_order():
+     from PIL import Image
+     from fastembed.image.transform.operators import Resize
+
+     # Define target dimensions: Height=100, Width=200
+     # FastEmbed's Resize transform semantically expects (height, width)
+     target_height, target_width = 100, 200
+     resizer = Resize(size=(target_height, target_width))
+
+        # Create a square 50x50 dummy image
+     img = Image.new("RGB", (50, 50))
+   
+        # Apply Resize transform (expects list, returns list)
+     resized_img = resizer([img])[0]
+   
+        # PIL's image.size property returns (width, height)
+        # Buggy: produces (100, 200) -> width=100, height=200
+        # Correct: should produce (200, 100) -> width=200, height=100
+     assert resized_img.size == (target_width, target_height), \
+        f"Expected size (W={target_width}, H={target_height}), but got {resized_img.size}"
