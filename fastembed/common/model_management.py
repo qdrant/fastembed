@@ -281,6 +281,16 @@ class ModelManagement(Generic[T]):
 
         return result
 
+    @staticmethod
+    def _safe_extractall(tar: tarfile.TarFile, cache_dir: str) -> None:
+        # Manual traversal guard for interpreters without the 'data' extraction filter.
+        base = os.path.realpath(cache_dir)
+        for member in tar.getmembers():
+            target = os.path.realpath(os.path.join(cache_dir, member.name))
+            if os.path.commonpath([base, target]) != base:
+                raise ValueError(f"Blocked path traversal in tar member: {member.name!r}")
+        tar.extractall(path=cache_dir)
+
     @classmethod
     def decompress_to_cache(cls, targz_path: str, cache_dir: str) -> str:
         """
@@ -304,10 +314,12 @@ class ModelManagement(Generic[T]):
         try:
             # Open the tar.gz file
             with tarfile.open(targz_path, "r:gz") as tar:
-                # Extract all files into the cache directory
-                tar.extractall(
-                    path=cache_dir,
-                )
+                # Guard against path traversal (CVE-2007-4559): the 'data' filter
+                # rejects members escaping cache_dir; fall back for pre-3.12 runtimes.
+                try:
+                    tar.extractall(path=cache_dir, filter="data")
+                except TypeError:
+                    cls._safe_extractall(tar, cache_dir)
         except tarfile.TarError as e:
             # If any error occurs while opening or extracting the tar.gz file,
             # delete the cache directory (if it was created in this function)
