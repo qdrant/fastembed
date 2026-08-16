@@ -36,6 +36,7 @@ CANONICAL_VECTOR_VALUES = {
         [0.0361, 0.1862, 0.2776, 0.2461, -0.1904]
     ),
     "intfloat/multilingual-e5-large": np.array([0.4544, -0.0968, 0.1054, -1.3753, 0.1500]),
+    "intfloat/multilingual-e5-large-instruct": np.array([0.01044649, 0.02897520, 0.00060697, -0.04193532, 0.02606634]),
     "sentence-transformers/paraphrase-multilingual-mpnet-base-v2": np.array(
         [0.0047, 0.1334, -0.0102, 0.0714, 0.1930]
     ),
