@@ -45,3 +45,17 @@ def test_last_token_pooling():
     pooled = last_token_pooling(token_embeddings, attention_mask)
 
     assert np.allclose(pooled, [[2.0, 2.0], [6.0, 6.0]])
+
+
+def test_last_token_pooling_with_left_padding():
+    token_embeddings = np.array(
+        [
+            [[9.0, 9.0], [9.0, 9.0], [1.0, 1.0], [2.0, 2.0]],  # padding, then 2 real tokens
+            [[3.0, 3.0], [4.0, 4.0], [5.0, 5.0], [6.0, 6.0]],  # no padding
+        ]
+    )
+    attention_mask = np.array([[0, 0, 1, 1], [1, 1, 1, 1]], dtype=np.int64)
+
+    pooled = last_token_pooling(token_embeddings, attention_mask)
+
+    assert np.allclose(pooled, [[2.0, 2.0], [6.0, 6.0]])

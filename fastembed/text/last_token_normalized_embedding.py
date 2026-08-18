@@ -21,7 +21,7 @@ supported_last_token_normalized_models: list[DenseModelDescription] = [
         size_in_GB=2.38,
         sources=ModelSource(hf="Qdrant/Qwen3-Embedding-0.6B-onnx"),
         model_file="onnx/model.onnx",
-        additional_files=["onnx/model.onnx.data"],
+        additional_files=["onnx/model.onnx_data"],
     ),
     DenseModelDescription(
         model="Qwen/Qwen3-Embedding-0.6B-Q",
