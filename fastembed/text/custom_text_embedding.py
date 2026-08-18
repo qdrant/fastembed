@@ -11,7 +11,7 @@ from fastembed.common.model_description import (
 )
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.types import NumpyArray, Device
-from fastembed.common.utils import normalize, mean_pooling
+from fastembed.common.utils import normalize, mean_pooling, last_token_pooling
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
 
 
@@ -73,12 +73,18 @@ class CustomTextEmbedding(OnnxTextEmbedding):
                 raise ValueError("attention_mask must be provided for mean pooling")
             return mean_pooling(embeddings, attention_mask)
 
+        if self._pooling == PoolingType.LAST_TOKEN:
+            if attention_mask is None:
+                raise ValueError("attention_mask must be provided for last token pooling")
+            return last_token_pooling(embeddings, attention_mask)
+
         if self._pooling == PoolingType.DISABLED:
             return embeddings
 
         raise ValueError(
             f"Unsupported pooling type {self._pooling}. "
-            f"Supported types are: {PoolingType.CLS}, {PoolingType.MEAN}, {PoolingType.DISABLED}."
+            f"Supported types are: {PoolingType.CLS}, {PoolingType.MEAN}, "
+            f"{PoolingType.LAST_TOKEN}, {PoolingType.DISABLED}."
         )
 
     def _normalize(self, embeddings: NumpyArray) -> NumpyArray:
