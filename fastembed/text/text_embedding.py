@@ -9,6 +9,7 @@ from fastembed.text.pooled_normalized_embedding import PooledNormalizedEmbedding
 from fastembed.text.pooled_embedding import PooledEmbedding
 from fastembed.text.multitask_embedding import JinaEmbeddingV3
 from fastembed.text.builtin_sentence_embedding import BuiltinSentenceEmbedding
+from fastembed.text.last_token_normalized_embedding import LastTokenNormalizedEmbedding
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
 from fastembed.text.text_embedding_base import TextEmbeddingBase
 from fastembed.common.model_description import DenseModelDescription, ModelSource, PoolingType
@@ -22,6 +23,7 @@ class TextEmbedding(TextEmbeddingBase):
         PooledEmbedding,
         JinaEmbeddingV3,
         BuiltinSentenceEmbedding,
+        LastTokenNormalizedEmbedding,
         CustomTextEmbedding,
     ]
 
