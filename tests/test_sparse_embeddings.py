@@ -181,6 +181,7 @@ def local_bm25_model_dir(tmp_path):
 
     return tmp_path
 
+
 @pytest.mark.parametrize(
     "model_name",
     ["prithivida/Splade_PP_en_v1", "Qdrant/minicoil-v1"],
