@@ -34,6 +34,7 @@ supported_languages = [
     "hungarian",
     "italian",
     "norwegian",
+    "persian",
     "portuguese",
     "romanian",
     "russian",
@@ -42,6 +43,22 @@ supported_languages = [
     "tamil",
     "turkish",
 ]
+
+languages_without_stemmer = {
+    "persian",
+}
+
+PERSIAN_NORMALIZATION = str.maketrans(
+    {
+        "\u064a": "\u06cc",  # Arabic Yeh -> Persian Yeh
+        "\u0643": "\u06a9",  # Arabic Kaf -> Persian Kaf
+    }
+)
+
+
+def normalize_persian(text: str) -> str:
+    return text.translate(PERSIAN_NORMALIZATION)
+
 
 supported_bm25_models: list[SparseModelDescription] = [
     SparseModelDescription(
@@ -131,8 +148,15 @@ class Bm25(SparseTextEmbeddingBase):
             self.stopwords: set[str] = set()
             self.stemmer = None
         else:
-            self.stopwords = set(self._load_stopwords(self._model_dir, self.language))
-            self.stemmer = SnowballStemmer(language)
+            stopwords = self._load_stopwords(self._model_dir, self.language)
+            if self.language == "persian":
+                stopwords = [normalize_persian(stopword) for stopword in stopwords]
+            self.stopwords = set(stopwords)
+            self.stemmer = (
+                None
+                if self.language in languages_without_stemmer
+                else SnowballStemmer(self.language)
+            )
 
         self.tokenizer = SimpleTokenizer
 
@@ -151,8 +175,13 @@ class Bm25(SparseTextEmbeddingBase):
         if not stopwords_path.exists():
             return []
 
-        with open(stopwords_path, "r") as f:
+        with open(stopwords_path, "r", encoding="utf-8") as f:
             return f.read().splitlines()
+
+    def _normalize_text(self, text: str) -> str:
+        if self.language == "persian":
+            return normalize_persian(text)
+        return text
 
     def _embed_documents(
         self,
@@ -261,6 +290,7 @@ class Bm25(SparseTextEmbeddingBase):
     ) -> list[SparseEmbedding]:
         embeddings: list[SparseEmbedding] = []
         for document in documents:
+            document = self._normalize_text(document)
             document = remove_non_alphanumeric(document)
             tokens = self.tokenizer.tokenize(document)
             stemmed_tokens = self._stem(tokens)
@@ -272,6 +302,7 @@ class Bm25(SparseTextEmbeddingBase):
         token_num = 0
         texts = [texts] if isinstance(texts, str) else texts
         for text in texts:
+            text = self._normalize_text(text)
             document = remove_non_alphanumeric(text)
             tokens = self.tokenizer.tokenize(document)
             token_num += len(tokens)
@@ -319,6 +350,7 @@ class Bm25(SparseTextEmbeddingBase):
             query = [query]
 
         for text in query:
+            text = self._normalize_text(text)
             text = remove_non_alphanumeric(text)
             tokens = self.tokenizer.tokenize(text)
             stemmed_tokens = self._stem(tokens)
