@@ -79,6 +79,9 @@ CANONICAL_VECTOR_VALUES = {
     "Qwen/Qwen3-Embedding-0.6B-Q": np.array(
         [-0.01599521, 0.01676456, -0.01195119, -0.07132675, 0.00346729]
     ),
+    "google/siglip2-base-patch16-224": np.array(
+        [-0.01181389, 0.00737596, 0.01118064, 0.0103095, 0.3451049]
+    ),
 }
 
 QWEN3_INSTRUCT_PREFIX = (

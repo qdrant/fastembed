@@ -32,6 +32,9 @@ CANONICAL_VECTOR_VALUES = {
     "nomic-ai/nomic-embed-vision-v1.5-Q": np.array(
         [-0.0011, -0.0477, 0.0024, -0.049, -0.0458, -0.0314, 0.017, -0.0383, -0.0537, -0.021]
     ),
+    "google/siglip2-base-patch16-224": np.array(
+        [-0.02095927, -0.0075177, -0.00144479, -0.0080948, 0.05031789]
+    ),
 }
 
 _MODELS_TO_CACHE = ("Qdrant/clip-ViT-B-32-vision",)
