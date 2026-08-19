@@ -10,7 +10,7 @@ from fastembed.common.model_description import (
     BaseModelDescription,
 )
 from fastembed.common.onnx_model import OnnxOutputContext
-from fastembed.common.utils import normalize, mean_pooling
+from fastembed.common.utils import normalize, mean_pooling, last_token_pooling
 from fastembed.text.custom_text_embedding import CustomTextEmbedding, PostprocessingConfig
 from fastembed.rerank.cross_encoder.custom_text_cross_encoder import CustomTextCrossEncoder
 from fastembed.rerank.cross_encoder import TextCrossEncoder
@@ -136,6 +136,8 @@ def test_mock_add_custom_models():
         f"{PoolingType.MEAN.lower()}": dummy_token_output,
         f"{PoolingType.CLS.lower()}-normalized": dummy_token_output,
         f"{PoolingType.CLS.lower()}": dummy_token_output,
+        f"{PoolingType.LAST_TOKEN.lower()}-normalized": dummy_token_output,
+        f"{PoolingType.LAST_TOKEN.lower()}": dummy_token_output,
         f"{PoolingType.DISABLED.lower()}-normalized": dummy_pooled_output,
         f"{PoolingType.DISABLED.lower()}": dummy_pooled_output,
     }
@@ -147,12 +149,19 @@ def test_mock_add_custom_models():
         f"{PoolingType.MEAN.lower()}": mean_pooling(dummy_token_embedding, dummy_attention_mask),
         f"{PoolingType.CLS.lower()}-normalized": normalize(dummy_token_embedding[:, 0]),
         f"{PoolingType.CLS.lower()}": dummy_token_embedding[:, 0],
+        f"{PoolingType.LAST_TOKEN.lower()}-normalized": normalize(
+            last_token_pooling(dummy_token_embedding, dummy_attention_mask)
+        ),
+        f"{PoolingType.LAST_TOKEN.lower()}": last_token_pooling(
+            dummy_token_embedding, dummy_attention_mask
+        ),
         f"{PoolingType.DISABLED.lower()}-normalized": normalize(dummy_pooled_embedding),
         f"{PoolingType.DISABLED.lower()}": dummy_pooled_embedding,
     }
 
     for pooling, normalization in itertools.product(
-        (PoolingType.MEAN, PoolingType.CLS, PoolingType.DISABLED), (True, False)
+        (PoolingType.MEAN, PoolingType.CLS, PoolingType.LAST_TOKEN, PoolingType.DISABLED),
+        (True, False),
     ):
         model_name = f"{pooling.name.lower()}{'-normalized' if normalization else ''}"
         TextEmbedding.add_custom_model(

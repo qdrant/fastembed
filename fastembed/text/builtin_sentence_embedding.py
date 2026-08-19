@@ -16,7 +16,7 @@ supported_builtin_sentence_embedding_models: list[DenseModelDescription] = [
             "Prefixes for queries/documents: `task: search result | query: {content}` for query, "
             "`title: {title | 'none'} | text: {content}` for documents, 2025 year."
         ),
-        license="apache-2.0",
+        license="gemma",
         size_in_GB=1.24,
         sources=ModelSource(
             hf="onnx-community/embeddinggemma-300m-ONNX",

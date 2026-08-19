@@ -1,6 +1,8 @@
 import os
 from unittest.mock import MagicMock, patch
 
+import numpy as np
+
 from fastembed import (
     ImageEmbedding,
     LateInteractionMultimodalEmbedding,
@@ -9,6 +11,7 @@ from fastembed import (
     TextEmbedding,
 )
 from fastembed.common.model_management import ModelManagement
+from fastembed.common.utils import last_token_pooling
 
 
 def test_text_list_supported_models():
@@ -155,3 +158,31 @@ def test_hf_endpoint_forwarded_on_local_files_only_path(tmp_path):
         f"snapshot_download should receive endpoint={custom_endpoint!r} on the local_files_only path, "
         f"got {sd_kwargs}"
     )
+
+
+def test_last_token_pooling():
+    token_embeddings = np.array(
+        [
+            [[1.0, 1.0], [2.0, 2.0], [9.0, 9.0], [9.0, 9.0]],  # 2 real tokens, then padding
+            [[3.0, 3.0], [4.0, 4.0], [5.0, 5.0], [6.0, 6.0]],  # no padding
+        ]
+    )
+    attention_mask = np.array([[1, 1, 0, 0], [1, 1, 1, 1]], dtype=np.int64)
+
+    pooled = last_token_pooling(token_embeddings, attention_mask)
+
+    assert np.allclose(pooled, [[2.0, 2.0], [6.0, 6.0]])
+
+
+def test_last_token_pooling_with_left_padding():
+    token_embeddings = np.array(
+        [
+            [[9.0, 9.0], [9.0, 9.0], [1.0, 1.0], [2.0, 2.0]],  # padding, then 2 real tokens
+            [[3.0, 3.0], [4.0, 4.0], [5.0, 5.0], [6.0, 6.0]],  # no padding
+        ]
+    )
+    attention_mask = np.array([[0, 0, 1, 1], [1, 1, 1, 1]], dtype=np.int64)
+
+    pooled = last_token_pooling(token_embeddings, attention_mask)
+
+    assert np.allclose(pooled, [[2.0, 2.0], [6.0, 6.0]])

@@ -19,6 +19,8 @@ from fastembed.parallel_processor import ParallelWorkerPool
 
 
 class OnnxImageModel(OnnxModel[T]):
+    ONNX_OUTPUT_NAMES: list[str] | None = None
+
     @classmethod
     def _get_worker_class(cls) -> Type["ImageEmbeddingWorker[T]"]:
         raise NotImplementedError("Subclasses must implement this method")
@@ -87,7 +89,7 @@ class OnnxImageModel(OnnxModel[T]):
             encoded = np.array(self.processor(image_files))
         onnx_input = self._build_onnx_input(encoded)
         onnx_input = self._preprocess_onnx_input(onnx_input)
-        model_output = self.model.run(None, onnx_input)  # type: ignore[union-attr]
+        model_output = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)  # type: ignore[union-attr]
         embeddings = model_output[0].reshape(len(images), -1)
         return OnnxOutputContext(model_output=embeddings)
 
