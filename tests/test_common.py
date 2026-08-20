@@ -85,9 +85,7 @@ def test_bm25_resolves_offline_without_network_fetch(tmp_path, monkeypatch):
 
     seen_local_files_only: list[bool] = []
 
-    def fake_download_files_from_huggingface(
-        hf_source_repo, cache_dir, extra_patterns, **kwargs
-    ):
+    def fake_download_files_from_huggingface(hf_source_repo, cache_dir, extra_patterns, **kwargs):
         local_files_only = bool(kwargs.get("local_files_only"))
         seen_local_files_only.append(local_files_only)
         if local_files_only:
