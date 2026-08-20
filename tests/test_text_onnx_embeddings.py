@@ -5,6 +5,8 @@ from contextlib import contextmanager
 import numpy as np
 import pytest
 
+from fastembed.text.last_token_normalized_embedding import LastTokenNormalizedEmbedding
+from fastembed.text.onnx_embedding import OnnxTextEmbedding
 from fastembed.text.text_embedding import TextEmbedding
 from tests.utils import delete_model_cache, should_test_model
 
@@ -71,19 +73,39 @@ CANONICAL_VECTOR_VALUES = {
     "google/embeddinggemma-300m": np.array(
         [-0.08181356, 0.0214127, 0.05120273, -0.03690156, -0.0254504]
     ),
+    "Qwen/Qwen3-Embedding-0.6B": np.array(
+        [-0.01476084, 0.01723184, -0.01195498, -0.07275258, 0.00281229]
+    ),
+    "Qwen/Qwen3-Embedding-0.6B-Q": np.array(
+        [-0.01599521, 0.01676456, -0.01195119, -0.07132675, 0.00346729]
+    ),
+    "google/siglip2-base-patch16-224": np.array(
+        [-0.01181389, 0.00737596, 0.01118064, 0.0103095, 0.3451049]
+    ),
 }
 
+QWEN3_INSTRUCT_PREFIX = (
+    "Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery:"
+)
 
 DOC_PREFIXES = {
     "google/embeddinggemma-300m": "title: none | text: ",
 }
 QUERY_PREFIXES = {
     "google/embeddinggemma-300m": "task: search result | query: ",
+    "Qwen/Qwen3-Embedding-0.6B": QWEN3_INSTRUCT_PREFIX,
+    "Qwen/Qwen3-Embedding-0.6B-Q": QWEN3_INSTRUCT_PREFIX,
 }
 CANONICAL_QUERY_VECTOR_VALUES = {
     "google/embeddinggemma-300m": np.array(
         [-0.22990295, 0.03311195, 0.04290345, -0.03558498, -0.01399477]
-    )
+    ),
+    "Qwen/Qwen3-Embedding-0.6B": np.array(
+        [-0.01908712, 0.01635596, -0.00356586, -0.03947155, -0.01387356]
+    ),
+    "Qwen/Qwen3-Embedding-0.6B-Q": np.array(
+        [-0.02221339, 0.01932909, -0.00361797, -0.03888897, -0.01362813]
+    ),
 }
 
 MULTI_TASK_MODELS = ["jinaai/jina-embeddings-v3"]
@@ -179,6 +201,23 @@ def test_query_embedding(model_cache) -> None:
             assert np.allclose(
                 embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3
             ), model_desc.model
+
+
+def test_quantized_model_reports_onnxruntime_requirement(monkeypatch) -> None:
+    """Old onnxruntime only implements 4-bit MatMulNBits, the error should say so."""
+    monkeypatch.setattr(
+        OnnxTextEmbedding,
+        "load_onnx_model",
+        lambda self: (_ for _ in ()).throw(RuntimeError("nbits_ == 4 was false")),
+    )
+    model = LastTokenNormalizedEmbedding(
+        "Qwen/Qwen3-Embedding-0.6B-Q",
+        lazy_load=True,
+        specific_model_path="./",  # disable model downloading and loading
+    )
+
+    with pytest.raises(RuntimeError, match="onnxruntime>=1.23"):
+        model.load_onnx_model()
 
 
 @pytest.mark.parametrize("n_dims,model_name", [(384, "BAAI/bge-small-en-v1.5")])

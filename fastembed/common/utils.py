@@ -32,6 +32,16 @@ def mean_pooling(input_array: NumpyArray, attention_mask: NDArray[np.int64]) -> 
     return pooled_embeddings
 
 
+def last_token_pooling(input_array: NumpyArray, attention_mask: NDArray[np.int64]) -> NumpyArray:
+    """Take the embedding of the last non-padding token of each sequence.
+
+    Locates the last position the attention mask marks as real, so it holds whichever
+    side the tokenizer pads on.
+    """
+    last_token_indices = attention_mask.shape[1] - 1 - np.argmax(attention_mask[:, ::-1], axis=1)
+    return input_array[np.arange(input_array.shape[0]), last_token_indices]
+
+
 def iter_batch(iterable: Iterable[T], size: int) -> Iterable[list[T]]:
     """
     >>> list(iter_batch([1,2,3,4,5], 3))

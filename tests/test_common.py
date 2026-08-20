@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import numpy as np
+
 from fastembed import (
     TextEmbedding,
     SparseTextEmbedding,
@@ -8,6 +10,7 @@ from fastembed import (
     LateInteractionTextEmbedding,
 )
 from fastembed.common.model_management import ModelManagement
+from fastembed.common.utils import last_token_pooling
 from fastembed.sparse.bm25 import Bm25, supported_bm25_models
 
 
@@ -32,6 +35,34 @@ def test_text_list_supported_models():
         assert "model_file" in description and description["model_file"]
         assert "sources" in description and description["sources"]
         assert "hf" in description["sources"] or "url" in description["sources"]
+
+
+def test_last_token_pooling():
+    token_embeddings = np.array(
+        [
+            [[1.0, 1.0], [2.0, 2.0], [9.0, 9.0], [9.0, 9.0]],  # 2 real tokens, then padding
+            [[3.0, 3.0], [4.0, 4.0], [5.0, 5.0], [6.0, 6.0]],  # no padding
+        ]
+    )
+    attention_mask = np.array([[1, 1, 0, 0], [1, 1, 1, 1]], dtype=np.int64)
+
+    pooled = last_token_pooling(token_embeddings, attention_mask)
+
+    assert np.allclose(pooled, [[2.0, 2.0], [6.0, 6.0]])
+
+
+def test_last_token_pooling_with_left_padding():
+    token_embeddings = np.array(
+        [
+            [[9.0, 9.0], [9.0, 9.0], [1.0, 1.0], [2.0, 2.0]],  # padding, then 2 real tokens
+            [[3.0, 3.0], [4.0, 4.0], [5.0, 5.0], [6.0, 6.0]],  # no padding
+        ]
+    )
+    attention_mask = np.array([[0, 0, 1, 1], [1, 1, 1, 1]], dtype=np.int64)
+
+    pooled = last_token_pooling(token_embeddings, attention_mask)
+
+    assert np.allclose(pooled, [[2.0, 2.0], [6.0, 6.0]])
 
 
 def test_bm25_resolves_offline_without_network_fetch(tmp_path, monkeypatch):
