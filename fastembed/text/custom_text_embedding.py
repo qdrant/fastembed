@@ -50,8 +50,10 @@ class CustomTextEmbedding(OnnxTextEmbedding):
             specific_model_path=specific_model_path,
             **kwargs,
         )
-        self._pooling = self.POSTPROCESSING_MAPPING[model_name].pooling
-        self._normalization = self.POSTPROCESSING_MAPPING[model_name].normalization
+        self._pooling = self.POSTPROCESSING_MAPPING[self.model_description.model].pooling
+        self._normalization = self.POSTPROCESSING_MAPPING[
+            self.model_description.model
+        ].normalization
 
     @classmethod
     def _list_supported_models(cls) -> list[DenseModelDescription]:
