@@ -311,7 +311,7 @@ def test_token_count(model_cache, model_name) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Regression tests for issue #688 – non-finite embedding guard
+# Regression tests for issue #688 - non-finite embedding guard
 # ---------------------------------------------------------------------------
 # All four tests use monkeypatch to replace the underlying ort.InferenceSession.run
 # so they are deterministic, fast, and independent of any real model download or
@@ -324,7 +324,7 @@ _BGE_SMALL = "BAAI/bge-small-en-v1.5"
 def _load_bge_small() -> TextEmbedding:
     """Load a small, widely-cached model. Uses lazy_load=False to ensure the
     ONNX session is initialised before monkeypatching."""
-    return TextEmbedding(model_name=_BGE_SMALL, lazy_load=False)
+    return TextEmbedding(model_name=_BGE_SMALL, lazy_load=False, cuda=False)
 
 
 def test_non_finite_nan_raises(monkeypatch) -> None:
