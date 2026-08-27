@@ -1,11 +1,11 @@
 from typing import Any, Iterable, Sequence, Type
 
-from fastembed.common.types import NumpyArray, OnnxProvider, Device
+from fastembed.common.model_description import DenseModelDescription, ModelSource
 from fastembed.common.onnx_model import OnnxOutputContext
+from fastembed.common.types import Device, NumpyArray, OnnxProvider
 from fastembed.common.utils import define_cache_dir, normalize
 from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
 from fastembed.text.text_embedding_base import TextEmbeddingBase
-from fastembed.common.model_description import DenseModelDescription, ModelSource
 
 supported_onnx_models: list[DenseModelDescription] = [
     DenseModelDescription(
@@ -179,6 +179,33 @@ supported_onnx_models: list[DenseModelDescription] = [
         size_in_GB=0.55,
         sources=ModelSource(hf="jinaai/jina-clip-v1"),
         model_file="onnx/text_model.onnx",
+    ),
+    DenseModelDescription(
+        model="minishlab/potion-base-8m",
+        dim=256,
+        description=("Text embeddings, Unimodal (text), English, 2024 year."),
+        license="mit",
+        size_in_GB=0.030,
+        sources=ModelSource(hf="minishlab/potion-base-8m-onnx"),
+        model_file="model.onnx",
+    ),
+    DenseModelDescription(
+        model="minishlab/potion-retrieval-32m",
+        dim=512,
+        description=("Text embeddings, Unimodal (text), English, 2025 year."),
+        license="mit",
+        size_in_GB=0.129,
+        sources=ModelSource(hf="minishlab/potion-retrieval-32m-onnx"),
+        model_file="model.onnx",
+    ),
+    DenseModelDescription(
+        model="minishlab/potion-multilingual-128m",
+        dim=256,
+        description=("Text embeddings, Unimodal (text), Multilingual, 2025 year."),
+        license="mit",
+        size_in_GB=0.512,
+        sources=ModelSource(hf="minishlab/potion-multilingual-128m-onnx"),
+        model_file="model.onnx",
     ),
 ]
 
