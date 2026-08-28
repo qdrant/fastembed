@@ -68,9 +68,12 @@ def make_model_dir(tmp_path_factory):
         config: dict[str, Any] | None = None,
         padding: dict[str, Any] | None = None,
         drop_from_tokenizer_config: tuple[str, ...] = (),
+        drop_files: tuple[str, ...] = (),
     ) -> Path:
         model_dir = tmp_path_factory.mktemp(f"model_dir_{next(counter)}")
         for file_name in TOKENIZER_FILES:
+            if file_name in drop_files:
+                continue
             shutil.copy(source_dir / file_name, model_dir / file_name)
 
         _patch_json(
@@ -78,7 +81,8 @@ def make_model_dir(tmp_path_factory):
             tokenizer_config or {},
             drop_from_tokenizer_config,
         )
-        _patch_json(model_dir / "config.json", config or {})
+        if "config.json" not in drop_files:
+            _patch_json(model_dir / "config.json", config or {})
         if padding is not None:
             _set_serialized_padding(model_dir / "tokenizer.json", padding)
 
@@ -230,3 +234,32 @@ def test_absent_max_context_keys_raise(make_model_dir) -> None:
 
     with pytest.raises(ValueError, match="Could not determine the maximum context length"):
         load_tokenizer(model_dir)
+
+
+# --- optional tokenizer metadata files (#686) ---------------------------------------------
+
+
+def test_load_tokenizer_without_config(make_model_dir) -> None:
+    """Without config.json the pad id is resolved from the tokenizer vocabulary."""
+    model_dir = make_model_dir(drop_files=("config.json",))
+
+    tokenizer, special_token_to_id = load_tokenizer(model_dir)
+
+    assert tokenizer.padding["pad_token"] == "[PAD]"
+    assert tokenizer.padding["pad_id"] == 0
+    assert special_token_to_id["[MASK]"] == 103
+
+
+def test_load_tokenizer_without_special_tokens_map(make_model_dir) -> None:
+    """Newer transformers releases stop writing the file; the tokenizer already knows them."""
+    model_dir = make_model_dir(drop_files=("special_tokens_map.json",))
+
+    _, special_token_to_id = load_tokenizer(model_dir)
+
+    assert special_token_to_id == {
+        "[PAD]": 0,
+        "[UNK]": 100,
+        "[CLS]": 101,
+        "[SEP]": 102,
+        "[MASK]": 103,
+    }
