@@ -181,7 +181,7 @@ supported_onnx_models: list[DenseModelDescription] = [
         model_file="onnx/text_model.onnx",
     ),
     DenseModelDescription(
-        model="minishlab/potion-base-8m",
+        model="minishlab/potion-base-8M",
         dim=256,
         description=(
             "Text embeddings, Unimodal (text), English, 512 input tokens truncation, "
