@@ -208,7 +208,7 @@ supported_onnx_models: list[DenseModelDescription] = [
         model="minishlab/potion-multilingual-128M",
         dim=256,
         description=(
-            "Text embeddings, Unimodal (text), English, 512 input tokens truncation, "
+            "Text embeddings, Unimodal (text), Multilingual, 512 input tokens truncation, "
             "Prefixes for queries/documents: not necessary, 2025 year."
         ),
         license="mit",
