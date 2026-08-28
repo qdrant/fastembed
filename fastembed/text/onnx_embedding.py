@@ -183,25 +183,34 @@ supported_onnx_models: list[DenseModelDescription] = [
     DenseModelDescription(
         model="minishlab/potion-base-8m",
         dim=256,
-        description=("Text embeddings, Extremely fast, Unimodal (text), English, 2024 year."),
+        description=(
+            "Text embeddings, Unimodal (text), English, 512 input tokens truncation, "
+            "Prefixes for queries/documents: not necessary, 2024 year."
+        ),
         license="mit",
         size_in_GB=0.030,
         sources=ModelSource(hf="minishlab/potion-base-8m-onnx"),
         model_file="model.onnx",
     ),
     DenseModelDescription(
-        model="minishlab/potion-retrieval-32m",
+        model="minishlab/potion-retrieval-32M",
         dim=512,
-        description=("Text embeddings, Extremely fast, Unimodal (text), English, 2025 year."),
+        description=(
+            "Text embeddings, Unimodal (text), English, 512 input tokens truncation, "
+            "Prefixes for queries/documents: not necessary, 2025 year."
+        ),
         license="mit",
         size_in_GB=0.129,
         sources=ModelSource(hf="minishlab/potion-retrieval-32m-onnx"),
         model_file="model.onnx",
     ),
     DenseModelDescription(
-        model="minishlab/potion-multilingual-128m",
+        model="minishlab/potion-multilingual-128M",
         dim=256,
-        description=("Text embeddings, Extremely fast, Unimodal (text), Multilingual, 2025 year."),
+        description=(
+            "Text embeddings, Unimodal (text), English, 512 input tokens truncation, "
+            "Prefixes for queries/documents: not necessary, 2025 year."
+        ),
         license="mit",
         size_in_GB=0.512,
         sources=ModelSource(hf="minishlab/potion-multilingual-128m-onnx"),
