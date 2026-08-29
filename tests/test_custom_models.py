@@ -29,7 +29,7 @@ def restore_custom_models_fixture():
 
 def test_text_custom_model():
     is_ci = os.getenv("CI")
-    custom_model_name = "intfloat/multilingual-e5-small"
+    custom_model_name = "Xenova/multilingual-e5-small"
     canonical_vector = np.array(
         [3.1317e-02, 3.0939e-02, -3.5117e-02, -6.7274e-02, 8.5084e-02], dtype=np.float32
     )
@@ -190,7 +190,7 @@ def test_mock_add_custom_models():
 
 def test_do_not_add_existing_model():
     existing_base_model = "sentence-transformers/all-MiniLM-L6-v2"
-    custom_model_name = "intfloat/multilingual-e5-small"
+    custom_model_name = "Xenova/multilingual-e5-small"
 
     with pytest.raises(ValueError, match=f"Model {existing_base_model} is already registered"):
         TextEmbedding.add_custom_model(
