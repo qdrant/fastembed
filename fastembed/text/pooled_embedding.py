@@ -71,6 +71,20 @@ supported_pooled_models: list[DenseModelDescription] = [
         model_file="onnx/model.onnx",
     ),
     DenseModelDescription(
+        model="intfloat/multilingual-e5-small",
+        dim=384,
+        description=(
+            "Text embeddings, Unimodal (text), Multilingual (~100 languages), 512 input tokens truncation, "
+            "Prefixes for queries/documents: necessary, 2024 year."
+        ),
+        license="mit",
+        size_in_GB=0.47,
+        sources=ModelSource(
+            hf="intfloat/multilingual-e5-small",
+        ),
+        model_file="onnx/model.onnx",
+    ),
+    DenseModelDescription(
         model="intfloat/multilingual-e5-large",
         dim=1024,
         description=(
