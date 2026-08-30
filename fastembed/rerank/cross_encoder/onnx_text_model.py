@@ -44,8 +44,11 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
             device_id=device_id,
             extra_session_options=extra_session_options,
         )
-        self.tokenizer, _ = load_tokenizer(model_dir=model_dir)
+        self._load_tokenizer(model_dir=model_dir)
         assert self.tokenizer is not None
+
+    def _load_tokenizer(self, model_dir: Path) -> None:
+        self.tokenizer, _ = load_tokenizer(model_dir=model_dir)
 
     def tokenize(self, pairs: list[tuple[str, str]], **_: Any) -> list[Encoding]:
         return self.tokenizer.encode_batch(pairs)  # type: ignore[union-attr]
@@ -168,8 +171,11 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
     def _token_count(
         self, pairs: Iterable[tuple[str, str]], batch_size: int = 1024, **_: Any
     ) -> int:
-        if not hasattr(self, "model") or self.model is None:
-            self.load_onnx_model()  # loads the tokenizer as well
+        if not hasattr(self, "tokenizer") or self.tokenizer is None:
+            model_dir = getattr(self, "_model_dir", None)
+            if model_dir is None:
+                raise ValueError("Tokenizer cannot be loaded before model files are resolved.")
+            self._load_tokenizer(model_dir=Path(model_dir))
 
         token_num = 0
         assert self.tokenizer is not None

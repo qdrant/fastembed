@@ -38,6 +38,9 @@ class OnnxTextModel(OnnxModel[T]):
         self.tokenizer: Tokenizer | None = None
         self.special_token_to_id: dict[str, int] = {}
 
+    def _load_tokenizer(self, model_dir: Path) -> None:
+        self.tokenizer, self.special_token_to_id = load_tokenizer(model_dir=model_dir)
+
     def _preprocess_onnx_input(
         self, onnx_input: dict[str, NumpyArray], **kwargs: Any
     ) -> dict[str, NumpyArray | NDArray[np.int64]]:
@@ -65,7 +68,7 @@ class OnnxTextModel(OnnxModel[T]):
             device_id=device_id,
             extra_session_options=extra_session_options,
         )
-        self.tokenizer, self.special_token_to_id = load_tokenizer(model_dir=model_dir)
+        self._load_tokenizer(model_dir=model_dir)
 
     def load_onnx_model(self) -> None:
         raise NotImplementedError("Subclasses must implement this method")
@@ -167,8 +170,11 @@ class OnnxTextModel(OnnxModel[T]):
                 yield from self._post_process_onnx_output(batch, **kwargs)  # type: ignore
 
     def _token_count(self, texts: str | Iterable[str], batch_size: int = 1024, **_: Any) -> int:
-        if not hasattr(self, "model") or self.model is None:
-            self.load_onnx_model()  # loads the tokenizer as well
+        if not hasattr(self, "tokenizer") or self.tokenizer is None:
+            model_dir = getattr(self, "_model_dir", None)
+            if model_dir is None:
+                raise ValueError("Tokenizer cannot be loaded before model files are resolved.")
+            self._load_tokenizer(model_dir=Path(model_dir))
 
         token_num = 0
         assert self.tokenizer is not None

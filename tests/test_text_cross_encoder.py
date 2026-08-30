@@ -100,6 +100,9 @@ def test_lazy_load(model_name: str) -> None:
     assert not hasattr(model.model, "model")
     query = "What is the capital of France?"
     documents = ["Paris is the capital of France.", "Berlin is the capital of Germany."]
+    pairs = [(query, doc) for doc in documents]
+    assert model.token_count(pairs) > 0
+    assert not hasattr(model.model, "model")
     list(model.rerank(query, documents))
     assert hasattr(model.model, "model")
 
