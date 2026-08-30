@@ -237,12 +237,7 @@ class Bm25(SparseTextEmbeddingBase):
 
     def _stem(self, tokens: list[str]) -> list[str]:
         stemmed_tokens: list[str] = []
-        for token in tokens:
-            lower_token = token.lower()
-
-            if token in self.punctuation:
-                continue
-
+        for lower_token in tokens:
             if lower_token in self.stopwords:
                 continue
 
