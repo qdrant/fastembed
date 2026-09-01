@@ -1,6 +1,6 @@
 import json
-from typing import Any
 from pathlib import Path
+from typing import Any
 
 from tokenizers import AddedToken, Tokenizer
 
@@ -10,7 +10,7 @@ from fastembed.image.transform.operators import Compose
 def load_special_tokens(model_dir: Path) -> dict[str, Any]:
     tokens_map_path = model_dir / "special_tokens_map.json"
     if not tokens_map_path.exists():
-        raise ValueError(f"Could not find special_tokens_map.json in {model_dir}")
+        return {}
 
     with open(str(tokens_map_path)) as tokens_map_file:
         tokens_map = json.load(tokens_map_file)
@@ -20,8 +20,6 @@ def load_special_tokens(model_dir: Path) -> dict[str, Any]:
 
 def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
     config_path = model_dir / "config.json"
-    if not config_path.exists():
-        raise ValueError(f"Could not find config.json in {model_dir}")
 
     tokenizer_path = model_dir / "tokenizer.json"
     if not tokenizer_path.exists():
@@ -31,14 +29,17 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
     if not tokenizer_config_path.exists():
         raise ValueError(f"Could not find tokenizer_config.json in {model_dir}")
 
-    with open(str(config_path)) as config_file:
-        config = json.load(config_file)
+    has_config = config_path.exists()
+    config = {}
+    if has_config:
+        with open(str(config_path)) as config_file:
+            config = json.load(config_file)
 
     with open(str(tokenizer_config_path)) as tokenizer_config_file:
         tokenizer_config = json.load(tokenizer_config_file)
-        assert "model_max_length" in tokenizer_config or "max_length" in tokenizer_config, (
-            "Models without model_max_length or max_length are not supported."
-        )
+        assert (
+            "model_max_length" in tokenizer_config or "max_length" in tokenizer_config
+        ), "Models without model_max_length or max_length are not supported."
         if "model_max_length" not in tokenizer_config:
             max_context = tokenizer_config["max_length"]
         elif "max_length" not in tokenizer_config:
@@ -51,8 +52,16 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
     tokenizer = Tokenizer.from_file(str(tokenizer_path))
     tokenizer.enable_truncation(max_length=max_context)
     if not tokenizer.padding:
+        pad_token = tokenizer_config["pad_token"]
+        if has_config:
+            pad_token_id = config.get("pad_token_id", 0)
+        else:
+            pad_token_id = tokenizer.token_to_id(pad_token)
+        if pad_token_id is None:
+            raise ValueError(f"Could not find pad token {pad_token!r} in {tokenizer_path}")
         tokenizer.enable_padding(
-            pad_id=config.get("pad_token_id", 0), pad_token=tokenizer_config["pad_token"]
+            pad_id=pad_token_id,
+            pad_token=pad_token,
         )
 
     for token in tokens_map.values():
@@ -61,14 +70,11 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
         elif isinstance(token, dict):
             tokenizer.add_special_tokens([AddedToken(**token)])
 
-    special_token_to_id: dict[str, int] = {}
-
-    for token in tokens_map.values():
-        if isinstance(token, str):
-            special_token_to_id[token] = tokenizer.token_to_id(token)
-        elif isinstance(token, dict):
-            token_str = token.get("content", "")
-            special_token_to_id[token_str] = tokenizer.token_to_id(token_str)
+    special_token_to_id = {
+        token.content: token_id
+        for token_id, token in tokenizer.get_added_tokens_decoder().items()
+        if token.special
+    }
 
     return tokenizer, special_token_to_id
 
