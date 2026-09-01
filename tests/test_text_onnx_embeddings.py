@@ -308,3 +308,71 @@ def test_token_count(model_cache, model_name) -> None:
         doc_token_count = model.token_count(documents)
         assert first_doc_token_count + second_doc_token_count == doc_token_count
         assert doc_token_count == model.token_count(documents, batch_size=1)
+
+
+# ---------------------------------------------------------------------------
+# Regression tests for issue #688 - non-finite embedding guard
+# ---------------------------------------------------------------------------
+# All four tests use monkeypatch to replace the underlying ort.InferenceSession.run
+# so they are deterministic, fast, and independent of any real model download or
+# specific ONNX Runtime version.
+# ---------------------------------------------------------------------------
+
+_BGE_SMALL = "BAAI/bge-small-en-v1.5"
+
+
+def _load_bge_small() -> TextEmbedding:
+    """Load a small, widely-cached model. Uses lazy_load=False to ensure the
+    ONNX session is initialised before monkeypatching."""
+    return TextEmbedding(model_name=_BGE_SMALL, lazy_load=False, cuda=False)
+
+
+def test_non_finite_nan_raises(monkeypatch) -> None:
+    """NaN values must raise RuntimeError with model name and provider (issue #688).
+
+    Verifies the full diagnostic message so users can immediately identify which
+    model/provider combination produced the bad output.
+    """
+    model = _load_bge_small()
+    monkeypatch.setattr(
+        model.model.model,
+        "run",
+        lambda *args, **kwargs: [np.full((1, 5, 384), np.nan, dtype=np.float32)],
+    )
+    with pytest.raises(
+        RuntimeError,
+        match=r"Model 'BAAI/bge-small-en-v1\.5' produced non-finite.*CPUExecutionProvider",
+    ):
+        list(model.embed(["test"]))
+
+
+def test_non_finite_pos_inf_raises(monkeypatch) -> None:
+    """+Inf values in ONNX output must raise RuntimeError (issue #688)."""
+    model = _load_bge_small()
+    monkeypatch.setattr(
+        model.model.model,
+        "run",
+        lambda *args, **kwargs: [np.full((1, 5, 384), np.inf, dtype=np.float32)],
+    )
+    with pytest.raises(RuntimeError, match="non-finite"):
+        list(model.embed(["test"]))
+
+
+def test_non_finite_neg_inf_raises(monkeypatch) -> None:
+    """-Inf values in ONNX output must raise RuntimeError (issue #688)."""
+    model = _load_bge_small()
+    monkeypatch.setattr(
+        model.model.model,
+        "run",
+        lambda *args, **kwargs: [np.full((1, 5, 384), -np.inf, dtype=np.float32)],
+    )
+    with pytest.raises(RuntimeError, match="non-finite"):
+        list(model.embed(["test"]))
+
+
+def test_non_finite_finite_output_succeeds() -> None:
+    """Sanity check: finite ONNX output must not raise (issue #688)."""
+    model = _load_bge_small()
+    results = list(model.embed(["test"]))
+    assert len(results) == 1
+    assert np.all(np.isfinite(results[0]))
