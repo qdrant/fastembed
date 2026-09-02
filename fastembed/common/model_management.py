@@ -282,6 +282,49 @@ class ModelManagement(Generic[T]):
         return result
 
     @classmethod
+    def resolve_local_source(cls, model: T, hf_source: str) -> Path | None:
+        """
+        Resolves an `hf` source which points to a local directory instead of a HuggingFace repo id.
+
+        A repo id never refers to an existing directory, so an `hf` source is treated as a local
+        model whenever it resolves to one. This mirrors the way HuggingFace libraries accept either
+        a repo id or a path, and makes it possible to load custom models straight from disk.
+
+        Args:
+            model (T): The model description.
+            hf_source (str): The `hf` field of the model source.
+
+        raises:
+            ValueError: If the directory does not contain all the files the model requires.
+
+        Returns:
+            Optional[Path]: The path to the local model directory, None if the source is a repo id.
+        """
+        model_dir = Path(hf_source).expanduser()
+        if not model_dir.is_dir():
+            return None
+
+        local_root = model_dir.absolute()
+
+        def _is_required_local_file(file: str) -> bool:
+            candidate = Path(os.path.abspath(local_root / file))
+            try:
+                candidate.relative_to(local_root)
+            except ValueError:
+                return False
+            return candidate.is_file()
+
+        required_files = [model.model_file, *model.additional_files]
+        missing_files = [file for file in required_files if not _is_required_local_file(file)]
+        if missing_files:
+            raise ValueError(
+                f"Local directory {model_dir} for model {model.model} is missing the following "
+                f"files: {', '.join(missing_files)}."
+            )
+
+        return model_dir
+
+    @classmethod
     def decompress_to_cache(cls, targz_path: str, cache_dir: str) -> str:
         """
         Decompresses a .tar.gz file to a cache directory.
@@ -410,6 +453,10 @@ class ModelManagement(Generic[T]):
         extra_patterns.extend(model.additional_files)
 
         if hf_source:
+            local_source = cls.resolve_local_source(model, hf_source)
+            if local_source is not None:
+                return local_source
+
             try:
                 cache_kwargs = deepcopy(kwargs)
                 cache_kwargs["local_files_only"] = True
