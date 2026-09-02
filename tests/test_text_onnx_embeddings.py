@@ -70,6 +70,7 @@ CANONICAL_VECTOR_VALUES = {
     "Qdrant/clip-ViT-B-32-text": np.array([0.0083, 0.0103, -0.0138, 0.0199, -0.0069]),
     "thenlper/gte-base": np.array([0.0038, 0.0355, 0.0181, 0.0092, 0.0654]),
     "jinaai/jina-clip-v1": np.array([-0.0862, -0.0101, -0.0056, 0.0375, -0.0472]),
+    "BAAI/bge-m3": np.array([-0.0403941, 0.03703506, -0.02897445, 0.01611726, -0.03569157]),
     "google/embeddinggemma-300m": np.array(
         [-0.08181356, 0.0214127, 0.05120273, -0.03690156, -0.0254504]
     ),
