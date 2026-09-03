@@ -12,8 +12,8 @@ supported_builtin_sentence_embedding_models: list[DenseModelDescription] = [
         model="ibm-granite/granite-embedding-small-english-r2",
         dim=384,
         description=(
-            "Text embeddings, Unimodal (text), English, 512 input tokens truncation, "
-            "Granite small english r2 model. 2024 year."
+            "Text embeddings, Unimodal (text), English, 8192 input tokens truncation, "
+            "Granite small english r2 model. 2025 year."
         ),
         license="apache-2.0",
         size_in_GB=0.18,
