@@ -31,6 +31,9 @@ CANONICAL_VECTOR_VALUES = {
     "BAAI/bge-large-en-v1.5-quantized": np.array(
         [0.03434538, 0.03316108, 0.02191251, -0.03713358, -0.01577825]
     ),
+    "ibm-granite/granite-embedding-small-english-r2": np.array(
+        [0.47021756, -0.08181943, -0.97021246, 0.10116885, -0.16487208]
+    ),
     "sentence-transformers/all-MiniLM-L6-v2": np.array(
         [-0.034478, 0.03102, 0.00673, 0.02611, -0.039362]
     ),
