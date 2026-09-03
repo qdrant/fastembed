@@ -21,9 +21,11 @@ from tests.utils import delete_model_cache
 @pytest.fixture(autouse=True)
 def restore_custom_models_fixture():
     CustomTextEmbedding.SUPPORTED_MODELS = []
+    CustomTextEmbedding.POSTPROCESSING_MAPPING = {}
     CustomTextCrossEncoder.SUPPORTED_MODELS = []
     yield
     CustomTextEmbedding.SUPPORTED_MODELS = []
+    CustomTextEmbedding.POSTPROCESSING_MAPPING = {}
     CustomTextCrossEncoder.SUPPORTED_MODELS = []
 
 
@@ -250,3 +252,41 @@ def test_do_not_add_existing_cross_encoder():
         )
 
     CustomTextCrossEncoder.SUPPORTED_MODELS.clear()
+
+
+def test_custom_model_postprocessing_lookup_is_case_insensitive():
+    """A custom model may be registered and instantiated with different casing.
+
+    `TextEmbedding` resolves model names case-insensitively, so
+    `CustomTextEmbedding` has to look its postprocessing config up by the resolved
+    canonical name rather than by whatever string the caller happened to type.
+    """
+    TextEmbedding.add_custom_model(
+        "Org/Model",
+        pooling=PoolingType.MEAN,
+        normalization=True,
+        sources=ModelSource(hf="intfloat/multilingual-e5-small"),
+        dim=384,
+    )
+
+    model = TextEmbedding("org/model", lazy_load=True).model
+
+    assert model.model_description.model == "Org/Model"
+    assert model._pooling == PoolingType.MEAN
+    assert model._normalization is True
+
+
+def test_custom_model_postprocessing_lookup_with_matching_case_still_works():
+    """Control: the exact-casing path worked before and must keep working."""
+    TextEmbedding.add_custom_model(
+        "Org/Model",
+        pooling=PoolingType.CLS,
+        normalization=False,
+        sources=ModelSource(hf="intfloat/multilingual-e5-small"),
+        dim=384,
+    )
+
+    model = TextEmbedding("Org/Model", lazy_load=True).model
+
+    assert model._pooling == PoolingType.CLS
+    assert model._normalization is False
