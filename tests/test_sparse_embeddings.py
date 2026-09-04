@@ -4,7 +4,7 @@ from contextlib import contextmanager
 import pytest
 import numpy as np
 
-from fastembed.sparse.bm25 import Bm25
+from fastembed.sparse.bm25 import Bm25, normalize_persian
 from fastembed.sparse.sparse_text_embedding import SparseTextEmbedding
 from tests.utils import delete_model_cache, should_test_model
 
@@ -155,6 +155,31 @@ def model_cache():
 
 
 docs = ["Hello World"]
+
+
+@pytest.fixture()
+def local_bm25_model_dir(tmp_path):
+    (tmp_path / "mock.file").write_text("", encoding="utf-8")
+
+    (tmp_path / "persian.txt").write_text(
+        """این
+است
+می
+به
+از
+که
+برای
+با
+در
+را
+و
+اما
+یک
+""",
+        encoding="utf-8",
+    )
+
+    return tmp_path
 
 
 @pytest.mark.parametrize(
@@ -309,6 +334,127 @@ def test_disable_stemmer_behavior(disable_stemmer: bool) -> None:
     else:
         expected = ["quick", "brown", "fox", "test", "sentenc"]
     assert result == expected, f"Expected {expected}, but got {result}"
+
+
+def test_persian_normalization() -> None:
+    assert normalize_persian("\u0639\u0644\u064a") == "\u0639\u0644\u06cc"
+    assert normalize_persian("\u0643\u0631\u064a\u0645") == "\u06a9\u0631\u06cc\u0645"
+
+
+def test_bm25_persian_resource_is_requested() -> None:
+    model_description = Bm25._get_model_description("Qdrant/bm25")
+
+    assert "persian.txt" in model_description.additional_files
+
+
+def test_bm25_accepts_persian_without_snowball_stemmer(local_bm25_model_dir) -> None:
+    model = Bm25(
+        "Qdrant/bm25",
+        language="persian",
+        specific_model_path=str(local_bm25_model_dir),
+    )
+
+    assert model.stemmer is None
+    assert {"این", "است", "می"} <= model.stopwords
+
+
+def test_bm25_persian_stopwords_are_loaded(local_bm25_model_dir) -> None:
+    model = Bm25(
+        "Qdrant/bm25",
+        language="persian",
+        specific_model_path=str(local_bm25_model_dir),
+    )
+
+    assert model._stem(["این", "یک", "متن"]) == [
+        "متن",
+    ]
+
+    assert model._stem(["کریم", "متن"]) == [
+        "کریم",
+        "متن",
+    ]
+
+
+def test_bm25_persian_embedding_works(local_bm25_model_dir) -> None:
+    model = Bm25(
+        "Qdrant/bm25",
+        language="persian",
+        specific_model_path=str(local_bm25_model_dir),
+    )
+
+    embedding = next(
+        iter(
+            model.embed(
+                [
+                    "\u0627\u06cc\u0646 \u06cc\u06a9 \u0645\u062a\u0646 "
+                    "\u0641\u0627\u0631\u0633\u06cc \u0627\u0633\u062a"
+                ]
+            )
+        )
+    )
+
+    assert len(embedding.indices) > 0
+    assert len(embedding.indices) == len(embedding.values)
+
+
+def test_bm25_persian_normalization_keeps_query_and_document_consistent(
+    local_bm25_model_dir,
+) -> None:
+    model = Bm25(
+        "Qdrant/bm25",
+        language="persian",
+        specific_model_path=str(local_bm25_model_dir),
+    )
+
+    document_embedding = next(
+        iter(
+            model.embed(
+                ["\u062f\u0627\u0646\u0634\u06af\u0627\u0647 \u062a\u0647\u0631\u0627\u0646"]
+            )
+        )
+    )
+    query_embedding = next(iter(model.query_embed(["\u062f\u0627\u0646\u0634\u06af\u0627\u0647"])))
+
+    assert set(document_embedding.indices).intersection(query_embedding.indices)
+
+
+def test_bm25_persian_normalizes_arabic_yeh_and_kaf_to_same_sparse_dimension(
+    local_bm25_model_dir,
+) -> None:
+    model = Bm25(
+        "Qdrant/bm25",
+        language="persian",
+        specific_model_path=str(local_bm25_model_dir),
+    )
+
+    arabic_forms = next(iter(model.query_embed(["\u0643\u064a\u0627\u0646"])))
+    persian_forms = next(iter(model.query_embed(["\u06a9\u06cc\u0627\u0646"])))
+
+    assert arabic_forms.indices.tolist() == persian_forms.indices.tolist()
+    assert len(arabic_forms.indices) == 1
+
+
+def test_bm25_persian_parallel_embedding(local_bm25_model_dir) -> None:
+    model = Bm25(
+        "Qdrant/bm25",
+        language="persian",
+        specific_model_path=str(local_bm25_model_dir),
+    )
+    documents = [
+        "\u062f\u0627\u0646\u0634\u06af\u0627\u0647 \u062a\u0647\u0631\u0627\u0646",
+        "\u0627\u06cc\u0646 \u0645\u062a\u0646 \u0641\u0627\u0631\u0633\u06cc \u0627\u0633\u062a",
+    ] * 3
+
+    parallel_embeddings = list(model.embed(documents, batch_size=1, parallel=2))
+    single_process_embeddings = list(model.embed(documents, batch_size=1, parallel=None))
+
+    assert len(parallel_embeddings) == len(single_process_embeddings) == len(documents)
+    for parallel_embedding, single_process_embedding in zip(
+        parallel_embeddings,
+        single_process_embeddings,
+    ):
+        assert np.array_equal(parallel_embedding.indices, single_process_embedding.indices)
+        assert np.allclose(parallel_embedding.values, single_process_embedding.values)
 
 
 def test_if_splade_query_embed_is_inference_free() -> None:
