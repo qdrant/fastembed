@@ -62,6 +62,10 @@ def test_last_token_pooling_with_left_padding():
 
 
 def test_load_tokenizer_fixed_length_padding_converted_to_dynamic(tmp_path):
+    """
+    Verify that models with serialized fixed-length padding (e.g. gte-base with length=128)
+    have their padding relaxed to dynamic batch padding (length=None) to support mixed-length batches.
+    """
     import json
 
     from tokenizers import Tokenizer, models
@@ -100,6 +104,10 @@ def test_load_tokenizer_fixed_length_padding_converted_to_dynamic(tmp_path):
 
 
 def test_load_tokenizer_preserves_left_padding(tmp_path):
+    """
+    Verify that tokenizers with serialized left padding (e.g. ColModernVBERT)
+    preserve their padding direction and pad_token_id without being overridden.
+    """
     import json
 
     from tokenizers import Tokenizer, models
@@ -133,3 +141,66 @@ def test_load_tokenizer_preserves_left_padding(tmp_path):
     assert loaded_tokenizer.padding["length"] is None
     assert loaded_tokenizer.padding["direction"] == "left"
     assert loaded_tokenizer.padding["pad_id"] == 50283
+
+
+def test_load_tokenizer_pad_to_multiple_of_and_validation(tmp_path):
+    """
+    Verify pad_to_multiple_of configuration precedence (tokenizer_config > config fallback),
+    application to unpadded and serialized tokenizers, and validation of positive integer values.
+    """
+    import json
+
+    import pytest
+    from tokenizers import Tokenizer, models
+
+    from fastembed.common.preprocessor_utils import load_tokenizer
+
+    # 1. Test pad_to_multiple_of via config.json fallback
+    dir_fallback = tmp_path / "fallback"
+    dir_fallback.mkdir()
+    (dir_fallback / "config.json").write_text(
+        json.dumps({"pad_token_id": 0, "pad_to_multiple_of": 16})
+    )
+    (dir_fallback / "tokenizer_config.json").write_text(
+        json.dumps({"model_max_length": 128, "pad_token": "[PAD]"})
+    )
+    (dir_fallback / "special_tokens_map.json").write_text(json.dumps({"pad_token": "[PAD]"}))
+    tok = Tokenizer(models.BPE())
+    tok.add_special_tokens(["[PAD]"])
+    tok.save(str(dir_fallback / "tokenizer.json"))
+
+    loaded_tok, _ = load_tokenizer(dir_fallback)
+    assert loaded_tok.padding is not None
+    assert loaded_tok.padding.get("pad_to_multiple_of") == 16
+
+    # 2. Test tokenizer_config.json precedence over config.json
+    dir_prec = tmp_path / "prec"
+    dir_prec.mkdir()
+    (dir_prec / "config.json").write_text(
+        json.dumps({"pad_token_id": 0, "pad_to_multiple_of": 16})
+    )
+    (dir_prec / "tokenizer_config.json").write_text(
+        json.dumps({"model_max_length": 128, "pad_token": "[PAD]", "pad_to_multiple_of": 8})
+    )
+    (dir_prec / "special_tokens_map.json").write_text(json.dumps({"pad_token": "[PAD]"}))
+    tok.save(str(dir_prec / "tokenizer.json"))
+
+    loaded_tok, _ = load_tokenizer(dir_prec)
+    assert loaded_tok.padding is not None
+    assert loaded_tok.padding.get("pad_to_multiple_of") == 8
+
+    # 3. Test validation error on invalid pad_to_multiple_of (<= 0 or non-integer)
+    for invalid_val in [0, -1, "8", False]:
+        dir_invalid = tmp_path / f"invalid_{invalid_val}"
+        dir_invalid.mkdir()
+        (dir_invalid / "config.json").write_text(json.dumps({"pad_token_id": 0}))
+        (dir_invalid / "tokenizer_config.json").write_text(
+            json.dumps(
+                {"model_max_length": 128, "pad_token": "[PAD]", "pad_to_multiple_of": invalid_val}
+            )
+        )
+        (dir_invalid / "special_tokens_map.json").write_text(json.dumps({"pad_token": "[PAD]"}))
+        tok.save(str(dir_invalid / "tokenizer.json"))
+
+        with pytest.raises(ValueError, match="pad_to_multiple_of must be a positive integer"):
+            load_tokenizer(dir_invalid)
