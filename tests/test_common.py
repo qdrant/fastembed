@@ -59,3 +59,28 @@ def test_last_token_pooling_with_left_padding():
     pooled = last_token_pooling(token_embeddings, attention_mask)
 
     assert np.allclose(pooled, [[2.0, 2.0], [6.0, 6.0]])
+
+
+def test_load_tokenizer_with_pad_to_multiple_of(tmp_path):
+    import json
+    from fastembed.common.preprocessor_utils import load_tokenizer
+
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+
+    (model_dir / "config.json").write_text(json.dumps({"pad_token_id": 0}))
+    (model_dir / "tokenizer_config.json").write_text(
+        json.dumps({"model_max_length": 128, "pad_token": "<pad>", "pad_to_multiple_of": 8})
+    )
+    (model_dir / "special_tokens_map.json").write_text(json.dumps({}))
+
+    from tokenizers import Tokenizer
+    from tokenizers.models import BPE
+
+    tokenizer = Tokenizer(BPE())
+    tokenizer.save(str(model_dir / "tokenizer.json"))
+
+    loaded_tokenizer, _ = load_tokenizer(model_dir)
+
+    assert loaded_tokenizer.padding is not None
+    assert loaded_tokenizer.padding.get("pad_to_multiple_of") == 8
