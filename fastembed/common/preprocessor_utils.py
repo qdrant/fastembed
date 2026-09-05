@@ -1,6 +1,6 @@
 import json
-from typing import Any
 from pathlib import Path
+from typing import Any
 
 from tokenizers import AddedToken, Tokenizer
 
@@ -51,19 +51,18 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
     tokenizer = Tokenizer.from_file(str(tokenizer_path))
     tokenizer.enable_truncation(max_length=max_context)
     if not tokenizer.padding:
-        pad_to_multiple_of = (
-            tokenizer_config.get("pad_to_multiple_of")
-            if tokenizer_config.get("pad_to_multiple_of") is not None
-            else (
-                config.get("pad_to_multiple_of")
-                if config.get("pad_to_multiple_of") is not None
-                else tokenizer_config.get("pad_to_multiple_of")
-            )
-        )
         tokenizer.enable_padding(
-            pad_id=config.get("pad_token_id", 0),
-            pad_token=tokenizer_config["pad_token"],
-            pad_to_multiple_of=pad_to_multiple_of,
+            pad_id=config.get("pad_token_id", 0), pad_token=tokenizer_config["pad_token"]
+        )
+    elif tokenizer.padding.get("length") is not None:
+        padding_params = tokenizer.padding
+        tokenizer.enable_padding(
+            direction=padding_params.get("direction", "right"),
+            pad_id=padding_params.get("pad_id", config.get("pad_token_id", 0)),
+            pad_type_id=padding_params.get("pad_type_id", 0),
+            pad_token=padding_params.get("pad_token", tokenizer_config.get("pad_token", "[PAD]")),
+            pad_to_multiple_of=padding_params.get("pad_to_multiple_of"),
+            length=None,
         )
 
     for token in tokens_map.values():
