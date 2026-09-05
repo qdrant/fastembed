@@ -1,11 +1,11 @@
 import numpy as np
 
 from fastembed import (
-    TextEmbedding,
-    SparseTextEmbedding,
     ImageEmbedding,
     LateInteractionMultimodalEmbedding,
     LateInteractionTextEmbedding,
+    SparseTextEmbedding,
+    TextEmbedding,
 )
 from fastembed.common.utils import last_token_pooling
 
@@ -23,13 +23,13 @@ def test_text_list_supported_models():
         description = supported_models[0]
         assert isinstance(description, dict)
 
-        assert "model" in description and description["model"]
+        assert description.get("model")
         if model_type != SparseTextEmbedding:
-            assert "dim" in description and description["dim"]
-        assert "license" in description and description["license"]
-        assert "size_in_GB" in description and description["size_in_GB"]
-        assert "model_file" in description and description["model_file"]
-        assert "sources" in description and description["sources"]
+            assert description.get("dim")
+        assert description.get("license")
+        assert description.get("size_in_GB")
+        assert description.get("model_file")
+        assert description.get("sources")
         assert "hf" in description["sources"] or "url" in description["sources"]
 
 
@@ -61,26 +61,75 @@ def test_last_token_pooling_with_left_padding():
     assert np.allclose(pooled, [[2.0, 2.0], [6.0, 6.0]])
 
 
-def test_load_tokenizer_with_pad_to_multiple_of(tmp_path):
+def test_load_tokenizer_fixed_length_padding_converted_to_dynamic(tmp_path):
     import json
+
+    from tokenizers import Tokenizer, models
+
     from fastembed.common.preprocessor_utils import load_tokenizer
 
-    model_dir = tmp_path / "model"
-    model_dir.mkdir()
+    config = {"pad_token_id": 0}
+    with open(tmp_path / "config.json", "w") as f:
+        json.dump(config, f)
 
-    (model_dir / "config.json").write_text(json.dumps({"pad_token_id": 0}))
-    (model_dir / "tokenizer_config.json").write_text(
-        json.dumps({"model_max_length": 128, "pad_token": "<pad>", "pad_to_multiple_of": 8})
-    )
-    (model_dir / "special_tokens_map.json").write_text(json.dumps({}))
+    tokenizer_config = {
+        "model_max_length": 512,
+        "pad_token": "[PAD]",
+    }
+    with open(tmp_path / "tokenizer_config.json", "w") as f:
+        json.dump(tokenizer_config, f)
 
-    from tokenizers import Tokenizer
-    from tokenizers.models import BPE
+    with open(tmp_path / "special_tokens_map.json", "w") as f:
+        json.dump({"pad_token": "[PAD]"}, f)
 
-    tokenizer = Tokenizer(BPE())
-    tokenizer.save(str(model_dir / "tokenizer.json"))
+    # Tokenizer initialized with fixed-length padding (e.g. gte-base with length=128)
+    tokenizer = Tokenizer(models.BPE())
+    tokenizer.add_special_tokens(["[PAD]"])
+    tokenizer.enable_padding(length=128, pad_id=0, pad_token="[PAD]", direction="right")
+    tokenizer.save(str(tmp_path / "tokenizer.json"))
 
-    loaded_tokenizer, _ = load_tokenizer(model_dir)
+    loaded_tokenizer, _ = load_tokenizer(tmp_path)
 
+    # Fixed length must be relaxed to None (dynamic batch padding) to prevent ragged arrays
     assert loaded_tokenizer.padding is not None
-    assert loaded_tokenizer.padding.get("pad_to_multiple_of") == 8
+    assert loaded_tokenizer.padding["length"] is None
+    assert loaded_tokenizer.padding["direction"] == "right"
+    assert loaded_tokenizer.padding["pad_id"] == 0
+    assert loaded_tokenizer.padding["pad_token"] == "[PAD]"
+    assert loaded_tokenizer.truncation["max_length"] == 512
+
+
+def test_load_tokenizer_preserves_left_padding(tmp_path):
+    import json
+
+    from tokenizers import Tokenizer, models
+
+    from fastembed.common.preprocessor_utils import load_tokenizer
+
+    config = {"pad_token_id": 50283}
+    with open(tmp_path / "config.json", "w") as f:
+        json.dump(config, f)
+
+    tokenizer_config = {
+        "model_max_length": 8192,
+        "pad_token": "[PAD]",
+    }
+    with open(tmp_path / "tokenizer_config.json", "w") as f:
+        json.dump(tokenizer_config, f)
+
+    with open(tmp_path / "special_tokens_map.json", "w") as f:
+        json.dump({"pad_token": "[PAD]"}, f)
+
+    # Tokenizer with dynamic left padding (e.g. ColModernVBERT)
+    tokenizer = Tokenizer(models.BPE())
+    tokenizer.add_special_tokens(["[PAD]"])
+    tokenizer.enable_padding(length=None, pad_id=50283, pad_token="[PAD]", direction="left")
+    tokenizer.save(str(tmp_path / "tokenizer.json"))
+
+    loaded_tokenizer, _ = load_tokenizer(tmp_path)
+
+    # Preserves left padding direction and pad_id
+    assert loaded_tokenizer.padding is not None
+    assert loaded_tokenizer.padding["length"] is None
+    assert loaded_tokenizer.padding["direction"] == "left"
+    assert loaded_tokenizer.padding["pad_id"] == 50283
