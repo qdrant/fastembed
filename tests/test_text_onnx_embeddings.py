@@ -82,6 +82,15 @@ CANONICAL_VECTOR_VALUES = {
     "google/siglip2-base-patch16-224": np.array(
         [-0.01181389, 0.00737596, 0.01118064, 0.0103095, 0.3451049]
     ),
+    "minishlab/potion-base-8M": np.array(
+        [-0.03432461, -0.08020256, -0.14396408, 0.08480079, 0.01958815]
+    ),
+    "minishlab/potion-retrieval-32M": np.array(
+        [0.019733, -0.01530093, -0.08678473, 0.0229059, 0.04700558]
+    ),
+    "minishlab/potion-multilingual-128M": np.array(
+        [0.02366836, 0.02973341, 0.05140258, -0.00745248, -0.06740689]
+    ),
 }
 
 QWEN3_INSTRUCT_PREFIX = (
