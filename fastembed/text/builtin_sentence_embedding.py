@@ -51,7 +51,9 @@ class BuiltinSentenceEmbedding(OnnxTextEmbedding):
     def _run_model(
         self, onnx_input: dict[str, Any], onnx_output_names: list[str] | None = None
     ) -> NumpyArray:
-        return self.model.run(onnx_output_names, onnx_input)[1]  # type: ignore[union-attr]
+        model_output = self.model.run(onnx_output_names, onnx_input)[1]  # type: ignore[union-attr]
+        self._check_output_finite(model_output)
+        return model_output
 
 
 class BuiltinSentenceEmbeddingWorker(OnnxTextEmbeddingWorker):
