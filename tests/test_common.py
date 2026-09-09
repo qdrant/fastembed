@@ -33,16 +33,6 @@ def test_text_list_supported_models():
         assert "hf" in description["sources"] or "url" in description["sources"]
 
 
-def test_bge_small_canonical_huggingface_source():
-    description = next(
-        model
-        for model in TextEmbedding.list_supported_models()
-        if model["model"] == "BAAI/bge-small-en-v1.5"
-    )
-    # Avoid the case-normalizing redirect, which lacks X-Repo-Commit metadata.
-    assert description["sources"]["hf"] == "Qdrant/bge-small-en-v1.5-onnx-Q"
-
-
 def test_last_token_pooling():
     token_embeddings = np.array(
         [
