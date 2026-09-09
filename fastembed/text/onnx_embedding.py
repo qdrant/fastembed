@@ -77,7 +77,7 @@ supported_onnx_models: list[DenseModelDescription] = [
         ),
         license="mit",
         size_in_GB=0.067,
-        sources=ModelSource(hf="qdrant/bge-small-en-v1.5-onnx-q"),
+        sources=ModelSource(hf="Qdrant/bge-small-en-v1.5-onnx-Q"),
         model_file="model_optimized.onnx",
     ),
     DenseModelDescription(
