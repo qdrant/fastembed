@@ -250,3 +250,39 @@ def test_do_not_add_existing_cross_encoder():
         )
 
     CustomTextCrossEncoder.SUPPORTED_MODELS.clear()
+
+
+def test_text_custom_model_from_local_directory():
+    """A custom model can be sourced from a local directory instead of a HuggingFace repo id."""
+    is_ci = os.getenv("CI")
+    base_model_name = "sentence-transformers/all-MiniLM-L6-v2"
+    custom_model_name = "custom/all-MiniLM-L6-v2-local"
+    dim = 384
+    docs = ["hello world", "flag embedding"]
+
+    base_model = TextEmbedding(base_model_name)
+    local_dir = base_model.model._model_dir
+    expected = np.stack(list(base_model.embed(docs)), axis=0)
+
+    TextEmbedding.add_custom_model(
+        custom_model_name,
+        pooling=PoolingType.MEAN,
+        normalization=True,
+        sources=ModelSource(hf=str(local_dir)),
+        dim=dim,
+        model_file="model.onnx",
+        size_in_gb=0.09,
+    )
+
+    model = TextEmbedding(custom_model_name)
+    assert model.model._model_dir == local_dir
+
+    embeddings = np.stack(list(model.embed(docs)), axis=0)
+    assert embeddings.shape == (2, dim)
+    assert np.allclose(embeddings, expected, atol=1e-3)
+
+    if is_ci:
+        delete_model_cache(local_dir)
+
+    CustomTextEmbedding.SUPPORTED_MODELS.clear()
+    CustomTextEmbedding.POSTPROCESSING_MAPPING.clear()

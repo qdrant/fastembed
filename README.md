@@ -81,6 +81,22 @@ model = TextEmbedding(model_name="intfloat/multilingual-e5-small")
 embeddings = list(model.embed(documents))
 ```
 
+`hf` also accepts a path to a local directory holding the model files, which is handy for models which are not published on the Hub yet.
+
+```python
+from fastembed import TextEmbedding
+from fastembed.common.model_description import ModelSource, PoolingType
+
+TextEmbedding.add_custom_model(
+    model="my-org/my-model",
+    pooling=PoolingType.MEAN,
+    normalization=True,
+    sources=ModelSource(hf="/path/to/my-model"),  # a local directory is used as is, nothing is downloaded
+    dim=384,
+    model_file="onnx/model.onnx",  # resolved relative to the local directory
+)
+```
+
 
 ### 🔱 Sparse text embeddings
 
