@@ -1,14 +1,14 @@
-import os
-import time
 import json
+import os
 import shutil
 import tarfile
+import time
 from copy import deepcopy
 from pathlib import Path
-from typing import Any, TypeVar, Generic
+from typing import Any, Generic, TypeVar
 
 import requests
-from huggingface_hub import snapshot_download, model_info, list_repo_tree
+from huggingface_hub import HfApi, snapshot_download
 from huggingface_hub.hf_api import RepoFile
 from huggingface_hub.utils import (
     RepositoryNotFoundError,
@@ -17,6 +17,7 @@ from huggingface_hub.utils import (
 )
 from loguru import logger
 from tqdm import tqdm
+
 from fastembed.common.model_description import BaseModelDescription
 
 T = TypeVar("T", bound=BaseModelDescription)
@@ -214,6 +215,9 @@ class ModelManagement(Generic[T]):
         snapshot_dir = Path(cache_dir) / f"models--{hf_source_repo.replace('/', '--')}"
         metadata_file = snapshot_dir / cls.METADATA_FILE
 
+        hf_endpoint = kwargs.pop("endpoint", None) or os.environ.get("HF_ENDPOINT") or None
+        hf_api = HfApi(endpoint=hf_endpoint)
+
         if local_files_only:
             disable_progress_bars()
             if metadata_file.exists():
@@ -228,12 +232,15 @@ class ModelManagement(Generic[T]):
                 allow_patterns=allow_patterns,
                 cache_dir=cache_dir,
                 local_files_only=local_files_only,
+                endpoint=hf_endpoint,
                 **kwargs,
             )
             return result
 
-        repo_revision = model_info(hf_source_repo).sha
-        repo_tree = list(list_repo_tree(hf_source_repo, revision=repo_revision, repo_type="model"))
+        repo_revision = hf_api.model_info(hf_source_repo).sha
+        repo_tree = list(
+            hf_api.list_repo_tree(hf_source_repo, revision=repo_revision, repo_type="model")
+        )
 
         allowed_extensions = {".json", ".onnx", ".txt"}
         repo_files = (
@@ -260,6 +267,7 @@ class ModelManagement(Generic[T]):
             allow_patterns=allow_patterns,
             cache_dir=cache_dir,
             local_files_only=local_files_only,
+            endpoint=hf_endpoint,
             **kwargs,
         )
 
