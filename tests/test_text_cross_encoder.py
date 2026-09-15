@@ -93,6 +93,32 @@ def test_batch_rerank(model_cache, model_name: str) -> None:
         ), f"Model: {model_name}, Scores: {scores}, Expected: {canonical_scores}"
 
 
+@pytest.mark.parametrize("parallel", [None, 2])
+@pytest.mark.parametrize("pair_count", [0, 1, 2, 3])
+def test_rerank_tuple_of_pairs(model_cache, pair_count: int, parallel: int | None) -> None:
+    model_name = "Xenova/ms-marco-MiniLM-L-6-v2"
+    query = "What is the capital of France?"
+    documents = ["Paris is the capital of France.", "Berlin is the capital of Germany."] * 2
+    pairs = tuple((query, document) for document in documents[:pair_count])
+
+    with model_cache(model_name) as model:
+        scores = np.array(list(model.rerank_pairs(pairs, batch_size=2, parallel=parallel)))
+
+    expected = np.tile(CANONICAL_SCORE_VALUES[model_name], 2)[:pair_count]
+    np.testing.assert_allclose(scores, expected, atol=1e-3)
+
+
+@pytest.mark.parametrize("parallel", [None, 2])
+def test_rerank_single_pair(model_cache, parallel: int | None) -> None:
+    model_name = "Xenova/ms-marco-MiniLM-L-6-v2"
+    pair = ("What is the capital of France?", "Paris is the capital of France.")
+
+    with model_cache(model_name) as model:
+        scores = np.array(list(model.rerank_pairs(pair, batch_size=1, parallel=parallel)))
+
+    np.testing.assert_allclose(scores, CANONICAL_SCORE_VALUES[model_name][:1], atol=1e-3)
+
+
 @pytest.mark.parametrize("model_name", ["Xenova/ms-marco-MiniLM-L-6-v2"])
 def test_lazy_load(model_name: str) -> None:
     is_ci = os.getenv("CI")
