@@ -88,7 +88,15 @@ def normalize(
 
     std_arr = np.array(std_list, dtype=np.float32)
 
-    image_upd = ((image.T - mean_arr) / std_arr).T
+    # Broadcast along the channel axis: 0 for (C, H, W), 1 for a (N, C, H, W) batch.
+    # Transposing instead would reverse every axis and misalign the channels on 4D input.
+    channel_axis = 1 if image.ndim == 4 else 0
+    broadcast_shape = [1] * image.ndim
+    broadcast_shape[channel_axis] = num_channels
+    mean_arr = mean_arr.reshape(broadcast_shape)
+    std_arr = std_arr.reshape(broadcast_shape)
+
+    image_upd = (image - mean_arr) / std_arr
     return image_upd
 
 
