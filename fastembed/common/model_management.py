@@ -304,19 +304,43 @@ class ModelManagement(Generic[T]):
         try:
             # Open the tar.gz file
             with tarfile.open(targz_path, "r:gz") as tar:
+                cache_path = Path(cache_dir).resolve()
+                members = list(tar.getmembers())
+                for member in members:
+                    cls._validate_tar_member(member, cache_path)
+
                 # Extract all files into the cache directory
-                tar.extractall(
-                    path=cache_dir,
-                )
-        except tarfile.TarError as e:
+                try:
+                    tar.extractall(path=cache_dir, members=members, filter="data")
+                except TypeError:  # pragma: no cover - Python < 3.12
+                    tar.extractall(path=cache_dir, members=members)
+        except (tarfile.TarError, ValueError) as e:
             # If any error occurs while opening or extracting the tar.gz file,
             # delete the cache directory (if it was created in this function)
             # and raise the error again
-            if "tmp" in cache_dir:
+            if "tmp" in cache_dir and os.path.exists(cache_dir):
                 shutil.rmtree(cache_dir)
             raise ValueError(f"An error occurred while decompressing {targz_path}: {e}")
 
         return cache_dir
+
+    @staticmethod
+    def _validate_tar_member(member: tarfile.TarInfo, cache_path: Path) -> None:
+        target_path = (cache_path / member.name).resolve()
+        if not target_path.is_relative_to(cache_path):
+            raise ValueError(f"Unsafe tar member path: {member.name}")
+
+        if member.issym() or member.islnk():
+            link_name = Path(member.linkname)
+            if member.issym():
+                link_target = (
+                    link_name if link_name.is_absolute() else target_path.parent / link_name
+                )
+            else:
+                link_target = link_name if link_name.is_absolute() else cache_path / link_name
+
+            if not link_target.resolve().is_relative_to(cache_path):
+                raise ValueError(f"Unsafe tar link target: {member.name} -> {member.linkname}")
 
     @classmethod
     def retrieve_model_gcs(
