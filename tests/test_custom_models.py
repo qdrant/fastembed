@@ -21,9 +21,11 @@ from tests.utils import delete_model_cache
 @pytest.fixture(autouse=True)
 def restore_custom_models_fixture():
     CustomTextEmbedding.SUPPORTED_MODELS = []
+    CustomTextEmbedding.POSTPROCESSING_MAPPING = {}
     CustomTextCrossEncoder.SUPPORTED_MODELS = []
     yield
     CustomTextEmbedding.SUPPORTED_MODELS = []
+    CustomTextEmbedding.POSTPROCESSING_MAPPING = {}
     CustomTextCrossEncoder.SUPPORTED_MODELS = []
 
 
@@ -74,9 +76,6 @@ def test_text_custom_model():
     if is_ci:
         delete_model_cache(model.model._model_dir)
 
-    CustomTextEmbedding.SUPPORTED_MODELS.clear()
-    CustomTextEmbedding.POSTPROCESSING_MAPPING.clear()
-
 
 def test_cross_encoder_custom_model():
     is_ci = os.getenv("CI")
@@ -113,8 +112,6 @@ def test_cross_encoder_custom_model():
     assert np.allclose(embeddings, canonical_vector, atol=1e-3)
     if is_ci:
         delete_model_cache(model.model._model_dir)
-
-    CustomTextCrossEncoder.SUPPORTED_MODELS.clear()
 
 
 def test_mock_add_custom_models():
@@ -175,9 +172,6 @@ def test_mock_add_custom_models():
         )
         assert np.allclose(post_processed_output, expected_output[model_name], atol=1e-3)
 
-    CustomTextEmbedding.SUPPORTED_MODELS.clear()
-    CustomTextEmbedding.POSTPROCESSING_MAPPING.clear()
-
 
 def test_custom_text_model_lookup_is_case_insensitive():
     model_name = "Org/Model"
@@ -231,9 +225,6 @@ def test_do_not_add_existing_model():
             size_in_gb=0.47,
         )
 
-    CustomTextEmbedding.SUPPORTED_MODELS.clear()
-    CustomTextEmbedding.POSTPROCESSING_MAPPING.clear()
-
 
 def test_do_not_add_existing_cross_encoder():
     existing_base_model = "Xenova/ms-marco-MiniLM-L-6-v2"
@@ -258,5 +249,3 @@ def test_do_not_add_existing_cross_encoder():
             sources=ModelSource(hf=custom_model_name),
             size_in_gb=0.08,
         )
-
-    CustomTextCrossEncoder.SUPPORTED_MODELS.clear()
