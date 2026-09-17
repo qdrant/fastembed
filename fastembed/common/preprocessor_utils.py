@@ -36,15 +36,21 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
 
     with open(str(tokenizer_config_path)) as tokenizer_config_file:
         tokenizer_config = json.load(tokenizer_config_file)
-        assert "model_max_length" in tokenizer_config or "max_length" in tokenizer_config, (
-            "Models without model_max_length or max_length are not supported."
+        # HuggingFace tokenizer configs may set `model_max_length` or `max_length`
+        # to 0 (or omit them entirely) — both mean "no cap". Truthiness handles
+        # missing, None, and 0 uniformly so we don't disable truncation on
+        # unusual-but-valid tokenizer configs.
+        model_max_length = tokenizer_config.get("model_max_length")
+        max_length = tokenizer_config.get("max_length")
+        assert model_max_length or max_length, (
+            "Models without a non-zero model_max_length or max_length are not supported."
         )
-        if "model_max_length" not in tokenizer_config:
-            max_context = tokenizer_config["max_length"]
-        elif "max_length" not in tokenizer_config:
-            max_context = tokenizer_config["model_max_length"]
+        if not model_max_length:
+            max_context = max_length
+        elif not max_length:
+            max_context = model_max_length
         else:
-            max_context = min(tokenizer_config["model_max_length"], tokenizer_config["max_length"])
+            max_context = min(model_max_length, max_length)
 
     tokens_map = load_special_tokens(model_dir)
 
