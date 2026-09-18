@@ -1,6 +1,6 @@
 import json
-from typing import Any
 from pathlib import Path
+from typing import Any
 
 from tokenizers import AddedToken, Tokenizer
 
@@ -19,6 +19,25 @@ def load_special_tokens(model_dir: Path) -> dict[str, Any]:
 
 
 def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
+    """
+    Load and configure a tokenizer from a model directory.
+
+    Configures truncation to the model context length, converts any fixed-length
+    padding to dynamic batch padding (avoiding ragged batch failures), preserves
+    serialized padding direction and token IDs, and optionally applies padding
+    multiples (e.g. pad_to_multiple_of) when configured.
+
+    Args:
+        model_dir: Directory path containing tokenizer configuration files
+            (config.json, tokenizer.json, tokenizer_config.json, special_tokens_map.json).
+
+    Returns:
+        A tuple of (configured Tokenizer instance, mapping of special token strings to token IDs).
+
+    Raises:
+        ValueError: If required configuration files are missing or if pad_to_multiple_of
+            is not a positive integer.
+    """
     config_path = model_dir / "config.json"
     if not config_path.exists():
         raise ValueError(f"Could not find config.json in {model_dir}")
@@ -50,10 +69,52 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
 
     tokenizer = Tokenizer.from_file(str(tokenizer_path))
     tokenizer.enable_truncation(max_length=max_context)
+
+    pad_to_multiple_of = tokenizer_config.get("pad_to_multiple_of")
+    if pad_to_multiple_of is None:
+        pad_to_multiple_of = config.get("pad_to_multiple_of")
+
+    if pad_to_multiple_of is not None and (
+        not isinstance(pad_to_multiple_of, int)
+        or isinstance(pad_to_multiple_of, bool)
+        or pad_to_multiple_of <= 0
+    ):
+        raise ValueError("pad_to_multiple_of must be a positive integer")
+
     if not tokenizer.padding:
         tokenizer.enable_padding(
-            pad_id=config.get("pad_token_id", 0), pad_token=tokenizer_config["pad_token"]
+            pad_id=config.get("pad_token_id", 0),
+            pad_token=tokenizer_config.get("pad_token", "[PAD]"),
+            pad_to_multiple_of=pad_to_multiple_of,
         )
+    else:
+        padding_params = tokenizer.padding
+        target_pad_to_multiple_of = (
+            pad_to_multiple_of
+            if pad_to_multiple_of is not None
+            else padding_params.get("pad_to_multiple_of")
+        )
+        if target_pad_to_multiple_of is not None and (
+            not isinstance(target_pad_to_multiple_of, int)
+            or isinstance(target_pad_to_multiple_of, bool)
+            or target_pad_to_multiple_of <= 0
+        ):
+            raise ValueError("pad_to_multiple_of must be a positive integer")
+
+        if padding_params.get("length") is not None or (
+            pad_to_multiple_of is not None
+            and padding_params.get("pad_to_multiple_of") != target_pad_to_multiple_of
+        ):
+            tokenizer.enable_padding(
+                direction=padding_params.get("direction", "right"),
+                pad_id=padding_params.get("pad_id", config.get("pad_token_id", 0)),
+                pad_type_id=padding_params.get("pad_type_id", 0),
+                pad_token=padding_params.get(
+                    "pad_token", tokenizer_config.get("pad_token", "[PAD]")
+                ),
+                pad_to_multiple_of=target_pad_to_multiple_of,
+                length=None,
+            )
 
     for token in tokens_map.values():
         if isinstance(token, str):

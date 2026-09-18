@@ -1,16 +1,17 @@
 import numpy as np
 
 from fastembed import (
-    TextEmbedding,
-    SparseTextEmbedding,
     ImageEmbedding,
     LateInteractionMultimodalEmbedding,
     LateInteractionTextEmbedding,
+    SparseTextEmbedding,
+    TextEmbedding,
 )
 from fastembed.common.utils import last_token_pooling
 
 
 def test_text_list_supported_models():
+    """Verify that supported text models expose non-empty metadata fields."""
     for model_type in [
         TextEmbedding,
         SparseTextEmbedding,
@@ -23,17 +24,18 @@ def test_text_list_supported_models():
         description = supported_models[0]
         assert isinstance(description, dict)
 
-        assert "model" in description and description["model"]
+        assert description.get("model")
         if model_type != SparseTextEmbedding:
-            assert "dim" in description and description["dim"]
-        assert "license" in description and description["license"]
-        assert "size_in_GB" in description and description["size_in_GB"]
-        assert "model_file" in description and description["model_file"]
-        assert "sources" in description and description["sources"]
+            assert description.get("dim")
+        assert description.get("license")
+        assert description.get("size_in_GB")
+        assert description.get("model_file")
+        assert description.get("sources")
         assert "hf" in description["sources"] or "url" in description["sources"]
 
 
 def test_last_token_pooling():
+    """Verify last token pooling logic against standard right-padded inputs."""
     token_embeddings = np.array(
         [
             [[1.0, 1.0], [2.0, 2.0], [9.0, 9.0], [9.0, 9.0]],  # 2 real tokens, then padding
@@ -48,6 +50,7 @@ def test_last_token_pooling():
 
 
 def test_last_token_pooling_with_left_padding():
+    """Verify last token pooling logic correctly identifies targets under left padding."""
     token_embeddings = np.array(
         [
             [[9.0, 9.0], [9.0, 9.0], [1.0, 1.0], [2.0, 2.0]],  # padding, then 2 real tokens
@@ -59,3 +62,160 @@ def test_last_token_pooling_with_left_padding():
     pooled = last_token_pooling(token_embeddings, attention_mask)
 
     assert np.allclose(pooled, [[2.0, 2.0], [6.0, 6.0]])
+
+
+def test_load_tokenizer_fixed_length_padding_converted_to_dynamic(tmp_path):
+    """
+    Verify that models with serialized fixed-length padding (e.g. gte-base with length=128)
+    have their padding relaxed to dynamic batch padding (length=None) to support mixed-length batches.
+    """
+    import json
+
+    import numpy as np
+    from tokenizers import Tokenizer, models, pre_tokenizers
+
+    from fastembed.common.preprocessor_utils import load_tokenizer
+
+    config = {"pad_token_id": 0}
+    with open(tmp_path / "config.json", "w") as f:
+        json.dump(config, f)
+
+    tokenizer_config = {
+        "model_max_length": 512,
+        "pad_token": "[PAD]",
+    }
+    with open(tmp_path / "tokenizer_config.json", "w") as f:
+        json.dump(tokenizer_config, f)
+
+    with open(tmp_path / "special_tokens_map.json", "w") as f:
+        json.dump({"pad_token": "[PAD]"}, f)
+
+    # Tokenizer initialized with fixed-length padding (e.g. gte-base with length=128)
+    tokenizer = Tokenizer(models.WordLevel({"[PAD]": 0, "first": 1, "second": 2, "third": 3}, unk_token="[PAD]"))
+    tokenizer.pre_tokenizer = pre_tokenizers.Whitespace()
+    tokenizer.add_special_tokens(["[PAD]"])
+    tokenizer.enable_padding(length=128, pad_id=0, pad_token="[PAD]", direction="right")
+    tokenizer.save(str(tmp_path / "tokenizer.json"))
+
+    loaded_tokenizer, _ = load_tokenizer(tmp_path)
+
+    # Fixed length must be relaxed to None (dynamic batch padding) to prevent ragged arrays
+    assert loaded_tokenizer.padding is not None
+    assert loaded_tokenizer.padding["length"] is None
+    assert loaded_tokenizer.padding["direction"] == "right"
+    assert loaded_tokenizer.padding["pad_id"] == 0
+    assert loaded_tokenizer.padding["pad_token"] == "[PAD]"
+    assert loaded_tokenizer.truncation["max_length"] == 512
+
+    # Verify that mixed-length batch inputs produce rectangular arrays rather than ragged batches
+    encodings = loaded_tokenizer.encode_batch(["first", "second third"])
+    ids = np.array([e.ids for e in encodings])
+    attention_mask = np.array([e.attention_mask for e in encodings])
+
+    assert ids.shape == (2, 2)
+    assert attention_mask.shape == (2, 2)
+    assert np.array_equal(ids, [[1, 0], [2, 3]])
+    assert np.array_equal(attention_mask, [[1, 0], [1, 1]])
+
+
+def test_load_tokenizer_preserves_left_padding(tmp_path):
+    """
+    Verify that tokenizers with serialized left padding (e.g. ColModernVBERT)
+    preserve their padding direction and pad_token_id without being overridden.
+    """
+    import json
+
+    from tokenizers import Tokenizer, models
+
+    from fastembed.common.preprocessor_utils import load_tokenizer
+
+    config = {"pad_token_id": 50283}
+    with open(tmp_path / "config.json", "w") as f:
+        json.dump(config, f)
+
+    tokenizer_config = {
+        "model_max_length": 8192,
+        "pad_token": "[PAD]",
+    }
+    with open(tmp_path / "tokenizer_config.json", "w") as f:
+        json.dump(tokenizer_config, f)
+
+    with open(tmp_path / "special_tokens_map.json", "w") as f:
+        json.dump({"pad_token": "[PAD]"}, f)
+
+    # Tokenizer with dynamic left padding (e.g. ColModernVBERT)
+    tokenizer = Tokenizer(models.BPE())
+    tokenizer.add_special_tokens(["[PAD]"])
+    tokenizer.enable_padding(length=None, pad_id=50283, pad_token="[PAD]", direction="left")
+    tokenizer.save(str(tmp_path / "tokenizer.json"))
+
+    loaded_tokenizer, _ = load_tokenizer(tmp_path)
+
+    # Preserves left padding direction and pad_id
+    assert loaded_tokenizer.padding is not None
+    assert loaded_tokenizer.padding["length"] is None
+    assert loaded_tokenizer.padding["direction"] == "left"
+    assert loaded_tokenizer.padding["pad_id"] == 50283
+
+
+def test_load_tokenizer_pad_to_multiple_of_and_validation(tmp_path):
+    """
+    Verify pad_to_multiple_of configuration precedence (tokenizer_config > config fallback),
+    application to unpadded and serialized tokenizers, and validation of positive integer values.
+    """
+    import json
+
+    import pytest
+    from tokenizers import Tokenizer, models
+
+    from fastembed.common.preprocessor_utils import load_tokenizer
+
+    # 1. Test pad_to_multiple_of via config.json fallback
+    dir_fallback = tmp_path / "fallback"
+    dir_fallback.mkdir()
+    (dir_fallback / "config.json").write_text(
+        json.dumps({"pad_token_id": 0, "pad_to_multiple_of": 16})
+    )
+    (dir_fallback / "tokenizer_config.json").write_text(
+        json.dumps({"model_max_length": 128, "pad_token": "[PAD]"})
+    )
+    (dir_fallback / "special_tokens_map.json").write_text(json.dumps({"pad_token": "[PAD]"}))
+    tok = Tokenizer(models.BPE())
+    tok.add_special_tokens(["[PAD]"])
+    tok.save(str(dir_fallback / "tokenizer.json"))
+
+    loaded_tok, _ = load_tokenizer(dir_fallback)
+    assert loaded_tok.padding is not None
+    assert loaded_tok.padding.get("pad_to_multiple_of") == 16
+
+    # 2. Test tokenizer_config.json precedence over config.json
+    dir_prec = tmp_path / "prec"
+    dir_prec.mkdir()
+    (dir_prec / "config.json").write_text(
+        json.dumps({"pad_token_id": 0, "pad_to_multiple_of": 16})
+    )
+    (dir_prec / "tokenizer_config.json").write_text(
+        json.dumps({"model_max_length": 128, "pad_token": "[PAD]", "pad_to_multiple_of": 8})
+    )
+    (dir_prec / "special_tokens_map.json").write_text(json.dumps({"pad_token": "[PAD]"}))
+    tok.save(str(dir_prec / "tokenizer.json"))
+
+    loaded_tok, _ = load_tokenizer(dir_prec)
+    assert loaded_tok.padding is not None
+    assert loaded_tok.padding.get("pad_to_multiple_of") == 8
+
+    # 3. Test validation error on invalid pad_to_multiple_of (<= 0 or non-integer)
+    for invalid_val in [0, -1, "8", False]:
+        dir_invalid = tmp_path / f"invalid_{invalid_val}"
+        dir_invalid.mkdir()
+        (dir_invalid / "config.json").write_text(json.dumps({"pad_token_id": 0}))
+        (dir_invalid / "tokenizer_config.json").write_text(
+            json.dumps(
+                {"model_max_length": 128, "pad_token": "[PAD]", "pad_to_multiple_of": invalid_val}
+            )
+        )
+        (dir_invalid / "special_tokens_map.json").write_text(json.dumps({"pad_token": "[PAD]"}))
+        tok.save(str(dir_invalid / "tokenizer.json"))
+
+        with pytest.raises(ValueError, match="pad_to_multiple_of must be a positive integer"):
+            load_tokenizer(dir_invalid)
