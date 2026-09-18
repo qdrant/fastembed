@@ -11,6 +11,7 @@ from fastembed.common.utils import last_token_pooling
 
 
 def test_text_list_supported_models():
+    """Verify that supported text models expose non-empty metadata fields."""
     for model_type in [
         TextEmbedding,
         SparseTextEmbedding,
@@ -34,6 +35,7 @@ def test_text_list_supported_models():
 
 
 def test_last_token_pooling():
+    """Verify last token pooling logic against standard right-padded inputs."""
     token_embeddings = np.array(
         [
             [[1.0, 1.0], [2.0, 2.0], [9.0, 9.0], [9.0, 9.0]],  # 2 real tokens, then padding
@@ -48,6 +50,7 @@ def test_last_token_pooling():
 
 
 def test_last_token_pooling_with_left_padding():
+    """Verify last token pooling logic correctly identifies targets under left padding."""
     token_embeddings = np.array(
         [
             [[9.0, 9.0], [9.0, 9.0], [1.0, 1.0], [2.0, 2.0]],  # padding, then 2 real tokens
