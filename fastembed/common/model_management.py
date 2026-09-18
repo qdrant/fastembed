@@ -24,6 +24,10 @@ T = TypeVar("T", bound=BaseModelDescription)
 
 class ModelManagement(Generic[T]):
     METADATA_FILE = "files_metadata.json"
+    # Placeholder ``model_file`` for models that have no real ONNX weight file
+    # (e.g. ``Qdrant/bm25``); such a file is never present on disk and must not be
+    # required by the offline cache probe.
+    MOCK_MODEL_FILE = "mock.file"
 
     @classmethod
     def list_supported_models(cls) -> list[dict[str, Any]]:
@@ -421,9 +425,10 @@ class ModelManagement(Generic[T]):
                         **cache_kwargs,
                     )
                 )
-                if (resolved_path / model.model_file).exists() and all(
-                    (resolved_path / file).exists() for file in extra_patterns
-                ):
+                required_files = [
+                    file for file in extra_patterns if file != cls.MOCK_MODEL_FILE
+                ]
+                if all((resolved_path / file).exists() for file in required_files):
                     return resolved_path
             except Exception:
                 pass
