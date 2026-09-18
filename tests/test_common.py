@@ -71,7 +71,8 @@ def test_load_tokenizer_fixed_length_padding_converted_to_dynamic(tmp_path):
     """
     import json
 
-    from tokenizers import Tokenizer, models
+    import numpy as np
+    from tokenizers import Tokenizer, models, pre_tokenizers
 
     from fastembed.common.preprocessor_utils import load_tokenizer
 
@@ -90,7 +91,8 @@ def test_load_tokenizer_fixed_length_padding_converted_to_dynamic(tmp_path):
         json.dump({"pad_token": "[PAD]"}, f)
 
     # Tokenizer initialized with fixed-length padding (e.g. gte-base with length=128)
-    tokenizer = Tokenizer(models.BPE())
+    tokenizer = Tokenizer(models.WordLevel({"[PAD]": 0, "first": 1, "second": 2, "third": 3}, unk_token="[PAD]"))
+    tokenizer.pre_tokenizer = pre_tokenizers.Whitespace()
     tokenizer.add_special_tokens(["[PAD]"])
     tokenizer.enable_padding(length=128, pad_id=0, pad_token="[PAD]", direction="right")
     tokenizer.save(str(tmp_path / "tokenizer.json"))
@@ -104,6 +106,16 @@ def test_load_tokenizer_fixed_length_padding_converted_to_dynamic(tmp_path):
     assert loaded_tokenizer.padding["pad_id"] == 0
     assert loaded_tokenizer.padding["pad_token"] == "[PAD]"
     assert loaded_tokenizer.truncation["max_length"] == 512
+
+    # Verify that mixed-length batch inputs produce rectangular arrays rather than ragged batches
+    encodings = loaded_tokenizer.encode_batch(["first", "second third"])
+    ids = np.array([e.ids for e in encodings])
+    attention_mask = np.array([e.attention_mask for e in encodings])
+
+    assert ids.shape == (2, 2)
+    assert attention_mask.shape == (2, 2)
+    assert np.array_equal(ids, [[1, 0], [2, 3]])
+    assert np.array_equal(attention_mask, [[1, 0], [1, 1]])
 
 
 def test_load_tokenizer_preserves_left_padding(tmp_path):
