@@ -9,6 +9,9 @@ packages = [{include = "fastembed"}]
 homepage = "https://github.com/qdrant/fastembed"
 repository = "https://github.com/qdrant/fastembed"
 keywords = ["vector", "embedding", "neural", "search", "qdrant", "sentence-transformers"]
+classifiers = [
+    "License :: OSI Approved :: Apache Software License",
+]
 
 [tool.poetry.dependencies]
 python = ">=3.10.0"
