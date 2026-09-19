@@ -46,7 +46,7 @@ Include details about your configuration and environment:
 
 ### Your First Code Contribution
 
-Unsure where to begin contributing to FastEmbed? You can start by looking through these `good-first-issue`issues:
+Unsure where to begin contributing to FastEmbed? You can start by looking through these `good-first-issue` issues:
 
 * [Good First Issue](https://github.com/qdrant/fastembed/labels/good%20first%20issue) - issues which should only require a few lines of code, and a test or two. These are a great way to get started with FastEmbed. This includes adding new models which are already tested and ready on Huggingface Hub. 
 
