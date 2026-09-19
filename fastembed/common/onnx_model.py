@@ -156,6 +156,19 @@ class OnnxModel(Generic[T]):
         if "enable_cpu_mem_arena" in extra_options:
             session_options.enable_cpu_mem_arena = extra_options["enable_cpu_mem_arena"]
 
+    def _check_output_finite(self, output: NumpyArray) -> None:
+        """Validate that the model output contains only finite numbers (no NaN or Inf).
+
+        Raises:
+            RuntimeError: If non-finite values (NaN/Inf) are detected in the output.
+        """
+        if not np.all(np.isfinite(output)):
+            providers = self.model.get_providers() if self.model is not None else None
+            raise RuntimeError(
+                f"Model '{self.model_name}' produced non-finite (NaN/Inf) embeddings "
+                f"with provider(s) '{providers}'."
+            )
+
     def load_onnx_model(self) -> None:
         raise NotImplementedError("Subclasses must implement this method")
 
