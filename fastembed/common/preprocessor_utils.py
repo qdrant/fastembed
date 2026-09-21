@@ -98,6 +98,7 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
         pad_id=padding.get("pad_id", config.get("pad_token_id", 0)),
         pad_type_id=padding.get("pad_type_id", 0),
         pad_token=pad_token,
+        pad_to_multiple_of=padding.get("pad_to_multiple_of"),
         length=None,
     )
 
