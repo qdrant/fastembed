@@ -1,4 +1,4 @@
-from typing import Sequence, Any, Iterable
+from typing import Sequence, Any, Iterable, Type
 from dataclasses import dataclass
 
 import numpy as np
@@ -13,6 +13,7 @@ from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.types import NumpyArray, Device
 from fastembed.common.utils import normalize, mean_pooling, last_token_pooling
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
+from fastembed.text.onnx_text_model import TextEmbeddingWorker
 
 
 @dataclass(frozen=True)
@@ -58,6 +59,16 @@ class CustomTextEmbedding(OnnxTextEmbedding):
     def _list_supported_models(cls) -> list[DenseModelDescription]:
         return cls.SUPPORTED_MODELS
 
+    @classmethod
+    def _get_worker_class(cls) -> Type["TextEmbeddingWorker[NumpyArray]"]:
+        return CustomTextEmbeddingWorker
+
+    def _get_worker_init_kwargs(self) -> dict[str, Any]:
+        return {
+            "model_description": self.model_description,
+            "postprocessing_config": self.POSTPROCESSING_MAPPING[self.model_description.model],
+        }
+
     def _post_process_onnx_output(
         self, output: OnnxOutputContext, **kwargs: Any
     ) -> Iterable[NumpyArray]:
@@ -101,4 +112,27 @@ class CustomTextEmbedding(OnnxTextEmbedding):
         cls.SUPPORTED_MODELS.append(model_description)
         cls.POSTPROCESSING_MAPPING[model_description.model] = PostprocessingConfig(
             pooling=pooling, normalization=normalization
+        )
+
+
+class CustomTextEmbeddingWorker(TextEmbeddingWorker[NumpyArray]):
+    def init_embedding(
+        self,
+        model_name: str,
+        cache_dir: str,
+        model_description: DenseModelDescription,
+        postprocessing_config: PostprocessingConfig,
+        **kwargs: Any,
+    ) -> CustomTextEmbedding:
+        # custom models live in a class-level registry, which spawned workers don't inherit
+        CustomTextEmbedding.add_model(
+            model_description,
+            pooling=postprocessing_config.pooling,
+            normalization=postprocessing_config.normalization,
+        )
+        return CustomTextEmbedding(
+            model_name=model_name,
+            cache_dir=cache_dir,
+            threads=1,
+            **kwargs,
         )

@@ -31,6 +31,18 @@ class OnnxModel(Generic[T]):
     def _get_worker_class(cls) -> Type["EmbeddingWorker[T]"]:
         raise NotImplementedError("Subclasses must implement this method")
 
+    def _get_worker_init_kwargs(self) -> dict[str, Any]:
+        """Additional kwargs a worker process needs to reconstruct this model.
+
+        Workers are started with `spawn`/`forkserver`, hence they don't inherit class-level state
+        which has been set up in runtime, e.g. models registered via `add_custom_model`.
+        Such state has to be shipped to the workers explicitly.
+
+        Returns:
+            dict[str, Any]: kwargs to pass to `_get_worker_class().init_embedding`.
+        """
+        return {}
+
     def _post_process_onnx_output(self, output: OnnxOutputContext, **kwargs: Any) -> Iterable[T]:
         """Post-process the ONNX model output to convert it into a usable format.
 
