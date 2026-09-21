@@ -98,10 +98,10 @@ def resize(
     resample: int | Image.Resampling = Image.Resampling.BILINEAR,
 ) -> Image.Image:
     if isinstance(size, tuple):
-        # fastembed keeps sizes as (height, width) — `Transform.from_config` builds
-        # the tuple as (size["height"], size["width"]) — while Pillow's resize takes
-        # (width, height). The two agree for square sizes, so this only shows up on
-        # a non-square image processor configuration.
+        # fastembed keeps sizes as (height, width) — `Compose.from_config` builds the
+        # tuple as (size["height"], size["width"]) — while Pillow's resize takes
+        # (width, height). The two agree for square sizes, so this only shows up on a
+        # non-square image processor configuration.
         height, width = size
         return image.resize((width, height), resample)
 
