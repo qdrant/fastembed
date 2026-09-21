@@ -151,6 +151,7 @@ class OnnxTextModel(OnnxModel[T]):
                 "local_files_only": local_files_only,
                 "specific_model_path": specific_model_path,
                 **kwargs,
+                **self._get_worker_init_kwargs(),
             }
 
             if extra_session_options is not None:

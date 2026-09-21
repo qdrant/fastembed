@@ -77,6 +77,30 @@ def test_text_custom_model():
         delete_model_cache(model.model._model_dir)
 
 
+def test_text_custom_model_parallel_processing():
+    is_ci = os.getenv("CI")
+    custom_model_name = "intfloat/multilingual-e5-small"
+    dim = 384
+
+    TextEmbedding.add_custom_model(
+        custom_model_name,
+        pooling=PoolingType.MEAN,
+        normalization=True,
+        sources=ModelSource(hf=custom_model_name),
+        dim=dim,
+        size_in_gb=0.47,
+    )
+
+    model = TextEmbedding(custom_model_name)
+    docs = ["hello world", "flag embedding"] * 50
+    embeddings = np.stack(list(model.embed(docs, batch_size=10, parallel=2)), axis=0)
+
+    assert embeddings.shape == (len(docs), dim)
+
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
+
+
 def test_cross_encoder_custom_model():
     is_ci = os.getenv("CI")
     custom_model_name = "Xenova/ms-marco-MiniLM-L-4-v2"
@@ -110,6 +134,27 @@ def test_cross_encoder_custom_model():
     embeddings = np.stack(scores, axis=0)
     assert embeddings.shape == (2,)
     assert np.allclose(embeddings, canonical_vector, atol=1e-3)
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
+
+
+def test_cross_encoder_custom_model_parallel_processing():
+    is_ci = os.getenv("CI")
+    custom_model_name = "Xenova/ms-marco-MiniLM-L-4-v2"
+
+    TextCrossEncoder.add_custom_model(
+        custom_model_name,
+        model_file="onnx/model.onnx",
+        sources=ModelSource(hf=custom_model_name),
+        size_in_gb=0.08,
+    )
+
+    model = TextCrossEncoder(custom_model_name)
+    pairs = [("What is AI?", "Artificial intelligence is ...")] * 50
+    scores = np.stack(list(model.rerank_pairs(pairs, batch_size=10, parallel=2)), axis=0)
+
+    assert scores.shape == (len(pairs),)
+
     if is_ci:
         delete_model_cache(model.model._model_dir)
 
