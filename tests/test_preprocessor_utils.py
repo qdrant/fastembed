@@ -138,6 +138,21 @@ def test_serialized_left_padding_is_preserved(make_model_dir) -> None:
     assert encoded[1].attention_mask[0] == 0
 
 
+def test_serialized_pad_to_multiple_of_is_preserved(make_model_dir) -> None:
+    """Everything the tokenizer declared is kept; only the fixed length is overridden."""
+    model_dir = make_model_dir(
+        padding={"length": 128, "pad_id": 0, "pad_token": "[PAD]", "pad_to_multiple_of": 8},
+    )
+
+    tokenizer, _ = load_tokenizer(model_dir)
+
+    assert tokenizer.padding["length"] is None
+    assert tokenizer.padding["pad_to_multiple_of"] == 8
+
+    encoded = tokenizer.encode_batch(["hello world", "hello"])
+    assert len(encoded[0].ids) % 8 == 0
+
+
 def test_serialized_pad_id_takes_precedence_over_config(make_model_dir) -> None:
     mask_pad_id = 103  # [MASK] in the bert-base vocab, any id other than the config's works
     model_dir = make_model_dir(
