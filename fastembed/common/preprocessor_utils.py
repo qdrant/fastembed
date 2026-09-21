@@ -34,10 +34,13 @@ def _valid_context(value: Any) -> int | None:
     return value
 
 
-def _resolve_max_context(
-    tokenizer_config: dict[str, Any], config: dict[str, Any], model_dir: Path
-) -> int:
-    """Pick the truncation limit, preferring the stricter of the two tokenizer config keys."""
+def _resolve_max_context(tokenizer_config: dict[str, Any], model_dir: Path) -> int:
+    """Pick the truncation limit, preferring the stricter of the two tokenizer config keys.
+
+    `config.json:max_position_embeddings` deliberately is not used as a fallback: it is the size
+    of the position table, not the usable context, and the two differ per architecture, e.g.
+    roberta reports 514 for a usable 512.
+    """
     candidates = [
         context
         for context in (
@@ -46,25 +49,13 @@ def _resolve_max_context(
         )
         if context is not None
     ]
-    if candidates:
-        return min(candidates)
+    if not candidates:
+        raise ValueError(
+            f"Could not determine the maximum context length for {model_dir}. Set a positive "
+            "`model_max_length` or `max_length` in tokenizer_config.json."
+        )
 
-    # Last resort. `max_position_embeddings` is not always the usable context, e.g. roberta-based
-    # models report 514 while only 512 positions are usable, so it is consulted only when
-    # tokenizer_config.json carries nothing usable at all.
-    text_config = config.get("text_config")
-    nested = text_config.get("max_position_embeddings") if isinstance(text_config, dict) else None
-    max_position_embeddings = _valid_context(config.get("max_position_embeddings")) or (
-        _valid_context(nested)
-    )
-    if max_position_embeddings is not None:
-        return max_position_embeddings
-
-    raise ValueError(
-        f"Could not determine the maximum context length for {model_dir}. Set a positive "
-        "`model_max_length` or `max_length` in tokenizer_config.json, or "
-        "`max_position_embeddings` in config.json."
-    )
+    return min(candidates)
 
 
 def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
@@ -86,7 +77,7 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
     with open(str(tokenizer_config_path)) as tokenizer_config_file:
         tokenizer_config = json.load(tokenizer_config_file)
 
-    max_context = _resolve_max_context(tokenizer_config, config, model_dir)
+    max_context = _resolve_max_context(tokenizer_config, model_dir)
 
     tokens_map = load_special_tokens(model_dir)
 

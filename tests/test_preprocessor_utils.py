@@ -68,7 +68,6 @@ def make_model_dir(tmp_path_factory):
         config: dict[str, Any] | None = None,
         padding: dict[str, Any] | None = None,
         drop_from_tokenizer_config: tuple[str, ...] = (),
-        drop_from_config: tuple[str, ...] = (),
     ) -> Path:
         model_dir = tmp_path_factory.mktemp(f"model_dir_{next(counter)}")
         for file_name in TOKENIZER_FILES:
@@ -79,7 +78,7 @@ def make_model_dir(tmp_path_factory):
             tokenizer_config or {},
             drop_from_tokenizer_config,
         )
-        _patch_json(model_dir / "config.json", config or {}, drop_from_config)
+        _patch_json(model_dir / "config.json", config or {})
         if padding is not None:
             _set_serialized_padding(model_dir / "tokenizer.json", padding)
 
@@ -176,8 +175,6 @@ def test_missing_pad_token_raises(make_model_dir) -> None:
         (512, None, 512),
         (None, 256, 256),
         (HF_SENTINEL, 128, 128),  # qdrant/gte-large-onnx
-        (HF_SENTINEL, None, 512),  # falls back to config.json:max_position_embeddings
-        (0, None, 512),  # a zero is not a limit, it truncates everything away
         (0, 256, 256),
         (512, 0, 512),
     ],
@@ -192,22 +189,28 @@ def test_max_context_resolution(make_model_dir, model_max_length, max_length, ex
     assert tokenizer.truncation["max_length"] == expected
 
 
-def test_max_context_falls_back_to_nested_text_config(make_model_dir) -> None:
+@pytest.mark.parametrize(
+    "model_max_length,max_length",
+    [
+        (HF_SENTINEL, None),  # transformers' placeholder is not a limit
+        (0, None),  # a zero would truncate everything away
+        (None, 0),
+        (None, None),
+        ("512", None),  # not an integer
+    ],
+)
+def test_unusable_max_context_raises(make_model_dir, model_max_length, max_length) -> None:
     model_dir = make_model_dir(
-        tokenizer_config={"model_max_length": HF_SENTINEL, "max_length": None},
-        config={"text_config": {"max_position_embeddings": 77}},
-        drop_from_config=("max_position_embeddings",),
+        tokenizer_config={"model_max_length": model_max_length, "max_length": max_length},
     )
 
-    tokenizer, _ = load_tokenizer(model_dir)
+    with pytest.raises(ValueError, match="Could not determine the maximum context length"):
+        load_tokenizer(model_dir)
 
-    assert tokenizer.truncation["max_length"] == 77
 
-
-def test_unusable_max_context_raises(make_model_dir) -> None:
+def test_absent_max_context_keys_raise(make_model_dir) -> None:
     model_dir = make_model_dir(
         drop_from_tokenizer_config=("model_max_length", "max_length"),
-        drop_from_config=("max_position_embeddings",),
     )
 
     with pytest.raises(ValueError, match="Could not determine the maximum context length"):
