@@ -9,11 +9,7 @@ from fastembed.image.transform.operators import Compose
 
 
 def load_special_tokens(model_dir: Path) -> dict[str, Any]:
-    """Read special_tokens_map.json, treating an absent file as an empty map.
-
-    Newer transformers releases stop writing the file, and everything it holds is also
-    recorded in tokenizer.json, so its absence is not an error.
-    """
+    """Read special_tokens_map.json, treating an absent file as an empty map."""
     tokens_map_path = model_dir / "special_tokens_map.json"
     if not tokens_map_path.exists():
         return {}
@@ -27,9 +23,7 @@ def load_special_tokens(model_dir: Path) -> dict[str, Any]:
 def iter_special_tokens(tokens_map: dict[str, Any]) -> Iterator[str | dict[str, Any]]:
     """Yield the individual tokens declared in a special tokens map.
 
-    Most keys hold a single token, either a bare string or an `AddedToken` dict, but
-    `additional_special_tokens` holds a list of them, which has to be flattened before
-    the tokens can be dispatched on their type.
+    Most keys hold one token, but `additional_special_tokens` holds a list of them.
     """
     for value in tokens_map.values():
         if isinstance(value, list):
@@ -86,8 +80,7 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
     if not tokenizer_config_path.exists():
         raise ValueError(f"Could not find tokenizer_config.json in {model_dir}")
 
-    # config.json is optional: it only ever contributes pad_token_id, and newer transformers
-    # releases no longer write it for every model.
+    # config.json is optional: transformers v5 no longer writes it for every model.
     config_path = model_dir / "config.json"
     config: dict[str, Any] = {}
     if config_path.exists():
@@ -104,8 +97,8 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
     tokenizer = Tokenizer.from_file(str(tokenizer_path))
     tokenizer.enable_truncation(max_length=max_context)
 
-    # Special tokens are registered before the padding is resolved: the map may name a pad
-    # token that tokenizer.json does not carry, and it only gets an id once it is added.
+    # Registered before the padding is resolved: the map may name a pad token that
+    # tokenizer.json does not carry, and it only gets an id once it is added.
     for token in iter_special_tokens(tokens_map):
         if isinstance(token, str):
             tokenizer.add_special_tokens([token])
@@ -121,9 +114,8 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
     if pad_token is None:
         raise ValueError(f"Could not find a pad token for {model_dir}")
 
-    # `config.json` is optional, and even when it is present it does not always carry a
-    # `pad_token_id`, so the vocabulary is the last resort. A hardcoded 0 is not: it silently
-    # disagrees with `pad_token` for every model whose pad token is not the first entry.
+    # The vocabulary is the last resort, not a hardcoded 0: that silently disagrees with
+    # `pad_token` for every model whose pad token is not the first entry.
     pad_id = padding.get("pad_id", config.get("pad_token_id"))
     if pad_id is None:
         pad_id = tokenizer.token_to_id(pad_token)

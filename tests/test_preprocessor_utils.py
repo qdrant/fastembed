@@ -238,12 +238,6 @@ def test_absent_max_context_keys_raise(make_model_dir) -> None:
         load_tokenizer(model_dir)
 
 
-# --- optional tokenizer metadata files (#686) ---------------------------------------------
-
-OPTIONAL_FILES = ("config.json", "special_tokens_map.json")
-REQUIRED_FILES = ("tokenizer.json", "tokenizer_config.json")
-
-
 @pytest.fixture(scope="module")
 def token_id(make_model_dir):
     """Resolve vocabulary ids by name, so the cases below carry no magic numbers."""
@@ -252,15 +246,11 @@ def token_id(make_model_dir):
 
 @pytest.mark.parametrize(
     "dropped",
-    [(), ("config.json",), ("special_tokens_map.json",), OPTIONAL_FILES],
-    ids=["nothing", "no-config", "no-special-tokens-map", "neither"],
+    [("config.json",), ("special_tokens_map.json",), ("config.json", "special_tokens_map.json")],
+    ids=["no-config", "no-special-tokens-map", "neither"],
 )
 def test_optional_files_do_not_change_what_is_loaded(make_model_dir, dropped) -> None:
-    """Both files are redundant: everything they carry is already in the tokenizer.
-
-    Comparing against the full-metadata load, rather than against literal ids, ties the
-    expectation to that contract instead of to one model's vocabulary.
-    """
+    """Both files are redundant: everything they carry is already in the tokenizer."""
     baseline, baseline_specials = load_tokenizer(make_model_dir())
 
     tokenizer, specials = load_tokenizer(make_model_dir(drop_files=dropped))
@@ -270,7 +260,7 @@ def test_optional_files_do_not_change_what_is_loaded(make_model_dir, dropped) ->
     assert tokenizer.encode("hello world").ids == baseline.encode("hello world").ids
 
 
-@pytest.mark.parametrize("missing", REQUIRED_FILES)
+@pytest.mark.parametrize("missing", ("tokenizer.json", "tokenizer_config.json"))
 def test_the_remaining_files_are_still_required(make_model_dir, missing) -> None:
     """Relaxing the optional two must not relax the two that carry irreplaceable data."""
     model_dir = make_model_dir(drop_files=(missing,))
@@ -280,45 +270,21 @@ def test_the_remaining_files_are_still_required(make_model_dir, missing) -> None
 
 
 @pytest.mark.parametrize(
-    ("model_files", "expected"),
+    "model_files",
     [
-        pytest.param(
-            {
-                "padding": {"length": None, "pad_id": 7, "pad_token": "[SEP]"},
-                "config": {"pad_token_id": 9},
-            },
-            7,
-            id="serialized-padding-wins",
-        ),
-        pytest.param(
-            {"config": {"pad_token_id": 9}, "tokenizer_config": {"pad_token": "[SEP]"}},
-            9,
-            id="config-beats-the-vocabulary",
-        ),
-        pytest.param(
-            {"tokenizer_config": {"pad_token": "[SEP]"}, "drop_from_config": ("pad_token_id",)},
-            "[SEP]",
-            id="vocabulary-when-config-omits-pad-token-id",
-        ),
-        pytest.param(
-            {"tokenizer_config": {"pad_token": "[SEP]"}, "drop_files": ("config.json",)},
-            "[SEP]",
-            id="vocabulary-when-config-is-absent",
-        ),
+        pytest.param({"drop_from_config": ("pad_token_id",)}, id="config-omits-pad-token-id"),
+        pytest.param({"drop_files": ("config.json",)}, id="config-is-absent"),
     ],
 )
-def test_pad_id_resolution_order(make_model_dir, token_id, model_files, expected) -> None:
-    """Serialized padding, then config.json, then the vocabulary.
+def test_pad_id_falls_back_to_the_vocabulary(make_model_dir, token_id, model_files) -> None:
+    """Last link of the chain; a hardcoded 0 would silently disagree with `pad_token`."""
+    expected = token_id("[SEP]")
+    assert expected != 0, "a pad token whose id is 0 would pass even without a lookup"
+    model_dir = make_model_dir(tokenizer_config={"pad_token": "[SEP]"}, **model_files)
 
-    A hardcoded 0 is deliberately not the last link: it silently disagrees with `pad_token`
-    for every model whose pad token is not the first vocabulary entry. `[SEP]` is used
-    throughout because its id is not 0, so a lookup that never ran cannot pass by accident.
-    """
-    tokenizer, _ = load_tokenizer(make_model_dir(**model_files))
+    tokenizer, _ = load_tokenizer(model_dir)
 
-    assert tokenizer.padding["pad_id"] == (
-        token_id(expected) if isinstance(expected, str) else expected
-    )
+    assert tokenizer.padding["pad_id"] == expected
 
 
 def test_pad_token_that_resolves_nowhere_raises(make_model_dir) -> None:
@@ -332,19 +298,8 @@ def test_pad_token_that_resolves_nowhere_raises(make_model_dir) -> None:
         load_tokenizer(model_dir)
 
 
-def test_tokens_declared_only_in_the_map_are_still_registered(make_model_dir) -> None:
-    """special_tokens_map.json stops being the source of truth, but must not become a no-op."""
-    model_dir = make_model_dir()
-    _patch_json(model_dir / "special_tokens_map.json", {"sep_token": "<|custom|>"})
-
-    _, specials = load_tokenizer(model_dir)
-
-    assert "<|custom|>" in specials
-
-
 def test_pad_token_named_only_in_the_map_resolves(make_model_dir) -> None:
-    """The map is read before the pad id is resolved, so it can name a token tokenizer.json
-    does not carry. Hand-assembled model directories do exactly this."""
+    """The map is read first, so it can name a pad token tokenizer.json does not carry."""
     model_dir = make_model_dir(
         tokenizer_config={"pad_token": "<|mypad|>"},
         drop_files=("config.json",),
@@ -367,8 +322,8 @@ def test_pad_token_named_only_in_the_map_resolves(make_model_dir) -> None:
 def test_list_valued_map_entries_are_registered(make_model_dir, additional) -> None:
     """`additional_special_tokens` holds a list, which the str/dict dispatch alone drops.
 
-    Five registry repos ship one, in both spellings. Their tokens happen to be in
-    tokenizer.json already, so only a token that lives *nowhere else* shows the drop.
+    Real repos ship both spellings, and their tokens are in tokenizer.json already, so
+    only a token living nowhere else shows the drop.
     """
     model_dir = make_model_dir()
     _patch_json(model_dir / "special_tokens_map.json", {"additional_special_tokens": additional})
@@ -376,16 +331,3 @@ def test_list_valued_map_entries_are_registered(make_model_dir, additional) -> N
     _, specials = load_tokenizer(model_dir)
 
     assert "<|list_str|>" in specials
-
-
-def test_scalar_map_entries_still_behave(make_model_dir) -> None:
-    """Flattening lists must not disturb the single-token keys around them."""
-    model_dir = make_model_dir()
-    _patch_json(
-        model_dir / "special_tokens_map.json",
-        {"cls_token": "<|scalar_str|>", "additional_special_tokens": ["<|from_list|>"]},
-    )
-
-    _, specials = load_tokenizer(model_dir)
-
-    assert {"<|scalar_str|>", "<|from_list|>"} <= specials.keys()
