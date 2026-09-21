@@ -1,6 +1,6 @@
 import json
 import sys
-from typing import Any
+from typing import Any, Iterator
 from pathlib import Path
 
 from tokenizers import AddedToken, Tokenizer
@@ -9,6 +9,11 @@ from fastembed.image.transform.operators import Compose
 
 
 def load_special_tokens(model_dir: Path) -> dict[str, Any]:
+    """Read special_tokens_map.json, treating an absent file as an empty map.
+
+    Newer transformers releases stop writing the file, and everything it holds is also
+    recorded in tokenizer.json, so its absence is not an error.
+    """
     tokens_map_path = model_dir / "special_tokens_map.json"
     if not tokens_map_path.exists():
         return {}
@@ -17,6 +22,20 @@ def load_special_tokens(model_dir: Path) -> dict[str, Any]:
         tokens_map = json.load(tokens_map_file)
 
     return tokens_map
+
+
+def iter_special_tokens(tokens_map: dict[str, Any]) -> Iterator[str | dict[str, Any]]:
+    """Yield the individual tokens declared in a special tokens map.
+
+    Most keys hold a single token, either a bare string or an `AddedToken` dict, but
+    `additional_special_tokens` holds a list of them, which has to be flattened before
+    the tokens can be dispatched on their type.
+    """
+    for value in tokens_map.values():
+        if isinstance(value, list):
+            yield from value
+        else:
+            yield value
 
 
 def _valid_context(value: Any) -> int | None:
@@ -59,8 +78,6 @@ def _resolve_max_context(tokenizer_config: dict[str, Any], model_dir: Path) -> i
 
 
 def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
-    config_path = model_dir / "config.json"
-
     tokenizer_path = model_dir / "tokenizer.json"
     if not tokenizer_path.exists():
         raise ValueError(f"Could not find tokenizer.json in {model_dir}")
@@ -69,9 +86,11 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
     if not tokenizer_config_path.exists():
         raise ValueError(f"Could not find tokenizer_config.json in {model_dir}")
 
-    has_config = config_path.exists()
+    # config.json is optional: it only ever contributes pad_token_id, and newer transformers
+    # releases no longer write it for every model.
+    config_path = model_dir / "config.json"
     config: dict[str, Any] = {}
-    if has_config:
+    if config_path.exists():
         with open(str(config_path)) as config_file:
             config = json.load(config_file)
 
@@ -85,6 +104,14 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
     tokenizer = Tokenizer.from_file(str(tokenizer_path))
     tokenizer.enable_truncation(max_length=max_context)
 
+    # Special tokens are registered before the padding is resolved: the map may name a pad
+    # token that tokenizer.json does not carry, and it only gets an id once it is added.
+    for token in iter_special_tokens(tokens_map):
+        if isinstance(token, str):
+            tokenizer.add_special_tokens([token])
+        elif isinstance(token, dict):
+            tokenizer.add_special_tokens([AddedToken(**token)])
+
     # Padding is always normalized to batch-longest. A serialized fixed length shorter than the
     # truncation limit leaves longer encodings untouched, which produces ragged batches, and a
     # fixed length equal to it pads every batch to the maximum. Direction and pad token metadata
@@ -94,12 +121,14 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
     if pad_token is None:
         raise ValueError(f"Could not find a pad token for {model_dir}")
 
-    pad_id = padding.get(
-        "pad_id",
-        config.get("pad_token_id", 0) if has_config else tokenizer.token_to_id(pad_token),
-    )
+    # `config.json` is optional, and even when it is present it does not always carry a
+    # `pad_token_id`, so the vocabulary is the last resort. A hardcoded 0 is not: it silently
+    # disagrees with `pad_token` for every model whose pad token is not the first entry.
+    pad_id = padding.get("pad_id", config.get("pad_token_id"))
     if pad_id is None:
-        raise ValueError(f"Could not find pad token {pad_token!r} in {model_dir}")
+        pad_id = tokenizer.token_to_id(pad_token)
+    if pad_id is None:
+        raise ValueError(f"Could not resolve an id for the pad token {pad_token!r} in {model_dir}")
 
     tokenizer.enable_padding(
         direction=padding.get("direction", "right"),
@@ -109,12 +138,6 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
         pad_to_multiple_of=padding.get("pad_to_multiple_of"),
         length=None,
     )
-
-    for token in tokens_map.values():
-        if isinstance(token, str):
-            tokenizer.add_special_tokens([token])
-        elif isinstance(token, dict):
-            tokenizer.add_special_tokens([AddedToken(**token)])
 
     special_token_to_id = {
         token.content: token_id
