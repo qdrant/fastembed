@@ -120,10 +120,16 @@ class CustomTextEmbeddingWorker(TextEmbeddingWorker[NumpyArray]):
         self,
         model_name: str,
         cache_dir: str,
-        model_description: DenseModelDescription,
-        postprocessing_config: PostprocessingConfig,
+        model_description: DenseModelDescription | None = None,
+        postprocessing_config: PostprocessingConfig | None = None,
         **kwargs: Any,
     ) -> CustomTextEmbedding:
+        if model_description is None or postprocessing_config is None:
+            raise ValueError(
+                "`model_description` and `postprocessing_config` are required to initialize a "
+                "custom model in a worker process, they are provided by "
+                "`CustomTextEmbedding._get_worker_init_kwargs`"
+            )
         # custom models live in a class-level registry, which spawned workers don't inherit
         CustomTextEmbedding.add_model(
             model_description,

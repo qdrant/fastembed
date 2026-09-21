@@ -60,9 +60,14 @@ class CustomTextCrossEncoderWorker(TextRerankerWorker):
         self,
         model_name: str,
         cache_dir: str,
-        model_description: BaseModelDescription,
+        model_description: BaseModelDescription | None = None,
         **kwargs: Any,
     ) -> CustomTextCrossEncoder:
+        if model_description is None:
+            raise ValueError(
+                "`model_description` is required to initialize a custom model in a worker "
+                "process, it is provided by `CustomTextCrossEncoder._get_worker_init_kwargs`"
+            )
         # custom models live in a class-level registry, which spawned workers don't inherit
         CustomTextCrossEncoder.add_model(model_description)
         return CustomTextCrossEncoder(
