@@ -1,4 +1,5 @@
 import json
+import sys
 from typing import Any
 from pathlib import Path
 
@@ -16,6 +17,54 @@ def load_special_tokens(model_dir: Path) -> dict[str, Any]:
         tokens_map = json.load(tokens_map_file)
 
     return tokens_map
+
+
+def _valid_context(value: Any) -> int | None:
+    """Return `value` if it can be used as a truncation limit, `None` otherwise.
+
+    Config files do not always carry a real limit: transformers writes `model_max_length` as
+    1e30 when the value is unknown, and some repos ship a 0 or a null. `enable_truncation`
+    raises an `OverflowError` on the former and silently produces empty encodings on the
+    latter, so both are rejected here rather than passed through.
+    """
+    if isinstance(value, bool) or not isinstance(value, int):
+        return None
+    if not 0 < value <= sys.maxsize:
+        return None
+    return value
+
+
+def _resolve_max_context(
+    tokenizer_config: dict[str, Any], config: dict[str, Any], model_dir: Path
+) -> int:
+    """Pick the truncation limit, preferring the stricter of the two tokenizer config keys."""
+    candidates = [
+        context
+        for context in (
+            _valid_context(tokenizer_config.get("model_max_length")),
+            _valid_context(tokenizer_config.get("max_length")),
+        )
+        if context is not None
+    ]
+    if candidates:
+        return min(candidates)
+
+    # Last resort. `max_position_embeddings` is not always the usable context, e.g. roberta-based
+    # models report 514 while only 512 positions are usable, so it is consulted only when
+    # tokenizer_config.json carries nothing usable at all.
+    text_config = config.get("text_config")
+    nested = text_config.get("max_position_embeddings") if isinstance(text_config, dict) else None
+    max_position_embeddings = _valid_context(config.get("max_position_embeddings")) or (
+        _valid_context(nested)
+    )
+    if max_position_embeddings is not None:
+        return max_position_embeddings
+
+    raise ValueError(
+        f"Could not determine the maximum context length for {model_dir}. Set a positive "
+        "`model_max_length` or `max_length` in tokenizer_config.json, or "
+        "`max_position_embeddings` in config.json."
+    )
 
 
 def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
@@ -36,24 +85,30 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
 
     with open(str(tokenizer_config_path)) as tokenizer_config_file:
         tokenizer_config = json.load(tokenizer_config_file)
-        assert "model_max_length" in tokenizer_config or "max_length" in tokenizer_config, (
-            "Models without model_max_length or max_length are not supported."
-        )
-        if "model_max_length" not in tokenizer_config:
-            max_context = tokenizer_config["max_length"]
-        elif "max_length" not in tokenizer_config:
-            max_context = tokenizer_config["model_max_length"]
-        else:
-            max_context = min(tokenizer_config["model_max_length"], tokenizer_config["max_length"])
+
+    max_context = _resolve_max_context(tokenizer_config, config, model_dir)
 
     tokens_map = load_special_tokens(model_dir)
 
     tokenizer = Tokenizer.from_file(str(tokenizer_path))
     tokenizer.enable_truncation(max_length=max_context)
-    if not tokenizer.padding:
-        tokenizer.enable_padding(
-            pad_id=config.get("pad_token_id", 0), pad_token=tokenizer_config["pad_token"]
-        )
+
+    # Padding is always normalized to batch-longest. A serialized fixed length shorter than the
+    # truncation limit leaves longer encodings untouched, which produces ragged batches, and a
+    # fixed length equal to it pads every batch to the maximum. Direction and pad token metadata
+    # are taken from the serialized settings, since some models pad on the left.
+    padding = tokenizer.padding or {}
+    pad_token = padding.get("pad_token") or tokenizer_config.get("pad_token")
+    if pad_token is None:
+        raise ValueError(f"Could not find a pad token for {model_dir}")
+
+    tokenizer.enable_padding(
+        direction=padding.get("direction", "right"),
+        pad_id=padding.get("pad_id", config.get("pad_token_id", 0)),
+        pad_type_id=padding.get("pad_type_id", 0),
+        pad_token=pad_token,
+        length=None,
+    )
 
     for token in tokens_map.values():
         if isinstance(token, str):

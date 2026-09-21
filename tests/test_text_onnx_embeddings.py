@@ -317,3 +317,17 @@ def test_token_count(model_cache, model_name) -> None:
         doc_token_count = model.token_count(documents)
         assert first_doc_token_count + second_doc_token_count == doc_token_count
         assert doc_token_count == model.token_count(documents, batch_size=1)
+
+
+@pytest.mark.parametrize(
+    "model_name,dim",
+    [("sentence-transformers/all-MiniLM-L6-v2", 384), ("thenlper/gte-base", 768)],
+)
+def test_mixed_length_batch_with_fixed_padding(model_cache, model_name: str, dim: int) -> None:
+    # both models serialize a fixed padding length of 128 in tokenizer.json; gte-base truncates
+    # at 512, so a document longer than 128 makes the batch ragged unless the padding is relaxed
+    with model_cache(model_name) as model:
+        assert model.model.tokenizer.padding["length"] is None
+
+        embeddings = np.stack(list(model.embed(["hello world", "retrieval " * 200])), axis=0)
+        assert embeddings.shape == (2, dim)
