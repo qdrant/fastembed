@@ -29,60 +29,62 @@ def test_resize_int_keeps_shortest_edge_behaviour() -> None:
     assert resize(portrait, size=100).size == (100, 200)
 
 
-def _reference_normalize(image, mean, std):
-    """Channel-wise normalization with explicit broadcasting, used as ground truth."""
-    channel_axis = 1 if image.ndim == 4 else 0
-    shape = [1] * image.ndim
-    shape[channel_axis] = image.shape[channel_axis]
-    mean_arr = np.asarray(mean, dtype=np.float32).reshape(shape)
-    std_arr = np.asarray(std, dtype=np.float32).reshape(shape)
-    return (image.astype(np.float32) - mean_arr) / std_arr
-
-
-def test_normalize_chw_matches_channel_wise():
+@pytest.mark.parametrize(
+    ("mean", "std"),
+    [
+        ([0.1, 0.2, 0.3], [0.5, 0.6, 0.7]),  # per-channel, as every model config gives it
+        (0.5, 0.25),  # scalar, expanded to one value per channel
+    ],
+)
+def test_normalize_chw_is_channel_wise(
+    mean: list[float] | float, std: list[float] | float
+) -> None:
+    """Each channel must be normalized by its own mean/std, not by any other axis."""
     rng = np.random.default_rng(0)
     image = rng.random((3, 5, 7)).astype(np.float32)
-    mean, std = [0.1, 0.2, 0.3], [0.5, 0.6, 0.7]
+    means = mean if isinstance(mean, list) else [mean] * 3
+    stds = std if isinstance(std, list) else [std] * 3
 
     result = normalize(image, mean=mean, std=std)
 
-    assert np.allclose(result, _reference_normalize(image, mean, std), atol=1e-6)
-
-
-def test_normalize_scalar_mean_std():
-    rng = np.random.default_rng(1)
-    image = rng.random((3, 4, 4)).astype(np.float32)
-
-    result = normalize(image, mean=0.5, std=0.25)
-
-    assert np.allclose(result, (image - 0.5) / 0.25, atol=1e-6)
-
-
-def test_normalize_batched_input_normalizes_per_channel():
-    # (N, C, H, W): every channel c is filled with the constant c, so subtracting
-    # mean == c and dividing by 1 must yield all zeros regardless of batch size.
-    image = np.zeros((3, 3, 2, 2), dtype=np.float32)
     for c in range(3):
-        image[:, c] = c
-
-    result = normalize(image, mean=[0.0, 1.0, 2.0], std=[1.0, 1.0, 1.0])
-
-    assert np.allclose(result, 0.0)
+        assert np.allclose(result[c], (image[c] - means[c]) / stds[c], atol=1e-6)
 
 
-def test_normalize_batched_input_when_batch_differs_from_channels():
-    # N != C used to raise because transposing reversed every axis.
+@pytest.mark.parametrize("batch_size", [2, 3])
+def test_normalize_batched_matches_per_image(batch_size: int) -> None:
+    """A batch must give exactly what the (C, H, W) path gives image by image.
+
+    batch_size 2 used to raise, since transposing reversed every axis; batch_size 3
+    matched the channel count and silently normalized along the batch axis instead.
+    """
     rng = np.random.default_rng(2)
-    image = rng.random((2, 3, 4, 4)).astype(np.float32)
+    batch = rng.random((batch_size, 3, 4, 4)).astype(np.float32)
     mean, std = [0.1, 0.2, 0.3], [0.5, 0.6, 0.7]
 
-    result = normalize(image, mean=mean, std=std)
+    result = normalize(batch, mean=mean, std=std)
 
-    assert result.shape == image.shape
-    assert np.allclose(result, _reference_normalize(image, mean, std), atol=1e-6)
+    per_image = np.stack([normalize(image, mean=mean, std=std) for image in batch])
+    assert result.shape == batch.shape
+    assert np.array_equal(result, per_image)
 
 
-def test_normalize_channel_count_mismatch_raises():
+def test_normalize_rejects_input_without_a_channel_axis() -> None:
+    """Every pipeline runs ConvertToRGB first, so normalize only ever sees (C, H, W)."""
+    with pytest.raises(ValueError, match=r"must be \(C, H, W\)"):
+        normalize(np.zeros((4, 6), dtype=np.float32), mean=0.5, std=0.25)
+
+
+@pytest.mark.parametrize(
+    ("mean", "std", "expected"),
+    [
+        ([0.1, 0.2], [1.0, 1.0, 1.0], "mean must"),
+        ([0.1, 0.2, 0.3], [1.0, 1.0], "std must"),
+    ],
+)
+def test_normalize_channel_count_mismatch_raises(
+    mean: list[float], std: list[float], expected: str
+) -> None:
     image = np.zeros((3, 4, 4), dtype=np.float32)
-    with pytest.raises(ValueError):
-        normalize(image, mean=[0.1, 0.2], std=[1.0, 1.0, 1.0])
+    with pytest.raises(ValueError, match=expected):
+        normalize(image, mean=mean, std=std)
