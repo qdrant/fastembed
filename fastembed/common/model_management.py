@@ -4,7 +4,7 @@ import json
 import shutil
 import tarfile
 from copy import deepcopy
-from pathlib import Path, PurePosixPath, PureWindowsPath
+from pathlib import Path, PureWindowsPath
 from typing import Any, TypeVar, Generic
 
 import requests
@@ -305,13 +305,9 @@ class ModelManagement(Generic[T]):
             # Open the tar.gz file
             with tarfile.open(targz_path, "r:gz") as tar:
                 if hasattr(tarfile, "data_filter"):
-                    # PEP 706 extraction filter: rejects absolute paths, traversal and
-                    # escaping links while extracting, so symlinks planted earlier in the
-                    # archive cannot be used to redirect later members.
                     tar.extractall(path=cache_dir, filter="data")
                 else:
-                    # Python 3.10.0 - 3.10.11 ship no extraction filter, so vet the members
-                    # by hand before writing anything to disk.
+                    # No PEP 706 filter before 3.10.12, so vet the members by hand.
                     members = tar.getmembers()
                     for member in members:
                         cls._validate_tar_member(member)
@@ -328,43 +324,20 @@ class ModelManagement(Generic[T]):
 
     @staticmethod
     def _is_unsafe_tar_path(path: str) -> bool:
-        """Checks whether a tar path may point outside the directory it is extracted into.
+        """Checks whether a tar member name or link target may escape the extraction dir.
 
-        The check is deliberately lexical. Resolving the path against the extraction
-        directory would be unsound before extraction: a member such as `link/../escape`
-        looks harmless while `link` does not exist yet, and only escapes once an earlier
-        member has been written as a symlink. Any `..` component is therefore rejected
-        outright, which keeps every member and link target under the extraction directory.
-
-        Args:
-            path (str): A tar member name or link target.
-
-        Returns:
-            bool: True if the path is absolute, drive-qualified or contains a `..` component.
+        Lexical on purpose: resolving against the extraction directory is unsound before
+        extraction, since `link/../escape` only escapes once an earlier member has been
+        written as a symlink. Any `..` component is therefore rejected outright.
         """
-        # Tar names use POSIX separators, but a crafted archive may carry Windows-style
-        # names ("C:\\evil", "..\\evil") that os.path.join would honour on Windows.
+        # PureWindowsPath splits on both separators, so `root` covers POSIX "/evil" as
+        # well as "\\evil", which escapes on Windows without being absolute.
         windows_path = PureWindowsPath(path)
-        return (
-            PurePosixPath(path).is_absolute()
-            or windows_path.is_absolute()
-            or bool(windows_path.drive)
-            or ".." in windows_path.parts
-        )
+        return bool(windows_path.drive or windows_path.root) or ".." in windows_path.parts
 
     @classmethod
     def _validate_tar_member(cls, member: tarfile.TarInfo) -> None:
-        """Rejects a tar member that could write outside the extraction directory.
-
-        Only used on interpreters without PEP 706 extraction filters, which do this (and
-        more) themselves.
-
-        Args:
-            member (tarfile.TarInfo): The member about to be extracted.
-
-        Raises:
-            ValueError: If the member path, its link target, or its type is unsafe.
-        """
+        """Raises ValueError if a member could write outside the extraction directory."""
         if cls._is_unsafe_tar_path(member.name):
             raise ValueError(f"Unsafe tar member path: {member.name}")
 
