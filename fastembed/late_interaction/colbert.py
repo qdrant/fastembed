@@ -221,6 +221,8 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
         self.query_tokenizer, _ = load_tokenizer(model_dir=self._model_dir)
 
         assert self.tokenizer is not None
+        # load_tokenizer always enables both
+        assert self.tokenizer.padding is not None and self.tokenizer.truncation is not None
         self.mask_token_id = self.special_token_to_id[self.MASK_TOKEN]
         self.pad_token_id = self.tokenizer.padding["pad_id"]
         self.skip_list = {
