@@ -25,11 +25,19 @@ class VocabTokenizer(VocabTokenizerBase):
         return np.array(self.tokenizer.encode(sentence).ids)
 
     def convert_ids_to_tokens(self, token_ids: NumpyArray) -> list[str]:
-        return [self.tokenizer.id_to_token(token_id) for token_id in token_ids]
+        tokens = []
+        for token_id in token_ids:
+            token = self.tokenizer.id_to_token(token_id)
+            if token is None:
+                raise ValueError(f"Token id {token_id} is not in the vocabulary")
+            tokens.append(token)
+        return tokens
 
 
 class VocabResolver:
-    def __init__(self, tokenizer: VocabTokenizerBase, stopwords: set[str], stemmer: SnowballStemmer):
+    def __init__(
+        self, tokenizer: VocabTokenizerBase, stopwords: set[str], stemmer: SnowballStemmer
+    ):
         # Word to id mapping
         self.vocab: dict[str, int] = {}
         # Id to word mapping
@@ -199,4 +207,3 @@ class VocabResolver:
             else:
                 counts[vocab_id] += 1
         return token_ids, counts, oov_count, forms
-
