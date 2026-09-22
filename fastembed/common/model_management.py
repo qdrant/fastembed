@@ -4,7 +4,7 @@ import json
 import shutil
 import tarfile
 from copy import deepcopy
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Any, TypeVar, Generic
 
 import requests
@@ -304,19 +304,49 @@ class ModelManagement(Generic[T]):
         try:
             # Open the tar.gz file
             with tarfile.open(targz_path, "r:gz") as tar:
-                # Extract all files into the cache directory
-                tar.extractall(
-                    path=cache_dir,
-                )
-        except tarfile.TarError as e:
+                if hasattr(tarfile, "data_filter"):
+                    tar.extractall(path=cache_dir, filter="data")
+                else:
+                    # No PEP 706 filter before 3.10.12, so vet the members by hand.
+                    members = tar.getmembers()
+                    for member in members:
+                        cls._validate_tar_member(member)
+                    tar.extractall(path=cache_dir, members=members)
+        except (tarfile.TarError, ValueError) as e:
             # If any error occurs while opening or extracting the tar.gz file,
             # delete the cache directory (if it was created in this function)
             # and raise the error again
-            if "tmp" in cache_dir:
+            if "tmp" in cache_dir and os.path.exists(cache_dir):
                 shutil.rmtree(cache_dir)
-            raise ValueError(f"An error occurred while decompressing {targz_path}: {e}")
+            raise ValueError(f"An error occurred while decompressing {targz_path}: {e}") from e
 
         return cache_dir
+
+    @staticmethod
+    def _is_unsafe_tar_path(path: str) -> bool:
+        """Checks whether a tar member name or link target may escape the extraction dir.
+
+        Lexical on purpose: resolving against the extraction directory is unsound before
+        extraction, since `link/../escape` only escapes once an earlier member has been
+        written as a symlink. Any `..` component is therefore rejected outright.
+        """
+        # PureWindowsPath splits on both separators, so `root` covers POSIX "/evil" as
+        # well as "\\evil", which escapes on Windows without being absolute.
+        windows_path = PureWindowsPath(path)
+        return bool(windows_path.drive or windows_path.root) or ".." in windows_path.parts
+
+    @classmethod
+    def _validate_tar_member(cls, member: tarfile.TarInfo) -> None:
+        """Raises ValueError if a member could write outside the extraction directory."""
+        if cls._is_unsafe_tar_path(member.name):
+            raise ValueError(f"Unsafe tar member path: {member.name}")
+
+        if member.issym() or member.islnk():
+            if cls._is_unsafe_tar_path(member.linkname):
+                raise ValueError(f"Unsafe tar link target: {member.name} -> {member.linkname}")
+        elif not (member.isfile() or member.isdir()):
+            # Devices, fifos and the like have no place in a model archive.
+            raise ValueError(f"Unsupported tar member type: {member.name}")
 
     @classmethod
     def retrieve_model_gcs(
