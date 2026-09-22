@@ -65,7 +65,13 @@ def normalize(
     mean: float | list[float],
     std: float | list[float],
 ) -> NumpyArray:
-    num_channels = image.shape[1] if len(image.shape) == 4 else image.shape[0]
+    if image.ndim < 3:
+        raise ValueError(f"image must be (C, H, W) or (N, C, H, W), got shape {image.shape}")
+
+    # Channels sit on the third axis from the end, which covers (C, H, W) and
+    # (N, C, H, W) alike. Transposing instead reversed every axis, which put the
+    # batch dimension where the channels were meant to be.
+    num_channels = image.shape[-3]
 
     if not np.issubdtype(image.dtype, np.floating):
         image = image.astype(np.float32)
@@ -78,7 +84,9 @@ def normalize(
             f"{len(mean_list)}"
         )
 
-    mean_arr = np.array(mean_list, dtype=np.float32)
+    # (C, 1, 1) lines the channels up with the trailing (C, H, W) axes under numpy
+    # broadcasting, whatever batch dimensions lead them.
+    mean_arr = np.array(mean_list, dtype=np.float32).reshape(-1, 1, 1)
 
     std_list = std if isinstance(std, list) else [std] * num_channels
     if len(std_list) != num_channels:
@@ -86,9 +94,9 @@ def normalize(
             f"std must have the same number of channels as the image, image has {num_channels} channels, got {len(std_list)}"
         )
 
-    std_arr = np.array(std_list, dtype=np.float32)
+    std_arr = np.array(std_list, dtype=np.float32).reshape(-1, 1, 1)
 
-    image_upd = ((image.T - mean_arr) / std_arr).T
+    image_upd = (image - mean_arr) / std_arr
     return image_upd
 
 
