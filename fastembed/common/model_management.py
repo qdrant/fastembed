@@ -1,8 +1,11 @@
 import os
 import time
+import gzip
 import json
 import shutil
 import tarfile
+import tempfile
+import contextlib
 from copy import deepcopy
 from pathlib import Path, PureWindowsPath
 from typing import Any, TypeVar, Generic
@@ -21,7 +24,6 @@ from fastembed.common.model_description import BaseModelDescription
 
 T = TypeVar("T", bound=BaseModelDescription)
 
-# 1 KiB used to cap the download loop at ~190 MiB/s, 256 KiB runs at ~3.5 GiB/s.
 _DOWNLOAD_CHUNK_SIZE = 256 * 1024
 
 
@@ -100,8 +102,6 @@ class ModelManagement(Generic[T]):
             str: The path to the downloaded file.
         """
 
-        if os.path.exists(output_path):
-            return output_path
         response = requests.get(url, stream=True, timeout=(10, 120))
 
         # Handle HTTP errors
@@ -291,8 +291,8 @@ class ModelManagement(Generic[T]):
         """
         Decompresses a .tar.gz file to a cache directory.
 
-        `cache_dir` belongs to the caller and is never deleted, so cleaning up after a
-        truncated archive is the caller's job.
+        Nothing is deleted on failure, since `cache_dir` may hold more than this archive.
+        Cleaning up a partial extraction is the caller's job.
 
         Args:
             targz_path (str): Path to the .tar.gz file.
@@ -315,19 +315,20 @@ class ModelManagement(Generic[T]):
         try:
             # Open the tar.gz file
             with tarfile.open(targz_path, "r:gz") as tar:
-                # Vet it all up front: `filter="data"` rejects members mid-extraction,
-                # leaving the ones ahead of the unsafe member on disk.
-                members = tar.getmembers()
-                for member in members:
-                    cls._validate_tar_member(member)
-
                 if hasattr(tarfile, "data_filter"):
-                    # PEP 706, unavailable before 3.10.12.
-                    tar.extractall(path=cache_dir, members=members, filter="data")
+                    tar.extractall(path=cache_dir, filter="data")
                 else:
+                    # No PEP 706 filter before 3.10.12, so vet the members by hand.
+                    members = tar.getmembers()
+                    for member in members:
+                        cls._validate_tar_member(member)
                     tar.extractall(path=cache_dir, members=members)
-        except (tarfile.TarError, ValueError, EOFError) as e:
-            # A truncated download raises EOFError from the gzip layer, not a TarError.
+                # tarfile stops at the end-of-archive marker, short of the gzip trailer, so
+                # the CRC is only checked if the rest of the stream is read.
+                while tar.fileobj.read(1 << 20):
+                    pass
+        except (tarfile.TarError, ValueError, EOFError, gzip.BadGzipFile) as e:
+            # gzip raises EOFError for a truncated stream and BadGzipFile for a corrupted one.
             raise ValueError(f"An error occurred while decompressing {targz_path}: {e}") from e
 
         return cache_dir
@@ -383,11 +384,15 @@ class ModelManagement(Generic[T]):
                 f"Could not find the model tar.gz file at {model_dir} and local_files_only=True."
             )
 
-        # The archive and everything extracted from it go in here, so removing it undoes the
-        # whole attempt. Clearing it on the way in disposes of what a killed run left behind.
-        staging_dir = cache_tmp_dir / fast_model_name
-        shutil.rmtree(staging_dir, ignore_errors=True)
-        staging_dir.mkdir(parents=True)
+        if cache_tmp_dir.is_symlink():
+            raise ValueError(
+                f"{cache_tmp_dir} is a symlink, refusing to stage downloads through it"
+            )
+        cache_tmp_dir.mkdir(parents=True, exist_ok=True)
+
+        # The archive and everything extracted from it go in a directory of this attempt's own,
+        # so removing it undoes the attempt without touching any other download of the model.
+        staging_dir = Path(tempfile.mkdtemp(dir=cache_tmp_dir, prefix=f"{fast_model_name}-"))
         try:
             model_tar_gz = staging_dir / f"{fast_model_name}.tar.gz"
             cls.download_file_from_gcs(
@@ -398,15 +403,23 @@ class ModelManagement(Generic[T]):
             cls.decompress_to_cache(targz_path=str(model_tar_gz), cache_dir=str(staging_dir))
 
             model_tmp_dir = staging_dir / fast_model_name
-            if not model_tmp_dir.exists():
-                raise ValueError(f"Could not find {fast_model_name} in {model_tar_gz}")
+            if not model_tmp_dir.is_dir() or model_tmp_dir.is_symlink():
+                raise ValueError(
+                    f"The archive from {source_url} has no {fast_model_name} directory"
+                )
 
-            if model_dir.exists():
-                # Only an empty one gets here, and Windows will not rename onto it.
+            # Replace a stale empty model_dir, which Windows will not rename onto. rmdir leaves
+            # anything else alone, including one another download has just filled.
+            with contextlib.suppress(OSError):
                 model_dir.rmdir()
 
-            # Rename from the staging dir to the final name is atomic
-            model_tmp_dir.rename(model_dir)
+            try:
+                # Rename from the staging dir to the final name is atomic
+                model_tmp_dir.rename(model_dir)
+            except OSError:
+                # Another download of the same model finished first, so keep its copy.
+                if not (model_dir.is_dir() and any(model_dir.iterdir())):
+                    raise
         finally:
             shutil.rmtree(staging_dir, ignore_errors=True)
 
