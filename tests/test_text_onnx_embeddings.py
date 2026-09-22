@@ -79,6 +79,18 @@ CANONICAL_VECTOR_VALUES = {
     "Qwen/Qwen3-Embedding-0.6B-Q": np.array(
         [-0.01599521, 0.01676456, -0.01195119, -0.07132675, 0.00346729]
     ),
+    "google/siglip2-base-patch16-224": np.array(
+        [-0.01181389, 0.00737596, 0.01118064, 0.0103095, 0.3451049]
+    ),
+    "minishlab/potion-base-8M": np.array(
+        [-0.03432461, -0.08020256, -0.14396408, 0.08480079, 0.01958815]
+    ),
+    "minishlab/potion-retrieval-32M": np.array(
+        [0.019733, -0.01530093, -0.08678473, 0.0229059, 0.04700558]
+    ),
+    "minishlab/potion-multilingual-128M": np.array(
+        [0.02366836, 0.02973341, 0.05140258, -0.00745248, -0.06740689]
+    ),
 }
 
 QWEN3_INSTRUCT_PREFIX = (
@@ -305,3 +317,17 @@ def test_token_count(model_cache, model_name) -> None:
         doc_token_count = model.token_count(documents)
         assert first_doc_token_count + second_doc_token_count == doc_token_count
         assert doc_token_count == model.token_count(documents, batch_size=1)
+
+
+@pytest.mark.parametrize(
+    "model_name,dim",
+    [("sentence-transformers/all-MiniLM-L6-v2", 384), ("thenlper/gte-base", 768)],
+)
+def test_mixed_length_batch_with_fixed_padding(model_cache, model_name: str, dim: int) -> None:
+    # both models serialize a fixed padding length of 128 in tokenizer.json; gte-base truncates
+    # at 512, so a document longer than 128 makes the batch ragged unless the padding is relaxed
+    with model_cache(model_name) as model:
+        assert model.model.tokenizer.padding["length"] is None
+
+        embeddings = np.stack(list(model.embed(["hello world", "retrieval " * 200])), axis=0)
+        assert embeddings.shape == (2, dim)
