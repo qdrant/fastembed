@@ -12,8 +12,8 @@ This distribution includes the following Jina AI models, each with its respectiv
 
 These models are developed by Jina (https://jina.ai/) and are subject to Jina AI's licensing terms.
 
-This distribution includes the following Google models, each with its respective license:
-- vidore/colpali-v1.3
+This distribution includes the following Gemma-based models, each with its respective license:
+- Qdrant/colpali-v1.3-fp16
     - License: gemma
 - google/embeddinggemma-300m
     - License: gemma

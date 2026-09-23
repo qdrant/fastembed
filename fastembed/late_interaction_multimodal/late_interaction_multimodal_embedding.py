@@ -33,7 +33,7 @@ class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase)
                          "model": "Qdrant/colpali-v1.3-fp16",
                          "dim": 128,
                          "description": "Text embeddings, Unimodal (text), Aligned to image latent space, ColBERT-compatible, 512 tokens max, 2024.",
-                         "license": "mit",
+                         "license": "gemma",
                          "size_in_GB": 6.06,
                          "sources": {
                             "hf": "Qdrant/colpali-v1.3-fp16",

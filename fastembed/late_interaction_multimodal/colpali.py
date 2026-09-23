@@ -22,7 +22,7 @@ supported_colpali_models: list[DenseModelDescription] = [
         model="Qdrant/colpali-v1.3-fp16",
         dim=128,
         description="Text embeddings, Multimodal (text&image), English, 50 tokens query length truncation, 2024.",
-        license="mit",
+        license="gemma",
         size_in_GB=6.5,
         sources=ModelSource(hf="Qdrant/colpali-v1.3-fp16"),
         additional_files=["model.onnx_data"],
