@@ -65,6 +65,7 @@ class CustomTextEmbedding(OnnxTextEmbedding):
 
     def _get_worker_init_kwargs(self) -> dict[str, Any]:
         return {
+            **super()._get_worker_init_kwargs(),
             "model_description": self.model_description,
             "postprocessing_config": self.POSTPROCESSING_MAPPING[self.model_description.model],
         }

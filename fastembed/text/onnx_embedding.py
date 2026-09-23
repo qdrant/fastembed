@@ -337,6 +337,12 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):
     def _get_worker_class(cls) -> Type["TextEmbeddingWorker[NumpyArray]"]:
         return OnnxTextEmbeddingWorker
 
+    def _get_worker_init_kwargs(self) -> dict[str, Any]:
+        return {
+            **super()._get_worker_init_kwargs(),
+            "max_length": self.max_length,
+        }
+
     def _preprocess_onnx_input(
         self, onnx_input: dict[str, NumpyArray], **kwargs: Any
     ) -> dict[str, NumpyArray]:

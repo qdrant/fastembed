@@ -331,3 +331,10 @@ def test_mixed_length_batch_with_fixed_padding(model_cache, model_name: str, dim
 
         embeddings = np.stack(list(model.embed(["hello world", "retrieval " * 200])), axis=0)
         assert embeddings.shape == (2, dim)
+
+
+def test_onnx_text_embedding_worker_init_kwargs_preserves_max_length() -> None:
+    embedding = OnnxTextEmbedding.__new__(OnnxTextEmbedding)
+    embedding.max_length = 256
+    assert embedding._get_worker_init_kwargs().get("max_length") == 256
+
