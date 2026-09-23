@@ -55,6 +55,7 @@ class OnnxTextModel(OnnxModel[T]):
         cuda: bool | Device = Device.AUTO,
         device_id: int | None = None,
         extra_session_options: dict[str, Any] | None = None,
+        max_length: int | None = None,
     ) -> None:
         super()._load_onnx_model(
             model_dir=model_dir,
@@ -65,7 +66,9 @@ class OnnxTextModel(OnnxModel[T]):
             device_id=device_id,
             extra_session_options=extra_session_options,
         )
-        self.tokenizer, self.special_token_to_id = load_tokenizer(model_dir=model_dir)
+        self.tokenizer, self.special_token_to_id = load_tokenizer(
+            model_dir=model_dir, max_length=max_length
+        )
 
     def load_onnx_model(self) -> None:
         raise NotImplementedError("Subclasses must implement this method")

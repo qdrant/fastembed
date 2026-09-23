@@ -71,7 +71,9 @@ def _resolve_max_context(tokenizer_config: dict[str, Any], model_dir: Path) -> i
     return min(candidates)
 
 
-def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
+def load_tokenizer(
+    model_dir: Path, max_length: int | None = None
+) -> tuple[Tokenizer, dict[str, int]]:
     tokenizer_path = model_dir / "tokenizer.json"
     if not tokenizer_path.exists():
         raise ValueError(f"Could not find tokenizer.json in {model_dir}")
@@ -90,7 +92,15 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
     with open(str(tokenizer_config_path)) as tokenizer_config_file:
         tokenizer_config = json.load(tokenizer_config_file)
 
-    max_context = _resolve_max_context(tokenizer_config, model_dir)
+    if max_length is not None:
+        valid_max_length = _valid_context(max_length)
+        if valid_max_length is None:
+            raise ValueError(
+                f"max_length must be a positive integer <= {sys.maxsize}, got {max_length}"
+            )
+        max_context = valid_max_length
+    else:
+        max_context = _resolve_max_context(tokenizer_config, model_dir)
 
     tokens_map = load_special_tokens(model_dir)
 

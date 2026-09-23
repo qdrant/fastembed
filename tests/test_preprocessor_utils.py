@@ -331,3 +331,21 @@ def test_list_valued_map_entries_are_registered(make_model_dir, additional) -> N
     _, specials = load_tokenizer(model_dir)
 
     assert "<|list_str|>" in specials
+
+
+def test_explicit_max_length_override(make_model_dir) -> None:
+    """User-provided max_length takes precedence over serialized tokenizer configs."""
+    model_dir = make_model_dir(
+        tokenizer_config={"model_max_length": 512, "max_length": 128},
+    )
+
+    tokenizer, _ = load_tokenizer(model_dir, max_length=256)
+    assert tokenizer.truncation["max_length"] == 256
+
+
+def test_invalid_explicit_max_length_raises(make_model_dir) -> None:
+    model_dir = make_model_dir()
+
+    with pytest.raises(ValueError, match="max_length must be a positive integer"):
+        load_tokenizer(model_dir, max_length=0)
+

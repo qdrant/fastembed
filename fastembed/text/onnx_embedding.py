@@ -270,6 +270,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):
         super().__init__(model_name, cache_dir, threads, **kwargs)
         self.providers = providers
         self.lazy_load = lazy_load
+        self.max_length = kwargs.get("max_length")
         self._extra_session_options = self._select_exposed_session_options(kwargs)
         # List of device ids, that can be used for data parallel processing in workers
         self.device_ids = device_ids
@@ -366,6 +367,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):
             cuda=self.cuda,
             device_id=self.device_id,
             extra_session_options=self._extra_session_options,
+            max_length=self.max_length,
         )
 
     def token_count(
