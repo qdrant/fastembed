@@ -3,6 +3,53 @@ import pytest
 from PIL import Image
 
 from fastembed.image.transform.functional import normalize, resize
+from fastembed.image.transform.operators import Compose
+
+
+@pytest.mark.parametrize(
+    ("interpolation", "resample"),
+    [
+        ("nearest", Image.Resampling.NEAREST),
+        ("NeArEsT", Image.Resampling.NEAREST),
+        (0, Image.Resampling.NEAREST),
+        (Image.Resampling.NEAREST, Image.Resampling.NEAREST),
+        ("lanczos", Image.Resampling.LANCZOS),
+        ("bilinear", Image.Resampling.BILINEAR),
+        ("bicubic", Image.Resampling.BICUBIC),
+        ("box", Image.Resampling.BOX),
+        ("hamming", Image.Resampling.HAMMING),
+        (None, Image.Resampling.BICUBIC),
+    ],
+)
+def test_jina_clip_interpolation(
+    interpolation: str | int | None, resample: Image.Resampling
+) -> None:
+    processor = Compose.from_config(
+        {
+            "image_processor_type": "JinaCLIPImageProcessor",
+            "size": 4,
+            "interpolation": interpolation,
+            "do_rescale": False,
+        }
+    )
+    pixels = np.array([[0, 255], [255, 0]], dtype=np.uint8)
+    image = Image.fromarray(np.repeat(pixels[:, :, None], 3, axis=2))
+
+    result = processor([image])[0]
+    expected = np.asarray(image.resize((4, 4), resample=resample)).transpose(2, 0, 1)
+    np.testing.assert_array_equal(result, expected)
+
+
+@pytest.mark.parametrize("interpolation", ["", "unknown"])
+def test_jina_clip_rejects_unknown_interpolation(interpolation: str) -> None:
+    with pytest.raises(ValueError, match="Unknown interpolation method"):
+        Compose.from_config(
+            {
+                "image_processor_type": "JinaCLIPImageProcessor",
+                "size": 4,
+                "interpolation": interpolation,
+            }
+        )
 
 
 @pytest.mark.parametrize(
