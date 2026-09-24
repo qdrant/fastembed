@@ -51,9 +51,13 @@ supported_bm25_models: list[SparseModelDescription] = [
         license="apache-2.0",
         size_in_GB=0.01,
         sources=ModelSource(hf="Qdrant/bm25"),
-        additional_files=[f"{lang}.txt" for lang in supported_languages],
+        # The repo has no tamil.txt, and Tamil works without stopwords. Listing a missing file
+        # would make download_model reject every cached snapshot.
+        additional_files=[f"{lang}.txt" for lang in supported_languages if lang != "tamil"],
         requires_idf=True,
-        model_file="mock.file",
+        # BM25 has no weights, but download_model requires model_file in a cached snapshot, so
+        # point it at the repo's (empty) config.json.
+        model_file="config.json",
     ),
 ]
 
