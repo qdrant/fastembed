@@ -440,7 +440,6 @@ class ModelManagement(Generic[T]):
                     "description": "Base English model, v1.5",
                     "size_in_GB": 0.44,
                     "sources": {
-                        "url": "https://storage.googleapis.com/qdrant-fastembed/fast-bge-base-en-v1.5.tar.gz",
                         "hf": "qdrant/bge-base-en-v1.5-onnx-q",
                     }
                 }
