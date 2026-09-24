@@ -396,15 +396,17 @@ class ModelManagement(Generic[T]):
 
         # check if the model_dir and the model files are both present for macOS
         if model_dir.exists() and len(list(model_dir.glob("*"))) > 0:
-            if deprecated_tar_struct:
+            if deprecated_tar_struct and not source_url:
                 # No built-in model is served from the bucket anymore, only copies of it remain.
-                # stacklevel points at the caller of TextEmbedding(...), the path that gets here.
+                # A model with a url of its own (a custom one) got its copy from there instead.
+                # stacklevel points at the caller of TextEmbedding(...) via download_model.
                 warnings.warn(
                     f"Loading {model_name} from {model_dir}, a copy downloaded from Google Cloud "
                     "Storage by an older fastembed version. Support for such copies is deprecated "
                     "and will be removed in a future release. To switch to Hugging Face, load the "
-                    "model once with network access (without `local_files_only=True` or "
-                    f"`HF_HUB_OFFLINE=1`), then delete {model_dir}.",
+                    "model once while huggingface.co (or an `HF_ENDPOINT` mirror) is reachable, "
+                    "without `local_files_only=True` or `HF_HUB_OFFLINE=1`, then delete "
+                    f"{model_dir}.",
                     FutureWarning,
                     stacklevel=5,
                 )
@@ -547,7 +549,7 @@ class ModelManagement(Generic[T]):
                 try:
                     return cls.retrieve_model_gcs(
                         model.model,
-                        str(url_source),
+                        url_source or "",
                         str(cache_dir),
                         deprecated_tar_struct=model.sources.deprecated_tar_struct,
                         local_files_only=local_files_only,
@@ -555,6 +557,17 @@ class ModelManagement(Generic[T]):
                 except Exception:
                     if not local_files_only:
                         logger.error(f"Could not download model from url: {url_source}")
+            elif model.sources.deprecated_tar_struct:
+                # Nothing is downloaded from the bucket anymore, but an old copy may still be cached.
+                legacy_dir = Path(cache_dir) / f"fast-{model.model.split('/')[-1]}"
+                if legacy_dir.is_dir() and any(legacy_dir.iterdir()):
+                    return cls.retrieve_model_gcs(
+                        model.model,
+                        "",
+                        str(cache_dir),
+                        deprecated_tar_struct=True,
+                        local_files_only=True,
+                    )
 
             if local_files_only:
                 logger.error("Could not find model in cache_dir")
