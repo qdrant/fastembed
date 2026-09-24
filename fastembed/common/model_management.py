@@ -12,7 +12,7 @@ from pathlib import Path, PureWindowsPath
 from typing import Any, TypeVar, Generic
 
 import requests
-from huggingface_hub import snapshot_download, model_info, list_repo_tree
+from huggingface_hub import constants, snapshot_download, model_info, list_repo_tree
 from huggingface_hub.hf_api import RepoFile
 from huggingface_hub.utils import (
     RepositoryNotFoundError,
@@ -259,7 +259,11 @@ class ModelManagement(Generic[T]):
             )
             return result
 
-        repo_revision = model_info(hf_source_repo).sha
+        # hub sends this request with no timeout unless given one, so an endpoint that accepts
+        # the connection but never answers would block here for good, before download_model can
+        # retry or fall back to another source. list_repo_tree and snapshot_download's own
+        # metadata requests can't be given one, but a silent endpoint now fails here first.
+        repo_revision = model_info(hf_source_repo, timeout=constants.HF_HUB_ETAG_TIMEOUT).sha
         repo_tree = list(list_repo_tree(hf_source_repo, revision=repo_revision, repo_type="model"))
 
         allowed_extensions = {".json", ".onnx", ".txt"}
