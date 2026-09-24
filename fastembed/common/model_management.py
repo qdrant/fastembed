@@ -5,6 +5,7 @@ import json
 import shutil
 import tarfile
 import tempfile
+import warnings
 import contextlib
 from copy import deepcopy
 from pathlib import Path, PureWindowsPath
@@ -374,6 +375,18 @@ class ModelManagement(Generic[T]):
 
         # check if the model_dir and the model files are both present for macOS
         if model_dir.exists() and len(list(model_dir.glob("*"))) > 0:
+            if deprecated_tar_struct:
+                # No built-in model is served from the bucket anymore, only copies of it remain.
+                # stacklevel points at the caller of TextEmbedding(...), the path that gets here.
+                warnings.warn(
+                    f"Loading {model_name} from {model_dir}, a copy downloaded from Google Cloud "
+                    "Storage by an older fastembed version. Support for such copies is deprecated "
+                    "and will be removed in a future release. To switch to Hugging Face, load the "
+                    "model once with network access (without `local_files_only=True` or "
+                    f"`HF_HUB_OFFLINE=1`), then delete {model_dir}.",
+                    FutureWarning,
+                    stacklevel=5,
+                )
             return model_dir
 
         if local_files_only:
