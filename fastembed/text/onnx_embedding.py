@@ -19,7 +19,6 @@ supported_onnx_models: list[DenseModelDescription] = [
         size_in_GB=0.42,
         sources=ModelSource(
             hf="Qdrant/fast-bge-base-en",
-            url="https://storage.googleapis.com/qdrant-fastembed/fast-bge-base-en.tar.gz",
             _deprecated_tar_struct=True,
         ),
         model_file="model_optimized.onnx",
@@ -35,7 +34,6 @@ supported_onnx_models: list[DenseModelDescription] = [
         size_in_GB=0.21,
         sources=ModelSource(
             hf="Qdrant/bge-base-en-v1.5-onnx-Q",
-            url="https://storage.googleapis.com/qdrant-fastembed/fast-bge-base-en-v1.5.tar.gz",
             _deprecated_tar_struct=True,
         ),
         model_file="model_optimized.onnx",
@@ -63,7 +61,6 @@ supported_onnx_models: list[DenseModelDescription] = [
         size_in_GB=0.13,
         sources=ModelSource(
             hf="Qdrant/bge-small-en",
-            url="https://storage.googleapis.com/qdrant-fastembed/BAAI-bge-small-en.tar.gz",
             _deprecated_tar_struct=True,
         ),
         model_file="model_optimized.onnx",
@@ -91,7 +88,6 @@ supported_onnx_models: list[DenseModelDescription] = [
         size_in_GB=0.09,
         sources=ModelSource(
             hf="Qdrant/bge-small-zh-v1.5",
-            url="https://storage.googleapis.com/qdrant-fastembed/fast-bge-small-zh-v1.5.tar.gz",
             _deprecated_tar_struct=True,
         ),
         model_file="model_optimized.onnx",
