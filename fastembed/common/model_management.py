@@ -27,6 +27,27 @@ T = TypeVar("T", bound=BaseModelDescription)
 _DOWNLOAD_CHUNK_SIZE = 256 * 1024
 
 
+def _hf_transport_errors() -> tuple[type[Exception], ...]:
+    """Network errors of huggingface_hub's HTTP library that aren't OSError.
+
+    A refused connection, a DNS failure or a timeout raises an OSError in huggingface_hub 0.x,
+    which is built on requests, but a TransportError in 1.x (httpx) and 2.x (httpx2).
+    """
+    try:
+        # huggingface_hub>=1.30 re-exports whichever of httpx and httpx2 it's built on.
+        from huggingface_hub.utils import httpx
+    except ImportError:
+        try:
+            import httpx  # huggingface_hub 1.0 to 1.29
+        except ImportError:  # huggingface_hub 0.x
+            return ()
+    return (httpx.TransportError,)
+
+
+# Errors from an HF download that download_model handles by falling back to url and retrying.
+_HF_DOWNLOAD_ERRORS = (OSError, RepositoryNotFoundError, ValueError) + _hf_transport_errors()
+
+
 class ModelManagement(Generic[T]):
     METADATA_FILE = "files_metadata.json"
 
@@ -502,7 +523,7 @@ class ModelManagement(Generic[T]):
                             **kwargs,
                         )
                     )
-                except (EnvironmentError, RepositoryNotFoundError, ValueError) as e:
+                except _HF_DOWNLOAD_ERRORS as e:
                     if not local_files_only:
                         logger.error(
                             f"Could not download model from HuggingFace: {e} "
