@@ -303,11 +303,13 @@ class ModelManagement(Generic[T]):
                             "Local file sizes do not match the metadata."
                         )  # do not raise, still make an attempt to load the model
                 try:
+                    # a legacy source is only ever resolved against the cache: sending it
+                    # to the hub would ask for the very redirect this casing avoids
                     return snapshot_download(
                         repo_id=source,
                         allow_patterns=allow_patterns,
                         cache_dir=cache_dir,
-                        local_files_only=local_files_only,
+                        local_files_only=True,
                         **kwargs,
                     )
                 except _HF_DOWNLOAD_ERRORS:
