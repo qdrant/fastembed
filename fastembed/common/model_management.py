@@ -13,8 +13,10 @@ from typing import Any, TypeVar, Generic
 
 import requests
 from huggingface_hub import constants, snapshot_download, model_info, list_repo_tree
+from huggingface_hub.file_download import repo_folder_name
 from huggingface_hub.hf_api import RepoFile
 from huggingface_hub.utils import (
+    HFValidationError,
     RepositoryNotFoundError,
     disable_progress_bars,
     enable_progress_bars,
@@ -173,25 +175,23 @@ class ModelManagement(Generic[T]):
         Returns:
             str | None: The differently cased source found in the cache, None if there is none.
         """
-        org, _, name = hf_source_repo.partition("/")
-        if not name:
+        separator = constants.REPO_ID_SEPARATOR
+        try:
+            expected = repo_folder_name(repo_id=hf_source_repo, repo_type="model")
+            entries = list(Path(cache_dir).iterdir())
+        except (HFValidationError, OSError):
             return None
 
-        expected = f"models--{org}--{name}"
-        try:
-            entries = list(Path(cache_dir).iterdir())
-        except OSError:
-            return None
+        # the repo id sits at the tail of the folder name, with every "/" replaced
+        offset = len(expected) - len(hf_source_repo.replace("/", separator))
 
         for entry in entries:
             if entry.name == expected or entry.name.lower() != expected.lower():
                 continue
             if not entry.is_dir():
                 continue
-            # casing never changes length, so org and name keep their offsets
-            org_at = len("models--")
-            name_at = org_at + len(org) + len("--")
-            return f"{entry.name[org_at : org_at + len(org)]}/{entry.name[name_at:]}"
+            # the hub forbids the separator inside a repo id, so it only marks the split
+            return entry.name[offset:].replace(separator, "/")
         return None
 
     @classmethod
@@ -275,36 +275,49 @@ class ModelManagement(Generic[T]):
 
         allow_patterns.extend(extra_patterns)
 
-        snapshot_dir = Path(cache_dir) / f"models--{hf_source_repo.replace('/', '--')}"
+        snapshot_dir = Path(cache_dir) / repo_folder_name(
+            repo_id=hf_source_repo, repo_type="model"
+        )
         metadata_file = snapshot_dir / cls.METADATA_FILE
 
         if local_files_only:
             disable_progress_bars()
-            if not snapshot_dir.exists():
-                legacy_source = cls._find_legacy_cased_source(cache_dir, hf_source_repo)
-                if legacy_source is not None:
-                    logger.info(
-                        f"{hf_source_repo} is not in {cache_dir}, loading {legacy_source}, "
-                        "cached from the same repo by an older fastembed version."
+            # a canonical directory can exist yet hold no usable snapshot, e.g. when an
+            # earlier download was interrupted, so fall back on failure rather than on
+            # the directory being absent
+            sources = [hf_source_repo]
+            legacy_source = cls._find_legacy_cased_source(cache_dir, hf_source_repo)
+            if legacy_source is not None:
+                sources.append(legacy_source)
+
+            for index, source in enumerate(sources):
+                snapshot_dir = Path(cache_dir) / repo_folder_name(
+                    repo_id=source, repo_type="model"
+                )
+                metadata_file = snapshot_dir / cls.METADATA_FILE
+                if metadata_file.exists():
+                    metadata = json.loads(metadata_file.read_text())
+                    verified = _verify_files_from_metadata(snapshot_dir, metadata, repo_files=[])
+                    if not verified:
+                        logger.warning(
+                            "Local file sizes do not match the metadata."
+                        )  # do not raise, still make an attempt to load the model
+                try:
+                    return snapshot_download(
+                        repo_id=source,
+                        allow_patterns=allow_patterns,
+                        cache_dir=cache_dir,
+                        local_files_only=local_files_only,
+                        **kwargs,
                     )
-                    hf_source_repo = legacy_source
-                    snapshot_dir = Path(cache_dir) / f"models--{hf_source_repo.replace('/', '--')}"
-                    metadata_file = snapshot_dir / cls.METADATA_FILE
-            if metadata_file.exists():
-                metadata = json.loads(metadata_file.read_text())
-                verified = _verify_files_from_metadata(snapshot_dir, metadata, repo_files=[])
-                if not verified:
-                    logger.warning(
-                        "Local file sizes do not match the metadata."
-                    )  # do not raise, still make an attempt to load the model
-            result = snapshot_download(
-                repo_id=hf_source_repo,
-                allow_patterns=allow_patterns,
-                cache_dir=cache_dir,
-                local_files_only=local_files_only,
-                **kwargs,
-            )
-            return result
+                except _HF_DOWNLOAD_ERRORS:
+                    if index == len(sources) - 1:
+                        raise
+                    logger.info(
+                        f"{source} is not usable in {cache_dir}, loading "
+                        f"{sources[index + 1]}, cached from the same repo by an older "
+                        "fastembed version."
+                    )
 
         # hub sends this request with no timeout unless given one, so an endpoint that accepts
         # the connection but never answers would block here for good, before download_model can
