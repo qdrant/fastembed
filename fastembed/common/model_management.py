@@ -158,6 +158,43 @@ class ModelManagement(Generic[T]):
         return output_path
 
     @classmethod
+    def _find_legacy_cased_source(cls, cache_dir: str, hf_source_repo: str) -> str | None:
+        """Looks for a cached snapshot of the same repo spelled with a different casing.
+
+        Built-in sources used to be lowercase and were canonicalized once it turned out that
+        relying on the hub's normalizing redirect breaks proxies. Both the hub and fastembed
+        derive the cache directory from the source verbatim, so on a case-sensitive filesystem
+        an offline load would otherwise miss a model an older version had already cached.
+
+        Args:
+            cache_dir (str): The path to the cache directory.
+            hf_source_repo (str): Name of the model on HuggingFace Hub.
+
+        Returns:
+            str | None: The differently cased source found in the cache, None if there is none.
+        """
+        org, _, name = hf_source_repo.partition("/")
+        if not name:
+            return None
+
+        expected = f"models--{org}--{name}"
+        try:
+            entries = list(Path(cache_dir).iterdir())
+        except OSError:
+            return None
+
+        for entry in entries:
+            if entry.name == expected or entry.name.lower() != expected.lower():
+                continue
+            if not entry.is_dir():
+                continue
+            # casing never changes length, so org and name keep their offsets
+            org_at = len("models--")
+            name_at = org_at + len(org) + len("--")
+            return f"{entry.name[org_at : org_at + len(org)]}/{entry.name[name_at:]}"
+        return None
+
+    @classmethod
     def download_files_from_huggingface(
         cls,
         hf_source_repo: str,
@@ -243,6 +280,16 @@ class ModelManagement(Generic[T]):
 
         if local_files_only:
             disable_progress_bars()
+            if not snapshot_dir.exists():
+                legacy_source = cls._find_legacy_cased_source(cache_dir, hf_source_repo)
+                if legacy_source is not None:
+                    logger.info(
+                        f"{hf_source_repo} is not in {cache_dir}, loading {legacy_source}, "
+                        "cached from the same repo by an older fastembed version."
+                    )
+                    hf_source_repo = legacy_source
+                    snapshot_dir = Path(cache_dir) / f"models--{hf_source_repo.replace('/', '--')}"
+                    metadata_file = snapshot_dir / cls.METADATA_FILE
             if metadata_file.exists():
                 metadata = json.loads(metadata_file.read_text())
                 verified = _verify_files_from_metadata(snapshot_dir, metadata, repo_files=[])
