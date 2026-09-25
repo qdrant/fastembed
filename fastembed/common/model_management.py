@@ -51,6 +51,16 @@ def _hf_transport_errors() -> tuple[type[Exception], ...]:
 _HF_DOWNLOAD_ERRORS = (OSError, RepositoryNotFoundError, ValueError) + _hf_transport_errors()
 
 
+class CorruptedCacheError(ValueError):
+    """A cached model file is present but does not match the size recorded for it.
+
+    Distinct from the download failures above so that callers can tell "this snapshot is
+    unusable, look elsewhere" apart from "the hub could not be reached": only the former
+    is worth re-fetching a file the hub's existence-only cache check would otherwise keep.
+    Subclasses ValueError to stay inside _HF_DOWNLOAD_ERRORS for callers that don't care.
+    """
+
+
 class ModelManagement(Generic[T]):
     METADATA_FILE = "files_metadata.json"
 
@@ -215,6 +225,15 @@ class ModelManagement(Generic[T]):
             Path: The path to the model directory.
         """
 
+        def _repo_relative_path(relative_path: Path) -> str:
+            # Cached files are stored under `snapshots/<revision>/<repo_path>`. Strip that
+            # prefix so the remainder matches a repo file's path, which may itself be nested
+            # (e.g. `onnx/model.onnx`).
+            parts = relative_path.parts
+            if len(parts) > 2 and parts[0] == "snapshots":
+                return "/".join(parts[2:])
+            return relative_path.as_posix()
+
         def _verify_files_from_metadata(
             model_dir: Path, stored_metadata: dict[str, Any], repo_files: list[RepoFile]
         ) -> bool:
@@ -226,7 +245,8 @@ class ModelManagement(Generic[T]):
                         return False
 
                     if repo_files:  # online verification
-                        file_info = next((f for f in repo_files if f.path == file_path.name), None)
+                        repo_path = _repo_relative_path(Path(rel_path))
+                        file_info = next((f for f in repo_files if f.path == repo_path), None)
                         if (
                             not file_info
                             or file_info.size != meta["size"]
@@ -249,9 +269,10 @@ class ModelManagement(Generic[T]):
             file_info_map = {f.path: f for f in repo_files}
             for file_path in model_dir.rglob("*"):
                 if file_path.is_file() and file_path.name != cls.METADATA_FILE:
-                    repo_file = file_info_map.get(file_path.name)
+                    relative_path = file_path.relative_to(model_dir)
+                    repo_file = file_info_map.get(_repo_relative_path(relative_path))
                     if repo_file:
-                        meta[str(file_path.relative_to(model_dir))] = {
+                        meta[str(relative_path)] = {
                             "size": repo_file.size,
                             "blob_id": repo_file.blob_id,
                         }
@@ -290,18 +311,46 @@ class ModelManagement(Generic[T]):
             if legacy_source is not None:
                 sources.append(legacy_source)
 
+            # a corrupt candidate is remembered rather than raised on the spot: the next
+            # candidate may still be loadable, and if none is, this is the error worth
+            # reporting, since it is the only one download_model can act on.
+            corruption: CorruptedCacheError | None = None
+
             for index, source in enumerate(sources):
+                last_source = index == len(sources) - 1
                 snapshot_dir = Path(cache_dir) / repo_folder_name(
                     repo_id=source, repo_type="model"
                 )
                 metadata_file = snapshot_dir / cls.METADATA_FILE
                 if metadata_file.exists():
                     metadata = json.loads(metadata_file.read_text())
-                    verified = _verify_files_from_metadata(snapshot_dir, metadata, repo_files=[])
-                    if not verified:
-                        logger.warning(
-                            "Local file sizes do not match the metadata."
-                        )  # do not raise, still make an attempt to load the model
+                    if not _verify_files_from_metadata(snapshot_dir, metadata, repo_files=[]):
+                        # A size mismatch on one of this model's own files (its weights, or
+                        # whatever else its description lists) means loading would later fail
+                        # with a cryptic error, so the snapshot is not offered at all. A
+                        # mismatch confined to a file nothing asked for is left to best-effort
+                        # loading, preserving the previous behavior.
+                        model_files = set(extra_patterns)
+                        model_file_corrupt = any(
+                            _repo_relative_path(Path(rel_path)) in model_files
+                            and (snapshot_dir / rel_path).is_file()
+                            and (snapshot_dir / rel_path).stat().st_size != meta["size"]
+                            for rel_path, meta in metadata.items()
+                        )
+                        if model_file_corrupt:
+                            corruption = corruption or CorruptedCacheError(
+                                f"Cached model files for {source} in {cache_dir} do not match "
+                                "the stored metadata; the cache appears corrupted."
+                            )
+                            if last_source:
+                                raise corruption
+                            logger.info(
+                                f"{source} is corrupted in {cache_dir}, loading "
+                                f"{sources[index + 1]}, cached from the same repo by an older "
+                                "fastembed version."
+                            )
+                            continue
+                        logger.warning("Local file sizes do not match the metadata.")
                 try:
                     # a legacy source is only ever resolved against the cache: sending it
                     # to the hub would ask for the very redirect this casing avoids
@@ -313,7 +362,11 @@ class ModelManagement(Generic[T]):
                         **kwargs,
                     )
                 except _HF_DOWNLOAD_ERRORS:
-                    if index == len(sources) - 1:
+                    if last_source:
+                        # an earlier candidate was corrupt and this one is merely absent:
+                        # report the corruption, the only failure a re-download can fix
+                        if corruption is not None:
+                            raise corruption
                         raise
                     logger.info(
                         f"{source} is not usable in {cache_dir}, loading "
@@ -326,9 +379,13 @@ class ModelManagement(Generic[T]):
         # retry or fall back to another source. list_repo_tree and snapshot_download's own
         # metadata requests can't be given one, but a silent endpoint now fails here first.
         repo_revision = model_info(hf_source_repo, timeout=constants.HF_HUB_ETAG_TIMEOUT).sha
-        repo_tree = list(list_repo_tree(hf_source_repo, revision=repo_revision, repo_type="model"))
+        repo_tree = list(
+            list_repo_tree(
+                hf_source_repo, revision=repo_revision, repo_type="model", recursive=True
+            )
+        )
 
-        allowed_extensions = {".json", ".onnx", ".txt"}
+        allowed_extensions = {Path(pattern).suffix for pattern in allow_patterns}
         repo_files = (
             [
                 f
@@ -567,6 +624,12 @@ class ModelManagement(Generic[T]):
         extra_patterns = [model.model_file]
         extra_patterns.extend(model.additional_files)
 
+        # Only a cached file that is present but does not match its recorded size needs
+        # force_download: the hub's cache check is existence-only, so a plain snapshot_download
+        # would keep the truncated blob. Every other probe failure (a missing file, an absent
+        # cache) is served by an ordinary download, which re-uses what is already on disk.
+        force_download = False
+
         if hf_source:
             try:
                 cache_kwargs = deepcopy(kwargs)
@@ -583,6 +646,8 @@ class ModelManagement(Generic[T]):
                     (resolved_path / file).exists() for file in extra_patterns
                 ):
                     return resolved_path
+            except CorruptedCacheError:
+                force_download = True
             except Exception:
                 pass
             finally:
@@ -594,21 +659,27 @@ class ModelManagement(Generic[T]):
 
             if hf_source and not local_files_only:
                 # we have already tried loading with `local_files_only=True` via hf and we failed
+
+                # Merged into kwargs so a caller-supplied force_download can't raise a
+                # duplicate keyword error. Cleared straight away: force_download deletes the
+                # partially fetched `.incomplete` file, so leaving it on would make every
+                # retry restart a large download from zero instead of resuming it.
+                attempt_kwargs = {**kwargs, "force_download": True} if force_download else kwargs
+                force_download = False
                 try:
                     return Path(
                         cls.download_files_from_huggingface(
                             hf_source,
                             cache_dir=cache_dir,
                             extra_patterns=extra_patterns,
-                            **kwargs,
+                            **attempt_kwargs,
                         )
                     )
                 except _HF_DOWNLOAD_ERRORS as e:
-                    if not local_files_only:
-                        logger.error(
-                            f"Could not download model from HuggingFace: {e} "
-                            "Falling back to other sources."
-                        )
+                    logger.error(
+                        f"Could not download model from HuggingFace: {e} "
+                        "Falling back to other sources."
+                    )
                 finally:
                     enable_progress_bars()
             if url_source or local_files_only:
