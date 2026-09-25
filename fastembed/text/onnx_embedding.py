@@ -47,7 +47,7 @@ supported_onnx_models: list[DenseModelDescription] = [
         ),
         license="mit",
         size_in_GB=1.20,
-        sources=ModelSource(hf="qdrant/bge-large-en-v1.5-onnx"),
+        sources=ModelSource(hf="Qdrant/bge-large-en-v1.5-onnx"),
         model_file="model.onnx",
     ),
     DenseModelDescription(
@@ -113,7 +113,7 @@ supported_onnx_models: list[DenseModelDescription] = [
         ),
         license="apache-2.0",
         size_in_GB=0.09,
-        sources=ModelSource(hf="snowflake/snowflake-arctic-embed-xs"),
+        sources=ModelSource(hf="Snowflake/snowflake-arctic-embed-xs"),
         model_file="onnx/model.onnx",
     ),
     DenseModelDescription(
@@ -125,7 +125,7 @@ supported_onnx_models: list[DenseModelDescription] = [
         ),
         license="apache-2.0",
         size_in_GB=0.13,
-        sources=ModelSource(hf="snowflake/snowflake-arctic-embed-s"),
+        sources=ModelSource(hf="Snowflake/snowflake-arctic-embed-s"),
         model_file="onnx/model.onnx",
     ),
     DenseModelDescription(
@@ -149,7 +149,7 @@ supported_onnx_models: list[DenseModelDescription] = [
         ),
         license="apache-2.0",
         size_in_GB=0.54,
-        sources=ModelSource(hf="snowflake/snowflake-arctic-embed-m-long"),
+        sources=ModelSource(hf="Snowflake/snowflake-arctic-embed-m-long"),
         model_file="onnx/model.onnx",
     ),
     DenseModelDescription(
@@ -161,7 +161,7 @@ supported_onnx_models: list[DenseModelDescription] = [
         ),
         license="apache-2.0",
         size_in_GB=1.02,
-        sources=ModelSource(hf="snowflake/snowflake-arctic-embed-l"),
+        sources=ModelSource(hf="Snowflake/snowflake-arctic-embed-l"),
         model_file="onnx/model.onnx",
     ),
     DenseModelDescription(

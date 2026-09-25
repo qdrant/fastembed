@@ -43,7 +43,7 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
                         "license": "apache-2.0",
                         "size_in_GB": 0.532,
                         "sources": {
-                            "hf": "qdrant/SPLADE_PP_en_v1",
+                            "hf": "Qdrant/Splade_PP_en_v1",
                         },
                     }
                 ]

@@ -13,8 +13,10 @@ from typing import Any, TypeVar, Generic
 
 import requests
 from huggingface_hub import constants, snapshot_download, model_info, list_repo_tree
+from huggingface_hub.file_download import repo_folder_name
 from huggingface_hub.hf_api import RepoFile
 from huggingface_hub.utils import (
+    HFValidationError,
     RepositoryNotFoundError,
     disable_progress_bars,
     enable_progress_bars,
@@ -158,6 +160,41 @@ class ModelManagement(Generic[T]):
         return output_path
 
     @classmethod
+    def _find_legacy_cased_source(cls, cache_dir: str, hf_source_repo: str) -> str | None:
+        """Looks for a cached snapshot of the same repo spelled with a different casing.
+
+        Built-in sources used to be lowercase and were canonicalized once it turned out that
+        relying on the hub's normalizing redirect breaks proxies. Both the hub and fastembed
+        derive the cache directory from the source verbatim, so on a case-sensitive filesystem
+        an offline load would otherwise miss a model an older version had already cached.
+
+        Args:
+            cache_dir (str): The path to the cache directory.
+            hf_source_repo (str): Name of the model on HuggingFace Hub.
+
+        Returns:
+            str | None: The differently cased source found in the cache, None if there is none.
+        """
+        separator = constants.REPO_ID_SEPARATOR
+        try:
+            expected = repo_folder_name(repo_id=hf_source_repo, repo_type="model")
+            entries = list(Path(cache_dir).iterdir())
+        except (HFValidationError, OSError):
+            return None
+
+        # the repo id sits at the tail of the folder name, with every "/" replaced
+        offset = len(expected) - len(hf_source_repo.replace("/", separator))
+
+        for entry in entries:
+            if entry.name == expected or entry.name.lower() != expected.lower():
+                continue
+            if not entry.is_dir():
+                continue
+            # the hub forbids the separator inside a repo id, so it only marks the split
+            return entry.name[offset:].replace(separator, "/")
+        return None
+
+    @classmethod
     def download_files_from_huggingface(
         cls,
         hf_source_repo: str,
@@ -169,7 +206,7 @@ class ModelManagement(Generic[T]):
         """
         Downloads a model from HuggingFace Hub.
         Args:
-            hf_source_repo (str): Name of the model on HuggingFace Hub, e.g. "qdrant/all-MiniLM-L6-v2-onnx".
+            hf_source_repo (str): Name of the model on HuggingFace Hub, e.g. "Qdrant/all-MiniLM-L6-v2-onnx".
             cache_dir (Optional[str]): The path to the cache directory.
             extra_patterns (list[str]): extra patterns to allow in the snapshot download, typically
                 includes the required model files.
@@ -238,26 +275,51 @@ class ModelManagement(Generic[T]):
 
         allow_patterns.extend(extra_patterns)
 
-        snapshot_dir = Path(cache_dir) / f"models--{hf_source_repo.replace('/', '--')}"
+        snapshot_dir = Path(cache_dir) / repo_folder_name(
+            repo_id=hf_source_repo, repo_type="model"
+        )
         metadata_file = snapshot_dir / cls.METADATA_FILE
 
         if local_files_only:
             disable_progress_bars()
-            if metadata_file.exists():
-                metadata = json.loads(metadata_file.read_text())
-                verified = _verify_files_from_metadata(snapshot_dir, metadata, repo_files=[])
-                if not verified:
-                    logger.warning(
-                        "Local file sizes do not match the metadata."
-                    )  # do not raise, still make an attempt to load the model
-            result = snapshot_download(
-                repo_id=hf_source_repo,
-                allow_patterns=allow_patterns,
-                cache_dir=cache_dir,
-                local_files_only=local_files_only,
-                **kwargs,
-            )
-            return result
+            # a canonical directory can exist yet hold no usable snapshot, e.g. when an
+            # earlier download was interrupted, so fall back on failure rather than on
+            # the directory being absent
+            sources = [hf_source_repo]
+            legacy_source = cls._find_legacy_cased_source(cache_dir, hf_source_repo)
+            if legacy_source is not None:
+                sources.append(legacy_source)
+
+            for index, source in enumerate(sources):
+                snapshot_dir = Path(cache_dir) / repo_folder_name(
+                    repo_id=source, repo_type="model"
+                )
+                metadata_file = snapshot_dir / cls.METADATA_FILE
+                if metadata_file.exists():
+                    metadata = json.loads(metadata_file.read_text())
+                    verified = _verify_files_from_metadata(snapshot_dir, metadata, repo_files=[])
+                    if not verified:
+                        logger.warning(
+                            "Local file sizes do not match the metadata."
+                        )  # do not raise, still make an attempt to load the model
+                try:
+                    # a legacy source is only ever resolved against the cache: sending it
+                    # to the hub would ask for the very redirect this casing avoids
+                    return snapshot_download(
+                        repo_id=source,
+                        allow_patterns=allow_patterns,
+                        cache_dir=cache_dir,
+                        local_files_only=True,
+                        **kwargs,
+                    )
+                except _HF_DOWNLOAD_ERRORS:
+                    if index == len(sources) - 1:
+                        raise
+                    logger.info(
+                        f"{source} is not usable in {cache_dir}, loading "
+                        f"{sources[index + 1]}, cached from the same repo by an older "
+                        "fastembed version."
+                    )
 
         # hub sends this request with no timeout unless given one, so an endpoint that accepts
         # the connection but never answers would block here for good, before download_model can
@@ -480,7 +542,7 @@ class ModelManagement(Generic[T]):
                     "description": "Base English model, v1.5",
                     "size_in_GB": 0.44,
                     "sources": {
-                        "hf": "qdrant/bge-base-en-v1.5-onnx-q",
+                        "hf": "Qdrant/bge-base-en-v1.5-onnx-Q",
                     }
                 }
                 ```

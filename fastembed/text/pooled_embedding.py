@@ -55,7 +55,7 @@ supported_pooled_models: list[DenseModelDescription] = [
         ),
         license="apache-2.0",
         size_in_GB=0.22,
-        sources=ModelSource(hf="qdrant/paraphrase-multilingual-MiniLM-L12-v2-onnx-Q"),
+        sources=ModelSource(hf="Qdrant/paraphrase-multilingual-MiniLM-L12-v2-onnx-Q"),
         model_file="model_optimized.onnx",
     ),
     DenseModelDescription(
@@ -67,7 +67,7 @@ supported_pooled_models: list[DenseModelDescription] = [
         ),
         license="apache-2.0",
         size_in_GB=1.00,
-        sources=ModelSource(hf="xenova/paraphrase-multilingual-mpnet-base-v2"),
+        sources=ModelSource(hf="Xenova/paraphrase-multilingual-mpnet-base-v2"),
         model_file="onnx/model.onnx",
     ),
     DenseModelDescription(
@@ -80,7 +80,7 @@ supported_pooled_models: list[DenseModelDescription] = [
         license="mit",
         size_in_GB=2.24,
         sources=ModelSource(
-            hf="qdrant/multilingual-e5-large-onnx",
+            hf="Qdrant/multilingual-e5-large-onnx",
             _deprecated_tar_struct=True,
         ),
         model_file="model.onnx",
