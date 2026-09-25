@@ -372,7 +372,7 @@ class Compose:
             if isinstance(interpolation, str):
                 resample = cls._interpolation_resolver(interpolation)
             else:
-                resample = interpolation or Image.Resampling.BICUBIC
+                resample = interpolation if interpolation is not None else Image.Resampling.BICUBIC
 
             if "size" in config:
                 resize_mode = config.get("resize_mode", "shortest")
@@ -493,7 +493,7 @@ class Compose:
             "hamming": Image.Resampling.HAMMING,
         }
 
-        if resample and (method := interpolation_map.get(resample.lower())):
+        if resample and (method := interpolation_map.get(resample.lower())) is not None:
             return method
 
         raise ValueError(f"Unknown interpolation method: {resample}")
