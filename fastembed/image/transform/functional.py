@@ -144,14 +144,16 @@ def pad2square(
     left, right = 0, width
     top, bottom = 0, height
 
+    # Jina's reference crops with torchvision's CenterCrop, which rounds the offset half to
+    # even like round() instead of flooring it: a 227 px edge is cropped from 2, not 1
     crop_required = False
     if width > size:
-        left = (width - size) // 2
+        left = round((width - size) / 2)
         right = left + size
         crop_required = True
 
     if height > size:
-        top = (height - size) // 2
+        top = round((height - size) / 2)
         bottom = top + size
         crop_required = True
 
