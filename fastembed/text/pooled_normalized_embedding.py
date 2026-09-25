@@ -19,7 +19,7 @@ supported_pooled_normalized_models: list[DenseModelDescription] = [
         license="apache-2.0",
         size_in_GB=0.09,
         sources=ModelSource(
-            hf="qdrant/all-MiniLM-L6-v2-onnx",
+            hf="Qdrant/all-MiniLM-L6-v2-onnx",
             _deprecated_tar_struct=True,
         ),
         model_file="model.onnx",
@@ -33,7 +33,7 @@ supported_pooled_normalized_models: list[DenseModelDescription] = [
         ),
         license="apache-2.0",
         size_in_GB=0.52,
-        sources=ModelSource(hf="xenova/jina-embeddings-v2-base-en"),
+        sources=ModelSource(hf="Xenova/jina-embeddings-v2-base-en"),
         model_file="onnx/model.onnx",
     ),
     DenseModelDescription(
@@ -45,7 +45,7 @@ supported_pooled_normalized_models: list[DenseModelDescription] = [
         ),
         license="apache-2.0",
         size_in_GB=0.12,
-        sources=ModelSource(hf="xenova/jina-embeddings-v2-small-en"),
+        sources=ModelSource(hf="Xenova/jina-embeddings-v2-small-en"),
         model_file="onnx/model.onnx",
     ),
     DenseModelDescription(
@@ -117,7 +117,7 @@ supported_pooled_normalized_models: list[DenseModelDescription] = [
         ),
         license="mit",
         size_in_GB=1.20,
-        sources=ModelSource(hf="qdrant/gte-large-onnx"),
+        sources=ModelSource(hf="Qdrant/gte-large-onnx"),
         model_file="model.onnx",
     ),
 ]

@@ -169,7 +169,7 @@ class ModelManagement(Generic[T]):
         """
         Downloads a model from HuggingFace Hub.
         Args:
-            hf_source_repo (str): Name of the model on HuggingFace Hub, e.g. "qdrant/all-MiniLM-L6-v2-onnx".
+            hf_source_repo (str): Name of the model on HuggingFace Hub, e.g. "Qdrant/all-MiniLM-L6-v2-onnx".
             cache_dir (Optional[str]): The path to the cache directory.
             extra_patterns (list[str]): extra patterns to allow in the snapshot download, typically
                 includes the required model files.
@@ -480,7 +480,7 @@ class ModelManagement(Generic[T]):
                     "description": "Base English model, v1.5",
                     "size_in_GB": 0.44,
                     "sources": {
-                        "hf": "qdrant/bge-base-en-v1.5-onnx-q",
+                        "hf": "Qdrant/bge-base-en-v1.5-onnx-Q",
                     }
                 }
                 ```

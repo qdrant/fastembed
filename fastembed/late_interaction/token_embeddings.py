@@ -19,7 +19,7 @@ supported_token_embeddings_models = [
         " Prefixes for queries/documents: not necessary, 2023 year.",
         license="apache-2.0",
         size_in_GB=0.12,
-        sources=ModelSource(hf="xenova/jina-embeddings-v2-small-en"),
+        sources=ModelSource(hf="Xenova/jina-embeddings-v2-small-en"),
         model_file="onnx/model.onnx",
     ),
 ]
