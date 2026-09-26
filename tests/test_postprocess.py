@@ -39,8 +39,7 @@ def test_single_input():
         assert np.allclose(fde_query[np.nonzero(fde_query)][:3], CANONICAL_QUERY_VALUES)
 
 
-@pytest.mark.parametrize("method", ["process_document", "process_query"])
-def test_empty_multivectors_raise_value_error(method):
+def test_empty_multivectors_raise_value_error():
     muvera = Muvera(dim=4, k_sim=2, dim_proj=2, r_reps=3)
     empty = np.empty((0, 4))
 
