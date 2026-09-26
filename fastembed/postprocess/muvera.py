@@ -283,6 +283,11 @@ class Muvera:
             vectors.shape[1] == self.dim
         ), f"Expected vectors of shape (n, {self.dim}), got {vectors.shape}"
 
+        # An empty document has no cluster to fill from; match the zero encoding
+        # already produced for an empty query.
+        if len(vectors) == 0:
+            return np.zeros(self.embedding_size)
+
         # Store results from each random projection
         output_vectors = []
 
