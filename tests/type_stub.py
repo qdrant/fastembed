@@ -3,6 +3,11 @@ from fastembed.sparse.bm25 import Bm25
 from fastembed.rerank.cross_encoder import TextCrossEncoder
 
 
+class CustomStemmer:
+    def stem_word(self, word: str) -> str:
+        return word
+
+
 text_embedder = TextEmbedding(cache_dir="models")
 late_interaction_embedder = LateInteractionTextEmbedding(model_name="", cache_dir="models")
 reranker = TextCrossEncoder(model_name="", cache_dir="models")
@@ -16,6 +21,8 @@ bm25_embedder = Bm25(
     token_max_length=1,
     disable_stemmer=False,
     specific_model_path="models",
+    stemmer=CustomStemmer(),
+    stopwords={"the", "a"},
 )
 
 text_embedder.list_supported_models()
