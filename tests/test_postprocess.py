@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from fastembed import LateInteractionTextEmbedding
 from fastembed.postprocess import Muvera
@@ -36,3 +37,12 @@ def test_single_input():
         fde_query = muvera.process_query(multivector)
         assert fde_query.shape[0] == muvera.embedding_size
         assert np.allclose(fde_query[np.nonzero(fde_query)][:3], CANONICAL_QUERY_VALUES)
+
+
+@pytest.mark.parametrize("method", ["process_document", "process_query"])
+def test_empty_multivectors_raise_value_error(method):
+    muvera = Muvera(dim=4, k_sim=2, dim_proj=2, r_reps=3)
+    empty = np.empty((0, 4))
+
+    with pytest.raises(ValueError, match="Cannot encode an empty multivector"):
+        getattr(muvera, method)(empty)
