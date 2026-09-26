@@ -44,5 +44,9 @@ def test_empty_multivectors_raise_value_error(method):
     muvera = Muvera(dim=4, k_sim=2, dim_proj=2, r_reps=3)
     empty = np.empty((0, 4))
 
-    with pytest.raises(ValueError, match="Cannot encode an empty multivector"):
-        getattr(muvera, method)(empty)
+    with pytest.raises(ValueError, match="Cannot encode an empty document"):
+        muvera.process_document(empty)
+
+    with pytest.raises(ValueError, match="Cannot encode an empty query"):
+        muvera.process_query(empty)
+
