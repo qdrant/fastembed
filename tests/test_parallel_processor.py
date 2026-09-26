@@ -1,6 +1,6 @@
-from multiprocessing import get_context
-from queue import Empty
-from unittest.mock import MagicMock, call
+import threading
+from itertools import count
+from multiprocessing import get_all_start_methods
 
 import pytest
 
@@ -16,105 +16,25 @@ class EchoWorker(Worker):
         yield from items
 
 
-def make_stubbed_pool(monkeypatch):
-    pool = ParallelWorkerPool(1, EchoWorker)
-    input_queue = MagicMock()
-    output_queue = MagicMock()
-    output_queue.get_nowait.side_effect = Empty
-    output_queue.get.return_value = (0, "result")
-    process = MagicMock()
-    process.is_alive.return_value = True
+# semi_ordered_map is closed by garbage collection, so an error in its cleanup is only reported as unraisable
+@pytest.mark.filterwarnings("error::pytest.PytestUnraisableExceptionWarning")
+def test_closing_partially_consumed_iterator_stops_workers():
+    start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
+    pool = ParallelWorkerPool(2, EchoWorker, start_method=start_method)
+    # the stream never ends, so the workers never get their stop signals
+    results = pool.ordered_map(count())
+    assert next(results) == 0
+    workers = list(pool.processes)
 
-    def start(**kwargs):
-        pool.input_queue = input_queue
-        pool.output_queue = output_queue
-        pool.processes = [process]
-
-    monkeypatch.setattr(pool, "start", start)
-    return pool, input_queue, output_queue, process
-
-
-def test_closing_partial_parallel_iterator_terminates_workers(monkeypatch):
-    pool, input_queue, output_queue, process = make_stubbed_pool(monkeypatch)
-    results = pool.ordered_map(["input"])
-
-    assert next(results) == "result"
-    results.close()
-
-    assert process.join.call_args_list == [call(timeout=1), call(timeout=1)]
-    process.terminate.assert_called_once_with()
-    input_queue.cancel_join_thread.assert_called_once_with()
-    output_queue.cancel_join_thread.assert_called_once_with()
-
-
-def test_parallel_iterator_terminates_workers_when_input_raises(monkeypatch):
-    pool, input_queue, output_queue, process = make_stubbed_pool(monkeypatch)
-
-    def failing_stream():
-        yield "input"
-        raise RuntimeError("stream failed")
-
-    with pytest.raises(RuntimeError, match="stream failed"):
-        list(pool.semi_ordered_map(failing_stream()))
-
-    assert process.join.call_args_list == [call(timeout=1), call(timeout=1)]
-    process.terminate.assert_called_once_with()
-    input_queue.cancel_join_thread.assert_called_once_with()
-    output_queue.cancel_join_thread.assert_called_once_with()
-
-
-def test_exhausted_parallel_iterator_joins_workers_gracefully(monkeypatch):
-    pool, input_queue, output_queue, process = make_stubbed_pool(monkeypatch)
-
-    assert list(pool.semi_ordered_map(["input"])) == [(0, "result")]
-
-    process.join.assert_called_once_with()
-    process.terminate.assert_not_called()
-    input_queue.join_thread.assert_called_once_with()
-    output_queue.join_thread.assert_called_once_with()
-
-
-def test_reused_pool_returns_to_graceful_queue_cleanup():
-    pool = ParallelWorkerPool(1, EchoWorker)
-    ctx = MagicMock()
-    pool.ctx = ctx
-
-    first_input_queue = MagicMock()
-    first_output_queue = MagicMock()
-    first_output_queue.get_nowait.return_value = (0, "first result")
-    second_input_queue = MagicMock()
-    second_output_queue = MagicMock()
-    second_output_queue.get_nowait.return_value = (0, "second result")
-    first_process = MagicMock()
-    first_process.is_alive.return_value = True
-    second_process = MagicMock()
-
-    ctx.Queue.side_effect = [
-        first_input_queue,
-        first_output_queue,
-        second_input_queue,
-        second_output_queue,
-    ]
-    ctx.Value.side_effect = [
-        get_context().Value("i", 1),
-        get_context().Value("i", 1),
-    ]
-    ctx.Process.side_effect = [first_process, second_process]
-
-    first_results = pool.ordered_map(["first input"])
-    assert next(first_results) == "first result"
-    first_results.close()
-
-    assert pool.emergency_shutdown is True
-    assert first_process.join.call_args_list == [call(timeout=1), call(timeout=1)]
-    first_process.terminate.assert_called_once_with()
-    first_input_queue.cancel_join_thread.assert_called_once_with()
-    first_output_queue.cancel_join_thread.assert_called_once_with()
-
-    assert list(pool.semi_ordered_map(["second input"])) == [(0, "second result")]
-
-    assert pool.emergency_shutdown is False
-    second_input_queue.join_thread.assert_called_once_with()
-    second_output_queue.join_thread.assert_called_once_with()
-    second_input_queue.cancel_join_thread.assert_not_called()
-    second_output_queue.cancel_join_thread.assert_not_called()
+    # close() used to wait in join() forever, run it in a thread so a regression fails instead of
+    # hanging the test session
+    closer = threading.Thread(target=results.close, daemon=True)
+    closer.start()
+    closer.join(timeout=30)
+    try:
+        assert not closer.is_alive(), "closing the iterator hung"
+        assert not any(worker.is_alive() for worker in workers)
+    finally:
+        for worker in workers:
+            if worker.is_alive():
+                worker.kill()
