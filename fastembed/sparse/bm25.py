@@ -162,6 +162,7 @@ class Bm25(SparseTextEmbeddingBase):
         self.punctuation = set(get_all_punctuation())
         self.disable_stemmer = disable_stemmer
 
+        self.stopwords: set[str]
         if self._custom_stopwords is not None:
             self.stopwords = self._custom_stopwords
         elif disable_stemmer:
@@ -169,6 +170,7 @@ class Bm25(SparseTextEmbeddingBase):
         else:
             self.stopwords = set(self._load_stopwords(self._model_dir, self.language))
 
+        self.stemmer: Stemmer | None
         if stemmer is not None:
             self.stemmer = stemmer
         elif disable_stemmer:
