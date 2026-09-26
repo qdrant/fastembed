@@ -36,3 +36,13 @@ def test_single_input():
         fde_query = muvera.process_query(multivector)
         assert fde_query.shape[0] == muvera.embedding_size
         assert np.allclose(fde_query[np.nonzero(fde_query)][:3], CANONICAL_QUERY_VALUES)
+
+
+def test_empty_multivector_encodings():
+    muvera = Muvera(dim=4, k_sim=2, dim_proj=2, r_reps=3)
+    empty = np.empty((0, 4))
+
+    for encode in (muvera.process_document, muvera.process_query):
+        encoded = encode(empty)
+        assert encoded.shape == (muvera.embedding_size,)
+        assert np.count_nonzero(encoded) == 0
