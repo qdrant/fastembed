@@ -47,6 +47,8 @@ def iter_batch(iterable: Iterable[T], size: int) -> Iterable[list[T]]:
     >>> list(iter_batch([1,2,3,4,5], 3))
     [[1, 2, 3], [4, 5]]
     """
+    if size < 1:
+        raise ValueError(f"batch_size must be >= 1, got {size}")
     source_iter = iter(iterable)
     while source_iter:
         b = list(islice(source_iter, size))

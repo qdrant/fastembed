@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from fastembed import (
     TextEmbedding,
@@ -7,7 +8,7 @@ from fastembed import (
     LateInteractionMultimodalEmbedding,
     LateInteractionTextEmbedding,
 )
-from fastembed.common.utils import last_token_pooling
+from fastembed.common.utils import iter_batch, last_token_pooling
 
 
 def test_text_list_supported_models():
@@ -59,3 +60,16 @@ def test_last_token_pooling_with_left_padding():
     pooled = last_token_pooling(token_embeddings, attention_mask)
 
     assert np.allclose(pooled, [[2.0, 2.0], [6.0, 6.0]])
+
+
+def test_iter_batch_accepts_positive_size():
+    assert list(iter_batch([1, 2, 3, 4, 5], 3)) == [[1, 2, 3], [4, 5]]
+
+
+def test_iter_batch_rejects_non_positive_size():
+    with pytest.raises(ValueError):
+        list(iter_batch([1, 2, 3], 0))
+
+    with pytest.raises(ValueError):
+        list(iter_batch([1, 2, 3], -1))
+
