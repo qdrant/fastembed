@@ -43,18 +43,23 @@ def last_token_pooling(input_array: NumpyArray, attention_mask: NDArray[np.int64
 
 
 def iter_batch(iterable: Iterable[T], size: int) -> Iterable[list[T]]:
-    """
+    """Validate the batch size immediately and consume the iterable lazily.
+
     >>> list(iter_batch([1,2,3,4,5], 3))
     [[1, 2, 3], [4, 5]]
     """
     if size < 1:
         raise ValueError(f"batch_size must be >= 1, got {size}")
-    source_iter = iter(iterable)
-    while source_iter:
-        b = list(islice(source_iter, size))
-        if len(b) == 0:
-            break
-        yield b
+
+    def batches() -> Iterable[list[T]]:
+        source_iter = iter(iterable)
+        while source_iter:
+            b = list(islice(source_iter, size))
+            if len(b) == 0:
+                break
+            yield b
+
+    return batches()
 
 
 def define_cache_dir(cache_dir: str | None = None) -> Path:

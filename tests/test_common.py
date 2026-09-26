@@ -67,9 +67,8 @@ def test_iter_batch_accepts_positive_size():
 
 
 def test_iter_batch_rejects_non_positive_size():
-    with pytest.raises(ValueError):
-        list(iter_batch([1, 2, 3], 0))
+    with pytest.raises(ValueError, match="batch_size must be >= 1, got 0"):
+        iter_batch([1, 2, 3], 0)
 
-    with pytest.raises(ValueError):
-        list(iter_batch([1, 2, 3], -1))
-
+    with pytest.raises(ValueError, match="batch_size must be >= 1, got -1"):
+        iter_batch([1, 2, 3], -1)
