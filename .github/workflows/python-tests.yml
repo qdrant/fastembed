@@ -19,24 +19,29 @@ jobs:
           - '3.11.x'
           - '3.12.x'
           - '3.13.x'
+          - '3.14.x'
         os:
           - ubuntu-latest
           - macos-latest
           - windows-latest
         exclude:
-          # Exclude 3.10–3.12 for macOS and Windows
+          # Exclude 3.10–3.13 for macOS and Windows
           - os: macos-latest
             python-version: '3.10.x'
           - os: macos-latest
             python-version: '3.11.x'
           - os: macos-latest
             python-version: '3.12.x'
+          - os: macos-latest
+            python-version: '3.13.x'
           - os: windows-latest
             python-version: '3.10.x'
           - os: windows-latest
             python-version: '3.11.x'
           - os: windows-latest
             python-version: '3.12.x'
+          - os: windows-latest
+            python-version: '3.13.x'
 
     runs-on: ${{ matrix.os }}
 
