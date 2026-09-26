@@ -228,6 +228,9 @@ class Muvera:
 
         Returns:
             NumpyArray: Fixed dimensional encodings of shape (r_reps * b * dim_proj,)
+
+        Raises:
+            ValueError: If the document multivector is empty
         """
         return self.process(vectors, fill_empty_clusters=True, normalize_by_count=True)
 
@@ -243,6 +246,9 @@ class Muvera:
 
         Returns:
             NumpyArray: Fixed dimensional encoding of shape (r_reps * b * dim_proj,)
+
+        Raises:
+            ValueError: If the query multivector is empty
         """
         return self.process(vectors, fill_empty_clusters=False, normalize_by_count=False)
 
@@ -278,15 +284,14 @@ class Muvera:
 
         Raises:
             AssertionError: If input vectors don't have expected dimensionality
+            ValueError: If the input multivector is empty
         """
         assert (
             vectors.shape[1] == self.dim
         ), f"Expected vectors of shape (n, {self.dim}), got {vectors.shape}"
 
-        # An empty document has no cluster to fill from; match the zero encoding
-        # already produced for an empty query.
         if len(vectors) == 0:
-            return np.zeros(self.embedding_size)
+            raise ValueError("Cannot encode an empty multivector")
 
         # Store results from each random projection
         output_vectors = []
