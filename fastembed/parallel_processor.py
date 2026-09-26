@@ -222,7 +222,7 @@ class ParallelWorkerPool:
                 if terminate_broken is not None:
                     terminate_broken()
                 else:
-                    self.input_queue._reader.close()
+                    self.input_queue._reader.close()  # type: ignore[attr-defined]
             self.input_queue.close()
             self.output_queue.close()
             if self.emergency_shutdown:
