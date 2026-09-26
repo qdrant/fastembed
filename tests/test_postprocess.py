@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from fastembed import LateInteractionTextEmbedding
 from fastembed.postprocess import Muvera
