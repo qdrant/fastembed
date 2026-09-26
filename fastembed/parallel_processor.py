@@ -112,6 +112,7 @@ class ParallelWorkerPool:
         self.num_active_workers: BaseValue | None = None
 
     def start(self, **kwargs: Any) -> None:
+        self.emergency_shutdown = False
         self.input_queue = self.ctx.Queue(self.queue_size)
         # An emergency shutdown unblocks the feeder thread with EPIPE (see semi_ordered_map), let it
         # exit quietly instead of printing a traceback. ProcessPoolExecutor does the same.
