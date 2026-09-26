@@ -1,4 +1,5 @@
 import os
+import platform
 from contextlib import contextmanager
 
 import pytest
@@ -97,6 +98,10 @@ def model_cache():
 
 
 def test_batch_embedding(model_cache):
+    # image splitting makes colmodernvbert take ~10 minutes on macOS CI runners
+    if platform.system() == "Darwin" and os.getenv("CI"):
+        pytest.skip("too slow on macOS CI runners")
+
     for model_name, expected_result in CANONICAL_IMAGE_VALUES.items():
         if model_name.lower() == "Qdrant/colpali-v1.3-fp16".lower() and os.getenv("CI"):
             continue  # colpali is too large for ci
@@ -111,6 +116,10 @@ def test_batch_embedding(model_cache):
 
 
 def test_single_embedding(model_cache):
+    # image splitting makes colmodernvbert take ~10 minutes on macOS CI runners
+    if platform.system() == "Darwin" and os.getenv("CI"):
+        pytest.skip("too slow on macOS CI runners")
+
     for model_name, expected_result in CANONICAL_IMAGE_VALUES.items():
         if model_name.lower() == "Qdrant/colpali-v1.3-fp16".lower() and os.getenv("CI"):
             continue  # colpali is too large for ci

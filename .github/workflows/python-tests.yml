@@ -63,4 +63,5 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          poetry run pytest
+          # TODO: drop --durations once macOS timings are confirmed
+          poetry run pytest ${{ matrix.os == 'macos-latest' && '--durations=10' || '' }}
