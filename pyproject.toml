@@ -28,7 +28,9 @@ onnxruntime = [
 tqdm = "^4.66"
 requests = "^2.31"
 tokenizers = ">=0.15,<1.0"
-huggingface-hub = ">=0.20,<3.0"
+huggingface-hub = ">=0.20,<3.0"  # NB: tokenizers still pins huggingface-hub<2.0
+# (verified through tokenizers 1.0.0rc2), so the relaxed bound becomes
+# installable only once tokenizers lifts its own pin.
 loguru = "^0.7.2"
 pillow = [
     { version = ">=10.3.0,<13.0", python = ">=3.10,<3.13" },

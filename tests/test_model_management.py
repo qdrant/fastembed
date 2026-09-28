@@ -173,6 +173,18 @@ def test_transport_error_shim_catches_hub_http_errors() -> None:
         with pytest.raises(model_management._HF_DOWNLOAD_ERRORS):
             raise errors[0]("simulated transport failure")
 
+    # The shim prefers the hub's own re-exported HTTP library
+    # (huggingface_hub.utils.httpx: httpx for hub 1.x, httpx2 for 2.x),
+    # falling back to a direct httpx import on hub 1.0-1.29. When the
+    # re-export exists its TransportError must be among the caught errors;
+    # the errors[0] assertion above covers the older-hub fallback.
+    try:
+        from huggingface_hub.utils import httpx as hub_httpx
+    except ImportError:
+        hub_httpx = None
+    if hub_httpx is not None:
+        assert hub_httpx.TransportError in model_management._HF_DOWNLOAD_ERRORS
+
 
 def test_online_download_flow_mocked(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Full download path works with hub 2.x-style RepoFile metadata, offline.
