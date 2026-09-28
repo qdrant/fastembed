@@ -50,7 +50,7 @@ supported_pooled_models: list[DenseModelDescription] = [
         model="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
         dim=384,
         description=(
-            "Text embeddings, Unimodal (text), Multilingual (~50 languages), 512 input tokens truncation, "
+            "Text embeddings, Unimodal (text), Multilingual (~50 languages), 128 input tokens truncation, "
             "Prefixes for queries/documents: not necessary, 2019 year."
         ),
         license="apache-2.0",
@@ -62,7 +62,7 @@ supported_pooled_models: list[DenseModelDescription] = [
         model="sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
         dim=768,
         description=(
-            "Text embeddings, Unimodal (text), Multilingual (~50 languages), 384 input tokens truncation, "
+            "Text embeddings, Unimodal (text), Multilingual (~50 languages), 512 input tokens truncation, "
             "Prefixes for queries/documents: not necessary, 2021 year."
         ),
         license="apache-2.0",

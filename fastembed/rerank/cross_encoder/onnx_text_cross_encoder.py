@@ -56,7 +56,7 @@ supported_onnx_models: list[BaseModelDescription] = [
     ),
     BaseModelDescription(
         model="jinaai/jina-reranker-v2-base-multilingual",
-        description="A multi-lingual reranker model for cross-encoder re-ranking with 1K context length and sliding window",
+        description="A multi-lingual reranker model for cross-encoder re-ranking with 1K context length",
         license="cc-by-nc-4.0",
         size_in_GB=1.11,
         sources=ModelSource(hf="jinaai/jina-reranker-v2-base-multilingual"),
