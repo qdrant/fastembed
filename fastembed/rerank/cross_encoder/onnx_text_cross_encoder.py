@@ -39,6 +39,23 @@ supported_onnx_models: list[BaseModelDescription] = [
         model_file="onnx/model.onnx",
     ),
     BaseModelDescription(
+        model="BAAI/bge-reranker-v2-m3",
+        description="Multilingual BGE reranker based on BGE-M3.",
+        license="apache-2.0",
+        size_in_GB=2.27,
+        sources=ModelSource(hf="onnx-community/bge-reranker-v2-m3-ONNX"),
+        model_file="onnx/model.onnx",
+        additional_files=["onnx/model.onnx_data"],
+    ),
+    BaseModelDescription(
+        model="BAAI/bge-reranker-v2-m3-int8",
+        description="Multilingual BGE reranker based on BGE-M3 (INT8 ONNX).",
+        license="apache-2.0",
+        size_in_GB=0.57,
+        sources=ModelSource(hf="onnx-community/bge-reranker-v2-m3-ONNX"),
+        model_file="onnx/model_int8.onnx",
+    ),
+    BaseModelDescription(
         model="jinaai/jina-reranker-v1-tiny-en",
         description="Designed for blazing-fast re-ranking with 8K context length and fewer parameters than jina-reranker-v1-turbo-en.",
         license="apache-2.0",

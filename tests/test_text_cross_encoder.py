@@ -11,6 +11,11 @@ CANONICAL_SCORE_VALUES = {
     "Xenova/ms-marco-MiniLM-L-6-v2": np.array([8.500708, -2.541011]),
     "Xenova/ms-marco-MiniLM-L-12-v2": np.array([9.330912, -2.0380247]),
     "BAAI/bge-reranker-base": np.array([6.15733337, -3.65939403]),
+    "BAAI/bge-reranker-v2-m3": np.array([8.78182220, -5.46485329]),
+    "BAAI/bge-reranker-v2-m3-int8": (
+        np.array([8.59202957, -5.39362288]),  # ONNX Runtime 1.27.0
+        np.array([8.51154804, -5.56898642]),  # ONNX Runtime 1.30.0
+    ),
     "jinaai/jina-reranker-v1-tiny-en": np.array([2.5911, 0.1122]),
     "jinaai/jina-reranker-v1-turbo-en": np.array([1.8295, -2.8908]),
     "jinaai/jina-reranker-v2-base-multilingual": np.array([1.6533, -1.6455]),
@@ -67,8 +72,11 @@ def test_rerank(model_cache, model_name: str) -> None:
             ), f"Model: {model_desc.model}, Scores: {scores}, Scores2: {scores2}"
 
             canonical_scores = CANONICAL_SCORE_VALUES[model_desc.model]
-            assert np.allclose(
-                scores, canonical_scores, atol=1e-3
+            canonical_variants = (
+                canonical_scores if isinstance(canonical_scores, tuple) else (canonical_scores,)
+            )
+            assert any(
+                np.allclose(scores, expected, atol=1e-3) for expected in canonical_variants
             ), f"Model: {model_desc.model}, Scores: {scores}, Expected: {canonical_scores}"
 
 
