@@ -42,9 +42,10 @@ def center_crop(
     new_shape = image.shape[:-2] + (new_height, new_width)
     new_image = np.zeros_like(image, shape=new_shape, dtype=np.float32)
 
-    top_pad = (new_height - orig_height) // 2
+    # Round padding up to offset the floor-rounded crop origin when the difference is odd.
+    top_pad = (new_height - orig_height + 1) // 2
     bottom_pad = top_pad + orig_height
-    left_pad = (new_width - orig_width) // 2
+    left_pad = (new_width - orig_width + 1) // 2
     right_pad = left_pad + orig_width
     new_image[..., top_pad:bottom_pad, left_pad:right_pad] = image
 

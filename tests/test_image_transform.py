@@ -2,7 +2,71 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from fastembed.image.transform.functional import normalize, resize
+from fastembed.image.transform.functional import center_crop, normalize, resize
+from fastembed.image.transform.operators import Compose
+
+
+@pytest.mark.parametrize("as_array", [False, True], ids=["pil", "numpy"])
+@pytest.mark.parametrize(
+    ("image_size", "crop_size"),
+    [
+        ((3, 3), (4, 4)),  # odd padding on both axes
+        ((3, 7), (4, 4)),  # pad height, crop width
+        ((7, 3), (4, 4)),  # crop height, pad width
+        ((1, 3), (6, 8)),  # more than one padding pixel on each side
+        ((3, 6), (4, 6)),  # pad height only
+        ((4, 5), (4, 6)),  # pad width only
+        ((2, 4), (4, 6)),  # even padding
+        ((6, 8), (4, 6)),  # no padding needed
+        ((4, 6), (4, 6)),  # already the requested size
+    ],
+)
+def test_center_crop_shape_and_pixels(
+    image_size: tuple[int, int], crop_size: tuple[int, int], as_array: bool
+) -> None:
+    height, width = image_size
+    pixels = np.arange(1, height * width * 3 + 1, dtype=np.uint8).reshape(height, width, 3)
+    pil_image = Image.fromarray(pixels)
+    image = pixels.transpose(2, 0, 1) if as_array else pil_image
+
+    crop_height, crop_width = crop_size
+    top, left = (height - crop_height) // 2, (width - crop_width) // 2
+    # Pillow independently supplies zero padding outside the requested crop box.
+    expected = np.asarray(
+        pil_image.crop((left, top, left + crop_width, top + crop_height))
+    ).transpose(2, 0, 1)
+
+    result = center_crop(image, size=crop_size)
+
+    assert result.shape == (3, crop_height, crop_width)
+    np.testing.assert_array_equal(result, expected)
+
+
+@pytest.mark.parametrize("rectangular", [False, True])
+def test_center_crop_batches_different_image_sizes(rectangular: bool) -> None:
+    height, width = 4, 6 if rectangular else 4
+    processor = Compose.from_config(
+        {
+            "do_resize": False,
+            "do_center_crop": True,
+            "crop_size": {"height": height, "width": width} if rectangular else height,
+            "do_rescale": True,
+            "rescale_factor": 1 / 255,
+        }
+    )
+    images = [
+        Image.new("RGB", (3, 3), color=(10, 20, 30)),
+        Image.new("RGB", (width, height), color=(10, 20, 30)),
+        Image.new("RGB", (9, 7), color=(10, 20, 30)),
+    ]
+
+    # OnnxImageModel also constructs its input batch with np.array(processor(images)).
+    batch = np.array(processor(images))
+
+    assert batch.shape == (len(images), 3, height, width)
+    assert batch.dtype == np.float32
+    np.testing.assert_array_equal(batch[0, :, 0, :], 0)
+    np.testing.assert_allclose(batch[0, :, height // 2, width // 2], np.array([10, 20, 30]) / 255)
 
 
 @pytest.mark.parametrize(
