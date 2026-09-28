@@ -22,7 +22,7 @@ supported_multitask_models: list[DenseModelDescription] = [
         },
         description=(
             "Multi-task unimodal (text) embedding model, multi-lingual (~100), "
-            "1024 tokens truncation, and 8192 sequence length. Prefixes for queries/documents: not necessary, 2024 year."
+            "8192 input tokens truncation. Prefixes for queries/documents: not necessary, 2024 year."
         ),
         license="cc-by-nc-4.0",
         size_in_GB=2.29,
