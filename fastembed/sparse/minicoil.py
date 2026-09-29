@@ -177,28 +177,32 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         """
         assert self.tokenizer is not None
 
-        self.stopwords = set(self._load_stopwords(self._model_dir))
-
+        stopwords = set(self._load_stopwords(self._model_dir))
         stemmer = SnowballStemmer(get_language_by_model_name(self.model_name))
 
-        self.vocab_resolver = VocabResolver(
+        vocab_resolver = VocabResolver(
             tokenizer=VocabTokenizer(self.tokenizer),
-            stopwords=self.stopwords,
+            stopwords=stopwords,
             stemmer=stemmer,
         )
-        self.vocab_resolver.load_json_vocab(str(self._model_dir / MINICOIL_VOCAB_FILE))
+        vocab_resolver.load_json_vocab(str(self._model_dir / MINICOIL_VOCAB_FILE))
 
         weights = np.load(str(self._model_dir / MINICOIL_MODEL_FILE), mmap_mode="r")
-        self.encoder = Encoder(weights)
-        self.output_dim = self.encoder.output_dim
+        encoder = Encoder(weights)
 
-        self.sparse_vector_converter = SparseVectorConverter(
-            stopwords=self.stopwords,
+        sparse_vector_converter = SparseVectorConverter(
+            stopwords=stopwords,
             stemmer=stemmer,
             k=self.k,
             b=self.b,
             avg_len=self.avg_len,
         )
+
+        self.stopwords = stopwords
+        self.encoder = encoder
+        self.output_dim = encoder.output_dim
+        self.sparse_vector_converter = sparse_vector_converter
+        self.vocab_resolver = vocab_resolver
 
     def token_count(
         self, texts: str | Iterable[str], batch_size: int = 1024, **kwargs: Any

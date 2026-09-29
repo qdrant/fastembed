@@ -229,27 +229,33 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
         Both tokenizers are always (re)loaded from disk here, so the truncation length is
         derived from the on-disk value and never decremented twice.
         """
-        super()._load_tokenizer(model_dir=model_dir)
-        self.query_tokenizer, _ = load_tokenizer(model_dir=model_dir)
+        tokenizer, special_token_to_id = load_tokenizer(model_dir=model_dir)
+        query_tokenizer, _ = load_tokenizer(model_dir=model_dir)
 
-        assert self.tokenizer is not None
         # load_tokenizer always enables both
-        assert self.tokenizer.padding is not None and self.tokenizer.truncation is not None
-        self.mask_token_id = self.special_token_to_id[self.MASK_TOKEN]
-        self.pad_token_id = self.tokenizer.padding["pad_id"]
-        self.skip_list = {
-            self.tokenizer.encode(symbol, add_special_tokens=False).ids[0]
+        assert tokenizer.padding is not None and tokenizer.truncation is not None
+        mask_token_id = special_token_to_id[self.MASK_TOKEN]
+        pad_token_id = tokenizer.padding["pad_id"]
+        skip_list = {
+            tokenizer.encode(symbol, add_special_tokens=False).ids[0]
             for symbol in string.punctuation
         }
-        current_max_length = self.tokenizer.truncation["max_length"]
         # ensure not to overflow after adding document-marker
-        self.tokenizer.enable_truncation(max_length=current_max_length - 1)
-        self.query_tokenizer.enable_truncation(max_length=current_max_length - 1)
-        self.query_tokenizer.enable_padding(
+        max_length = tokenizer.truncation["max_length"] - 1
+        tokenizer.enable_truncation(max_length=max_length)
+        query_tokenizer.enable_truncation(max_length=max_length)
+        query_tokenizer.enable_padding(
             pad_token=self.MASK_TOKEN,
-            pad_id=self.mask_token_id,
+            pad_id=mask_token_id,
             length=self.MIN_QUERY_LENGTH,
         )
+
+        self.query_tokenizer = query_tokenizer
+        self.special_token_to_id = special_token_to_id
+        self.mask_token_id = mask_token_id
+        self.pad_token_id = pad_token_id
+        self.skip_list = skip_list
+        self.tokenizer = tokenizer
 
     def embed(
         self,
