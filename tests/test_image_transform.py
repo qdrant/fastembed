@@ -3,6 +3,27 @@ import pytest
 from PIL import Image
 
 from fastembed.image.transform.functional import normalize, resize
+from fastembed.image.transform.operators import Compose
+
+
+def test_center_crop_odd_padding_keeps_batch_shape_and_pixels() -> None:
+    pixels = np.arange(1, 28, dtype=np.uint8).reshape(3, 3, 3)
+    processor = Compose.from_config(
+        {
+            "do_resize": False,
+            "do_center_crop": True,
+            "crop_size": 4,
+            "do_rescale": False,
+        }
+    )
+    images = [Image.fromarray(pixels), Image.new("RGB", (4, 4))]
+
+    batch = np.array(processor(images))
+    expected = np.zeros((3, 4, 4), dtype=np.float32)
+    expected[:, 1:, 1:] = pixels.transpose(2, 0, 1)
+
+    assert batch.shape == (2, 3, 4, 4)
+    np.testing.assert_array_equal(batch[0], expected)
 
 
 @pytest.mark.parametrize(
