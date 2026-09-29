@@ -46,7 +46,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
             device_id=device_id,
             extra_session_options=extra_session_options,
         )
-        self._load_tokenizer(model_dir=model_dir)
+        self._ensure_tokenizer()
         assert self.tokenizer is not None
 
     def _load_tokenizer(self, model_dir: Path) -> None:

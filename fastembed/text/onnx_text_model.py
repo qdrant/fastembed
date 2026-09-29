@@ -80,7 +80,7 @@ class OnnxTextModel(OnnxModel[T]):
             device_id=device_id,
             extra_session_options=extra_session_options,
         )
-        self._load_tokenizer(model_dir=model_dir)
+        self._ensure_tokenizer()
 
     def load_onnx_model(self) -> None:
         raise NotImplementedError("Subclasses must implement this method")

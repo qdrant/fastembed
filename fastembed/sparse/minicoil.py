@@ -159,8 +159,8 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             device_id=self.device_id,
             extra_session_options=self._extra_session_options,
         )
-        # rebuilt on every call, so the vocab resolver wraps the tokenizer which has just been reloaded
-        self._load_post_processing_state()
+        if self.vocab_resolver is None:
+            self._load_post_processing_state()
 
     def _load_tokenizer(self, model_dir: Path) -> None:
         super()._load_tokenizer(model_dir=model_dir)
