@@ -399,8 +399,9 @@ def test_if_splade_query_embed_is_inference_free() -> None:
         lazy_load=True,
     )
     embeddings = list(model.query_embed(["hello world", "flag embedding"]))
-    # queries are embedded with a tokenizer and an idf lookup table only,
-    # the onnx model must stay unloaded
+    assert model.token_count(["hello world", "flag embedding"]) > 0
+    # queries are embedded with a tokenizer and an idf lookup table only, and token counting
+    # needs the tokenizer alone, so the onnx model must stay unloaded
     assert not hasattr(model.model, "model")
     assert all(len(embedding.indices) > 0 for embedding in embeddings)
 

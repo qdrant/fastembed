@@ -6,9 +6,8 @@ import numpy as np
 from fastembed.common import OnnxProvider
 from fastembed.common.model_description import ModelSource, SparseModelDescription
 from fastembed.common.onnx_model import OnnxOutputContext
-from fastembed.common.preprocessor_utils import load_tokenizer
 from fastembed.common.types import Device
-from fastembed.common.utils import define_cache_dir, iter_batch
+from fastembed.common.utils import define_cache_dir
 from fastembed.sparse.sparse_embedding_base import (
     SparseEmbedding,
     SparseTextEmbeddingBase,
@@ -69,13 +68,7 @@ class IfSplade(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
     def token_count(
         self, texts: str | Iterable[str], batch_size: int = 1024, **kwargs: Any
     ) -> int:
-        # unlike `OnnxTextModel._token_count`, does not require the onnx model to be loaded
-        token_num = 0
-        texts = [texts] if isinstance(texts, str) else texts
-        for batch in iter_batch(texts, batch_size):
-            for tokens in self.tokenizer.encode_batch(batch):  # type: ignore[union-attr]
-                token_num += sum(tokens.attention_mask)
-        return token_num
+        return self._token_count(texts, batch_size=batch_size, **kwargs)
 
     @classmethod
     def _list_supported_models(cls) -> list[SparseModelDescription]:
@@ -151,7 +144,7 @@ class IfSplade(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         # The tokenizer and the idf table are lightweight and are required for query embedding,
         # which does not involve any model inference, so they are loaded eagerly, while
         # `lazy_load` only defers the initialization of the onnx model
-        self.tokenizer, self.special_token_to_id = load_tokenizer(model_dir=self._model_dir)
+        self._load_tokenizer(model_dir=self._model_dir)
         self.special_tokens_ids: set[int] = set(self.special_token_to_id.values())
         self._token_id_to_idf = self._load_idf()
 

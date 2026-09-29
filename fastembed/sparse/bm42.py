@@ -141,6 +141,13 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         if not self.lazy_load:
             self.load_onnx_model()
 
+    def _load_tokenizer(self, model_dir: Path) -> None:
+        super()._load_tokenizer(model_dir=model_dir)
+        # `_reconstruct_bpe` needs the special tokens, and it is also used by `query_embed`,
+        # which runs no inference, so they are derived here rather than in `load_onnx_model`
+        self.special_tokens = set(self.special_token_to_id.keys())
+        self.special_tokens_ids = set(self.special_token_to_id.values())
+
     def load_onnx_model(self) -> None:
         self._load_onnx_model(
             model_dir=self._model_dir,
@@ -154,8 +161,6 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
 
         for token, idx in self.tokenizer.get_vocab().items():  # type: ignore[union-attr]
             self.invert_vocab[idx] = token
-        self.special_tokens = set(self.special_token_to_id.keys())
-        self.special_tokens_ids = set(self.special_token_to_id.values())
         self.stopwords = set(self._load_stopwords(self._model_dir))
 
     def _filter_pair_tokens(self, tokens: list[tuple[str, Any]]) -> list[tuple[str, Any]]:
@@ -336,8 +341,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         if isinstance(query, str):
             query = [query]
 
-        if not hasattr(self, "model") or self.model is None:
-            self.load_onnx_model()
+        self._ensure_tokenizer()
 
         for text in query:
             encoded = self.tokenizer.encode(text)  # type: ignore[union-attr]

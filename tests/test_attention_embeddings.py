@@ -169,6 +169,7 @@ def test_lazy_load(model_name: str) -> None:
 
     model = SparseTextEmbedding(model_name=model_name, lazy_load=True)
     list(model.query_embed(docs))
+    assert not hasattr(model.model, "model")  # query embedding does not require inference
 
     model = SparseTextEmbedding(model_name=model_name, lazy_load=True)
     list(model.passage_embed(docs))
