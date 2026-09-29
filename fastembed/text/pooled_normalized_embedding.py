@@ -120,6 +120,19 @@ supported_pooled_normalized_models: list[DenseModelDescription] = [
         sources=ModelSource(hf="Qdrant/gte-large-onnx"),
         model_file="model.onnx",
     ),
+    DenseModelDescription(
+        model="Qdrant/constella-nano",
+        dim=1024,
+        description=(
+            "Text embeddings, Unimodal (text), English, 512 input tokens truncation, "
+            "Query-side 34.5M-parameter transformer, embeds into the document space of "
+            "stella_en_400M_v5, Prefixes for queries/documents: not necessary, 2026 year."
+        ),
+        license="mit",
+        size_in_GB=0.14,
+        sources=ModelSource(hf="Qdrant/constella-nano"),
+        model_file="model.onnx",
+    ),
 ]
 
 
