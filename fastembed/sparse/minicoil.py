@@ -159,13 +159,24 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             device_id=self.device_id,
             extra_session_options=self._extra_session_options,
         )
+        # rebuilt on every call, so the vocab resolver wraps the tokenizer which has just been reloaded
+        self._load_post_processing_state()
 
+    def _load_tokenizer(self, model_dir: Path) -> None:
+        super()._load_tokenizer(model_dir=model_dir)
         assert self.tokenizer is not None
-
-        for token, idx in self.tokenizer.get_vocab().items():  # type: ignore[union-attr]
-            self.invert_vocab[idx] = token
+        self.invert_vocab = {idx: token for token, idx in self.tokenizer.get_vocab().items()}
         self.special_tokens = set(self.special_token_to_id.keys())
         self.special_tokens_ids = set(self.special_token_to_id.values())
+
+    def _load_post_processing_state(self) -> None:
+        """Load the vocab resolver, the encoder and the sparse vector converter.
+
+        None of them needs the onnx session, so the parent process can post-process the outputs
+        of parallel workers without loading it. Requires the tokenizer to be loaded.
+        """
+        assert self.tokenizer is not None
+
         self.stopwords = set(self._load_stopwords(self._model_dir))
 
         stemmer = SnowballStemmer(get_language_by_model_name(self.model_name))
@@ -278,6 +289,12 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
     ) -> Iterable[SparseEmbedding]:
         if output.input_ids is None:
             raise ValueError("input_ids must be provided for document post-processing")
+
+        if self.vocab_resolver is None:
+            # with `lazy_load` and `parallel`, inference runs in the workers and the parent
+            # never calls `load_onnx_model`
+            self._ensure_tokenizer()
+            self._load_post_processing_state()
 
         assert self.vocab_resolver is not None
         assert self.encoder is not None

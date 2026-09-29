@@ -56,6 +56,10 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
                     "input_ids and attention_mask must be provided for document post-processing"
                 )
 
+            # with `lazy_load` and `parallel`, inference runs in the workers and the parent
+            # never calls `load_onnx_model`, so `skip_list` and `pad_token_id` might not be set yet
+            self._ensure_tokenizer()
+
             for i, token_sequence in enumerate(output.input_ids):
                 for j, token_id in enumerate(token_sequence):  # type: ignore
                     if token_id in self.skip_list or token_id == self.pad_token_id:
