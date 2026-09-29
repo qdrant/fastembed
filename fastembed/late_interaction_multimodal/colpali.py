@@ -180,8 +180,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
         include_extension: bool = False,
         **kwargs: Any,
     ) -> int:
-        if not hasattr(self, "tokenizer") or self.tokenizer is None:
-            self._load_tokenizer(model_dir=self._model_dir)
+        self._ensure_tokenizer()
         token_num = 0
         texts = [texts] if isinstance(texts, str) else texts
         assert self.tokenizer is not None

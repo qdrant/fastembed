@@ -162,6 +162,18 @@ def test_embedding_size():
     assert model.embedding_size == 128
 
 
+def test_lazy_load() -> None:
+    model_name = "Qdrant/colmodernvbert"
+    model = LateInteractionMultimodalEmbedding(model_name=model_name, lazy_load=True)
+    assert not hasattr(model.model, "model")
+
+    assert model.token_count(queries) > 0
+    assert not hasattr(model.model, "model")
+
+    list(model.embed_text(queries))
+    assert hasattr(model.model, "model")
+
+
 def test_token_count(model_cache) -> None:
     model_name = "Qdrant/colmodernvbert"
     with model_cache(model_name) as model:

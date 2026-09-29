@@ -15,6 +15,9 @@ from fastembed.parallel_processor import ParallelWorkerPool
 
 
 class OnnxTextModel(OnnxModel[T]):
+    # set by the concrete model classes in their __init__
+    _model_dir: Path
+
     ONNX_OUTPUT_NAMES: list[str] | None = None
 
     @classmethod
@@ -40,6 +43,15 @@ class OnnxTextModel(OnnxModel[T]):
 
     def _load_tokenizer(self, model_dir: Path) -> None:
         self.tokenizer, self.special_token_to_id = load_tokenizer(model_dir=model_dir)
+
+    def _ensure_tokenizer(self) -> None:
+        """Load the tokenizer if it has not been loaded yet, leaving the onnx model alone.
+
+        Tokenizer files are lightweight, so counting tokens does not have to resolve
+        `lazy_load` into a full onnx session.
+        """
+        if getattr(self, "tokenizer", None) is None:
+            self._load_tokenizer(model_dir=self._model_dir)
 
     def _preprocess_onnx_input(
         self, onnx_input: dict[str, NumpyArray], **kwargs: Any
@@ -171,12 +183,7 @@ class OnnxTextModel(OnnxModel[T]):
                 yield from self._post_process_onnx_output(batch, **kwargs)  # type: ignore
 
     def _token_count(self, texts: str | Iterable[str], batch_size: int = 1024, **_: Any) -> int:
-        if not hasattr(self, "tokenizer") or self.tokenizer is None:
-            model_dir = getattr(self, "_model_dir", None)
-            if model_dir is None:
-                raise ValueError("Tokenizer cannot be loaded before model files are resolved.")
-            self._load_tokenizer(model_dir=Path(model_dir))
-
+        self._ensure_tokenizer()
         token_num = 0
         assert self.tokenizer is not None
         texts = [texts] if isinstance(texts, str) else texts

@@ -1,4 +1,5 @@
 import string
+from pathlib import Path
 from typing import Any, Iterable, Sequence, Type
 
 import numpy as np
@@ -104,10 +105,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
         include_extension: bool = False,
         **kwargs: Any,
     ) -> int:
-        if not hasattr(self, "tokenizer") or self.tokenizer is None:
-            self._load_tokenizer(model_dir=self._model_dir)
-        if self.query_tokenizer is None:
-            self._load_query_tokenizer()
+        self._ensure_tokenizer()
         token_num = 0
         texts = [texts] if isinstance(texts, str) else texts
         tokenizer = self.tokenizer if is_doc else self.query_tokenizer
@@ -220,10 +218,15 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
             device_id=self.device_id,
             extra_session_options=self._extra_session_options,
         )
-        self._load_query_tokenizer()
 
-    def _load_query_tokenizer(self) -> None:
-        self.query_tokenizer, _ = load_tokenizer(model_dir=self._model_dir)
+    def _load_tokenizer(self, model_dir: Path) -> None:
+        """Load the document and the query tokenizers, and apply colbert's own configuration.
+
+        Both tokenizers are always (re)loaded from disk here, so the truncation length is
+        derived from the on-disk value and never decremented twice.
+        """
+        super()._load_tokenizer(model_dir=model_dir)
+        self.query_tokenizer, _ = load_tokenizer(model_dir=model_dir)
 
         assert self.tokenizer is not None
         # load_tokenizer always enables both

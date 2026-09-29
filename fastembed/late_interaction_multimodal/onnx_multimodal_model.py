@@ -18,6 +18,9 @@ from fastembed.parallel_processor import ParallelWorkerPool
 
 
 class OnnxMultimodalModel(OnnxModel[T]):
+    # set by the concrete model classes in their __init__
+    _model_dir: Path
+
     ONNX_OUTPUT_NAMES: list[str] | None = None
 
     def __init__(self) -> None:
@@ -81,6 +84,15 @@ class OnnxMultimodalModel(OnnxModel[T]):
 
     def _load_tokenizer(self, model_dir: Path) -> None:
         self.tokenizer, self.special_token_to_id = load_tokenizer(model_dir=model_dir)
+
+    def _ensure_tokenizer(self) -> None:
+        """Load the tokenizer if it has not been loaded yet, leaving the onnx model alone.
+
+        Tokenizer files are lightweight, so counting tokens does not have to resolve
+        `lazy_load` into a full onnx session.
+        """
+        if getattr(self, "tokenizer", None) is None:
+            self._load_tokenizer(model_dir=self._model_dir)
 
     def load_onnx_model(self) -> None:
         raise NotImplementedError("Subclasses must implement this method")
