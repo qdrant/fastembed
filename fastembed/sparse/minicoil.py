@@ -1,15 +1,15 @@
 from pathlib import Path
-
-from typing import Any, Sequence, Iterable, Type
+from typing import Any, Iterable, Sequence, Type
 
 import numpy as np
 from numpy.typing import NDArray
 from py_rust_stemmers import SnowballStemmer
 from tokenizers import Tokenizer
 
-from fastembed.common.model_description import SparseModelDescription, ModelSource
-from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common import OnnxProvider
+from fastembed.common.model_description import ModelSource, SparseModelDescription
+from fastembed.common.onnx_model import OnnxOutputContext
+from fastembed.common.preprocessor_utils import load_tokenizer
 from fastembed.common.types import Device
 from fastembed.common.utils import define_cache_dir
 from fastembed.sparse.sparse_embedding_base import (
@@ -20,7 +20,6 @@ from fastembed.sparse.utils.minicoil_encoder import Encoder
 from fastembed.sparse.utils.sparse_vectors_converter import SparseVectorConverter, WordEmbedding
 from fastembed.sparse.utils.vocab_resolver import VocabResolver, VocabTokenizer
 from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
-
 
 MINICOIL_MODEL_FILE = "minicoil.triplet.model.npy"
 MINICOIL_VOCAB_FILE = "minicoil.triplet.model.vocab"
@@ -159,6 +158,14 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             device_id=self.device_id,
             extra_session_options=self._extra_session_options,
         )
+
+        self._prepare_post_processing()
+
+    def _prepare_post_processing(self) -> None:
+        if self.vocab_resolver is not None:
+            return
+        if self.tokenizer is None:
+            self.tokenizer, self.special_token_to_id = load_tokenizer(model_dir=self._model_dir)
 
         assert self.tokenizer is not None
 

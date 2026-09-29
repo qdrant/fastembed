@@ -7,9 +7,9 @@ import numpy as np
 from numpy.typing import NDArray
 from tokenizers import Encoding, Tokenizer
 
-from fastembed.common.types import NumpyArray, OnnxProvider, Device
 from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
 from fastembed.common.preprocessor_utils import load_tokenizer
+from fastembed.common.types import Device, NumpyArray, OnnxProvider
 from fastembed.common.utils import iter_batch
 from fastembed.parallel_processor import ParallelWorkerPool
 
@@ -69,6 +69,9 @@ class OnnxTextModel(OnnxModel[T]):
 
     def load_onnx_model(self) -> None:
         raise NotImplementedError("Subclasses must implement this method")
+
+    def _prepare_post_processing(self) -> None:
+        """Load model-specific assets needed to process worker outputs in the parent."""
 
     def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
         return self.tokenizer.encode_batch(documents)  # type: ignore[union-attr]
@@ -140,6 +143,7 @@ class OnnxTextModel(OnnxModel[T]):
                     self.onnx_embed(batch, **kwargs), **kwargs
                 )
         else:
+            self._prepare_post_processing()
             if parallel == 0:
                 parallel = os.cpu_count()
 

@@ -1,13 +1,12 @@
 import os
 from contextlib import contextmanager
 
-import pytest
 import numpy as np
+import pytest
 
 from fastembed.sparse.bm25 import Bm25
 from fastembed.sparse.sparse_text_embedding import SparseTextEmbedding
 from tests.utils import delete_model_cache, should_test_model
-
 
 CANONICAL_COLUMN_VALUES = {
     "prithivida/Splade_PP_en_v1": {
@@ -241,6 +240,30 @@ def test_parallel_processing(model_cache, model_name: str) -> None:
             )
             assert np.allclose(sparse_embedding.values, sparse_embedding_duo.values, atol=1e-3)
             # assert np.allclose(sparse_embedding.values, sparse_embedding_all.values, atol=1e-3)
+
+
+@pytest.mark.parametrize(
+    "model_name",
+    ["Qdrant/bm42-all-minilm-l6-v2-attentions", "Qdrant/minicoil-v1"],
+)
+def test_lazy_parallel_sparse_post_processing(model_cache, model_name: str) -> None:
+    with model_cache(model_name) as eager_model:
+        documents = ["hello world", "flag embedding"] * 2
+        expected = list(eager_model.embed(documents, batch_size=2))
+        lazy_model = SparseTextEmbedding(
+            model_name=model_name,
+            specific_model_path=str(eager_model.model._model_dir),
+            lazy_load=True,
+        )
+        assert not hasattr(lazy_model.model, "model")
+
+        actual = list(lazy_model.embed(documents, batch_size=2, parallel=2))
+
+        assert not hasattr(lazy_model.model, "model")
+        assert len(actual) == len(expected)
+        for expected_embedding, actual_embedding in zip(expected, actual):
+            assert actual_embedding.indices.tolist() == expected_embedding.indices.tolist()
+            assert np.allclose(actual_embedding.values, expected_embedding.values, atol=1e-3)
 
 
 def test_stem_with_stopwords_and_punctuation(model_cache) -> None:

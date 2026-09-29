@@ -8,7 +8,9 @@ import numpy as np
 from py_rust_stemmers import SnowballStemmer
 
 from fastembed.common import OnnxProvider
+from fastembed.common.model_description import ModelSource, SparseModelDescription
 from fastembed.common.onnx_model import OnnxOutputContext
+from fastembed.common.preprocessor_utils import load_tokenizer
 from fastembed.common.types import Device
 from fastembed.common.utils import define_cache_dir
 from fastembed.sparse.sparse_embedding_base import (
@@ -16,7 +18,6 @@ from fastembed.sparse.sparse_embedding_base import (
     SparseTextEmbeddingBase,
 )
 from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
-from fastembed.common.model_description import SparseModelDescription, ModelSource
 
 supported_bm42_models: list[SparseModelDescription] = [
     SparseModelDescription(
@@ -151,6 +152,12 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             device_id=self.device_id,
             extra_session_options=self._extra_session_options,
         )
+
+        self._prepare_post_processing()
+
+    def _prepare_post_processing(self) -> None:
+        if getattr(self, "tokenizer", None) is None:
+            self.tokenizer, self.special_token_to_id = load_tokenizer(model_dir=self._model_dir)
 
         for token, idx in self.tokenizer.get_vocab().items():  # type: ignore[union-attr]
             self.invert_vocab[idx] = token
