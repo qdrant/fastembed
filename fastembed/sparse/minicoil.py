@@ -159,8 +159,6 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             device_id=self.device_id,
             extra_session_options=self._extra_session_options,
         )
-        if self.vocab_resolver is None:
-            self._load_post_processing_state()
 
     def _load_tokenizer(self, model_dir: Path) -> None:
         super()._load_tokenizer(model_dir=model_dir)
@@ -295,8 +293,8 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             raise ValueError("input_ids must be provided for document post-processing")
 
         if self.vocab_resolver is None:
-            # with `lazy_load` and `parallel`, inference runs in the workers and the parent
-            # never calls `load_onnx_model`
+            # built on first use instead of in `load_onnx_model`: parallel workers never
+            # post-process, and with `lazy_load` the process that does may never load the model
             self._ensure_tokenizer()
             self._load_post_processing_state()
 
