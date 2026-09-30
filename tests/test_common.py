@@ -8,7 +8,7 @@ from fastembed import (
     LateInteractionMultimodalEmbedding,
     LateInteractionTextEmbedding,
 )
-from fastembed.common.utils import iter_batch, last_token_pooling
+from fastembed.common.utils import iter_batch, last_token_pooling, mean_pooling, normalize
 
 
 def test_text_list_supported_models():
@@ -60,6 +60,41 @@ def test_last_token_pooling_with_left_padding():
     pooled = last_token_pooling(token_embeddings, attention_mask)
 
     assert np.allclose(pooled, [[2.0, 2.0], [6.0, 6.0]])
+
+
+@pytest.mark.parametrize("dtype", [np.float16, np.float32, np.float64])
+def test_mean_pooling(dtype):
+    token_embeddings = np.array(
+        [
+            [[1.0, 2.0], [3.0, 4.0], [9.0, 9.0]],  # 2 real tokens, then padding
+            [[9.0, 9.0], [1.0, 2.0], [5.0, 8.0]],  # padding, then 2 real tokens
+            [[9.0, 9.0], [9.0, 9.0], [9.0, 9.0]],  # padding only
+        ],
+        dtype=dtype,
+    )
+    attention_mask = np.array([[1, 1, 0], [0, 1, 1], [0, 0, 0]], dtype=np.int64)
+    # the sum over 8192 tokens of 10.0 exceeds the float16 max of 65504
+    long_sequence = np.full((1, 8192, 2), 10.0, dtype=dtype)
+
+    pooled = mean_pooling(token_embeddings, attention_mask)
+    pooled_long_sequence = mean_pooling(long_sequence, np.ones((1, 8192), dtype=np.int64))
+
+    assert pooled.dtype == pooled_long_sequence.dtype == np.float64
+    assert np.array_equal(pooled, [[2.0, 3.0], [3.0, 5.0], [0.0, 0.0]])
+    assert np.array_equal(pooled_long_sequence, [[10.0, 10.0]])
+
+
+@pytest.mark.parametrize("dtype", [np.float16, np.float32, np.float64])
+def test_normalize(dtype):
+    # the sum of squares of the first row, 1024 * 10.0**2, exceeds the float16 max of 65504
+    embeddings = np.zeros((2, 1024), dtype=dtype)
+    embeddings[0] = 10.0
+
+    normalized = normalize(embeddings)
+
+    assert normalized.dtype == dtype
+    assert np.array_equal(normalized[0], np.full(1024, 1 / 32))
+    assert not normalized[1].any()  # a zero vector stays zero
 
 
 def test_iter_batch_accepts_positive_size():
