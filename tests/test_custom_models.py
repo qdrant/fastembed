@@ -229,6 +229,7 @@ def test_mock_add_custom_models():
 
 
 def test_custom_mean_pooling_keeps_float16_without_overflow():
+    """A float16 model stays float16, and normalizing before the cast keeps the norm finite."""
     model_name = "mean-normalized-fp16"
     TextEmbedding.add_custom_model(
         model_name,

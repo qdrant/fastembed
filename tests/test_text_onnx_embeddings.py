@@ -240,6 +240,7 @@ def test_query_embedding(model_cache) -> None:
 def test_mean_pooling_keeps_model_dtype(
     model_class, model_name: str, normalized: bool, dtype
 ) -> None:
+    """Built-in mean pooling returns the model's own dtype and the correct pooled values."""
     model = model_class(
         model_name,
         lazy_load=True,

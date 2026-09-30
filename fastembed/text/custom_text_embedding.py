@@ -72,6 +72,12 @@ class CustomTextEmbedding(OnnxTextEmbedding):
     def _post_process_onnx_output(
         self, output: OnnxOutputContext, **kwargs: Any
     ) -> Iterable[NumpyArray]:
+        """Pool and optionally normalize the model output, as configured for this custom model.
+
+        Float embeddings keep the dtype the model produced, so a float32 model returns float32
+        even though mean pooling computes in float64. Integer outputs are returned as computed,
+        since casting them back would truncate the pooled values.
+        """
         embeddings = self._normalize(self._pool(output.model_output, output.attention_mask))
         # cast after normalizing: computing the norm in float16 can overflow
         if np.issubdtype(output.model_output.dtype, np.floating):
