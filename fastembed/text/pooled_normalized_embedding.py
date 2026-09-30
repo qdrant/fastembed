@@ -158,7 +158,9 @@ class PooledNormalizedEmbedding(PooledEmbedding):
 
         embeddings = output.model_output
         attn_mask = output.attention_mask
-        return normalize(self.mean_pooling(embeddings, attn_mask)).astype(embeddings.dtype, copy=False)
+        return normalize(self.mean_pooling(embeddings, attn_mask)).astype(
+            embeddings.dtype, copy=False
+        )
 
 
 class PooledNormalizedEmbeddingWorker(OnnxTextEmbeddingWorker):

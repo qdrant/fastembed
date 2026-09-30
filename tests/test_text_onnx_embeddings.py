@@ -237,7 +237,9 @@ def test_query_embedding(model_cache) -> None:
     ],
 )
 @pytest.mark.parametrize("dtype", [np.float32, np.float16])
-def test_mean_pooling_keeps_model_dtype(model_class, model_name: str, normalized: bool, dtype) -> None:
+def test_mean_pooling_keeps_model_dtype(
+    model_class, model_name: str, normalized: bool, dtype
+) -> None:
     model = model_class(
         model_name,
         lazy_load=True,
