@@ -5,8 +5,12 @@ from contextlib import contextmanager
 import numpy as np
 import pytest
 
+from fastembed.common.onnx_model import OnnxOutputContext
+from fastembed.common.utils import mean_pooling, normalize
 from fastembed.text.last_token_normalized_embedding import LastTokenNormalizedEmbedding
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
+from fastembed.text.pooled_embedding import PooledEmbedding
+from fastembed.text.pooled_normalized_embedding import PooledNormalizedEmbedding
 from fastembed.text.text_embedding import TextEmbedding
 from tests.utils import delete_model_cache, should_test_model
 
@@ -182,6 +186,7 @@ def test_embedding(model_cache, model_name: str) -> None:
                 docs = [DOC_PREFIXES[model_desc.model] + doc for doc in docs]
 
             embeddings = list(model.embed(docs))
+            assert embeddings[0].dtype == np.float32, model_desc.model
             embeddings = np.stack(embeddings, axis=0)
             assert embeddings.shape == (2, dim)
 
@@ -222,6 +227,34 @@ def test_query_embedding(model_cache) -> None:
             assert np.allclose(
                 embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3
             ), model_desc.model
+
+
+@pytest.mark.parametrize(
+    "model_class,model_name,normalized",
+    [
+        (PooledEmbedding, "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", False),
+        (PooledNormalizedEmbedding, "sentence-transformers/all-MiniLM-L6-v2", True),
+    ],
+)
+@pytest.mark.parametrize("dtype", [np.float32, np.float16])
+def test_mean_pooling_keeps_model_dtype(model_class, model_name: str, normalized: bool, dtype) -> None:
+    model = model_class(
+        model_name,
+        lazy_load=True,
+        specific_model_path="./",  # disable model downloading and loading
+    )
+    token_embeddings = np.random.random((2, 4, 8)).astype(dtype)
+    attention_mask = np.array([[1, 1, 1, 1], [1, 1, 0, 0]], dtype=np.int64)
+    output = OnnxOutputContext(model_output=token_embeddings, attention_mask=attention_mask)
+
+    expected = mean_pooling(token_embeddings, attention_mask)
+    if normalized:
+        expected = normalize(expected)
+
+    embeddings = model._post_process_onnx_output(output)
+
+    assert embeddings.dtype == dtype
+    assert np.allclose(embeddings, expected, atol=1e-3)
 
 
 def test_quantized_model_reports_onnxruntime_requirement(monkeypatch) -> None:

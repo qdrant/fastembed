@@ -72,7 +72,11 @@ class CustomTextEmbedding(OnnxTextEmbedding):
     def _post_process_onnx_output(
         self, output: OnnxOutputContext, **kwargs: Any
     ) -> Iterable[NumpyArray]:
-        return self._normalize(self._pool(output.model_output, output.attention_mask))
+        embeddings = self._normalize(self._pool(output.model_output, output.attention_mask))
+        # cast after normalizing: computing the norm in float16 can overflow
+        if np.issubdtype(output.model_output.dtype, np.floating):
+            return embeddings.astype(output.model_output.dtype, copy=False)
+        return embeddings
 
     def _pool(
         self, embeddings: NumpyArray, attention_mask: NDArray[np.int64] | None = None

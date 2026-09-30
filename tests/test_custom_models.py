@@ -225,6 +225,34 @@ def test_mock_add_custom_models():
             iter(custom_text_embedding._post_process_onnx_output(input_data[model_name]))
         )
         assert np.allclose(post_processed_output, expected_output[model_name], atol=1e-3)
+        assert post_processed_output.dtype == np.float32
+
+
+def test_custom_mean_pooling_keeps_float16_without_overflow():
+    model_name = "mean-normalized-fp16"
+    TextEmbedding.add_custom_model(
+        model_name,
+        pooling=PoolingType.MEAN,
+        normalization=True,
+        sources=ModelSource(hf="artificial"),
+        dim=1024,
+        size_in_gb=0.1,
+    )
+    custom_text_embedding = CustomTextEmbedding(
+        model_name,
+        lazy_load=True,
+        specific_model_path="./",  # disable model downloading and loading
+    )
+    # the squared norm, 1024 * 10.0**2, exceeds the float16 max of 65504
+    output = OnnxOutputContext(
+        model_output=np.full((1, 3, 1024), 10.0, dtype=np.float16),
+        attention_mask=np.ones((1, 3), dtype=np.int64),
+    )
+
+    embedding = next(iter(custom_text_embedding._post_process_onnx_output(output)))
+
+    assert embedding.dtype == np.float16
+    assert np.allclose(embedding, 1 / 32, atol=1e-3)
 
 
 def test_custom_text_model_lookup_is_case_insensitive():
