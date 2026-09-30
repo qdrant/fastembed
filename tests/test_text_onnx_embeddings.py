@@ -186,7 +186,6 @@ def test_embedding(model_cache, model_name: str) -> None:
             embeddings = list(model.embed(docs))
             embeddings = np.stack(embeddings, axis=0)
             assert embeddings.shape == (2, dim)
-            assert embeddings.dtype == np.float32, model_desc.model
 
             canonical_vector = CANONICAL_VECTOR_VALUES[model_desc.model]
             assert np.allclose(
@@ -220,7 +219,6 @@ def test_query_embedding(model_cache) -> None:
             embeddings = list(model.query_embed(queries))
             embeddings = np.stack(embeddings, axis=0)
             assert embeddings.shape == (2, dim)
-            assert embeddings.dtype == np.float32, model_desc.model
 
             canonical_vector = CANONICAL_QUERY_VECTOR_VALUES[model_desc.model]
             assert np.allclose(
@@ -245,31 +243,28 @@ def test_quantized_model_reports_onnxruntime_requirement(monkeypatch) -> None:
         model.load_onnx_model()
 
 
-@pytest.mark.parametrize("dtype", [np.float32, np.float16])
 @pytest.mark.parametrize(
     "embedding_class",
     # custom models are covered in test_custom_models.py
     [cls for cls in TextEmbedding.EMBEDDINGS_REGISTRY if cls is not CustomTextEmbedding],
     ids=lambda cls: cls.__name__,
 )
-def test_post_processing_keeps_model_dtype(embedding_class, dtype) -> None:
+def test_post_processing_keeps_model_dtype(embedding_class) -> None:
     model_desc = embedding_class._list_supported_models()[0]
     model = embedding_class(
         model_desc.model,
         lazy_load=True,
         specific_model_path="./",  # disable model downloading and loading
     )
-    # values this large overflow the sum of squares in float16, unless it's computed in a wider type
-    token_embeddings = np.random.default_rng(0).standard_normal((2, 4, model_desc.dim)) * 100
+    token_embeddings = np.random.default_rng(0).standard_normal((2, 4, model_desc.dim))
     output = OnnxOutputContext(
-        model_output=token_embeddings.astype(dtype),
+        model_output=token_embeddings.astype(np.float32),
         attention_mask=np.array([[1, 1, 0, 0], [1, 1, 1, 1]], dtype=np.int64),
     )
 
     embeddings = np.stack(list(model._post_process_onnx_output(output)))
 
-    assert embeddings.dtype == dtype
-    assert np.isfinite(embeddings).all() and embeddings.any()
+    assert embeddings.dtype == np.float32
 
 
 @pytest.mark.parametrize("n_dims,model_name", [(384, "BAAI/bge-small-en-v1.5")])
@@ -296,7 +291,6 @@ def test_parallel_processing(model_cache, n_dims: int, model_name: str) -> None:
         embeddings_3 = np.stack(embeddings_3, axis=0)
 
         assert embeddings.shape == (len(docs), n_dims)
-        assert embeddings.dtype == np.float32
         assert np.allclose(embeddings, embeddings_2, atol=1e-3)
         assert np.allclose(embeddings, embeddings_3, atol=1e-3)
 

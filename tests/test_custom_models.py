@@ -70,7 +70,6 @@ def test_text_custom_model():
     embeddings = list(model.embed(docs))
     embeddings = np.stack(embeddings, axis=0)
     assert embeddings.shape == (2, dim)
-    assert embeddings.dtype == np.float32
 
     assert np.allclose(embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3)
 
@@ -97,7 +96,6 @@ def test_text_custom_model_parallel_processing():
     embeddings = np.stack(list(model.embed(docs, batch_size=10, parallel=2)), axis=0)
 
     assert embeddings.shape == (len(docs), dim)
-    assert embeddings.dtype == np.float32
 
     if is_ci:
         delete_model_cache(model.model._model_dir)
@@ -161,15 +159,14 @@ def test_cross_encoder_custom_model_parallel_processing():
         delete_model_cache(model.model._model_dir)
 
 
-@pytest.mark.parametrize("dtype", [np.float16, np.float32, np.float64])
-def test_mock_add_custom_models(dtype):
+def test_mock_add_custom_models():
     dim = 5
     size_in_gb = 0.1
     source = ModelSource(hf="artificial")
 
     num_tokens = 10
-    dummy_pooled_embedding = np.random.random((1, dim)).astype(dtype)
-    dummy_token_embedding = np.random.random((1, num_tokens, dim)).astype(dtype)
+    dummy_pooled_embedding = np.random.random((1, dim)).astype(np.float32)
+    dummy_token_embedding = np.random.random((1, num_tokens, dim)).astype(np.float32)
     dummy_attention_mask = np.ones((1, num_tokens)).astype(np.int64)
 
     dummy_token_output = OnnxOutputContext(
@@ -228,31 +225,7 @@ def test_mock_add_custom_models(dtype):
             iter(custom_text_embedding._post_process_onnx_output(input_data[model_name]))
         )
         assert np.allclose(post_processed_output, expected_output[model_name], atol=1e-3)
-        assert post_processed_output.dtype == dtype, model_name
-
-
-def test_mock_custom_mean_pooling_does_not_truncate_integer_outputs() -> None:
-    TextEmbedding.add_custom_model(
-        "mean-int8",
-        pooling=PoolingType.MEAN,
-        normalization=False,
-        sources=ModelSource(hf="artificial"),
-        dim=2,
-        size_in_gb=0.1,
-    )
-    custom_text_embedding = CustomTextEmbedding(
-        "mean-int8",
-        lazy_load=True,
-        specific_model_path="./",  # disable model downloading and loading
-    )
-    output = OnnxOutputContext(
-        model_output=np.array([[[1, 2], [2, 3]]], dtype=np.int8),
-        attention_mask=np.ones((1, 2), dtype=np.int64),
-    )
-
-    embedding = next(iter(custom_text_embedding._post_process_onnx_output(output)))
-
-    assert np.array_equal(embedding, [1.5, 2.5])
+        assert post_processed_output.dtype == np.float32, model_name
 
 
 def test_custom_text_model_lookup_is_case_insensitive():

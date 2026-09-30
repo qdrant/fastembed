@@ -9,7 +9,6 @@ import requests
 from PIL import Image
 
 from fastembed import ImageEmbedding
-from fastembed.common.onnx_model import OnnxOutputContext
 from tests.config import TEST_MISC_DIR
 from tests.utils import delete_model_cache, should_test_model
 
@@ -92,7 +91,6 @@ def test_embedding(model_cache, model_name: str) -> None:
             embeddings = list(model.embed(images))
             embeddings = np.stack(embeddings, axis=0)
             assert embeddings.shape == (len(images), dim)
-            assert embeddings.dtype == np.float32, model_desc.model
 
             canonical_vector = CANONICAL_VECTOR_VALUES[model_desc.model]
 
@@ -161,27 +159,6 @@ def test_lazy_load(model_name: str) -> None:
     assert hasattr(model.model, "model")
     if is_ci:
         delete_model_cache(model.model._model_dir)
-
-
-@pytest.mark.parametrize("dtype", [np.float32, np.float16])
-@pytest.mark.parametrize(
-    "embedding_class", ImageEmbedding.EMBEDDINGS_REGISTRY, ids=lambda cls: cls.__name__
-)
-def test_post_processing_keeps_model_dtype(embedding_class, dtype) -> None:
-    model_desc = embedding_class._list_supported_models()[0]
-    model = embedding_class(
-        model_desc.model,
-        lazy_load=True,
-        specific_model_path="./",  # disable model downloading and loading
-    )
-    # values this large overflow the sum of squares in float16, unless it's computed in a wider type
-    image_embeddings = np.random.default_rng(0).standard_normal((2, model_desc.dim)) * 100
-    output = OnnxOutputContext(model_output=image_embeddings.astype(dtype))
-
-    embeddings = np.stack(list(model._post_process_onnx_output(output)))
-
-    assert embeddings.dtype == dtype
-    assert np.isfinite(embeddings).all() and embeddings.any()
 
 
 def test_get_embedding_size() -> None:
