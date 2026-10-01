@@ -58,7 +58,9 @@ class TextEmbedding(TextEmbeddingBase):
         license: str = "",
         size_in_gb: float = 0.0,
         additional_files: list[str] | None = None,
+        output_name: str | None = None,
     ) -> None:
+        """注册自定义模型；output_name 选择送入池化的单个 ONNX 输出。"""
         registered_models = cls._list_supported_models()
         for registered_model in registered_models:
             if model.lower() == registered_model.model.lower():
@@ -80,6 +82,7 @@ class TextEmbedding(TextEmbeddingBase):
             ),
             pooling=pooling,
             normalization=normalization,
+            output_name=output_name,
         )
 
     def __init__(

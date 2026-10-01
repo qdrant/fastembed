@@ -20,6 +20,7 @@ from fastembed.text.onnx_text_model import TextEmbeddingWorker
 class PostprocessingConfig:
     pooling: PoolingType
     normalization: bool
+    output_name: str | None = None
 
 
 class CustomTextEmbedding(OnnxTextEmbedding):
@@ -54,6 +55,8 @@ class CustomTextEmbedding(OnnxTextEmbedding):
         postprocessing_config = self.POSTPROCESSING_MAPPING[self.model_description.model]
         self._pooling = postprocessing_config.pooling
         self._normalization = postprocessing_config.normalization
+        if postprocessing_config.output_name is not None:
+            self.ONNX_OUTPUT_NAMES = [postprocessing_config.output_name]
 
     @classmethod
     def _list_supported_models(cls) -> list[DenseModelDescription]:
@@ -108,10 +111,15 @@ class CustomTextEmbedding(OnnxTextEmbedding):
         model_description: DenseModelDescription,
         pooling: PoolingType,
         normalization: bool,
+        output_name: str | None = None,
     ) -> None:
+        if output_name is not None and (
+            not isinstance(output_name, str) or not output_name.strip()
+        ):
+            raise ValueError("output_name must be a non-empty string or None")
         cls.SUPPORTED_MODELS.append(model_description)
         cls.POSTPROCESSING_MAPPING[model_description.model] = PostprocessingConfig(
-            pooling=pooling, normalization=normalization
+            pooling=pooling, normalization=normalization, output_name=output_name
         )
 
 
@@ -135,6 +143,7 @@ class CustomTextEmbeddingWorker(TextEmbeddingWorker[NumpyArray]):
             model_description,
             pooling=postprocessing_config.pooling,
             normalization=postprocessing_config.normalization,
+            output_name=postprocessing_config.output_name,
         )
         return CustomTextEmbedding(
             model_name=model_name,
