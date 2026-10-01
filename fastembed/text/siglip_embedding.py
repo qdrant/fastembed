@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any, Type
 
 from fastembed.common.model_description import DenseModelDescription, ModelSource
@@ -41,19 +42,19 @@ class SiglipOnnxTextEmbedding(OnnxTextEmbedding):
     def _list_supported_models(cls) -> list[DenseModelDescription]:
         return supported_siglip_models
 
-    def load_onnx_model(self) -> None:
-        super().load_onnx_model()
-        if self.tokenizer is not None:
-            truncation = self.tokenizer.truncation
-            padding = self.tokenizer.padding
-            if truncation and padding and padding.get("length") is None:
-                self.tokenizer.enable_padding(
-                    direction=padding["direction"],
-                    pad_id=padding["pad_id"],
-                    pad_type_id=padding["pad_type_id"],
-                    pad_token=padding["pad_token"],
-                    length=truncation["max_length"],
-                )
+    def _load_tokenizer(self, model_dir: Path) -> None:
+        super()._load_tokenizer(model_dir=model_dir)
+        assert self.tokenizer is not None
+        truncation = self.tokenizer.truncation
+        padding = self.tokenizer.padding
+        if truncation and padding and padding.get("length") is None:
+            self.tokenizer.enable_padding(
+                direction=padding["direction"],
+                pad_id=padding["pad_id"],
+                pad_type_id=padding["pad_type_id"],
+                pad_token=padding["pad_token"],
+                length=truncation["max_length"],
+            )
 
 
 class SiglipTextEmbeddingWorker(OnnxTextEmbeddingWorker):

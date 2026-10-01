@@ -44,8 +44,20 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
             device_id=device_id,
             extra_session_options=extra_session_options,
         )
-        self.tokenizer, _ = load_tokenizer(model_dir=model_dir)
+        self._ensure_tokenizer()
         assert self.tokenizer is not None
+
+    def _load_tokenizer(self, model_dir: Path) -> None:
+        self.tokenizer, _ = load_tokenizer(model_dir=model_dir)
+
+    def _ensure_tokenizer(self) -> None:
+        """Load the tokenizer if it has not been loaded yet, leaving the onnx model alone.
+
+        Tokenizer files are lightweight, so counting tokens does not have to resolve
+        `lazy_load` into a full onnx session.
+        """
+        if getattr(self, "tokenizer", None) is None:
+            self._load_tokenizer(model_dir=self._model_dir)
 
     def tokenize(self, pairs: list[tuple[str, str]], **_: Any) -> list[Encoding]:
         return self.tokenizer.encode_batch(pairs)  # type: ignore[union-attr]
@@ -169,9 +181,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
     def _token_count(
         self, pairs: Iterable[tuple[str, str]], batch_size: int = 1024, **_: Any
     ) -> int:
-        if not hasattr(self, "model") or self.model is None:
-            self.load_onnx_model()  # loads the tokenizer as well
-
+        self._ensure_tokenizer()
         token_num = 0
         assert self.tokenizer is not None
         for batch in iter_batch(pairs, batch_size):

@@ -234,6 +234,9 @@ def test_lazy_load(model_name: str):
     model = TextEmbedding(model_name=model_name, lazy_load=True)
     assert not hasattr(model.model, "model")
 
+    assert model.token_count(docs) > 0
+    assert not hasattr(model.model, "model")
+
     list(model.embed(docs))
     assert hasattr(model.model, "model")
 

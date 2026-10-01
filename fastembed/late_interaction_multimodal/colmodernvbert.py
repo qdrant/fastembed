@@ -203,8 +203,7 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         include_extension: bool = False,
         **kwargs: Any,
     ) -> int:
-        if not hasattr(self, "model") or self.model is None:
-            self.load_onnx_model()  # loads the tokenizer as well
+        self._ensure_tokenizer()
         token_num = 0
         texts = [texts] if isinstance(texts, str) else texts
         assert self.tokenizer is not None

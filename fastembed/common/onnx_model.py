@@ -26,6 +26,8 @@ class OnnxOutputContext:
 
 class OnnxModel(Generic[T]):
     EXPOSED_SESSION_OPTIONS = ("enable_cpu_mem_arena",)
+    # set by the concrete model classes in their __init__
+    _model_dir: Path
 
     @classmethod
     def _get_worker_class(cls) -> Type["EmbeddingWorker[T]"]:
