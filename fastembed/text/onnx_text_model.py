@@ -15,9 +15,6 @@ from fastembed.parallel_processor import ParallelWorkerPool
 
 
 class OnnxTextModel(OnnxModel[T]):
-    # set by the concrete model classes in their __init__
-    _model_dir: Path
-
     ONNX_OUTPUT_NAMES: list[str] | None = None
 
     @classmethod

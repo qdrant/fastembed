@@ -20,8 +20,6 @@ from fastembed.parallel_processor import ParallelWorkerPool
 
 class OnnxCrossEncoderModel(OnnxModel[float]):
     ONNX_OUTPUT_NAMES: list[str] | None = None
-    # set by the concrete model classes in their __init__
-    _model_dir: Path
 
     @classmethod
     def _get_worker_class(cls) -> Type["TextRerankerWorker"]:
