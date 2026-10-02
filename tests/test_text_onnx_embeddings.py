@@ -226,6 +226,17 @@ def test_query_embedding(model_cache) -> None:
             ), model_desc.model
 
 
+def test_external_data_model(model_cache) -> None:
+    # Its weights are ONNX external data, which onnxruntime>=1.24 doesn't load straight from a
+    # huggingface_hub>=1.32 cache, see fastembed.common.onnx_external_data
+    model_name = "ibm-granite/granite-embedding-small-english-r2"
+    with model_cache(model_name) as model:
+        embedding = next(iter(model.embed(["hello world"])))
+
+    canonical_vector = CANONICAL_VECTOR_VALUES[model_name]
+    assert np.allclose(embedding[: canonical_vector.shape[0]], canonical_vector, atol=1e-3)
+
+
 def test_quantized_model_reports_onnxruntime_requirement(monkeypatch) -> None:
     """Old onnxruntime only implements 4-bit MatMulNBits, the error should say so."""
     monkeypatch.setattr(

@@ -34,6 +34,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         cuda: bool | Device = Device.AUTO,
         device_id: int | None = None,
         extra_session_options: dict[str, Any] | None = None,
+        additional_files: list[str] | None = None,
     ) -> None:
         super()._load_onnx_model(
             model_dir=model_dir,
@@ -43,6 +44,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
             cuda=cuda,
             device_id=device_id,
             extra_session_options=extra_session_options,
+            additional_files=additional_files,
         )
         self._ensure_tokenizer()
         assert self.tokenizer is not None
