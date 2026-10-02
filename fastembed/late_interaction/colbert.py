@@ -41,7 +41,9 @@ supported_colbert_models: list[DenseModelDescription] = [
 class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
     QUERY_MARKER_TOKEN_ID = 1
     DOCUMENT_MARKER_TOKEN_ID = 2
-    MIN_QUERY_LENGTH = 31  # it's 32, we add one additional special token in the beginning
+    # it's 32, we add one additional special token in the beginning. `None` turns the query
+    # expansion off: the query is then padded to the longest one in its batch, as a document is
+    MIN_QUERY_LENGTH: int | None = 31
     MASK_TOKEN = "[MASK]"
 
     def _post_process_onnx_output(
@@ -120,7 +122,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
                     token_num += sum(tokens.attention_mask)
                 else:
                     attend_count = sum(tokens.attention_mask)
-                    if include_extension:
+                    if include_extension and self.MIN_QUERY_LENGTH is not None:
                         token_num += max(attend_count, self.MIN_QUERY_LENGTH)
 
                     else:

@@ -1,4 +1,4 @@
-import string
+from pathlib import Path
 from typing import Any, Iterable, Type
 
 import numpy as np
@@ -6,8 +6,6 @@ import numpy as np
 from fastembed.common.model_description import DenseModelDescription, ModelSource
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.types import NumpyArray
-from fastembed.common.preprocessor_utils import load_tokenizer
-from fastembed.common.utils import iter_batch
 from fastembed.late_interaction.colbert import Colbert, ColbertEmbeddingWorker
 
 
@@ -16,24 +14,49 @@ supported_lateon_models: list[DenseModelDescription] = [
         model="lightonai/LateOn",
         dim=128,
         description=(
-            "PyLate/ColBERT late-interaction English model based on ModernBERT, "
-            "300 document tokens, 32 query tokens, 2025 year"
+            "Text embeddings, Unimodal (text), English, 299 input tokens truncation, 2026 year"
         ),
         license="apache-2.0",
         size_in_GB=0.616,
         sources=ModelSource(hf="lightonai/LateOn"),
         model_file="model.onnx",
-        additional_files=["onnx_config.json"],
+    ),
+]
+
+supported_mlateon_models: list[DenseModelDescription] = [
+    DenseModelDescription(
+        model="lightonai/mLateOn",
+        dim=128,
+        description=(
+            "Text embeddings, Unimodal (text), Multilingual and code, "
+            "8192 input tokens truncation, 2026 year"
+        ),
+        license="apache-2.0",
+        size_in_GB=1.25,
+        sources=ModelSource(hf="lightonai/mLateOn"),
+        model_file="model.onnx",
     ),
 ]
 
 
 class LateOn(Colbert):
+    """LightOn's English ColBERT model, trained and exported with PyLate.
+
+    It differs from colbert in two ways: a query is not expanded up to a fixed length with
+    mask tokens, and the padding reuses the mask token id.
+
+    TODO: PyLate writes `model_max_length` as its `document_length` minus the [D] marker, 299
+    here, and colbert subtracts the marker a second time. Until the model repository reports
+    the real limits, a document is cut at 299 tokens instead of 300, and a query is not cut at
+    PyLate's `query_length` of 32 at all, which is how every other colbert model behaves here.
+    """
+
     QUERY_MARKER_TOKEN_ID = 50368
     DOCUMENT_MARKER_TOKEN_ID = 50369
-    QUERY_LENGTH = 32
-    DOCUMENT_LENGTH = 300
     MASK_TOKEN = "[MASK]"
+    # exported with `do_query_expansion=false`, so a query is padded to the longest one in its
+    # batch instead of to a fixed length, and that padding is dropped from the output
+    MIN_QUERY_LENGTH = None
 
     @classmethod
     def _get_worker_class(cls) -> Type[ColbertEmbeddingWorker]:
@@ -41,86 +64,87 @@ class LateOn(Colbert):
 
     @classmethod
     def _list_supported_models(cls) -> list[DenseModelDescription]:
-        """Lists the supported LateOn models."""
+        """Lists the supported LateOn models.
+
+        Returns:
+            list[DenseModelDescription]: A list of DenseModelDescription objects containing the model information.
+        """
         return supported_lateon_models
-
-    def load_onnx_model(self) -> None:
-        self._load_onnx_model(
-            model_dir=self._model_dir,
-            model_file=self.model_description.model_file,
-            threads=self.threads,
-            providers=self.providers,
-            cuda=self.cuda,
-            device_id=self.device_id,
-            extra_session_options=self._extra_session_options,
-        )
-        self.query_tokenizer, _ = load_tokenizer(model_dir=self._model_dir)
-
-        assert self.tokenizer is not None
-        self.mask_token_id = self.special_token_to_id[self.MASK_TOKEN]
-        self.pad_token_id = self.mask_token_id
-        self.skip_list = {
-            self.tokenizer.encode(symbol, add_special_tokens=False).ids[0]
-            for symbol in string.punctuation
-        }
-        # LateOn's PyLate config uses document_length/query_length including the inserted
-        # [D]/[Q] prefix token. Configure the tokenizer for the pre-prefix lengths.
-        self.tokenizer.enable_truncation(max_length=self.DOCUMENT_LENGTH - 1)
-        self.query_tokenizer.enable_truncation(max_length=self.QUERY_LENGTH - 1)
 
     def _post_process_onnx_output(
         self, output: OnnxOutputContext, is_doc: bool = True, **kwargs: Any
     ) -> Iterable[NumpyArray]:
-        if is_doc:
-            yield from super()._post_process_onnx_output(output, is_doc=is_doc, **kwargs)
-            return
-
         if output.attention_mask is None:
-            raise ValueError("attention_mask must be provided for query post-processing")
+            raise ValueError("attention_mask must be provided for post-processing")
 
-        for embedding, attention_mask in zip(output.model_output, output.attention_mask):
-            # LateOn was exported with do_query_expansion=false, so query embeddings should
-            # only include non-padding query tokens instead of ColBERT mask-token expansion.
-            embedding = embedding[attention_mask == 1]
+        # with `lazy_load` and `parallel`, inference runs in the workers and the parent
+        # never calls `load_onnx_model`, so `skip_list` might not be set yet
+        self._ensure_tokenizer()
+
+        # padding reuses the mask token id, so it can only be told apart from a mask token in
+        # the input by the attention mask, which is also what drops the padding from a query
+        keep = output.attention_mask == 1
+        if is_doc and self.skip_list:
+            if output.input_ids is None:
+                raise ValueError("input_ids must be provided for document post-processing")
+            keep &= ~np.isin(output.input_ids, list(self.skip_list))
+
+        for embedding, keep_tokens in zip(output.model_output, keep):
+            embedding = embedding[keep_tokens]
             norm = np.linalg.norm(embedding, ord=2, axis=1, keepdims=True)
             norm_clamped = np.maximum(norm, 1e-12)
             yield embedding / norm_clamped
 
-    def token_count(
-        self,
-        texts: str | Iterable[str],
-        batch_size: int = 1024,
-        is_doc: bool = True,
-        include_extension: bool = False,
-        **kwargs: Any,
-    ) -> int:
-        if is_doc:
-            return super().token_count(
-                texts,
-                batch_size=batch_size,
-                is_doc=is_doc,
-                include_extension=include_extension,
-                **kwargs,
-            )
 
-        if not hasattr(self, "model") or self.model is None:
-            self.load_onnx_model()
+class MLateOn(LateOn):
+    """The multilingual and code sibling of LateOn, based on mmBERT.
 
-        token_num = 0
-        texts = [texts] if isinstance(texts, str) else texts
-        assert self.query_tokenizer is not None
-        for batch in iter_batch(texts, batch_size):
-            for tokens in self.query_tokenizer.encode_batch(batch):
-                token_num += sum(tokens.attention_mask)
-            if include_extension:
-                token_num += len(batch)  # add one [Q] prefix token per query
+    Besides its own tokenizer and context length, it was trained with an empty skiplist, so
+    punctuation is a part of a document rather than dropped from it.
+    """
 
-        return token_num
+    QUERY_MARKER_TOKEN_ID = 256000
+    DOCUMENT_MARKER_TOKEN_ID = 256001
+    MASK_TOKEN = "<mask>"
+
+    @classmethod
+    def _get_worker_class(cls) -> Type[ColbertEmbeddingWorker]:
+        return MLateOnEmbeddingWorker
+
+    @classmethod
+    def _list_supported_models(cls) -> list[DenseModelDescription]:
+        """Lists the supported mLateOn models.
+
+        Returns:
+            list[DenseModelDescription]: A list of DenseModelDescription objects containing the model information.
+        """
+        return supported_mlateon_models
+
+    def _load_tokenizer(self, model_dir: Path) -> None:
+        super()._load_tokenizer(model_dir)
+        self.skip_list = set()
+
+        # TODO: drop once the model repository ships its own tokenizer metadata. It carries
+        # LateOn's 299, and this model reads 8192 tokens, so without this every input is cut
+        # at 299. The marker colbert inserts takes one of the 8192 positions.
+        assert self.tokenizer is not None and self.query_tokenizer is not None
+        self.tokenizer.enable_truncation(max_length=8192 - 1)
+        self.query_tokenizer.enable_truncation(max_length=8192 - 1)
 
 
 class LateOnEmbeddingWorker(ColbertEmbeddingWorker):
     def init_embedding(self, model_name: str, cache_dir: str, **kwargs: Any) -> LateOn:
         return LateOn(
+            model_name=model_name,
+            cache_dir=cache_dir,
+            threads=1,
+            **kwargs,
+        )
+
+
+class MLateOnEmbeddingWorker(ColbertEmbeddingWorker):
+    def init_embedding(self, model_name: str, cache_dir: str, **kwargs: Any) -> MLateOn:
+        return MLateOn(
             model_name=model_name,
             cache_dir=cache_dir,
             threads=1,
