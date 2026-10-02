@@ -105,6 +105,18 @@ supported_onnx_models: list[DenseModelDescription] = [
         model_file="onnx/model.onnx",
     ),
     DenseModelDescription(
+        model="ibm-granite/granite-embedding-107m-multilingual",
+        dim=384,
+        description=(
+            "Text embeddings, Unimodal (text), Multilingual (12 languages), 512 input tokens truncation, "
+            "Prefixes for queries/documents: not necessary, 2024 year."
+        ),
+        license="apache-2.0",
+        size_in_GB=0.43,
+        sources=ModelSource(hf="ibm-granite/granite-embedding-107m-multilingual"),
+        model_file="model.onnx",
+    ),
+    DenseModelDescription(
         model="snowflake/snowflake-arctic-embed-xs",
         dim=384,
         description=(

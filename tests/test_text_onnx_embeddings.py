@@ -36,6 +36,9 @@ CANONICAL_VECTOR_VALUES = {
     "ibm-granite/granite-embedding-small-english-r2": np.array(
         [0.47021756, -0.08181943, -0.97021246, 0.10116885, -0.16487208]
     ),
+    "ibm-granite/granite-embedding-107m-multilingual": np.array(
+        [0.03108855, 0.02688832, 0.08992623, 0.05844157, 0.03039573]
+    ),
     "sentence-transformers/all-MiniLM-L6-v2": np.array(
         [-0.034478, 0.03102, 0.00673, 0.02611, -0.039362]
     ),
