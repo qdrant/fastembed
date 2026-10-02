@@ -49,3 +49,31 @@ def test_empty_multivectors_raise_value_error():
     with pytest.raises(ValueError, match="Cannot encode an empty multivector"):
         muvera.process_query(empty)
 
+
+def test_muvera_fills_from_nearest_occupied_cluster():
+    muvera = Muvera(dim=2, k_sim=2, dim_proj=2, r_reps=1)
+    muvera.simhash_projections[0].get_cluster_ids = lambda vectors: np.array([0, 3])
+    vectors = np.array([[1.0, 2.0], [3.0, 4.0]])
+    np.testing.assert_array_equal(
+        muvera.process_document(vectors).reshape(4, 2),
+        [vectors[0], vectors[0], vectors[0], vectors[1]],
+    )
+
+
+@pytest.mark.parametrize("k_sim", [1, 2, 5, 8])
+@pytest.mark.parametrize("assignments", [[0], [0, 0, 0], [0, 1, 0, 1]])
+def test_muvera_fills_match_full_matrix_reference(k_sim, assignments):
+    from fastembed.postprocess.muvera import hamming_distance_matrix
+
+    n = 2**k_sim
+    ids = np.array(assignments) % n
+    empty = np.bincount(ids, minlength=n) == 0
+    full = hamming_distance_matrix(np.arange(n))
+    full[:, empty] = 65
+    expected_source_ids = np.argmin(full, axis=1)[empty]
+    vectors = np.arange(len(ids), dtype=np.float64)[:, None] + 1
+    muvera = Muvera(dim=1, k_sim=k_sim, dim_proj=1, r_reps=1)
+    muvera.simhash_projections[0].get_cluster_ids = lambda vectors: ids
+    result = muvera.process_document(vectors).reshape(n, 1)
+    for empty_id, nearest in zip(np.flatnonzero(empty), expected_source_ids):
+        assert result[empty_id, 0] == vectors[np.flatnonzero(ids == nearest)[0], 0]
