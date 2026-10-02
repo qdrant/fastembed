@@ -24,6 +24,7 @@ from huggingface_hub.utils import (
 from loguru import logger
 from tqdm import tqdm
 from fastembed.common.model_description import BaseModelDescription
+from fastembed.common.onnx_external_data import link_external_data
 
 T = TypeVar("T", bound=BaseModelDescription)
 
@@ -584,6 +585,19 @@ class ModelManagement(Generic[T]):
 
         return model_dir
 
+    @staticmethod
+    def _link_onnx_external_data(model: BaseModelDescription, model_dir: Path) -> Path:
+        """Links the external data of `model` right after its download, see link_external_data.
+
+        Loading the model links it as well, but linking it here also covers lazy_load=True, e.g.
+        in a Docker build step, where links made by a later step would copy the files into a new
+        image layer. A failure, e.g. in a read-only cache, is reported when the model is loaded.
+        """
+        if model.model_file.endswith(".onnx"):
+            with contextlib.suppress(OSError):
+                link_external_data(model_dir, model.model_file, model.additional_files)
+        return model_dir
+
     @classmethod
     def download_model(cls, model: T, cache_dir: str, retries: int = 3, **kwargs: Any) -> Path:
         """
@@ -645,7 +659,7 @@ class ModelManagement(Generic[T]):
                 if (resolved_path / model.model_file).exists() and all(
                     (resolved_path / file).exists() for file in extra_patterns
                 ):
-                    return resolved_path
+                    return cls._link_onnx_external_data(model, resolved_path)
             except CorruptedCacheError:
                 force_download = True
             except Exception:
@@ -667,7 +681,7 @@ class ModelManagement(Generic[T]):
                 attempt_kwargs = {**kwargs, "force_download": True} if force_download else kwargs
                 force_download = False
                 try:
-                    return Path(
+                    model_dir = Path(
                         cls.download_files_from_huggingface(
                             hf_source,
                             cache_dir=cache_dir,
@@ -675,6 +689,7 @@ class ModelManagement(Generic[T]):
                             **attempt_kwargs,
                         )
                     )
+                    return cls._link_onnx_external_data(model, model_dir)
                 except _HF_DOWNLOAD_ERRORS as e:
                     logger.error(
                         f"Could not download model from HuggingFace: {e} "
