@@ -65,8 +65,9 @@ def test_minicoil_rejects_invalid_sequence_limit(local_minicoil, invalid_length)
 
 
 @pytest.mark.parametrize("max_sequence_length", [1, 2])
+@pytest.mark.parametrize("operation", ["token_count", "embed", "query_embed"])
 def test_minicoil_limit_must_leave_room_for_text_and_special_tokens(
-    local_minicoil, monkeypatch, max_sequence_length
+    local_minicoil, monkeypatch, max_sequence_length, operation
 ) -> None:
     tokenizer = Tokenizer(
         models.WordLevel({"[UNK]": 0, "[CLS]": 1, "[SEP]": 2, "word": 3}, unk_token="[UNK]")
@@ -81,9 +82,17 @@ def test_minicoil_limit_must_leave_room_for_text_and_special_tokens(
         lambda model_dir: (tokenizer, {"[CLS]": 1, "[SEP]": 2}),
     )
     model = local_minicoil(max_sequence_length)
+    monkeypatch.setattr(
+        model,
+        "_load_onnx_model",
+        lambda **kwargs: pytest.fail("invalid sequence limit must fail before loading ONNX"),
+    )
 
-    with pytest.raises(ValueError, match="max_sequence_length must be at least 3"):
-        model._ensure_tokenizer()
+    for _ in range(2):
+        with pytest.raises(ValueError, match="max_sequence_length must be at least 3"):
+            result = getattr(model, operation)("word word")
+            if operation != "token_count":
+                list(result)
 
 
 def test_minicoil_parallel_workers_receive_sequence_limit(local_minicoil, monkeypatch) -> None:

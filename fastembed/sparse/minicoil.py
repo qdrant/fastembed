@@ -162,6 +162,7 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             self.load_onnx_model()
 
     def load_onnx_model(self) -> None:
+        self._ensure_tokenizer()
         self._load_onnx_model(
             model_dir=self._model_dir,
             model_file=self.model_description.model_file,
@@ -180,6 +181,8 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             assert self.tokenizer.truncation is not None
             minimum_length = self.tokenizer.num_special_tokens_to_add(is_pair=False) + 1
             if self.max_sequence_length < minimum_length:
+                self.tokenizer = None
+                self.special_token_to_id = {}
                 raise ValueError(
                     f"max_sequence_length must be at least {minimum_length} to include a text token"
                 )
