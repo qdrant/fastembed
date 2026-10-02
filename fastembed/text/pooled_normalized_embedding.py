@@ -158,7 +158,11 @@ class PooledNormalizedEmbedding(PooledEmbedding):
 
         embeddings = output.model_output
         attn_mask = output.attention_mask
-        return normalize(self.mean_pooling(embeddings, attn_mask))
+        # mean pooling returns float64, embeddings keep the dtype of the model,
+        # the cast goes after normalization to normalize in full precision
+        return normalize(self.mean_pooling(embeddings, attn_mask)).astype(
+            embeddings.dtype, copy=False
+        )
 
 
 class PooledNormalizedEmbeddingWorker(OnnxTextEmbeddingWorker):

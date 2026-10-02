@@ -5,6 +5,8 @@ from contextlib import contextmanager
 import numpy as np
 import pytest
 
+from fastembed.common.onnx_model import OnnxOutputContext
+from fastembed.text.custom_text_embedding import CustomTextEmbedding
 from fastembed.text.last_token_normalized_embedding import LastTokenNormalizedEmbedding
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
 from fastembed.text.text_embedding import TextEmbedding
@@ -239,6 +241,30 @@ def test_quantized_model_reports_onnxruntime_requirement(monkeypatch) -> None:
 
     with pytest.raises(RuntimeError, match="onnxruntime>=1.23"):
         model.load_onnx_model()
+
+
+@pytest.mark.parametrize(
+    "embedding_class",
+    # custom models are covered in test_custom_models.py
+    [cls for cls in TextEmbedding.EMBEDDINGS_REGISTRY if cls is not CustomTextEmbedding],
+    ids=lambda cls: cls.__name__,
+)
+def test_post_processing_keeps_model_dtype(embedding_class) -> None:
+    model_desc = embedding_class._list_supported_models()[0]
+    model = embedding_class(
+        model_desc.model,
+        lazy_load=True,
+        specific_model_path="./",  # disable model downloading and loading
+    )
+    token_embeddings = np.random.default_rng(0).standard_normal((2, 4, model_desc.dim))
+    output = OnnxOutputContext(
+        model_output=token_embeddings.astype(np.float32),
+        attention_mask=np.array([[1, 1, 0, 0], [1, 1, 1, 1]], dtype=np.int64),
+    )
+
+    embeddings = np.stack(list(model._post_process_onnx_output(output)))
+
+    assert embeddings.dtype == np.float32
 
 
 @pytest.mark.parametrize("n_dims,model_name", [(384, "BAAI/bge-small-en-v1.5")])

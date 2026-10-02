@@ -225,6 +225,7 @@ def test_mock_add_custom_models():
             iter(custom_text_embedding._post_process_onnx_output(input_data[model_name]))
         )
         assert np.allclose(post_processed_output, expected_output[model_name], atol=1e-3)
+        assert post_processed_output.dtype == np.float32, model_name
 
 
 def test_custom_text_model_lookup_is_case_insensitive():

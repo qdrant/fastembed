@@ -169,10 +169,10 @@ query = "What is Qdrant?"
 model = LateInteractionMultimodalEmbedding(model_name="Qdrant/colpali-v1.3-fp16")
 doc_images_embeddings = list(model.embed_image(doc_images))
 # shape (2, 1030, 128)
-# [array([[-0.03353882, -0.02090454, ..., -0.15576172, -0.07678223]], dtype=float32)]
+# [array([[-0.03354, -0.0209, ..., -0.1558, -0.0768]], dtype=float16)]
 query_embedding = model.embed_text(query)
 # shape (1, 20, 128)
-# [array([[-0.00218201,  0.14758301, ...,  -0.02207947,  0.16833496]], dtype=float32)]
+# [array([[-0.002182, 0.1476, ..., -0.02208, 0.1683]], dtype=float16)]
 ```
 
 ### 🔄 Rerankers

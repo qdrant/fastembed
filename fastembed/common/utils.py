@@ -16,6 +16,11 @@ T = TypeVar("T")
 
 
 def normalize(input_array: NumpyArray, p: int = 2, dim: int = 1, eps: float = 1e-12) -> NumpyArray:
+    if input_array.dtype == np.float16:
+        # the sum of squares overflows float16 (max 65504) already for moderate values,
+        # which turns the norm into inf and the embedding into zeros
+        return normalize(input_array.astype(np.float32), p=p, dim=dim, eps=eps).astype(np.float16)
+
     # Calculate the Lp norm along the specified dimension
     norm = np.linalg.norm(input_array, ord=p, axis=dim, keepdims=True)
     norm = np.maximum(norm, eps)  # Avoid division by zero
@@ -24,10 +29,16 @@ def normalize(input_array: NumpyArray, p: int = 2, dim: int = 1, eps: float = 1e
 
 
 def mean_pooling(input_array: NumpyArray, attention_mask: NDArray[np.int64]) -> NumpyArray:
-    input_mask_expanded = np.expand_dims(attention_mask, axis=-1).astype(np.int64)
-    input_mask_expanded = np.tile(input_mask_expanded, (1, 1, input_array.shape[-1]))
-    sum_embeddings = np.sum(input_array * input_mask_expanded, axis=1)
-    sum_mask = np.sum(input_mask_expanded, axis=1)
+    """Average the embeddings of the tokens which the attention mask marks as real.
+
+    The sum is accumulated in float64, so the result is float64 for any input dtype,
+    callers cast it back to the dtype of the model once post-processing is done.
+    """
+    # `where` skips the padding without materializing a (batch_size, seq_len, dim) mask
+    sum_embeddings = np.sum(
+        input_array, axis=1, where=attention_mask[:, :, np.newaxis].astype(bool), dtype=np.float64
+    )
+    sum_mask = np.sum(attention_mask, axis=1, keepdims=True)
     pooled_embeddings = sum_embeddings / np.maximum(sum_mask, 1e-9)
     return pooled_embeddings
 
