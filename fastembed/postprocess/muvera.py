@@ -145,6 +145,12 @@ class Muvera:
         ]
         # Random projection matrices with entries from {-1, +1} for each repetition
         self.dim_reduction_projections = generator.choice([-1, 1], size=(r_reps, dim, dim_proj))
+        # Hamming distance between two cluster ids is the popcount of their XOR, which is
+        # itself a cluster id, so per-id popcounts are enough to get any pairwise distance
+        cluster_ids = np.arange(2**k_sim, dtype=np.uint64)
+        self._cluster_id_popcounts = POPCOUNT_LUT[cluster_ids.view(np.uint8).reshape(-1, 8)].sum(
+            axis=1
+        )
 
     @classmethod
     def from_multivector_model(
@@ -286,9 +292,9 @@ class Muvera:
             AssertionError: If input vectors don't have expected dimensionality
             ValueError: If the input multivector is empty
         """
-        assert vectors.shape[1] == self.dim, (
-            f"Expected vectors of shape (n, {self.dim}), got {vectors.shape}"
-        )
+        assert (
+            vectors.shape[1] == self.dim
+        ), f"Expected vectors of shape (n, {self.dim}), got {vectors.shape}"
 
         if len(vectors) == 0:
             raise ValueError("Cannot encode an empty multivector")
@@ -332,13 +338,7 @@ class Muvera:
                 # are sorted, preserving the original argmin tie-breaking order.
                 occupied_ids = cluster_center_ids[~empty_mask]
                 empty_ids = cluster_center_ids[empty_mask]
-                distances = np.bitwise_xor(empty_ids[:, None], occupied_ids[None, :])
-                bytes_view = (
-                    distances.astype(np.uint64)
-                    .view(np.uint8)
-                    .reshape(len(empty_ids), len(occupied_ids), 8)
-                )
-                hamming = POPCOUNT_LUT[bytes_view].sum(axis=2)
+                hamming = self._cluster_id_popcounts[empty_ids[:, None] ^ occupied_ids[None, :]]
                 nearest_non_empty = occupied_ids[np.argmin(hamming, axis=1)]
                 fill_vectors = np.array(
                     [
