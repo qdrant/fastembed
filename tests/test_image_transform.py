@@ -109,3 +109,71 @@ def test_normalize_channel_count_mismatch_raises(
     image = np.zeros((3, 4, 4), dtype=np.float32)
     with pytest.raises(ValueError, match=expected):
         normalize(image, mean=mean, std=std)
+
+
+@pytest.mark.parametrize("splitting", [False, True])
+@pytest.mark.parametrize("rescale_and_normalize", [False, True])
+def test_compose_grid_metadata_keeps_default_outputs(splitting, rescale_and_normalize) -> None:
+    processor = Compose.from_config(
+        {
+            "image_processor_type": "Idefics3ImageProcessor",
+            "do_resize": False,
+            "do_image_splitting": splitting,
+            "max_image_size": {"longest_edge": 4},
+            "do_rescale": rescale_and_normalize,
+            "do_normalize": rescale_and_normalize,
+            "image_mean": [0.5, 0.5, 0.5],
+            "image_std": [0.5, 0.5, 0.5],
+        }
+    )
+    images = [Image.new("RGB", size, (32, 64, 128)) for size in [(4, 8), (8, 4), (4, 4)]]
+    ordinary = processor(images)
+    metadata = {"existing": "preserved"}
+    with_metadata = processor(images, metadata=metadata)
+
+    assert isinstance(ordinary, list) and isinstance(with_metadata, list)
+    assert metadata["image_grid"] == ([(2, 1), (1, 2), (0, 0)] if splitting else [(0, 0)] * 3)
+    assert metadata["existing"] == "preserved"
+    for expected, actual in zip(ordinary, with_metadata):
+        assert isinstance(expected, list) and isinstance(actual, list)
+        assert len(expected) == len(actual)
+        for expected_patch, actual_patch in zip(expected, actual):
+            assert isinstance(expected_patch, np.ndarray) and isinstance(actual_patch, np.ndarray)
+            np.testing.assert_array_equal(actual_patch, expected_patch)
+
+    # Geometry belongs to each call, including repeated use of a metadata dictionary.
+    processor([images[-1]], metadata=metadata)
+    assert metadata["image_grid"] == [(0, 0)]
+
+
+def test_splitter_grid_keeps_row_major_pixels_and_global_last() -> None:
+    from fastembed.image.transform.operators import ImageSplitter
+
+    image = np.arange(3 * 8 * 12, dtype=np.float32).reshape(3, 8, 12)
+    splitter = ImageSplitter(max_size=4)
+    ordinary = splitter([image])
+    patches, grids = splitter.split_with_grid([image])
+
+    assert grids == [(2, 3)]
+    assert isinstance(ordinary, list) and isinstance(ordinary[0], list)
+    assert len(patches[0]) == len(ordinary[0]) == 7
+    for row in range(2):
+        for col in range(3):
+            index = row * 3 + col
+            np.testing.assert_array_equal(
+                patches[0][index], image[:, row * 4 : (row + 1) * 4, col * 4 : (col + 1) * 4]
+            )
+    for actual, expected in zip(patches[0], ordinary[0]):
+        np.testing.assert_array_equal(actual, expected)
+    assert patches[0][-1].shape == (3, 4, 4)
+
+
+def test_compose_metadata_does_not_change_flat_image_batches() -> None:
+    processor = Compose.from_config({"do_resize": False, "do_rescale": False})
+    images = [Image.new("RGB", (4, 4))]
+    metadata = {}
+    actual = processor(images, metadata=metadata)
+
+    assert isinstance(actual, list) and isinstance(actual[0], np.ndarray)
+    assert metadata == {"image_grid": [(0, 0)]}
+    np.testing.assert_array_equal(actual, processor(images))

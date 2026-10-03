@@ -222,11 +222,15 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
                 for image in images
             ]
             assert self.processor is not None, "Processor is not initialized"
-            processed = self.processor(image_files)
+            processor_metadata: dict[str, Any] = {}
+            processed = self.processor(image_files, metadata=processor_metadata)
             encoded, attention_mask, metadata = self._process_nested_patches(processed)  # type: ignore[arg-type]
+            metadata.update(processor_metadata)
 
         onnx_input = {"pixel_values": encoded, "attention_mask": attention_mask}
-        onnx_input = self._preprocess_onnx_image_input(onnx_input, **kwargs)
+        onnx_input = self._preprocess_onnx_image_input(
+            onnx_input, image_grid=metadata["image_grid"], **kwargs
+        )
         model_output = self.model.run(None, onnx_input)  # type: ignore[union-attr]
 
         return OnnxOutputContext(
@@ -276,17 +280,22 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         return encoded, attention_mask, metadata  # type: ignore[return-value]
 
     def _preprocess_onnx_image_input(
-        self, onnx_input: dict[str, np.ndarray], **kwargs: Any
+        self,
+        onnx_input: dict[str, np.ndarray],
+        *,
+        image_grid: list[tuple[int, int]] | None = None,
+        **kwargs: Any,
     ) -> dict[str, NumpyArray]:
         """
         Add text input placeholders for image data, following Idefics3 processing logic.
 
-        Constructs input_ids dynamically based on the actual number of image patches,
-        using the same token expansion logic as Idefics3Processor.
+        Constructs input_ids from the actual image patch grid, using the same
+        token expansion logic as Idefics3Processor.
 
         Args:
             onnx_input: Dict with 'pixel_values' (batch, num_patches, C, H, W)
                         and 'attention_mask' (batch, num_patches) indicating real patches
+            image_grid: Actual (rows, cols) from image splitting, (0, 0) if unsplit
             **kwargs: Additional arguments
 
         Returns:
@@ -298,15 +307,18 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         pixel_values = onnx_input["pixel_values"]
 
         batch_size = pixel_values.shape[0]
+        if image_grid is None or len(image_grid) != batch_size:
+            raise ValueError("The image patch grid is required for each image in the batch")
         batch_input_ids = []
 
-        # Build input_ids for each image based on its actual patch count
-        for i in range(batch_size):
+        # A patch count cannot distinguish portrait, landscape, and square grids.
+        for i, (rows, cols) in enumerate(image_grid):
             # Count real patches (non-padded) from attention mask
             patch_count = int(np.sum(patch_attention_mask[i]))
 
-            # Compute rows/cols from patch count
-            rows, cols = self._compute_rows_cols_from_patches(patch_count)
+            valid_grid = (rows == 0 and cols == 0) or (rows > 0 and cols > 0)
+            if not valid_grid or rows * cols + 1 != patch_count:
+                raise ValueError("The image patch grid does not match the number of patches")
 
             # Build input_ids for this image
             input_ids = self._build_input_ids_for_image(rows, cols)
@@ -339,31 +351,6 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         # Update attention_mask with token-level data
         onnx_input["attention_mask"] = attention_mask
         return onnx_input
-
-    @staticmethod
-    def _compute_rows_cols_from_patches(patch_count: int) -> tuple[int, int]:
-        if patch_count <= 1:
-            return 0, 0
-
-        # Subtract 1 for the global image
-        grid_patches = patch_count - 1
-
-        # Find rows and cols (assume square or near-square grid)
-        rows = int(grid_patches**0.5)
-        cols = grid_patches // rows
-
-        # Verify the calculation
-        if rows * cols + 1 != patch_count:
-            # Handle non-square grids
-            for r in range(1, grid_patches + 1):
-                if grid_patches % r == 0:
-                    c = grid_patches // r
-                    if r * c + 1 == patch_count:
-                        return r, c
-            # Fallback: treat as unsplit
-            return 0, 0
-
-        return rows, cols
 
     def _create_single_image_prompt_string(self) -> str:
         return (
