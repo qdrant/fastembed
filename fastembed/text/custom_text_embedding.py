@@ -58,6 +58,17 @@ class CustomTextEmbedding(OnnxTextEmbedding):
         if postprocessing_config.output_name is not None:
             self.ONNX_OUTPUT_NAMES = [postprocessing_config.output_name]
 
+    def load_onnx_model(self) -> None:
+        super().load_onnx_model()
+        # with eager loading this runs inside super().__init__(), before ONNX_OUTPUT_NAMES is set,
+        # so the output name is taken from the registered config
+        output_name = self.POSTPROCESSING_MAPPING[self.model_description.model].output_name
+        output_names = [output.name for output in self.model.get_outputs()]  # type: ignore[union-attr]
+        if output_name is not None and output_name not in output_names:
+            raise ValueError(
+                f"Output {output_name!r} not found in the model, available outputs: {output_names}"
+            )
+
     @classmethod
     def _list_supported_models(cls) -> list[DenseModelDescription]:
         return cls.SUPPORTED_MODELS
@@ -113,10 +124,6 @@ class CustomTextEmbedding(OnnxTextEmbedding):
         normalization: bool,
         output_name: str | None = None,
     ) -> None:
-        if output_name is not None and (
-            not isinstance(output_name, str) or not output_name.strip()
-        ):
-            raise ValueError("output_name must be a non-empty string or None")
         cls.SUPPORTED_MODELS.append(model_description)
         cls.POSTPROCESSING_MAPPING[model_description.model] = PostprocessingConfig(
             pooling=pooling, normalization=normalization, output_name=output_name
