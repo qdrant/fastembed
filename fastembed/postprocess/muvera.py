@@ -145,6 +145,12 @@ class Muvera:
         ]
         # Random projection matrices with entries from {-1, +1} for each repetition
         self.dim_reduction_projections = generator.choice([-1, 1], size=(r_reps, dim, dim_proj))
+        # Hamming distance between two cluster ids is the popcount of their XOR, which is
+        # itself a cluster id, so per-id popcounts are enough to get any pairwise distance
+        cluster_ids = np.arange(2**k_sim, dtype=np.uint64)
+        self._cluster_id_popcounts = POPCOUNT_LUT[cluster_ids.view(np.uint8).reshape(-1, 8)].sum(
+            axis=1
+        )
 
     @classmethod
     def from_multivector_model(
@@ -299,9 +305,6 @@ class Muvera:
         # num of space partitions in SimHash
         num_partitions = 2**self.k_sim
         cluster_center_ids = np.arange(num_partitions)
-        precomputed_hamming_matrix = (
-            hamming_distance_matrix(cluster_center_ids) if fill_empty_clusters else None
-        )
 
         for projection_index, simhash in enumerate(self.simhash_projections):
             # Initialize cluster centers and count vectors assigned to each cluster
@@ -331,15 +334,16 @@ class Muvera:
             # Fill empty clusters using vectors with minimum Hamming distance
             if fill_empty_clusters:
                 assert empty_mask is not None
-                assert precomputed_hamming_matrix is not None
-                masked_hamming = np.where(
-                    empty_mask[None, :], MAX_HAMMING_DISTANCE, precomputed_hamming_matrix
-                )
-                nearest_non_empty = np.argmin(masked_hamming, axis=1)
+                # Compare empty clusters only with occupied clusters. Both ID arrays
+                # are sorted, preserving the original argmin tie-breaking order.
+                occupied_ids = cluster_center_ids[~empty_mask]
+                empty_ids = cluster_center_ids[empty_mask]
+                hamming = self._cluster_id_popcounts[empty_ids[:, None] ^ occupied_ids[None, :]]
+                nearest_non_empty = occupied_ids[np.argmin(hamming, axis=1)]
                 fill_vectors = np.array(
                     [
                         vectors[cluster_center_id_to_vectors[cluster_id][0]]
-                        for cluster_id in nearest_non_empty[empty_mask]
+                        for cluster_id in nearest_non_empty
                     ]
                 ).reshape(-1, self.dim)
                 cluster_centers[empty_mask] = fill_vectors
