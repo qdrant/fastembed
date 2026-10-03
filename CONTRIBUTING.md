@@ -32,7 +32,7 @@ Bugs are tracked as [GitHub issues](https://guides.github.com/features/issues/).
 Explain the problem and include additional details to help maintainers reproduce the problem:
 
 * **Use a clear and descriptive title** for the issue to identify the problem.
-* **Describe the exact steps which reproduce the problem** in as many details as possible. For example, start by explaining how you are using FastEmbed, e.g. with Langchain, Qdrant Client, Llama Index and which command exactly you used. When listing steps, **don't just say what you did, but explain how you did it**.
+* **Describe the exact steps which reproduce the problem** in as many details as possible. For example, start by explaining how you are using FastEmbed, e.g. with LangChain, Qdrant Client, LlamaIndex and which command exactly you used. When listing steps, **don't just say what you did, but explain how you did it**.
 * **Provide specific examples to demonstrate the steps**. Include links to files or GitHub projects, or copy/pasteable snippets, which you use in those examples. If you're providing snippets in the issue, use [Markdown code blocks](https://help.github.com/articles/markdown-basics/#multiple-lines).
 * **Describe the behavior you observed after following the steps** and point out what exactly is the problem with that behavior.
 * **Explain which behavior you expected to see instead and why.**
@@ -46,9 +46,9 @@ Include details about your configuration and environment:
 
 ### Your First Code Contribution
 
-Unsure where to begin contributing to FastEmbed? You can start by looking through these `good-first-issue`issues:
+Unsure where to begin contributing to FastEmbed? You can start by looking through these `good-first-issue` issues:
 
-* [Good First Issue](https://github.com/qdrant/fastembed/labels/good%20first%20issue) - issues which should only require a few lines of code, and a test or two. These are a great way to get started with FastEmbed. This includes adding new models which are already tested and ready on Huggingface Hub. 
+* [Good First Issue](https://github.com/qdrant/fastembed/labels/good%20first%20issue) - issues which should only require a few lines of code, and a test or two. These are a great way to get started with FastEmbed. This includes adding new models which are already tested and ready on Hugging Face Hub. 
 
 ## Pull Requests
 
@@ -66,7 +66,7 @@ Even documentation improvements and tests are most welcome:
 1. Open Requests for New Models are [here](https://github.com/qdrant/fastembed/labels/model%20request). 
 2. There are quite a few pull requests that were merged for this purpose and you can use them as a reference. Here is an example: https://github.com/qdrant/fastembed/pull/129
 3. Make sure to add tests for the new model
-    - The CANONICAL_VECTOR values must come from a reference implementation usually from Huggingface Transformers or Sentence Transformers
+    - The CANONICAL_VECTOR values must come from a reference implementation usually from Hugging Face Transformers or Sentence Transformers
     - Here is a reference [Colab Notebook](https://colab.research.google.com/drive/1tNdV3DsiwsJzu2AXnUnoeF5av1Hp8HF1?usp=sharing) for how we will evaluate whether your VECTOR values in the test are correct or not.
 
 ## Styleguides
