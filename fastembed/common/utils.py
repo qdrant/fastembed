@@ -4,6 +4,7 @@ import re
 import tempfile
 import unicodedata
 from pathlib import Path
+from functools import lru_cache
 from itertools import islice
 from typing import Iterable, TypeVar
 
@@ -93,5 +94,33 @@ def get_all_punctuation() -> set[str]:
     )
 
 
+@lru_cache(maxsize=None)
+def get_all_marks() -> str:
+    """Return the combining marks (Unicode category M) as regex character class ranges.
+
+    Marks include Tamil and Devanagari vowel signs and Arabic harakat. The regex word class
+    does not match them, so a pattern that only keeps word characters splits words in these
+    scripts at every mark. Ranges keep the class short, which keeps matching fast.
+    """
+    ranges: list[str] = []
+    start = None
+    for i in range(sys.maxunicode + 2):
+        is_mark = i <= sys.maxunicode and unicodedata.category(chr(i)).startswith("M")
+        if is_mark and start is None:
+            start = i
+        elif not is_mark and start is not None:
+            ranges.append(f"{re.escape(chr(start))}-{re.escape(chr(i - 1))}")
+            start = None
+    return "".join(ranges)
+
+
+@lru_cache(maxsize=None)
+def _non_alphanumeric_pattern() -> re.Pattern[str]:
+    return re.compile(rf"[^\w\s{get_all_marks()}]")
+
+
 def remove_non_alphanumeric(text: str) -> str:
-    return re.sub(r"[^\w\s]", " ", text, flags=re.UNICODE)
+    # ASCII text has no combining marks, and the plain class is faster to match.
+    if text.isascii():
+        return re.sub(r"[^\w\s]", " ", text)
+    return _non_alphanumeric_pattern().sub(" ", text)
