@@ -344,6 +344,8 @@ class Compose:
                     )
                 )
         elif mode == "ConvNextFeatureExtractor":
+            if not config.get("do_resize", True):
+                return
             if "size" in config and "shortest_edge" not in config["size"]:
                 raise ValueError(
                     f"Size dictionary must contain 'shortest_edge' key. Got {config['size'].keys()}"
