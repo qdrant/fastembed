@@ -38,10 +38,15 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
     def _post_process_onnx_output(
         self, output: OnnxOutputContext, **kwargs: Any
     ) -> Iterable[SparseEmbedding]:
+        """Yield sparse scores from log-ReLU weights and masked maximum pooling.
+
+        Use log1p to retain tiny positive logits that adding to one would lose.
+        An attention mask is required; dimensions with zero pooled weight are omitted.
+        """
         if output.attention_mask is None:
             raise ValueError("attention_mask must be provided for document post-processing")
 
-        relu_log = np.log(1 + np.maximum(output.model_output, 0))
+        relu_log = np.log1p(np.maximum(output.model_output, 0))
 
         weighted_log = relu_log * np.expand_dims(output.attention_mask, axis=-1)
 
