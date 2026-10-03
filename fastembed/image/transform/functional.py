@@ -168,6 +168,7 @@ def resize_longest_edge(
     max_size: int,
     resample: int | Image.Resampling = Image.Resampling.LANCZOS,
 ) -> Image.Image:
+    """Resize by the longest edge, preserving even rounding and nonzero dimensions."""
     height, width = image.height, image.width
     aspect_ratio = width / height
 

@@ -64,6 +64,7 @@ def test_resize_int_keeps_shortest_edge_behaviour() -> None:
 def test_resize_longest_edge_keeps_nonzero_dimensions(
     size: tuple[int, int], expected: tuple[int, int]
 ) -> None:
+    """Longest-edge resizing must clamp zeros and preserve existing even rounding."""
     image = Image.new("RGB", size)
 
     resized = resize_longest_edge(image, max_size=2048)
@@ -73,6 +74,7 @@ def test_resize_longest_edge_keeps_nonzero_dimensions(
 
 @pytest.mark.parametrize("size", [(4096, 1), (1, 4096)])
 def test_idefics3_preprocessor_accepts_thin_images(size: tuple[int, int]) -> None:
+    """Thin images must pass Idefics3 resizing, splitting, rescaling and normalization."""
     # ColModernVBERT's config resizes before splitting into 512-pixel patches.
     processor = Compose.from_config(
         {
