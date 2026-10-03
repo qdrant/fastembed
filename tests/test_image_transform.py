@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from fastembed.image.transform.functional import normalize, resize
+from fastembed.image.transform.functional import normalize, resize, resize_longest_edge
 from fastembed.image.transform.operators import Compose
 
 
@@ -48,6 +48,56 @@ def test_resize_int_keeps_shortest_edge_behaviour() -> None:
     # size sets the shortest edge, and the aspect ratio is preserved.
     assert resize(landscape, size=100).size == (200, 100)
     assert resize(portrait, size=100).size == (100, 200)
+
+
+@pytest.mark.parametrize(
+    ("size", "expected"),
+    [
+        ((4096, 1), (2048, 1)),
+        ((1, 4096), (1, 2048)),
+        ((4096, 2), (2048, 2)),
+        ((2, 4096), (2, 2048)),
+        ((400, 200), (2048, 1024)),
+        ((200, 400), (1024, 2048)),
+    ],
+)
+def test_resize_longest_edge_keeps_nonzero_dimensions(
+    size: tuple[int, int], expected: tuple[int, int]
+) -> None:
+    """Longest-edge resizing must clamp zeros and preserve existing even rounding."""
+    image = Image.new("RGB", size)
+
+    resized = resize_longest_edge(image, max_size=2048)
+
+    assert resized.size == expected
+
+
+@pytest.mark.parametrize("size", [(4096, 1), (1, 4096)])
+def test_idefics3_preprocessor_accepts_thin_images(size: tuple[int, int]) -> None:
+    """Thin images must pass Idefics3 resizing, splitting, rescaling and normalization."""
+    # ColModernVBERT's config resizes before splitting into 512-pixel patches.
+    processor = Compose.from_config(
+        {
+            "image_processor_type": "Idefics3ImageProcessor",
+            "do_resize": True,
+            "size": {"longest_edge": 2048},
+            "resample": Image.Resampling.LANCZOS,
+            "do_image_splitting": True,
+            "max_image_size": {"longest_edge": 512},
+            "do_rescale": True,
+            "rescale_factor": 1 / 255,
+            "do_normalize": True,
+            "image_mean": [0.5, 0.5, 0.5],
+            "image_std": [0.5, 0.5, 0.5],
+        }
+    )
+
+    patches = processor([Image.new("RGB", size, color=(128, 128, 128))])[0]
+
+    assert len(patches) == 5
+    for patch in patches:
+        assert patch.shape == (3, 512, 512)
+        np.testing.assert_allclose(patch, (128 / 255 - 0.5) / 0.5, atol=1e-6)
 
 
 @pytest.mark.parametrize(
