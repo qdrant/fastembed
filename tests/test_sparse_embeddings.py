@@ -6,7 +6,7 @@ import numpy as np
 
 from fastembed.sparse.bm25 import Bm25
 from fastembed.sparse.sparse_text_embedding import SparseTextEmbedding
-from tests.utils import delete_model_cache, should_test_model
+from tests.utils import delete_model_cache, is_manual_run, should_test_model
 
 
 CANONICAL_COLUMN_VALUES = {
@@ -175,7 +175,7 @@ def test_batch_embedding(model_cache, model_name: str) -> None:
 
 def test_single_embedding(model_cache) -> None:
     is_ci = os.getenv("CI")
-    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    is_manual = is_manual_run()
 
     for model_desc in SparseTextEmbedding._list_supported_models():
         if (

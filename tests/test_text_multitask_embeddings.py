@@ -5,7 +5,7 @@ import pytest
 
 from fastembed import TextEmbedding
 from fastembed.text.multitask_embedding import JinaEmbeddingV3, Task
-from tests.utils import delete_model_cache
+from tests.utils import delete_model_cache, is_manual_run
 
 
 CANONICAL_VECTOR_VALUES = {
@@ -63,7 +63,7 @@ docs = ["Hello World", "Follow the white rabbit."]
 @pytest.mark.parametrize("dim,model_name", [(1024, "jinaai/jina-embeddings-v3")])
 def test_batch_embedding(dim: int, model_name: str):
     is_ci = os.getenv("CI")
-    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    is_manual = is_manual_run()
     if is_ci and not is_manual:
         pytest.skip("Skipping multitask models in CI non-manual mode")
 
@@ -88,7 +88,7 @@ def test_batch_embedding(dim: int, model_name: str):
 
 def test_single_embedding():
     is_ci = os.getenv("CI")
-    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    is_manual = is_manual_run()
     if is_ci and not is_manual:
         pytest.skip("Skipping multitask models in CI non-manual mode")
 
@@ -134,7 +134,7 @@ def test_single_embedding():
 
 def test_single_embedding_query():
     is_ci = os.getenv("CI")
-    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    is_manual = is_manual_run()
     if is_ci and not is_manual:
         pytest.skip("Skipping multitask models in CI non-manual mode")
 
@@ -165,7 +165,7 @@ def test_single_embedding_query():
 
 def test_single_embedding_passage():
     is_ci = os.getenv("CI")
-    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    is_manual = is_manual_run()
     if is_ci and not is_manual:
         pytest.skip("Skipping multitask models in CI non-manual mode")
 
@@ -198,7 +198,7 @@ def test_single_embedding_passage():
 @pytest.mark.parametrize("dim,model_name", [(1024, "jinaai/jina-embeddings-v3")])
 def test_parallel_processing(dim: int, model_name: str):
     is_ci = os.getenv("CI")
-    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    is_manual = is_manual_run()
     if is_ci and not is_manual:
         pytest.skip("Skipping in CI non-manual mode")
 
@@ -226,7 +226,7 @@ def test_parallel_processing(dim: int, model_name: str):
 @pytest.mark.parametrize("model_name", ["jinaai/jina-embeddings-v3"])
 def test_lazy_load(model_name: str):
     is_ci = os.getenv("CI")
-    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    is_manual = is_manual_run()
 
     if is_ci and not is_manual:
         pytest.skip("Skipping in CI non-manual mode")

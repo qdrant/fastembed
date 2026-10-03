@@ -10,7 +10,7 @@ from PIL import Image
 
 from fastembed import ImageEmbedding
 from tests.config import TEST_MISC_DIR
-from tests.utils import delete_model_cache, should_test_model
+from tests.utils import delete_model_cache, is_manual_run, should_test_model
 
 CANONICAL_VECTOR_VALUES = {
     "Qdrant/clip-ViT-B-32-vision": np.array([-0.0098, 0.0128, -0.0274, 0.002, -0.0059]),
@@ -70,7 +70,7 @@ def model_cache():
 def test_embedding(model_cache, model_name: str) -> None:
     is_ci = os.getenv("CI")
     is_mac = platform.system() == "Darwin"
-    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    is_manual = is_manual_run()
 
     for model_desc in ImageEmbedding._list_supported_models():
         # quantized int8 ops diverge on macOS; canonical vector is generated on linux/amd64 (CI)
