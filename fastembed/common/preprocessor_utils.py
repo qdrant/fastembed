@@ -95,7 +95,12 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
     tokens_map = load_special_tokens(model_dir)
 
     tokenizer = Tokenizer.from_file(str(tokenizer_path))
-    tokenizer.enable_truncation(max_length=max_context)
+    # Updating the context limit must not reset a saved left-truncating tokenizer
+    # to the tokenizers default of keeping the start of the input.
+    truncation = tokenizer.truncation or {}
+    tokenizer.enable_truncation(
+        max_length=max_context, direction=truncation.get("direction", "right")
+    )
 
     # Registered before the padding is resolved: the map may name a pad token that
     # tokenizer.json does not carry, and it only gets an id once it is added.
