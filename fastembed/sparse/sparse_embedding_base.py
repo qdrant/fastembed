@@ -25,8 +25,13 @@ class SparseEmbedding:
 
     @classmethod
     def from_dict(cls, data: dict[int, float]) -> "SparseEmbedding":
+        """Build aligned indices and values from an index-to-weight mapping.
+
+        Mapping iteration order is retained. Empty input produces empty values
+        and int64 indices, so the indices remain valid for NumPy indexing.
+        """
         if len(data) == 0:
-            return cls(values=np.array([]), indices=np.array([]))
+            return cls(values=np.array([]), indices=np.array([], dtype=np.int64))
         indices, values = zip(*data.items())
         return cls(values=np.array(values), indices=np.array(indices))
 
