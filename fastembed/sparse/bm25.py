@@ -365,6 +365,9 @@ class Bm25(SparseTextEmbeddingBase):
     def query_embed(self, query: str | Iterable[str], **kwargs: Any) -> Iterable[SparseEmbedding]:
         """To emulate BM25 behaviour, we don't need to use weights in the query, and
         it's enough to just hash the tokens and assign a weight of 1.0 to them.
+
+        Store unique token IDs as int64 to include the absolute signed-hash
+        boundary value 2147483648 without changing established IDs.
         """
         if isinstance(query, str):
             query = [query]
@@ -375,7 +378,7 @@ class Bm25(SparseTextEmbeddingBase):
             stemmed_tokens = self._stem(tokens)
             token_ids = np.array(
                 list(set(self.compute_token_id(token) for token in stemmed_tokens)),
-                dtype=np.int32,
+                dtype=np.int64,
             )
             values = np.ones_like(token_ids)
             yield SparseEmbedding(indices=token_ids, values=values)
