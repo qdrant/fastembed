@@ -95,11 +95,12 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
     tokens_map = load_special_tokens(model_dir)
 
     tokenizer = Tokenizer.from_file(str(tokenizer_path))
-    # Updating the context limit must not reset a saved left-truncating tokenizer
-    # to the tokenizers default of keeping the start of the input.
+    # enable_truncation resets the direction to right unless it is passed. The direction is
+    # resolved as in transformers: tokenizer_config.json, then tokenizer.json, then right.
     truncation = tokenizer.truncation or {}
     tokenizer.enable_truncation(
-        max_length=max_context, direction=truncation.get("direction", "right")
+        max_length=max_context,
+        direction=tokenizer_config.get("truncation_side") or truncation.get("direction", "right"),
     )
 
     # Registered before the padding is resolved: the map may name a pad token that
