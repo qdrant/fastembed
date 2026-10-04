@@ -237,6 +237,30 @@ def test_truncation_direction_resolution(
 
 
 @pytest.mark.parametrize(
+    "serialized_direction,padding_side,expected",
+    [
+        (None, None, "right"),
+        ("left", None, "left"),
+        (None, "left", "left"),
+        ("left", "right", "right"),  # tokenizer_config.json wins, as in transformers
+    ],
+)
+def test_padding_direction_resolution(
+    make_model_dir, serialized_direction, padding_side, expected
+) -> None:
+    model_dir = make_model_dir(
+        tokenizer_config={"padding_side": padding_side},
+        padding=None
+        if serialized_direction is None
+        else {"pad_id": 0, "pad_token": "[PAD]", "direction": serialized_direction},
+    )
+
+    tokenizer, _ = load_tokenizer(model_dir)
+
+    assert tokenizer.padding["direction"] == expected
+
+
+@pytest.mark.parametrize(
     "model_max_length,max_length",
     [
         (HF_SENTINEL, None),  # transformers' placeholder is not a limit
