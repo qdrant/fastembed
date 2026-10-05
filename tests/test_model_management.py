@@ -124,6 +124,6 @@ def test_online_download_ignores_older_cached_snapshot(
     )
 
     assert result == str(repo_dir / "snapshots" / "new")
-    # the size check ran on the new file, and only on it
+    # the size check ran on the new file, and only on it (keys use the OS path separator)
     metadata = json.loads((repo_dir / ModelManagement.METADATA_FILE).read_text())
-    assert list(metadata) == ["snapshots/new/tokenizer.json"]
+    assert list(metadata) == [str(Path("snapshots/new/tokenizer.json"))]
