@@ -403,7 +403,10 @@ class ModelManagement(Generic[T]):
 
         if snapshot_dir.exists() and metadata_file.exists():
             metadata = json.loads(metadata_file.read_text())
-            verified_metadata = _verify_files_from_metadata(snapshot_dir, metadata, repo_files)
+            # empty metadata lists no files, so it can't vouch for the cached ones
+            verified_metadata = bool(metadata) and _verify_files_from_metadata(
+                snapshot_dir, metadata, repo_files
+            )
 
         if verified_metadata:
             disable_progress_bars()
@@ -433,7 +436,10 @@ class ModelManagement(Generic[T]):
                     "Files have been corrupted during downloading process. "
                     "Please check your internet connection and try again."
                 )
-            _save_file_metadata(snapshot_dir, metadata)
+            # Empty means no file was checked, e.g. the files went to a local_dir instead of
+            # the cache. Saving it would make later downloads skip this check.
+            if metadata:
+                _save_file_metadata(snapshot_dir, metadata)
 
         return result
 
