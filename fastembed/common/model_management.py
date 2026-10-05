@@ -264,11 +264,15 @@ class ModelManagement(Generic[T]):
                 return False
 
         def _collect_file_metadata(
-            model_dir: Path, repo_files: list[RepoFile]
+            model_dir: Path, repo_files: list[RepoFile], downloaded_dir: Path
         ) -> dict[str, dict[str, int | str]]:
             meta: dict[str, dict[str, int | str]] = {}
             file_info_map = {f.path: f for f in repo_files}
+            downloaded_dir = Path(os.path.abspath(downloaded_dir))
             for file_path in model_dir.rglob("*"):
+                # Older snapshots can have different sizes for the same repo-relative files.
+                if not Path(os.path.abspath(file_path)).is_relative_to(downloaded_dir):
+                    continue
                 if file_path.is_file() and file_path.name != cls.METADATA_FILE:
                     relative_path = file_path.relative_to(model_dir)
                     repo_file = file_info_map.get(_repo_relative_path(relative_path))
@@ -418,7 +422,7 @@ class ModelManagement(Generic[T]):
             not verified_metadata
         ):  # metadata is not up-to-date, update it and check whether the files have been
             # downloaded correctly
-            metadata = _collect_file_metadata(snapshot_dir, repo_files)
+            metadata = _collect_file_metadata(snapshot_dir, repo_files, Path(result))
 
             download_successful = _verify_files_from_metadata(
                 snapshot_dir, metadata, repo_files=[]

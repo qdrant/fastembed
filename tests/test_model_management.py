@@ -10,9 +10,11 @@ repo-relative path, not the bare filename.
 
 import json
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from huggingface_hub.hf_api import RepoFile
 
 from fastembed.common import model_management
 from fastembed.common.model_management import ModelManagement
@@ -90,3 +92,38 @@ def test_offline_probe_tolerates_auxiliary_file_drift(
         local_files_only=True,
     )
     assert result == str(snapshot)
+
+
+def test_online_verification_only_collects_downloaded_snapshot(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    cache = Path("cache")
+    old_key = f"snapshots/{'a' * 40}/onnx/model.onnx"
+    current_key = f"snapshots/{REVISION}/onnx/model.onnx"
+    repo_dir = _seed_cache(
+        cache,
+        files={old_key: b"old", current_key: b"current"},
+        metadata={old_key: {"size": 3, "blob_id": "old-blob"}},
+    )
+    current_snapshot = (repo_dir / "snapshots" / REVISION).resolve()
+    monkeypatch.setattr(
+        model_management, "model_info", lambda *args, **kwargs: SimpleNamespace(sha=REVISION)
+    )
+    monkeypatch.setattr(
+        model_management,
+        "list_repo_tree",
+        lambda *args, **kwargs: [RepoFile(path="onnx/model.onnx", size=7, oid="current-blob")],
+    )
+    monkeypatch.setattr(
+        model_management, "snapshot_download", lambda **kwargs: str(current_snapshot)
+    )
+
+    result = ModelManagement.download_files_from_huggingface(
+        "qdrant/fake-onnx", str(cache), extra_patterns=["onnx/model.onnx"]
+    )
+    assert result == str(current_snapshot)
+    assert json.loads((repo_dir / ModelManagement.METADATA_FILE).read_text()) == {
+        current_key: {"size": 7, "blob_id": "current-blob"}
+    }
+    assert (repo_dir / old_key).read_bytes() == b"old"
