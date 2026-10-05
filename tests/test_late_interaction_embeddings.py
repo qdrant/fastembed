@@ -47,8 +47,6 @@ CANONICAL_COLUMN_VALUES = {
             [-0.02461, -0.02876, 0.03014, -0.0035, -0.00431],
         ]
     ),
-    # computed with PyLate from the safetensors checkpoint. lightonai/mLateOn's published
-    # model.onnx was exported from different weights and does not reproduce them yet
     "lightonai/mLateOn": np.array(
         [
             [0.06085, -0.0992, -0.00024, -0.01035, -0.04497],
@@ -409,8 +407,8 @@ def test_token_count_without_query_expansion(model_cache, model_name: str) -> No
             == query_token_count + 2
         )
 
-        # TODO: PyLate cuts a query at 32 tokens and a document at 300, the marker included.
-        # The tokenizer metadata reports neither of them, see the note on the LateOn class.
+        # a document is cut where PyLate cuts it, at 300 tokens with the marker included, and
+        # a query keeps that limit rather than PyLate's 32
         long_text = "token " * 400
-        assert model.token_count(long_text, is_doc=False, include_extension=True) == 299
-        assert model.token_count(long_text, include_extension=True) == 299
+        assert model.token_count(long_text, include_extension=True) == 300
+        assert model.token_count(long_text, is_doc=False, include_extension=True) == 300

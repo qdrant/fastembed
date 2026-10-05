@@ -41,6 +41,8 @@ supported_colbert_models: list[DenseModelDescription] = [
 class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
     QUERY_MARKER_TOKEN_ID = 1
     DOCUMENT_MARKER_TOKEN_ID = 2
+    # tokens `_preprocess_onnx_input` inserts that the tokenizer metadata does not count
+    RESERVED_MARKER_TOKENS = 1
     # it's 32, we add one additional special token in the beginning. `None` turns the query
     # expansion off: the query is then padded to the longest one in its batch, as a document is
     MIN_QUERY_LENGTH: int | None = 31
@@ -244,7 +246,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
             for symbol in string.punctuation
         }
         # ensure not to overflow after adding document-marker
-        max_length = tokenizer.truncation["max_length"] - 1
+        max_length = tokenizer.truncation["max_length"] - self.RESERVED_MARKER_TOKENS
         tokenizer.enable_truncation(max_length=max_length)
         query_tokenizer.enable_truncation(max_length=max_length)
         query_tokenizer.enable_padding(

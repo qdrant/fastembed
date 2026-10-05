@@ -14,7 +14,7 @@ supported_lateon_models: list[DenseModelDescription] = [
         model="lightonai/LateOn",
         dim=128,
         description=(
-            "Text embeddings, Unimodal (text), English, 299 input tokens truncation, 2026 year"
+            "Text embeddings, Unimodal (text), English, 300 input tokens truncation, 2026 year"
         ),
         license="apache-2.0",
         size_in_GB=0.616,
@@ -40,23 +40,13 @@ supported_mlateon_models: list[DenseModelDescription] = [
 
 
 class LateOn(Colbert):
-    """LightOn's English ColBERT model, trained and exported with PyLate.
-
-    It differs from colbert in two ways: a query is not expanded up to a fixed length with
-    mask tokens, and the padding reuses the mask token id.
-
-    TODO: PyLate writes `model_max_length` as its `document_length` minus the [D] marker, 299
-    here, and colbert subtracts the marker a second time. Until the model repository reports
-    the real limits, a document is cut at 299 tokens instead of 300, and a query is not cut at
-    PyLate's `query_length` of 32 at all, which is how every other colbert model behaves here.
-    """
-
     QUERY_MARKER_TOKEN_ID = 50368
     DOCUMENT_MARKER_TOKEN_ID = 50369
     MASK_TOKEN = "[MASK]"
-    # exported with `do_query_expansion=false`, so a query is padded to the longest one in its
-    # batch instead of to a fixed length, and that padding is dropped from the output
+    # exported with `do_query_expansion=false`
     MIN_QUERY_LENGTH = None
+    # PyLate writes `model_max_length` with the [Q]/[D] marker already taken off
+    RESERVED_MARKER_TOKENS = 0
 
     @classmethod
     def _get_worker_class(cls) -> Type[ColbertEmbeddingWorker]:
@@ -77,12 +67,10 @@ class LateOn(Colbert):
         if output.attention_mask is None:
             raise ValueError("attention_mask must be provided for post-processing")
 
-        # with `lazy_load` and `parallel`, inference runs in the workers and the parent
-        # never calls `load_onnx_model`, so `skip_list` might not be set yet
+        # inference can run in a worker, leaving `skip_list` unset in this process
         self._ensure_tokenizer()
 
-        # padding reuses the mask token id, so it can only be told apart from a mask token in
-        # the input by the attention mask, which is also what drops the padding from a query
+        # padding reuses the mask token id, only the attention mask tells them apart
         keep = output.attention_mask == 1
         if is_doc and self.skip_list:
             if output.input_ids is None:
@@ -97,12 +85,6 @@ class LateOn(Colbert):
 
 
 class MLateOn(LateOn):
-    """The multilingual and code sibling of LateOn, based on mmBERT.
-
-    Besides its own tokenizer and context length, it was trained with an empty skiplist, so
-    punctuation is a part of a document rather than dropped from it.
-    """
-
     QUERY_MARKER_TOKEN_ID = 256000
     DOCUMENT_MARKER_TOKEN_ID = 256001
     MASK_TOKEN = "<mask>"
@@ -122,14 +104,8 @@ class MLateOn(LateOn):
 
     def _load_tokenizer(self, model_dir: Path) -> None:
         super()._load_tokenizer(model_dir)
+        # trained with an empty skiplist, punctuation is a part of a document
         self.skip_list = set()
-
-        # TODO: drop once the model repository ships its own tokenizer metadata. It carries
-        # LateOn's 299, and this model reads 8192 tokens, so without this every input is cut
-        # at 299. The marker colbert inserts takes one of the 8192 positions.
-        assert self.tokenizer is not None and self.query_tokenizer is not None
-        self.tokenizer.enable_truncation(max_length=8192 - 1)
-        self.query_tokenizer.enable_truncation(max_length=8192 - 1)
 
 
 class LateOnEmbeddingWorker(ColbertEmbeddingWorker):
