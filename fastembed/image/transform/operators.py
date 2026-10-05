@@ -325,11 +325,6 @@ class Compose:
 
     @classmethod
     def _get_resize(cls, transforms: list[Transform], config: dict[str, Any]) -> None:
-        """Append resize operations selected by the image processor configuration.
-
-        ConvNeXT defaults to resizing when do_resize is omitted. Disabling it
-        skips both resize and its coupled crop while later preprocessing continues.
-        """
         mode = config.get("image_processor_type", "CLIPImageProcessor")
         if mode in ("CLIPImageProcessor", "SiglipImageProcessor"):
             if config.get("do_resize", False):
@@ -349,6 +344,7 @@ class Compose:
                     )
                 )
         elif mode == "ConvNextFeatureExtractor":
+            # HF defaults do_resize to True for ConvNeXT; it also gates the coupled crop
             if not config.get("do_resize", True):
                 return
             if "size" in config and "shortest_edge" not in config["size"]:
