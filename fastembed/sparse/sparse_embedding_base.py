@@ -26,7 +26,7 @@ class SparseEmbedding:
     @classmethod
     def from_dict(cls, data: dict[int, float]) -> "SparseEmbedding":
         if len(data) == 0:
-            return cls(values=np.array([]), indices=np.array([]))
+            return cls(values=np.array([]), indices=np.array([], dtype=np.int64))
         indices, values = zip(*data.items())
         return cls(values=np.array(values), indices=np.array(indices))
 
