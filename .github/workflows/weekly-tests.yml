@@ -4,7 +4,7 @@ name: Weekly tests
 # see is_manual_run in tests/utils.py
 on:
   schedule:
-    - cron: '17 3 * * 1' # Mondays, 03:17 UTC
+    - cron: '5 9 * * 1' # Mondays, 09:05 UTC
   workflow_dispatch:
 
 permissions:
