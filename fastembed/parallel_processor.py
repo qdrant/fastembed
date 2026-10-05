@@ -125,10 +125,10 @@ class ParallelWorkerPool:
 
         for worker_id in range(0, self.num_workers):
             worker_kwargs = deepcopy(kwargs)
+            worker_kwargs["cuda"] = self.cuda
             if self.device_ids:
                 device_id = self.device_ids[worker_id % len(self.device_ids)]
                 worker_kwargs["device_id"] = device_id
-                worker_kwargs["cuda"] = self.cuda
 
             assert hasattr(self.ctx, "Process")
             process = self.ctx.Process(
