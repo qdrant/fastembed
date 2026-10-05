@@ -38,6 +38,24 @@ CANONICAL_COLUMN_VALUES = {
             [0.0766, 0.0452, -0.2343, -0.183, 0.0058],
         ]
     ),
+    "lightonai/LateOn": np.array(
+        [
+            [0.00039, 0.00651, 0.0146, 0.00346, 0.00244],
+            [-0.0029, 0.00423, 0.00042, 0.02236, 0.00981],
+            [-0.0287, 0.01159, 0.02401, -0.00312, -0.04338],
+            [-0.04709, 0.00209, 0.02174, -0.00381, -0.00608],
+            [-0.02461, -0.02876, 0.03014, -0.0035, -0.00431],
+        ]
+    ),
+    "lightonai/mLateOn": np.array(
+        [
+            [0.06085, -0.0992, -0.00024, -0.01035, -0.04497],
+            [0.0511, -0.09208, -0.00751, -0.0224, -0.03931],
+            [0.04596, -0.10963, -0.01414, 0.00134, -0.03307],
+            [0.04688, -0.09261, -0.00664, -0.01437, -0.0551],
+            [0.06737, -0.12068, -0.00429, -0.00843, -0.04418],
+        ]
+    ),
 }
 
 CANONICAL_QUERY_VALUES = {
@@ -147,6 +165,24 @@ CANONICAL_QUERY_VALUES = {
             [0.058, 0.048, -0.0527, -0.0607, 0.0568],
             [0.0561, 0.0447, -0.0661, -0.0702, 0.0764],
             [0.0204, -0.0856, -0.0386, -0.1232, -0.0332],
+        ]
+    ),
+    "lightonai/LateOn": np.array(
+        [
+            [0.00202, -0.02634, 0.00685, 0.00993, 0.03093],
+            [-0.02321, -0.0226, 0.00356, 0.02836, 0.01729],
+            [-0.01066, 0.00595, 0.02884, 0.00267, -0.10405],
+            [-0.10359, -0.06927, 0.03218, 0.05037, -0.03338],
+            [-0.02992, -0.03874, 0.10582, 0.06303, 0.05831],
+        ]
+    ),
+    "lightonai/mLateOn": np.array(
+        [
+            [0.08036, -0.09783, 0.00963, -0.00164, -0.04674],
+            [0.10542, -0.10502, 0.06527, -0.01749, -0.04493],
+            [0.09968, -0.1013, 0.02409, -0.04671, -0.02976],
+            [0.09301, -0.09293, 0.03714, -0.07039, -0.06817],
+            [0.10895, -0.10447, 0.01298, -0.0075, -0.05043],
         ]
     ),
 }
@@ -298,6 +334,12 @@ def test_get_embedding_size():
     model_name = "answerdotai/answerai-ColBERT-small-v1"
     assert LateInteractionTextEmbedding.get_embedding_size(model_name) == 96
 
+    model_name = "lightonai/LateOn"
+    assert LateInteractionTextEmbedding.get_embedding_size(model_name) == 128
+
+    model_name = "lightonai/mLateOn"
+    assert LateInteractionTextEmbedding.get_embedding_size(model_name) == 128
+
 
 def test_embedding_size():
     is_ci = os.getenv("CI")
@@ -344,3 +386,29 @@ def test_token_count(model_cache, model_name) -> None:
         assert model.token_count(documents, is_doc=False, include_extension=True) == 64
         very_long_query = "It's a very long query which definitely contains more than 32 tokens and we're using it to check whether the method can handle large query properly without cutting it to 32 tokens"
         assert model.token_count(very_long_query, is_doc=False, include_extension=True) > 32
+
+
+@pytest.mark.parametrize("model_name", ["lightonai/LateOn"])
+def test_token_count_without_query_expansion(model_cache, model_name: str) -> None:
+    is_ci = os.getenv("CI")
+    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    if is_ci and not is_manual:
+        pytest.skip("Skipping LateOn in CI non-manual mode")
+
+    with model_cache(model_name) as model:
+        queries = ["short query", "a longer query, which is still shorter than 32 tokens"]
+        query_token_count = model.token_count(queries, is_doc=False)
+        assert query_token_count == sum(
+            model.token_count(query, is_doc=False) for query in queries
+        )
+        # a query is not expanded up to 32 tokens, the extension is one [Q] marker per query
+        assert (
+            model.token_count(queries, is_doc=False, include_extension=True)
+            == query_token_count + 2
+        )
+
+        # a document is cut where PyLate cuts it, at 300 tokens with the marker included, and
+        # a query keeps that limit rather than PyLate's 32
+        long_text = "token " * 400
+        assert model.token_count(long_text, include_extension=True) == 300
+        assert model.token_count(long_text, is_doc=False, include_extension=True) == 300
