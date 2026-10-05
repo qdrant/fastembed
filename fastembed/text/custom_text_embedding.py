@@ -129,6 +129,8 @@ class CustomTextEmbedding(OnnxTextEmbedding):
         normalization: bool,
         output_name: str | None = None,
     ) -> None:
+        if output_name is not None and (not isinstance(output_name, str) or not output_name):
+            raise ValueError("output_name must be a non-empty string or None")
         cls.SUPPORTED_MODELS.append(model_description)
         cls.POSTPROCESSING_MAPPING[model_description.model] = PostprocessingConfig(
             pooling=pooling, normalization=normalization, output_name=output_name
