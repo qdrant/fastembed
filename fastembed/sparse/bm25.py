@@ -365,9 +365,6 @@ class Bm25(SparseTextEmbeddingBase):
     def query_embed(self, query: str | Iterable[str], **kwargs: Any) -> Iterable[SparseEmbedding]:
         """To emulate BM25 behaviour, we don't need to use weights in the query, and
         it's enough to just hash the tokens and assign a weight of 1.0 to them.
-
-        Store unique token IDs as int64 to include the absolute signed-hash
-        boundary value 2147483648 without changing established IDs.
         """
         if isinstance(query, str):
             query = [query]
