@@ -112,11 +112,6 @@ class ParallelWorkerPool:
         self.num_active_workers: BaseValue | None = None
 
     def start(self, **kwargs: Any) -> None:
-        """Start workers with copies of the supplied initialization options.
-
-        The pool's cuda setting takes precedence over a cuda option in kwargs.
-        When device IDs are provided, assign them to workers in round-robin order.
-        """
         self.emergency_shutdown = False
         self.input_queue = self.ctx.Queue(self.queue_size)
         # An emergency shutdown unblocks the feeder thread with EPIPE (see semi_ordered_map), let it
