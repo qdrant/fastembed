@@ -7,7 +7,7 @@ import numpy as np
 from fastembed.late_interaction.late_interaction_text_embedding import (
     LateInteractionTextEmbedding,
 )
-from tests.utils import delete_model_cache, should_test_model
+from tests.utils import delete_model_cache, is_manual_run, should_test_model
 
 # vectors are abridged and rounded for brevity
 CANONICAL_COLUMN_VALUES = {
@@ -211,7 +211,7 @@ def test_batch_inference_size_same_as_single_inference(model_cache, model_name: 
 @pytest.mark.parametrize("model_name", ["answerdotai/answerai-colbert-small-v1"])
 def test_single_embedding(model_cache, model_name: str):
     is_ci = os.getenv("CI")
-    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    is_manual = is_manual_run()
     docs_to_embed = docs
 
     for model_desc in LateInteractionTextEmbedding._list_supported_models():
@@ -231,7 +231,7 @@ def test_single_embedding(model_cache, model_name: str):
 @pytest.mark.parametrize("model_name", ["answerdotai/answerai-colbert-small-v1"])
 def test_single_embedding_query(model_cache, model_name: str):
     is_ci = os.getenv("CI")
-    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    is_manual = is_manual_run()
     queries_to_embed = docs
 
     for model_desc in LateInteractionTextEmbedding._list_supported_models():
