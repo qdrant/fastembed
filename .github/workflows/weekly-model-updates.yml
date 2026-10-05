@@ -1,0 +1,114 @@
+name: Weekly model updates
+
+# Reports new commits in HuggingFace repositories of the supported models, see .github/scripts/check_model_updates.py
+# The report is in the job summary, scheduled runs also open an issue per affected model or comment on the open one
+on:
+  schedule:
+    - cron: '5 9 * * 1' # Mondays, 09:05 UTC
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'Report commits made since 00:00 UTC this many days ago'
+        required: false
+        default: '7'
+      open_issues:
+        description: 'Open an issue per affected model'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    name: Check model repositories
+
+    outputs:
+      has_issues: ${{ steps.check.outputs.has_issues }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14.x'
+      - name: Install dependencies
+        run: |
+          python -m pip install poetry
+          poetry config virtualenvs.create false
+          poetry install --no-interaction --no-ansi --only main
+
+      - name: Check model repositories
+        id: check
+        shell: bash
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          DAYS: ${{ inputs.days || '7' }}
+        # issues of the repositories which have been checked are opened even if some could not be checked
+        run: |
+          status=0
+          poetry run python .github/scripts/check_model_updates.py --days "$DAYS" --issues-file issues.json \
+            || status=$?
+          if [ -s issues.json ] && [ "$(jq length issues.json)" -gt 0 ]; then
+            echo "has_issues=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+
+      # an artifact rather than a job output: issues can exceed the size limit of an env variable
+      - name: Upload issues
+        if: steps.check.outputs.has_issues == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: model-update-issues
+          path: issues.json
+          retention-days: 7
+
+      - name: Fail if some repositories could not be checked
+        if: steps.check.outputs.status != '0'
+        run: exit 1
+
+  issues:
+    needs: check
+    if: always() && needs.check.outputs.has_issues == 'true' && (github.event_name == 'schedule' || inputs.open_issues)
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write # open the model update issues or comment on them
+
+    name: Open model update issues
+
+    steps:
+      - name: Download issues
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: model-update-issues
+
+      - name: Open an issue per model or comment on the open one
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          open_issues=$(gh issue list --state open --limit 1000 --json number,title)
+          count=$(jq length issues.json)
+          for i in $(seq 0 $((count - 1))); do
+            title=$(jq -r --argjson i "$i" '.[$i].title' issues.json)
+            {
+              jq -r --argjson i "$i" '.[$i].body' issues.json
+              echo
+              echo "Run: $RUN_URL"
+            } > body.md
+            number=$(jq -r --arg title "$title" \
+              'map(select(.title == $title)) | first | .number // empty' <<< "$open_issues")
+            if [ -n "$number" ]; then
+              gh issue comment "$number" --body-file body.md
+            else
+              gh issue create --title "$title" --body-file body.md
+            fi
+          done
