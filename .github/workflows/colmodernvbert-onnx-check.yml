@@ -48,4 +48,30 @@ jobs:
       - name: Check the candidate model
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: python scripts/check_colmodernvbert_onnx.py --repo jmzzomg/colmodernvbert --revision main
+        run: python -X faulthandler -u scripts/check_colmodernvbert_onnx.py --repo jmzzomg/colmodernvbert --revision main
+
+  # onnxruntime 1.18.0 crashes natively on Windows while loading the new file. Does the published file crash
+  # the same way (as both do on Linux), and does basic graph optimization avoid it?
+  probe-onnxruntime-1-18:
+    strategy:
+      fail-fast: false
+      matrix:
+        repo: [ jmzzomg/colmodernvbert, Qdrant/colmodernvbert ]
+        optimization: [ all, basic ]
+
+    runs-on: windows-latest
+
+    name: onnxruntime 1.18.0 loads ${{ matrix.repo }} with ${{ matrix.optimization }} optimization on windows-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Install onnxruntime 1.18.0
+        run: python -m pip install "onnxruntime==1.18.0" "numpy<2" huggingface_hub
+      - name: Load the model and run a text query
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python -X faulthandler -u scripts/probe_ort_load.py ${{ matrix.repo }} ${{ matrix.optimization }}
