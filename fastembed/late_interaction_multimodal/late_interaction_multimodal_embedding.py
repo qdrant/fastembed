@@ -1,3 +1,4 @@
+import warnings
 from typing import Any, Iterable, Sequence, Type
 from dataclasses import asdict
 
@@ -67,6 +68,14 @@ class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase)
         **kwargs: Any,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
+        # keep for a couple of releases after the 2026-10 re-export of the model
+        if model_name.lower() == "qdrant/colmodernvbert":
+            warnings.warn(
+                "The model 'Qdrant/colmodernvbert' has been updated. Re-embed your images, and "
+                "delete a copy cached before the update, otherwise text queries fail.",
+                UserWarning,
+                stacklevel=2,
+            )
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
             supported_models = EMBEDDING_MODEL_TYPE._list_supported_models()
             if any(model_name.lower() == model.model.lower() for model in supported_models):
