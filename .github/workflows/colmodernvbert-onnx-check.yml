@@ -3,6 +3,8 @@ name: ColModernVBERT ONNX runtime check
 # TEMPORARY, delete before merging: checks the re-exported model from the test repo
 # jmzzomg/colmodernvbert with released fastembed 0.8.1 and the oldest and newest onnxruntime it allows on
 # each Python version, on Windows and x86 Linux (the regular tests skip ColModernVBERT on Windows).
+# onnxruntime 1.18 is left out: it crashes while loading this graph on Windows and Linux, with the
+# published model.onnx too, and fastembed now refuses onnxruntime<1.19 for this model.
 on:
   push:
     branches: [ colmodernvbert-fixes ]
@@ -16,20 +18,12 @@ jobs:
           - windows-latest
           - ubuntu-latest
         runtime:
-          - { python: '3.10', onnxruntime: '1.18.0', numpy: 'numpy<2' }
           - { python: '3.10', onnxruntime: '1.23.2', numpy: 'numpy' }
-          - { python: '3.12', onnxruntime: '1.18.0', numpy: 'numpy<2' }
           - { python: '3.12', onnxruntime: '1.30.0', numpy: 'numpy' }
           - { python: '3.13', onnxruntime: '1.21.1', numpy: 'numpy' }
           - { python: '3.13', onnxruntime: '1.30.0', numpy: 'numpy' }
           - { python: '3.14', onnxruntime: '1.24.2', numpy: 'numpy' }
           - { python: '3.14', onnxruntime: '1.30.0', numpy: 'numpy' }
-        exclude:
-          # onnxruntime 1.18.x on Linux aborts while optimizing this graph, with the published model.onnx too
-          - os: ubuntu-latest
-            runtime: { python: '3.10', onnxruntime: '1.18.0', numpy: 'numpy<2' }
-          - os: ubuntu-latest
-            runtime: { python: '3.12', onnxruntime: '1.18.0', numpy: 'numpy<2' }
 
     runs-on: ${{ matrix.os }}
 
@@ -50,28 +44,3 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: python -X faulthandler -u scripts/check_colmodernvbert_onnx.py --repo jmzzomg/colmodernvbert --revision main
 
-  # onnxruntime 1.18.0 crashes natively on Windows while loading the new file. Does the published file crash
-  # the same way (as both do on Linux), and does basic graph optimization avoid it?
-  probe-onnxruntime-1-18:
-    strategy:
-      fail-fast: false
-      matrix:
-        repo: [ jmzzomg/colmodernvbert, Qdrant/colmodernvbert ]
-        optimization: [ all, basic ]
-
-    runs-on: windows-latest
-
-    name: onnxruntime 1.18.0 loads ${{ matrix.repo }} with ${{ matrix.optimization }} optimization on windows-latest
-
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: '3.12'
-      - name: Install onnxruntime 1.18.0
-        run: python -m pip install "onnxruntime==1.18.0" "numpy<2" huggingface_hub
-      - name: Load the model and run a text query
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: python -X faulthandler -u scripts/probe_ort_load.py ${{ matrix.repo }} ${{ matrix.optimization }}

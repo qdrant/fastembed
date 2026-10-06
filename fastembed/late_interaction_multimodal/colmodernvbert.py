@@ -3,6 +3,7 @@ from typing import Any, Iterable, Type, Optional, Sequence
 import json
 
 import numpy as np
+import onnxruntime as ort
 from tokenizers import Encoding
 from PIL import Image
 
@@ -126,6 +127,13 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         return supported_colmodernvbert_models
 
     def load_onnx_model(self) -> None:
+        # onnxruntime 1.18 crashes the whole process while optimizing this graph (an access violation
+        # on Windows, a failed bounds check on Linux), and 1.17 can't read its IR version
+        if tuple(int(part) for part in ort.__version__.split(".")[:2]) < (1, 19):
+            raise RuntimeError(
+                f"Could not load {self.model_name}: it requires onnxruntime>=1.19, but "
+                f"onnxruntime {ort.__version__} is installed. Please upgrade onnxruntime."
+            )
         self._load_onnx_model(
             model_dir=self._model_dir,
             model_file=self.model_description.model_file,
