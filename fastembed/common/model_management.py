@@ -264,11 +264,14 @@ class ModelManagement(Generic[T]):
                 return False
 
         def _collect_file_metadata(
-            model_dir: Path, repo_files: list[RepoFile]
+            model_dir: Path, revision: str, repo_files: list[RepoFile]
         ) -> dict[str, dict[str, int | str]]:
             meta: dict[str, dict[str, int | str]] = {}
             file_info_map = {f.path: f for f in repo_files}
-            for file_path in model_dir.rglob("*"):
+            # Only look at the downloaded revision's folder. The cache may also hold folders of
+            # older revisions, whose files differ from the ones on the hub now, so checking
+            # them would report a good download as corrupted.
+            for file_path in (model_dir / "snapshots" / revision).rglob("*"):
                 if file_path.is_file() and file_path.name != cls.METADATA_FILE:
                     relative_path = file_path.relative_to(model_dir)
                     repo_file = file_info_map.get(_repo_relative_path(relative_path))
@@ -401,7 +404,10 @@ class ModelManagement(Generic[T]):
 
         if snapshot_dir.exists() and metadata_file.exists():
             metadata = json.loads(metadata_file.read_text())
-            verified_metadata = _verify_files_from_metadata(snapshot_dir, metadata, repo_files)
+            # empty metadata lists no files, so it can't vouch for the cached ones
+            verified_metadata = bool(metadata) and _verify_files_from_metadata(
+                snapshot_dir, metadata, repo_files
+            )
 
         if verified_metadata:
             disable_progress_bars()
@@ -418,7 +424,10 @@ class ModelManagement(Generic[T]):
             not verified_metadata
         ):  # metadata is not up-to-date, update it and check whether the files have been
             # downloaded correctly
-            metadata = _collect_file_metadata(snapshot_dir, repo_files)
+            # result is <cache_dir>/.../snapshots/<revision>. Only the revision is taken from
+            # it: the hub resolves cache_dir, so the rest of the path may not match ours.
+            downloaded_revision = Path(result).name
+            metadata = _collect_file_metadata(snapshot_dir, downloaded_revision, repo_files)
 
             download_successful = _verify_files_from_metadata(
                 snapshot_dir, metadata, repo_files=[]
@@ -428,7 +437,10 @@ class ModelManagement(Generic[T]):
                     "Files have been corrupted during downloading process. "
                     "Please check your internet connection and try again."
                 )
-            _save_file_metadata(snapshot_dir, metadata)
+            # Empty means no file was checked, e.g. the files went to a local_dir instead of
+            # the cache. Saving it would make later downloads skip this check.
+            if metadata:
+                _save_file_metadata(snapshot_dir, metadata)
 
         return result
 
