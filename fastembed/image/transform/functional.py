@@ -186,7 +186,8 @@ def resize_longest_edge(
     if new_width % 2 != 0:
         new_width += 1
 
-    return image.resize((new_width, new_height), resample)
+    # A very narrow image can round down to zero along its shorter edge.
+    return image.resize((max(1, new_width), max(1, new_height)), resample)
 
 
 def crop_ndarray(
