@@ -164,7 +164,7 @@ class IfSplade(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         )
 
     def _load_idf(self) -> dict[int, float]:
-        with open(self._model_dir / IDF_FILE) as f:
+        with open(self._model_dir / IDF_FILE, encoding="utf-8") as f:
             token_to_idf: dict[str, float] = json.load(f)
 
         vocab: dict[str, int] = self.tokenizer.get_vocab()  # type: ignore[union-attr]

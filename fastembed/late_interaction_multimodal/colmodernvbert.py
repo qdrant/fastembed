@@ -138,12 +138,12 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
 
         # Load image processing configuration
         processor_config_path = self._model_dir / "processor_config.json"
-        with open(processor_config_path) as f:
+        with open(processor_config_path, encoding="utf-8") as f:
             processor_config = json.load(f)
             self.image_seq_len = processor_config.get("image_seq_len", 64)
 
         preprocessor_config_path = self._model_dir / "preprocessor_config.json"
-        with open(preprocessor_config_path) as f:
+        with open(preprocessor_config_path, encoding="utf-8") as f:
             preprocessor_config = json.load(f)
             self.max_image_size = preprocessor_config.get("max_image_size", {}).get(
                 "longest_edge", 512
@@ -151,7 +151,7 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
 
         # Load model configuration
         config_path = self._model_dir / "config.json"
-        with open(config_path) as f:
+        with open(config_path, encoding="utf-8") as f:
             model_config = json.load(f)
             vision_config = model_config.get("vision_config", {})
             self.image_size = vision_config.get("image_size", 512)
