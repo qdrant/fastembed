@@ -71,8 +71,9 @@ class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase)
         # keep for a couple of releases after the 2026-10 re-export of the model
         if model_name.lower() == "qdrant/colmodernvbert":
             warnings.warn(
-                "The model 'Qdrant/colmodernvbert' has been updated. Re-embed your images, and "
-                "delete a copy cached before the update, otherwise text queries fail.",
+                "The model 'Qdrant/colmodernvbert' has been updated: re-embed images that were "
+                "embedded in batches with images of other aspect ratios. Delete a copy cached "
+                "before the update, otherwise text queries fail.",
                 UserWarning,
                 stacklevel=2,
             )

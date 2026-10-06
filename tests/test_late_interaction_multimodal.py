@@ -154,10 +154,6 @@ def test_batch_embedding_mixed_tile_counts(model_cache):
 
 
 def test_single_embedding_query(model_cache):
-    # text inputs get a zero image placeholder per token, so this is as slow as the image tests
-    if platform.system() != "Linux" and os.getenv("CI"):
-        pytest.skip("too slow on macOS and Windows CI runners")
-
     for model_name, expected_result in CANONICAL_QUERY_VALUES.items():
         if model_name.lower() == "Qdrant/colpali-v1.3-fp16".lower() and os.getenv("CI"):
             continue  # colpali is too large for ci
