@@ -58,7 +58,8 @@ jobs:
               echo "No pytest test summary, last lines of its output:"
               tail -n 50 pytest.log
             fi
-          } | head -c 60000 > report.txt  # issue bodies are limited to 65536 characters
+          } > summary.txt
+          head -c 60000 summary.txt > report.txt  # issue bodies are limited to 65536 characters
           if [ -s report.txt ]; then
             delimiter="EOF_$(openssl rand -hex 16)"
             {
