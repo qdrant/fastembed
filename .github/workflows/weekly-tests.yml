@@ -108,5 +108,5 @@ jobs:
           if [ -n "$issue" ]; then
             gh issue comment "$issue" --body-file body.md
           else
-            gh issue create --title "$title" --body-file body.md
+            gh issue create --title "$title" --body-file body.md --assignee joein
           fi
