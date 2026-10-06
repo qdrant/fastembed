@@ -1,0 +1,51 @@
+name: ColModernVBERT ONNX runtime check
+
+# TEMPORARY, delete before merging: checks the re-exported model from the test repo
+# jmzzomg/colmodernvbert with released fastembed 0.8.1 and the oldest and newest onnxruntime it allows on
+# each Python version, on Windows and x86 Linux (the regular tests skip ColModernVBERT on Windows).
+on:
+  push:
+    branches: [ colmodernvbert-fixes ]
+
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - windows-latest
+          - ubuntu-latest
+        runtime:
+          - { python: '3.10', onnxruntime: '1.18.0', numpy: 'numpy<2' }
+          - { python: '3.10', onnxruntime: '1.23.2', numpy: 'numpy' }
+          - { python: '3.12', onnxruntime: '1.18.0', numpy: 'numpy<2' }
+          - { python: '3.12', onnxruntime: '1.30.0', numpy: 'numpy' }
+          - { python: '3.13', onnxruntime: '1.21.1', numpy: 'numpy' }
+          - { python: '3.13', onnxruntime: '1.30.0', numpy: 'numpy' }
+          - { python: '3.14', onnxruntime: '1.24.2', numpy: 'numpy' }
+          - { python: '3.14', onnxruntime: '1.30.0', numpy: 'numpy' }
+        exclude:
+          # onnxruntime 1.18.x on Linux aborts while optimizing this graph, with the published model.onnx too
+          - os: ubuntu-latest
+            runtime: { python: '3.10', onnxruntime: '1.18.0', numpy: 'numpy<2' }
+          - os: ubuntu-latest
+            runtime: { python: '3.12', onnxruntime: '1.18.0', numpy: 'numpy<2' }
+
+    runs-on: ${{ matrix.os }}
+
+    name: py${{ matrix.runtime.python }} onnxruntime ${{ matrix.runtime.onnxruntime }} on ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.runtime.python }}
+      - name: Install released fastembed and the onnxruntime under test
+        run: |
+          python -m pip install "fastembed==0.8.1"
+          python -m pip install "onnxruntime==${{ matrix.runtime.onnxruntime }}" "${{ matrix.runtime.numpy }}"
+      - name: Check the candidate model
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python scripts/check_colmodernvbert_onnx.py --repo jmzzomg/colmodernvbert --revision main

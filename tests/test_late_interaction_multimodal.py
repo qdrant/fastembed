@@ -130,6 +130,29 @@ def test_single_embedding(model_cache):
             assert np.allclose(result[:token_num, :abridged_dim], expected_result, atol=2e-3)
 
 
+def test_batch_embedding_mixed_tile_counts(model_cache):
+    # image splitting makes colmodernvbert slow on CI runners, so only linux runs it
+    if platform.system() != "Linux" and os.getenv("CI"):
+        pytest.skip("too slow on macOS and Windows CI runners")
+
+    model_name = "Qdrant/colmodernvbert"
+    image = Image.open(TEST_MISC_DIR / "image.jpeg")
+    # the 4:1 strip is split into 5 tiles and the full image into 13, so the strip gets padded
+    # with empty tiles, which must not leak into the image after it
+    strip = image.crop((0, 0, image.width, image.width // 4))
+    mixed_images = [strip, image]
+    with model_cache(model_name) as model:
+        batch_result = list(model.embed_image(mixed_images, batch_size=len(mixed_images)))
+        single_result = list(model.embed_image(mixed_images, batch_size=1))
+
+    for batch_value, single_value in zip(batch_result, single_result):
+        # padding tokens are zeroed out
+        batch_value = batch_value[np.any(batch_value, axis=-1)]
+        single_value = single_value[np.any(single_value, axis=-1)]
+        assert batch_value.shape == single_value.shape
+        assert np.allclose(batch_value, single_value, atol=1e-3)
+
+
 def test_single_embedding_query(model_cache):
     # text inputs get a zero image placeholder per token, so this is as slow as the image tests
     if platform.system() != "Linux" and os.getenv("CI"):
