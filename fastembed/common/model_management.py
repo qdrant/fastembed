@@ -402,11 +402,17 @@ class ModelManagement(Generic[T]):
 
         verified_metadata = False
 
-        if snapshot_dir.exists() and metadata_file.exists():
+        # a forced download re-fetches every file, so show progress and re-collect the metadata
+        if not kwargs.get("force_download") and snapshot_dir.exists() and metadata_file.exists():
             metadata = json.loads(metadata_file.read_text())
+            # metadata lacking a requested file, e.g. a new model_file, can't vouch for it
+            requested_files = {f.path for f in repo_files if f.path in allow_patterns}
+            stored_files = {_repo_relative_path(Path(rel_path)) for rel_path in metadata}
             # empty metadata lists no files, so it can't vouch for the cached ones
-            verified_metadata = bool(metadata) and _verify_files_from_metadata(
-                snapshot_dir, metadata, repo_files
+            verified_metadata = (
+                bool(metadata)
+                and requested_files.issubset(stored_files)
+                and _verify_files_from_metadata(snapshot_dir, metadata, repo_files)
             )
 
         if verified_metadata:
