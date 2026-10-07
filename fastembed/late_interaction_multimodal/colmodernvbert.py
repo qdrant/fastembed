@@ -28,7 +28,6 @@ supported_colmodernvbert_models: list[DenseModelDescription] = [
         description="The late-interaction version of ModernVBERT, CPU friendly, English, 2025.",
         license="mit",
         size_in_GB=1.0,
-        # TEMPORARY: test copy of the re-exported model, switch back to Qdrant/colmodernvbert before merging
         sources=ModelSource(hf="Qdrant/colmodernvbert"),
         additional_files=["processor_config.json"],
         model_file="model_v2.onnx",
