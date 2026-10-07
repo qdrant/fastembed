@@ -146,9 +146,6 @@ def test_batch_embedding_mixed_tile_counts(model_cache):
         single_result = list(model.embed_image(mixed_images, batch_size=1))
 
     for batch_value, single_value in zip(batch_result, single_result):
-        # padding tokens are zeroed out
-        batch_value = batch_value[np.any(batch_value, axis=-1)]
-        single_value = single_value[np.any(single_value, axis=-1)]
         assert batch_value.shape == single_value.shape
         assert np.allclose(batch_value, single_value, atol=1e-3)
 

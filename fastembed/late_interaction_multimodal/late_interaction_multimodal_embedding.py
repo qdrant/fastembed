@@ -72,8 +72,7 @@ class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase)
         if model_name.lower() == "qdrant/colmodernvbert":
             warnings.warn(
                 "The model 'Qdrant/colmodernvbert' has been updated: re-embed images that were "
-                "embedded in batches with images of other aspect ratios. Delete a copy cached "
-                "before the update, otherwise text queries fail.",
+                "embedded in batches with images of other aspect ratios.",
                 UserWarning,
                 stacklevel=2,
             )
@@ -157,7 +156,7 @@ class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase)
     def embed_image(
         self,
         images: ImageInput | Iterable[ImageInput],
-        batch_size: int = 16,
+        batch_size: int = 2,
         parallel: int | None = None,
         **kwargs: Any,
     ) -> Iterable[NumpyArray]:

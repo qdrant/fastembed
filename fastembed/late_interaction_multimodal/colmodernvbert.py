@@ -31,7 +31,7 @@ supported_colmodernvbert_models: list[DenseModelDescription] = [
         # TEMPORARY: test copy of the re-exported model, switch back to Qdrant/colmodernvbert before merging
         sources=ModelSource(hf="jmzzomg/colmodernvbert"),
         additional_files=["processor_config.json"],
-        model_file="model.onnx",
+        model_file="model_v2.onnx",
     ),
 ]
 
@@ -177,13 +177,13 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         Returns:
             Iterable[NumpyArray]: Post-processed output as NumPy arrays.
         """
-        # no tiles: text has no image tokens, and the model skips the vision encoder without a tile
-        batch_size = onnx_input["input_ids"].shape[0]
-        empty_image_placeholder: NumpyArray = np.zeros(
-            (batch_size, 0, 3, self.image_size, self.image_size),
+        # one blank tile for the whole batch: the model drops blank tiles and skips the vision
+        # encoder; zero tiles would also skip it, but CUDA can't reduce the resulting empty tensor
+        blank_image_placeholder: NumpyArray = np.zeros(
+            (1, 1, 3, self.image_size, self.image_size),
             dtype=np.float32,  # type: ignore[type-var,arg-type,assignment]
         )
-        onnx_input["pixel_values"] = empty_image_placeholder
+        onnx_input["pixel_values"] = blank_image_placeholder
         return onnx_input
 
     def _post_process_onnx_text_output(
@@ -199,7 +199,10 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         Returns:
             Iterable[NumpyArray]: Post-processed output as NumPy arrays.
         """
-        return output.model_output
+        assert output.attention_mask is not None
+        # drop the padding rows, so a query gets the same vectors whatever else is in its batch
+        for embedding, attention_mask in zip(output.model_output, output.attention_mask):
+            yield embedding[attention_mask == 1]
 
     def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
         # Add query augmentation tokens (matching process_queries logic from colpali-engine)
@@ -245,7 +248,8 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
 
         return OnnxOutputContext(
             model_output=model_output[0],
-            attention_mask=attention_mask,  # type: ignore[arg-type]
+            # the token mask, not the tile mask: post-processing drops the padding rows with it
+            attention_mask=onnx_input["attention_mask"],  # type: ignore[arg-type]
             metadata=metadata,
         )
 
@@ -424,9 +428,13 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
             Iterable[NumpyArray]: Post-processed output as NumPy arrays.
         """
         assert self.model_description.dim is not None, "Model dim is not defined"
-        return output.model_output.reshape(
+        assert output.attention_mask is not None
+        embeddings: NumpyArray = output.model_output.reshape(
             output.model_output.shape[0], -1, self.model_description.dim
         )
+        # drop the padding rows, so an image gets the same vectors whatever else is in its batch
+        for embedding, attention_mask in zip(embeddings, output.attention_mask):
+            yield embedding[attention_mask == 1]
 
     def embed_text(
         self,
@@ -467,7 +475,7 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
     def embed_image(
         self,
         images: ImageInput | Iterable[ImageInput],
-        batch_size: int = 16,
+        batch_size: int = 2,
         parallel: Optional[int] = None,
         **kwargs: Any,
     ) -> Iterable[NumpyArray]:
@@ -476,7 +484,8 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
 
         Args:
             images: Iterator of image paths or single image path to embed
-            batch_size: Batch size for encoding -- higher values will use more memory, but be faster
+            batch_size: Batch size for encoding -- every image is split into up to 17 tiles, so
+                memory grows quickly with it, while on CPU larger batches are not faster
             parallel:
                 If > 1, data-parallel encoding will be used, recommended for offline encoding of large datasets.
                 If 0, use all available cores.
