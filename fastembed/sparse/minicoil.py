@@ -158,36 +158,50 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             cuda=self.cuda,
             device_id=self.device_id,
             extra_session_options=self._extra_session_options,
+            additional_files=self.model_description.additional_files,
         )
 
+    def _load_tokenizer(self, model_dir: Path) -> None:
+        super()._load_tokenizer(model_dir=model_dir)
         assert self.tokenizer is not None
-
-        for token, idx in self.tokenizer.get_vocab().items():  # type: ignore[union-attr]
-            self.invert_vocab[idx] = token
+        self.invert_vocab = {idx: token for token, idx in self.tokenizer.get_vocab().items()}
         self.special_tokens = set(self.special_token_to_id.keys())
         self.special_tokens_ids = set(self.special_token_to_id.values())
-        self.stopwords = set(self._load_stopwords(self._model_dir))
 
+    def _load_post_processing_state(self) -> None:
+        """Load the vocab resolver, the encoder and the sparse vector converter.
+
+        None of them needs the onnx session, so the parent process can post-process the outputs
+        of parallel workers without loading it. Requires the tokenizer to be loaded.
+        """
+        assert self.tokenizer is not None
+
+        stopwords = set(self._load_stopwords(self._model_dir))
         stemmer = SnowballStemmer(get_language_by_model_name(self.model_name))
 
-        self.vocab_resolver = VocabResolver(
+        vocab_resolver = VocabResolver(
             tokenizer=VocabTokenizer(self.tokenizer),
-            stopwords=self.stopwords,
+            stopwords=stopwords,
             stemmer=stemmer,
         )
-        self.vocab_resolver.load_json_vocab(str(self._model_dir / MINICOIL_VOCAB_FILE))
+        vocab_resolver.load_json_vocab(str(self._model_dir / MINICOIL_VOCAB_FILE))
 
         weights = np.load(str(self._model_dir / MINICOIL_MODEL_FILE), mmap_mode="r")
-        self.encoder = Encoder(weights)
-        self.output_dim = self.encoder.output_dim
+        encoder = Encoder(weights)
 
-        self.sparse_vector_converter = SparseVectorConverter(
-            stopwords=self.stopwords,
+        sparse_vector_converter = SparseVectorConverter(
+            stopwords=stopwords,
             stemmer=stemmer,
             k=self.k,
             b=self.b,
             avg_len=self.avg_len,
         )
+
+        self.stopwords = stopwords
+        self.encoder = encoder
+        self.output_dim = encoder.output_dim
+        self.sparse_vector_converter = sparse_vector_converter
+        self.vocab_resolver = vocab_resolver
 
     def token_count(
         self, texts: str | Iterable[str], batch_size: int = 1024, **kwargs: Any
@@ -278,6 +292,12 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
     ) -> Iterable[SparseEmbedding]:
         if output.input_ids is None:
             raise ValueError("input_ids must be provided for document post-processing")
+
+        if self.vocab_resolver is None:
+            # built on first use instead of in `load_onnx_model`: parallel workers never
+            # post-process, and with `lazy_load` the process that does may never load the model
+            self._ensure_tokenizer()
+            self._load_post_processing_state()
 
         assert self.vocab_resolver is not None
         assert self.encoder is not None

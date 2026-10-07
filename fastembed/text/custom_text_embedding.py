@@ -20,6 +20,7 @@ from fastembed.text.onnx_text_model import TextEmbeddingWorker
 class PostprocessingConfig:
     pooling: PoolingType
     normalization: bool
+    output_name: str | None = None
 
 
 class CustomTextEmbedding(OnnxTextEmbedding):
@@ -54,6 +55,19 @@ class CustomTextEmbedding(OnnxTextEmbedding):
         postprocessing_config = self.POSTPROCESSING_MAPPING[self.model_description.model]
         self._pooling = postprocessing_config.pooling
         self._normalization = postprocessing_config.normalization
+        if postprocessing_config.output_name is not None:
+            self.ONNX_OUTPUT_NAMES = [postprocessing_config.output_name]
+
+    def load_onnx_model(self) -> None:
+        super().load_onnx_model()
+        # with eager loading this runs inside super().__init__(), before ONNX_OUTPUT_NAMES is set,
+        # so the output name is taken from the registered config
+        output_name = self.POSTPROCESSING_MAPPING[self.model_description.model].output_name
+        output_names = [output.name for output in self.model.get_outputs()]  # type: ignore[union-attr]
+        if output_name is not None and output_name not in output_names:
+            raise ValueError(
+                f"Output {output_name!r} not found in the model, available outputs: {output_names}"
+            )
 
     @classmethod
     def _list_supported_models(cls) -> list[DenseModelDescription]:
@@ -72,7 +86,12 @@ class CustomTextEmbedding(OnnxTextEmbedding):
     def _post_process_onnx_output(
         self, output: OnnxOutputContext, **kwargs: Any
     ) -> Iterable[NumpyArray]:
-        return self._normalize(self._pool(output.model_output, output.attention_mask))
+        embeddings = self._normalize(self._pool(output.model_output, output.attention_mask))
+        # mean pooling returns float64, float embeddings are cast back to the dtype of the model
+        # after normalization, integer outputs are kept as is, since the cast would truncate them
+        if np.issubdtype(output.model_output.dtype, np.floating):
+            return embeddings.astype(output.model_output.dtype, copy=False)
+        return embeddings
 
     def _pool(
         self, embeddings: NumpyArray, attention_mask: NDArray[np.int64] | None = None
@@ -108,10 +127,11 @@ class CustomTextEmbedding(OnnxTextEmbedding):
         model_description: DenseModelDescription,
         pooling: PoolingType,
         normalization: bool,
+        output_name: str | None = None,
     ) -> None:
         cls.SUPPORTED_MODELS.append(model_description)
         cls.POSTPROCESSING_MAPPING[model_description.model] = PostprocessingConfig(
-            pooling=pooling, normalization=normalization
+            pooling=pooling, normalization=normalization, output_name=output_name
         )
 
 
@@ -135,6 +155,7 @@ class CustomTextEmbeddingWorker(TextEmbeddingWorker[NumpyArray]):
             model_description,
             pooling=postprocessing_config.pooling,
             normalization=postprocessing_config.normalization,
+            output_name=postprocessing_config.output_name,
         )
         return CustomTextEmbedding(
             model_name=model_name,

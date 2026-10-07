@@ -101,6 +101,43 @@ def test_text_custom_model_parallel_processing():
         delete_model_cache(model.model._model_dir)
 
 
+def test_text_custom_model_output_name():
+    is_ci = os.getenv("CI")
+    custom_model_name = "custom/granite-embedding-small-english-r2"
+
+    # onnx outputs are `last_hidden_state` and `sentence_embedding`, the builtin model uses the latter
+    TextEmbedding.add_custom_model(
+        custom_model_name,
+        pooling=PoolingType.DISABLED,
+        normalization=False,
+        sources=ModelSource(hf="onnx-community/granite-embedding-small-english-r2-ONNX"),
+        dim=384,
+        additional_files=["onnx/model.onnx_data"],
+        output_name="sentence_embedding",
+    )
+
+    model = TextEmbedding(custom_model_name)
+    builtin_model = TextEmbedding("ibm-granite/granite-embedding-small-english-r2")
+    docs = ["hello world", "flag embedding"]
+    expected = np.stack(list(builtin_model.embed(docs)), axis=0)
+
+    embeddings = np.stack(list(model.embed(docs)), axis=0)
+    assert np.allclose(embeddings, expected, atol=1e-5)
+
+    # workers re-register the model, so they have to receive the output name too
+    embeddings = np.stack(list(model.embed(docs, batch_size=1, parallel=2)), axis=0)
+    assert np.allclose(embeddings, expected, atol=1e-5)
+
+    CustomTextEmbedding.POSTPROCESSING_MAPPING[custom_model_name] = PostprocessingConfig(
+        pooling=PoolingType.DISABLED, normalization=False, output_name="sentence_embeddings"
+    )
+    with pytest.raises(ValueError, match="available outputs"):
+        TextEmbedding(custom_model_name)
+
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
+
+
 def test_cross_encoder_custom_model():
     is_ci = os.getenv("CI")
     custom_model_name = "Xenova/ms-marco-MiniLM-L-4-v2"
@@ -225,6 +262,7 @@ def test_mock_add_custom_models():
             iter(custom_text_embedding._post_process_onnx_output(input_data[model_name]))
         )
         assert np.allclose(post_processed_output, expected_output[model_name], atol=1e-3)
+        assert post_processed_output.dtype == np.float32, model_name
 
 
 def test_custom_text_model_lookup_is_case_insensitive():

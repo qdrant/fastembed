@@ -1,4 +1,5 @@
 import string
+from pathlib import Path
 from typing import Any, Iterable, Sequence, Type
 
 import numpy as np
@@ -40,7 +41,11 @@ supported_colbert_models: list[DenseModelDescription] = [
 class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
     QUERY_MARKER_TOKEN_ID = 1
     DOCUMENT_MARKER_TOKEN_ID = 2
-    MIN_QUERY_LENGTH = 31  # it's 32, we add one additional special token in the beginning
+    # tokens `_preprocess_onnx_input` inserts that the tokenizer metadata does not count
+    RESERVED_MARKER_TOKENS = 1
+    # it's 32, we add one additional special token in the beginning. `None` turns the query
+    # expansion off: the query is then padded to the longest one in its batch, as a document is
+    MIN_QUERY_LENGTH: int | None = 31
     MASK_TOKEN = "[MASK]"
 
     def _post_process_onnx_output(
@@ -54,6 +59,10 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
                 raise ValueError(
                     "input_ids and attention_mask must be provided for document post-processing"
                 )
+
+            # with `lazy_load` and `parallel`, inference runs in the workers and the parent
+            # never calls `load_onnx_model`, so `skip_list` and `pad_token_id` might not be set yet
+            self._ensure_tokenizer()
 
             for i, token_sequence in enumerate(output.input_ids):
                 for j, token_id in enumerate(token_sequence):  # type: ignore
@@ -104,8 +113,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
         include_extension: bool = False,
         **kwargs: Any,
     ) -> int:
-        if not hasattr(self, "model") or self.model is None:
-            self.load_onnx_model()  # loads the tokenizer as well
+        self._ensure_tokenizer()
         token_num = 0
         texts = [texts] if isinstance(texts, str) else texts
         tokenizer = self.tokenizer if is_doc else self.query_tokenizer
@@ -116,7 +124,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
                     token_num += sum(tokens.attention_mask)
                 else:
                     attend_count = sum(tokens.attention_mask)
-                    if include_extension:
+                    if include_extension and self.MIN_QUERY_LENGTH is not None:
                         token_num += max(attend_count, self.MIN_QUERY_LENGTH)
 
                     else:
@@ -217,27 +225,42 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
             cuda=self.cuda,
             device_id=self.device_id,
             extra_session_options=self._extra_session_options,
+            additional_files=self.model_description.additional_files,
         )
-        self.query_tokenizer, _ = load_tokenizer(model_dir=self._model_dir)
 
-        assert self.tokenizer is not None
+    def _load_tokenizer(self, model_dir: Path) -> None:
+        """Load the document and the query tokenizers, and apply colbert's own configuration.
+
+        Both tokenizers are always (re)loaded from disk here, so the truncation length is
+        derived from the on-disk value and never decremented twice.
+        """
+        tokenizer, special_token_to_id = load_tokenizer(model_dir=model_dir)
+        query_tokenizer, _ = load_tokenizer(model_dir=model_dir)
+
         # load_tokenizer always enables both
-        assert self.tokenizer.padding is not None and self.tokenizer.truncation is not None
-        self.mask_token_id = self.special_token_to_id[self.MASK_TOKEN]
-        self.pad_token_id = self.tokenizer.padding["pad_id"]
-        self.skip_list = {
-            self.tokenizer.encode(symbol, add_special_tokens=False).ids[0]
+        assert tokenizer.padding is not None and tokenizer.truncation is not None
+        mask_token_id = special_token_to_id[self.MASK_TOKEN]
+        pad_token_id = tokenizer.padding["pad_id"]
+        skip_list = {
+            tokenizer.encode(symbol, add_special_tokens=False).ids[0]
             for symbol in string.punctuation
         }
-        current_max_length = self.tokenizer.truncation["max_length"]
         # ensure not to overflow after adding document-marker
-        self.tokenizer.enable_truncation(max_length=current_max_length - 1)
-        self.query_tokenizer.enable_truncation(max_length=current_max_length - 1)
-        self.query_tokenizer.enable_padding(
+        max_length = tokenizer.truncation["max_length"] - self.RESERVED_MARKER_TOKENS
+        tokenizer.enable_truncation(max_length=max_length)
+        query_tokenizer.enable_truncation(max_length=max_length)
+        query_tokenizer.enable_padding(
             pad_token=self.MASK_TOKEN,
-            pad_id=self.mask_token_id,
+            pad_id=mask_token_id,
             length=self.MIN_QUERY_LENGTH,
         )
+
+        self.query_tokenizer = query_tokenizer
+        self.special_token_to_id = special_token_to_id
+        self.mask_token_id = mask_token_id
+        self.pad_token_id = pad_token_id
+        self.skip_list = skip_list
+        self.tokenizer = tokenizer
 
     def embed(
         self,

@@ -38,6 +38,18 @@ class OnnxTextModel(OnnxModel[T]):
         self.tokenizer: Tokenizer | None = None
         self.special_token_to_id: dict[str, int] = {}
 
+    def _load_tokenizer(self, model_dir: Path) -> None:
+        self.tokenizer, self.special_token_to_id = load_tokenizer(model_dir=model_dir)
+
+    def _ensure_tokenizer(self) -> None:
+        """Load the tokenizer if it has not been loaded yet, leaving the onnx model alone.
+
+        Tokenizer files are lightweight, so counting tokens does not have to resolve
+        `lazy_load` into a full onnx session.
+        """
+        if getattr(self, "tokenizer", None) is None:
+            self._load_tokenizer(model_dir=self._model_dir)
+
     def _preprocess_onnx_input(
         self, onnx_input: dict[str, NumpyArray], **kwargs: Any
     ) -> dict[str, NumpyArray | NDArray[np.int64]]:
@@ -55,6 +67,7 @@ class OnnxTextModel(OnnxModel[T]):
         cuda: bool | Device = Device.AUTO,
         device_id: int | None = None,
         extra_session_options: dict[str, Any] | None = None,
+        additional_files: list[str] | None = None,
     ) -> None:
         super()._load_onnx_model(
             model_dir=model_dir,
@@ -64,8 +77,9 @@ class OnnxTextModel(OnnxModel[T]):
             cuda=cuda,
             device_id=device_id,
             extra_session_options=extra_session_options,
+            additional_files=additional_files,
         )
-        self.tokenizer, self.special_token_to_id = load_tokenizer(model_dir=model_dir)
+        self._ensure_tokenizer()
 
     def load_onnx_model(self) -> None:
         raise NotImplementedError("Subclasses must implement this method")
@@ -168,9 +182,7 @@ class OnnxTextModel(OnnxModel[T]):
                 yield from self._post_process_onnx_output(batch, **kwargs)  # type: ignore
 
     def _token_count(self, texts: str | Iterable[str], batch_size: int = 1024, **_: Any) -> int:
-        if not hasattr(self, "model") or self.model is None:
-            self.load_onnx_model()  # loads the tokenizer as well
-
+        self._ensure_tokenizer()
         token_num = 0
         assert self.tokenizer is not None
         texts = [texts] if isinstance(texts, str) else texts

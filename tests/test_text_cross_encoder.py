@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from fastembed.rerank.cross_encoder import TextCrossEncoder
-from tests.utils import delete_model_cache, should_test_model
+from tests.utils import delete_model_cache, is_manual_run, should_test_model
 
 CANONICAL_SCORE_VALUES = {
     "Xenova/ms-marco-MiniLM-L-6-v2": np.array([8.500708, -2.541011]),
@@ -54,7 +54,7 @@ def model_cache():
 @pytest.mark.parametrize("model_name", ["Xenova/ms-marco-MiniLM-L-6-v2"])
 def test_rerank(model_cache, model_name: str) -> None:
     is_ci = os.getenv("CI")
-    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    is_manual = is_manual_run()
 
     for model_desc in TextCrossEncoder._list_supported_models():
         if not should_test_model(model_desc, model_name, is_ci, is_manual):
@@ -108,6 +108,9 @@ def test_lazy_load(model_name: str) -> None:
     assert not hasattr(model.model, "model")
     query = "What is the capital of France?"
     documents = ["Paris is the capital of France.", "Berlin is the capital of Germany."]
+    pairs = [(query, doc) for doc in documents]
+    assert model.token_count(pairs) > 0
+    assert not hasattr(model.model, "model")
     list(model.rerank(query, documents))
     assert hasattr(model.model, "model")
 

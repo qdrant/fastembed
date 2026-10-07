@@ -128,6 +128,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
             cuda=self.cuda,
             device_id=self.device_id,
             extra_session_options=self._extra_session_options,
+            additional_files=self.model_description.additional_files,
         )
 
     def _post_process_onnx_image_output(
@@ -180,8 +181,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
         include_extension: bool = False,
         **kwargs: Any,
     ) -> int:
-        if not hasattr(self, "model") or self.model is None:
-            self.load_onnx_model()  # loads the tokenizer as well
+        self._ensure_tokenizer()
         token_num = 0
         texts = [texts] if isinstance(texts, str) else texts
         assert self.tokenizer is not None

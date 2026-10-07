@@ -162,11 +162,14 @@ def test_lazy_load(model_name: str) -> None:
     model = SparseTextEmbedding(model_name=model_name, lazy_load=True)
     assert not hasattr(model.model, "model")
     docs = ["hello world", "flag embedding"]
+    assert model.token_count(docs) > 0
+    assert not hasattr(model.model, "model")
     list(model.embed(docs))
     assert hasattr(model.model, "model")
 
     model = SparseTextEmbedding(model_name=model_name, lazy_load=True)
     list(model.query_embed(docs))
+    assert not hasattr(model.model, "model")  # query embedding does not require inference
 
     model = SparseTextEmbedding(model_name=model_name, lazy_load=True)
     list(model.passage_embed(docs))

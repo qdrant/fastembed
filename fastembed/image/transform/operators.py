@@ -191,7 +191,15 @@ class ImageSplitter(Transform):
         self.resample = resample
 
     def __call__(self, images: list[NumpyArray]) -> list[list[NumpyArray]]:  # type: ignore[override]
+        patches, _ = self.split_with_grid(images)
+        return patches
+
+    def split_with_grid(
+        self, images: list[NumpyArray]
+    ) -> tuple[list[list[NumpyArray]], list[tuple[int, int]]]:
+        """Return patches and their (rows, cols), or (0, 0) for unsplit images."""
         result = []
+        image_grid = []
 
         for image in images:
             # Assume (C, H, W) format
@@ -204,6 +212,7 @@ class ImageSplitter(Transform):
                 # Calculate the number of splits needed
                 num_splits_h = math.ceil(height / max_height)
                 num_splits_w = math.ceil(width / max_width)
+                image_grid.append((num_splits_h, num_splits_w))
 
                 # Calculate optimal patch dimensions
                 optimal_height = math.ceil(height / num_splits_h)
@@ -234,12 +243,13 @@ class ImageSplitter(Transform):
                 frames.append(global_view)
             else:
                 # Image is small enough, no splitting needed
+                image_grid.append((0, 0))
                 frames.append(image)
 
             # Append (not extend) to preserve per-image grouping
             result.append(frames)
 
-        return result
+        return result, image_grid
 
 
 class SquareResize(Transform):
@@ -272,10 +282,23 @@ class Compose:
         self.transforms = transforms
 
     def __call__(
-        self, images: list[Image.Image] | list[NumpyArray]
+        self,
+        images: list[Image.Image] | list[NumpyArray],
+        *,
+        metadata: dict[str, Any] | None = None,
     ) -> list[NumpyArray] | list[Image.Image]:
+        """Apply transforms without changing their usual return type.
+
+        If supplied, metadata["image_grid"] records (rows, cols) for each image,
+        or (0, 0) for images that are not split.
+        """
+        if metadata is not None:
+            metadata["image_grid"] = [(0, 0) for _ in images]
         for transform in self.transforms:
-            images = transform(images)
+            if metadata is not None and isinstance(transform, ImageSplitter):
+                images, metadata["image_grid"] = transform.split_with_grid(images)  # type: ignore[assignment,arg-type]
+            else:
+                images = transform(images)
         return images
 
     @classmethod
@@ -344,6 +367,9 @@ class Compose:
                     )
                 )
         elif mode == "ConvNextFeatureExtractor":
+            # HF defaults do_resize to True for ConvNeXT; it also gates the coupled crop
+            if not config.get("do_resize", True):
+                return
             if "size" in config and "shortest_edge" not in config["size"]:
                 raise ValueError(
                     f"Size dictionary must contain 'shortest_edge' key. Got {config['size'].keys()}"

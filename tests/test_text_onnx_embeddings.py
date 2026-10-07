@@ -5,10 +5,12 @@ from contextlib import contextmanager
 import numpy as np
 import pytest
 
+from fastembed.common.onnx_model import OnnxOutputContext
+from fastembed.text.custom_text_embedding import CustomTextEmbedding
 from fastembed.text.last_token_normalized_embedding import LastTokenNormalizedEmbedding
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
 from fastembed.text.text_embedding import TextEmbedding
-from tests.utils import delete_model_cache, should_test_model
+from tests.utils import delete_model_cache, is_manual_run, should_test_model
 
 CANONICAL_VECTOR_VALUES = {
     "BAAI/bge-small-en": np.array([-0.0232, -0.0255, 0.0174, -0.0639, -0.0006]),
@@ -164,7 +166,7 @@ def model_cache():
 def test_embedding(model_cache, model_name: str) -> None:
     is_ci = os.getenv("CI")
     is_mac = platform.system() == "Darwin"
-    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    is_manual = is_manual_run()
 
     for model_desc in TextEmbedding._list_supported_models():
         if model_desc.model in MULTI_TASK_MODELS or (
@@ -194,7 +196,7 @@ def test_embedding(model_cache, model_name: str) -> None:
 def test_query_embedding(model_cache) -> None:
     is_ci = os.getenv("CI")
     is_mac = platform.system() == "Darwin"
-    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    is_manual = is_manual_run()
 
     for model_desc in TextEmbedding._list_supported_models():
         if model_desc.model in MULTI_TASK_MODELS or (
@@ -224,6 +226,17 @@ def test_query_embedding(model_cache) -> None:
             ), model_desc.model
 
 
+def test_external_data_model(model_cache) -> None:
+    # Its weights are ONNX external data, which onnxruntime>=1.24 doesn't load straight from a
+    # huggingface_hub>=1.32 cache, see fastembed.common.onnx_external_data
+    model_name = "ibm-granite/granite-embedding-small-english-r2"
+    with model_cache(model_name) as model:
+        embedding = next(iter(model.embed(["hello world"])))
+
+    canonical_vector = CANONICAL_VECTOR_VALUES[model_name]
+    assert np.allclose(embedding[: canonical_vector.shape[0]], canonical_vector, atol=1e-3)
+
+
 def test_quantized_model_reports_onnxruntime_requirement(monkeypatch) -> None:
     """Old onnxruntime only implements 4-bit MatMulNBits, the error should say so."""
     monkeypatch.setattr(
@@ -239,6 +252,30 @@ def test_quantized_model_reports_onnxruntime_requirement(monkeypatch) -> None:
 
     with pytest.raises(RuntimeError, match="onnxruntime>=1.23"):
         model.load_onnx_model()
+
+
+@pytest.mark.parametrize(
+    "embedding_class",
+    # custom models are covered in test_custom_models.py
+    [cls for cls in TextEmbedding.EMBEDDINGS_REGISTRY if cls is not CustomTextEmbedding],
+    ids=lambda cls: cls.__name__,
+)
+def test_post_processing_keeps_model_dtype(embedding_class) -> None:
+    model_desc = embedding_class._list_supported_models()[0]
+    model = embedding_class(
+        model_desc.model,
+        lazy_load=True,
+        specific_model_path="./",  # disable model downloading and loading
+    )
+    token_embeddings = np.random.default_rng(0).standard_normal((2, 4, model_desc.dim))
+    output = OnnxOutputContext(
+        model_output=token_embeddings.astype(np.float32),
+        attention_mask=np.array([[1, 1, 0, 0], [1, 1, 1, 1]], dtype=np.int64),
+    )
+
+    embeddings = np.stack(list(model._post_process_onnx_output(output)))
+
+    assert embeddings.dtype == np.float32
 
 
 @pytest.mark.parametrize("n_dims,model_name", [(384, "BAAI/bge-small-en-v1.5")])
@@ -275,6 +312,8 @@ def test_lazy_load(model_name: str) -> None:
     model = TextEmbedding(model_name=model_name, lazy_load=True)
     assert not hasattr(model.model, "model")
     docs = ["hello world", "flag embedding"]
+    assert model.token_count(docs) > 0
+    assert not hasattr(model.model, "model")
     list(model.embed(docs))
     assert hasattr(model.model, "model")
 

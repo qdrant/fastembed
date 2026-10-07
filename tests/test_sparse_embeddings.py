@@ -8,7 +8,7 @@ from fastembed.common.utils import remove_non_alphanumeric
 from fastembed.sparse.bm25 import Bm25
 from fastembed.sparse.sparse_text_embedding import SparseTextEmbedding
 from fastembed.sparse.utils.tokenizer import SimpleTokenizer
-from tests.utils import delete_model_cache, should_test_model
+from tests.utils import delete_model_cache, is_manual_run, should_test_model
 
 
 CANONICAL_COLUMN_VALUES = {
@@ -177,7 +177,7 @@ def test_batch_embedding(model_cache, model_name: str) -> None:
 
 def test_single_embedding(model_cache) -> None:
     is_ci = os.getenv("CI")
-    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    is_manual = is_manual_run()
 
     for model_desc in SparseTextEmbedding._list_supported_models():
         if (
@@ -430,8 +430,9 @@ def test_if_splade_query_embed_is_inference_free() -> None:
         lazy_load=True,
     )
     embeddings = list(model.query_embed(["hello world", "flag embedding"]))
-    # queries are embedded with a tokenizer and an idf lookup table only,
-    # the onnx model must stay unloaded
+    assert model.token_count(["hello world", "flag embedding"]) > 0
+    # queries are embedded with a tokenizer and an idf lookup table only, and token counting
+    # needs the tokenizer alone, so the onnx model must stay unloaded
     assert not hasattr(model.model, "model")
     assert all(len(embedding.indices) > 0 for embedding in embeddings)
 
@@ -446,6 +447,8 @@ def test_lazy_load(model_name: str) -> None:
     assert not hasattr(model.model, "model")
 
     docs = ["hello world", "flag embedding"]
+    assert model.token_count(docs) > 0
+    assert not hasattr(model.model, "model")
     list(model.embed(docs))
     assert hasattr(model.model, "model")
 

@@ -41,7 +41,7 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         if output.attention_mask is None:
             raise ValueError("attention_mask must be provided for document post-processing")
 
-        relu_log = np.log(1 + np.maximum(output.model_output, 0))
+        relu_log = np.log1p(np.maximum(output.model_output, 0))
 
         weighted_log = relu_log * np.expand_dims(output.attention_mask, axis=-1)
 
@@ -142,6 +142,7 @@ class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             cuda=self.cuda,
             device_id=self.device_id,
             extra_session_options=self._extra_session_options,
+            additional_files=self.model_description.additional_files,
         )
 
     def embed(
