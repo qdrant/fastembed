@@ -3,6 +3,7 @@ from typing import Any, Iterable, Type, Optional, Sequence
 import json
 
 import numpy as np
+import onnxruntime as ort
 from tokenizers import Encoding
 from PIL import Image
 
@@ -27,9 +28,10 @@ supported_colmodernvbert_models: list[DenseModelDescription] = [
         description="The late-interaction version of ModernVBERT, CPU friendly, English, 2025.",
         license="mit",
         size_in_GB=1.0,
+        # TEMPORARY: test copy of the re-exported model, switch back to Qdrant/colmodernvbert before merging
         sources=ModelSource(hf="Qdrant/colmodernvbert"),
         additional_files=["processor_config.json"],
-        model_file="model.onnx",
+        model_file="model_v2.onnx",
     ),
 ]
 
@@ -125,6 +127,13 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         return supported_colmodernvbert_models
 
     def load_onnx_model(self) -> None:
+        # onnxruntime 1.18 crashes the whole process while optimizing this graph (an access violation
+        # on Windows, a failed bounds check on Linux), and 1.17 can't read its IR version
+        if tuple(int(part) for part in ort.__version__.split(".")[:2]) < (1, 19):
+            raise RuntimeError(
+                f"Could not load {self.model_name}: it requires onnxruntime>=1.19, but "
+                f"onnxruntime {ort.__version__} is installed. Please upgrade onnxruntime."
+            )
         self._load_onnx_model(
             model_dir=self._model_dir,
             model_file=self.model_description.model_file,
@@ -168,12 +177,13 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         Returns:
             Iterable[NumpyArray]: Post-processed output as NumPy arrays.
         """
-        batch_size, seq_length = onnx_input["input_ids"].shape
-        empty_image_placeholder: NumpyArray = np.zeros(
-            (batch_size, seq_length, 3, self.image_size, self.image_size),
+        # one blank tile for the whole batch: the model drops blank tiles and skips the vision
+        # encoder; zero tiles would also skip it, but CUDA can't reduce the resulting empty tensor
+        blank_image_placeholder: NumpyArray = np.zeros(
+            (1, 1, 3, self.image_size, self.image_size),
             dtype=np.float32,  # type: ignore[type-var,arg-type,assignment]
         )
-        onnx_input["pixel_values"] = empty_image_placeholder
+        onnx_input["pixel_values"] = blank_image_placeholder
         return onnx_input
 
     def _post_process_onnx_text_output(
@@ -189,7 +199,10 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         Returns:
             Iterable[NumpyArray]: Post-processed output as NumPy arrays.
         """
-        return output.model_output
+        assert output.attention_mask is not None
+        # drop the padding rows, so a query gets the same vectors whatever else is in its batch
+        for embedding, attention_mask in zip(output.model_output, output.attention_mask):
+            yield embedding[attention_mask == 1]
 
     def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
         # Add query augmentation tokens (matching process_queries logic from colpali-engine)
@@ -222,16 +235,21 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
                 for image in images
             ]
             assert self.processor is not None, "Processor is not initialized"
-            processed = self.processor(image_files)
+            processor_metadata: dict[str, Any] = {}
+            processed = self.processor(image_files, metadata=processor_metadata)
             encoded, attention_mask, metadata = self._process_nested_patches(processed)  # type: ignore[arg-type]
+            metadata.update(processor_metadata)
 
         onnx_input = {"pixel_values": encoded, "attention_mask": attention_mask}
-        onnx_input = self._preprocess_onnx_image_input(onnx_input, **kwargs)
+        onnx_input = self._preprocess_onnx_image_input(
+            onnx_input, image_grid=metadata["image_grid"], **kwargs
+        )
         model_output = self.model.run(None, onnx_input)  # type: ignore[union-attr]
 
         return OnnxOutputContext(
             model_output=model_output[0],
-            attention_mask=attention_mask,  # type: ignore[arg-type]
+            # the token mask, not the tile mask: post-processing drops the padding rows with it
+            attention_mask=onnx_input["attention_mask"],  # type: ignore[arg-type]
             metadata=metadata,
         )
 
@@ -276,17 +294,22 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         return encoded, attention_mask, metadata  # type: ignore[return-value]
 
     def _preprocess_onnx_image_input(
-        self, onnx_input: dict[str, np.ndarray], **kwargs: Any
+        self,
+        onnx_input: dict[str, np.ndarray],
+        *,
+        image_grid: list[tuple[int, int]] | None = None,
+        **kwargs: Any,
     ) -> dict[str, NumpyArray]:
         """
         Add text input placeholders for image data, following Idefics3 processing logic.
 
-        Constructs input_ids dynamically based on the actual number of image patches,
-        using the same token expansion logic as Idefics3Processor.
+        Constructs input_ids from the actual image patch grid, using the same
+        token expansion logic as Idefics3Processor.
 
         Args:
             onnx_input: Dict with 'pixel_values' (batch, num_patches, C, H, W)
                         and 'attention_mask' (batch, num_patches) indicating real patches
+            image_grid: Actual (rows, cols) from image splitting, (0, 0) if unsplit
             **kwargs: Additional arguments
 
         Returns:
@@ -298,15 +321,18 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         pixel_values = onnx_input["pixel_values"]
 
         batch_size = pixel_values.shape[0]
+        if image_grid is None or len(image_grid) != batch_size:
+            raise ValueError("The image patch grid is required for each image in the batch")
         batch_input_ids = []
 
-        # Build input_ids for each image based on its actual patch count
-        for i in range(batch_size):
+        # A patch count cannot distinguish portrait, landscape, and square grids.
+        for i, (rows, cols) in enumerate(image_grid):
             # Count real patches (non-padded) from attention mask
             patch_count = int(np.sum(patch_attention_mask[i]))
 
-            # Compute rows/cols from patch count
-            rows, cols = self._compute_rows_cols_from_patches(patch_count)
+            valid_grid = (rows == 0 and cols == 0) or (rows > 0 and cols > 0)
+            if not valid_grid or rows * cols + 1 != patch_count:
+                raise ValueError("The image patch grid does not match the number of patches")
 
             # Build input_ids for this image
             input_ids = self._build_input_ids_for_image(rows, cols)
@@ -339,31 +365,6 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         # Update attention_mask with token-level data
         onnx_input["attention_mask"] = attention_mask
         return onnx_input
-
-    @staticmethod
-    def _compute_rows_cols_from_patches(patch_count: int) -> tuple[int, int]:
-        if patch_count <= 1:
-            return 0, 0
-
-        # Subtract 1 for the global image
-        grid_patches = patch_count - 1
-
-        # Find rows and cols (assume square or near-square grid)
-        rows = int(grid_patches**0.5)
-        cols = grid_patches // rows
-
-        # Verify the calculation
-        if rows * cols + 1 != patch_count:
-            # Handle non-square grids
-            for r in range(1, grid_patches + 1):
-                if grid_patches % r == 0:
-                    c = grid_patches // r
-                    if r * c + 1 == patch_count:
-                        return r, c
-            # Fallback: treat as unsplit
-            return 0, 0
-
-        return rows, cols
 
     def _create_single_image_prompt_string(self) -> str:
         return (
@@ -427,9 +428,13 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
             Iterable[NumpyArray]: Post-processed output as NumPy arrays.
         """
         assert self.model_description.dim is not None, "Model dim is not defined"
-        return output.model_output.reshape(
+        assert output.attention_mask is not None
+        embeddings: NumpyArray = output.model_output.reshape(
             output.model_output.shape[0], -1, self.model_description.dim
         )
+        # drop the padding rows, so an image gets the same vectors whatever else is in its batch
+        for embedding, attention_mask in zip(embeddings, output.attention_mask):
+            yield embedding[attention_mask == 1]
 
     def embed_text(
         self,
@@ -470,7 +475,7 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
     def embed_image(
         self,
         images: ImageInput | Iterable[ImageInput],
-        batch_size: int = 16,
+        batch_size: int = 2,
         parallel: Optional[int] = None,
         **kwargs: Any,
     ) -> Iterable[NumpyArray]:
@@ -479,7 +484,8 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
 
         Args:
             images: Iterator of image paths or single image path to embed
-            batch_size: Batch size for encoding -- higher values will use more memory, but be faster
+            batch_size: Batch size for encoding -- every image is split into up to 17 tiles, so
+                memory grows quickly with it, while on CPU larger batches are not faster
             parallel:
                 If > 1, data-parallel encoding will be used, recommended for offline encoding of large datasets.
                 If 0, use all available cores.
