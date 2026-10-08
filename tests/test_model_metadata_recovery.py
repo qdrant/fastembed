@@ -32,17 +32,17 @@ def cached_model(tmp_path: Path) -> tuple[Path, Path, dict[str, dict[str, int | 
     return snapshot, metadata_file, metadata
 
 
-@pytest.mark.parametrize("metadata_text", ["", "{"])
+@pytest.mark.parametrize("metadata_bytes", [b"", b"{", b"\xff"])
 @pytest.mark.parametrize("local_files_only", [False, True])
 def test_download_model_reuses_cache_with_malformed_metadata(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     cached_model: tuple[Path, Path, dict[str, dict[str, int | str]]],
-    metadata_text: str,
+    metadata_bytes: bytes,
     local_files_only: bool,
 ) -> None:
     snapshot, metadata_file, _ = cached_model
-    metadata_file.write_text(metadata_text)
+    metadata_file.write_bytes(metadata_bytes)
     download = Mock(return_value=str(snapshot))
     info = Mock(side_effect=AssertionError("The cached model needs no hub request"))
     tree = Mock(side_effect=AssertionError("The cached model needs no hub request"))
@@ -73,20 +73,20 @@ def test_download_model_reuses_cache_with_malformed_metadata(
     sleep.assert_not_called()
     assert (snapshot / "model.onnx").read_bytes() == PAYLOAD
     # Offline reuse does not manufacture authoritative metadata.
-    assert metadata_file.read_text() == metadata_text
+    assert metadata_file.read_bytes() == metadata_bytes
 
 
-@pytest.mark.parametrize("metadata_text", ["", "{"])
+@pytest.mark.parametrize("metadata_bytes", [b"", b"{", b"\xff"])
 @pytest.mark.parametrize("bad_size", [False, True])
 def test_online_download_rebuilds_malformed_metadata_and_checks_sizes(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     cached_model: tuple[Path, Path, dict[str, dict[str, int | str]]],
-    metadata_text: str,
+    metadata_bytes: bytes,
     bad_size: bool,
 ) -> None:
     snapshot, metadata_file, metadata = cached_model
-    metadata_file.write_text(metadata_text)
+    metadata_file.write_bytes(metadata_bytes)
     old_file = snapshot.parent / "older-revision" / "model.onnx"
     old_file.parent.mkdir()
     old_file.write_bytes(b"old")
@@ -104,7 +104,7 @@ def test_online_download_rebuilds_malformed_metadata_and_checks_sizes(
     if bad_size:
         with pytest.raises(ValueError, match="corrupted during downloading"):
             load()
-        assert metadata_file.read_text() == metadata_text
+        assert metadata_file.read_bytes() == metadata_bytes
     else:
         assert load() == str(snapshot)
         assert json.loads(metadata_file.read_text()) == metadata
@@ -117,17 +117,19 @@ def test_online_download_rebuilds_malformed_metadata_and_checks_sizes(
     assert old_file.read_bytes() == b"old"
 
 
+@pytest.mark.parametrize("metadata_bytes", [b"{", b"\xff"])
 def test_malformed_canonical_metadata_does_not_block_legacy_cache(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     cached_model: tuple[Path, Path, dict[str, dict[str, int | str]]],
+    metadata_bytes: bytes,
 ) -> None:
     snapshot, _, _ = cached_model
     canonical_dir = tmp_path / "models--Qdrant--fake-onnx"
     if canonical_dir.exists():
         pytest.skip("Distinct repository casing requires a case-sensitive filesystem")
     canonical_dir.mkdir()
-    (canonical_dir / ModelManagement.METADATA_FILE).write_text("{")
+    (canonical_dir / ModelManagement.METADATA_FILE).write_bytes(metadata_bytes)
     download = Mock(side_effect=[FileNotFoundError("No canonical snapshot"), str(snapshot)])
     info = Mock(side_effect=AssertionError("Offline loading must not reach the hub"))
     tree = Mock(side_effect=AssertionError("Offline loading must not reach the hub"))

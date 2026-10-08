@@ -293,10 +293,10 @@ class ModelManagement(Generic[T]):
         def _read_file_metadata(metadata_file: Path) -> dict[str, Any]:
             try:
                 return json.loads(metadata_file.read_text())
-            except json.JSONDecodeError as e:
-                # An interrupted write can leave metadata incomplete even when the model
-                # files are intact. Treat it as absent: offline loading can still try the
-                # snapshot, and an online download will collect and verify fresh metadata.
+            except (json.JSONDecodeError, UnicodeDecodeError) as e:
+                # Corruption can leave metadata unreadable even when the model files are intact.
+                # Treat it as absent: offline loading can still try the snapshot, and an online
+                # download will collect and verify fresh metadata.
                 logger.warning(f"Error reading metadata from {metadata_file}: {e}")
                 return {}
 
