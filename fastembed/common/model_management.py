@@ -290,6 +290,16 @@ class ModelManagement(Generic[T]):
             except (OSError, ValueError) as e:
                 logger.warning(f"Error saving metadata: {str(e)}")
 
+        def _read_file_metadata(metadata_file: Path) -> dict[str, Any]:
+            try:
+                return json.loads(metadata_file.read_text())
+            except json.JSONDecodeError as e:
+                # An interrupted write can leave metadata incomplete even when the model
+                # files are intact. Treat it as absent: offline loading can still try the
+                # snapshot, and an online download will collect and verify fresh metadata.
+                logger.warning(f"Error reading metadata from {metadata_file}: {e}")
+                return {}
+
         allow_patterns = [
             "config.json",
             "tokenizer.json",
@@ -327,7 +337,7 @@ class ModelManagement(Generic[T]):
                 )
                 metadata_file = snapshot_dir / cls.METADATA_FILE
                 if metadata_file.exists():
-                    metadata = json.loads(metadata_file.read_text())
+                    metadata = _read_file_metadata(metadata_file)
                     if not _verify_files_from_metadata(snapshot_dir, metadata, repo_files=[]):
                         # A size mismatch on one of this model's own files (its weights, or
                         # whatever else its description lists) means loading would later fail
@@ -404,7 +414,7 @@ class ModelManagement(Generic[T]):
 
         # a forced download re-fetches every file, so show progress and re-collect the metadata
         if not kwargs.get("force_download") and snapshot_dir.exists() and metadata_file.exists():
-            metadata = json.loads(metadata_file.read_text())
+            metadata = _read_file_metadata(metadata_file)
             # metadata lacking a requested file, e.g. a new model_file, can't vouch for it
             requested_files = {f.path for f in repo_files if f.path in allow_patterns}
             stored_files = {_repo_relative_path(Path(rel_path)) for rel_path in metadata}
