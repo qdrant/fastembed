@@ -31,7 +31,7 @@ body:
     attributes:
       label: What Python version are you on? e.g. python --version
       description: Also tell us, what package manager are you using e.g. conda, pip, poetry?
-      placeholder: Python3.10
+      placeholder: Python3.13
     validations:
       required: true
   - type: textarea
