@@ -16,7 +16,7 @@ classifiers = [
 ]
 requires-python = ">=3.11.0"
 dependencies = [
-    "numpy>=1.21 ; python_version == '3.11'",
+    "numpy>=1.23.2 ; python_version == '3.11'",
     "numpy>=1.26 ; python_version == '3.12'",
     "numpy>=2.1.0 ; python_version == '3.13'",
     "numpy>=2.3.0 ; python_version >= '3.14'",
