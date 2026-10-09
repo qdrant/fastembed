@@ -143,9 +143,10 @@ class TextCrossEncoder(TextCrossEncoderBase):
         size_in_gb: float = 0.0,
         additional_files: list[str] | None = None,
     ) -> None:
+        """Register a custom reranker under a case-insensitively unique model name."""
         registered_models = cls._list_supported_models()
         for registered_model in registered_models:
-            if model == registered_model.model:
+            if model.lower() == registered_model.model.lower():
                 raise ValueError(
                     f"Model {model} is already registered in CrossEncoderModel, if you still want to add this model, "
                     f"please use another model name"
