@@ -110,6 +110,14 @@ class CustomTextEmbedding(OnnxTextEmbedding):
             return last_token_pooling(embeddings, attention_mask)
 
         if self._pooling == PoolingType.DISABLED:
+            if embeddings.ndim != 2:
+                raise ValueError(
+                    f"{PoolingType.DISABLED} pooling expects the model to output sentence "
+                    f"embeddings of shape (batch_size, dim), got an output of shape "
+                    f"{embeddings.shape}. Use {PoolingType.CLS}, {PoolingType.MEAN} or "
+                    f"{PoolingType.LAST_TOKEN} pooling, or set `output_name` to a pooled output "
+                    "of the model, e.g. `sentence_embedding`."
+                )
             return embeddings
 
         raise ValueError(
