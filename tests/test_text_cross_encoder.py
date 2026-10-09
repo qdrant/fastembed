@@ -136,6 +136,27 @@ def test_rerank_pairs_parallel(model_cache, model_name: str) -> None:
 
 
 @pytest.mark.parametrize("model_name", ["Xenova/ms-marco-MiniLM-L-6-v2"])
+def test_rerank_pairs_tuple_input(model_cache, model_name: str) -> None:
+    with model_cache(model_name) as model:
+        query = "What is the capital of France?"
+        documents = ["Paris is the capital of France.", "Berlin is the capital of Germany."]
+        pairs = [(query, doc) for doc in documents]
+        expected = np.array(list(model.rerank_pairs(pairs)))
+
+        # a tuple of pairs is an iterable of pairs, not a single pair
+        scores_tuple = np.array(list(model.rerank_pairs(tuple(pairs))))
+        assert np.allclose(scores_tuple, expected, atol=1e-5)
+
+        three_pairs = tuple(pairs + [pairs[0]])
+        scores_three = np.array(list(model.rerank_pairs(three_pairs)))
+        assert np.allclose(scores_three, np.append(expected, expected[0]), atol=1e-5)
+
+        # a lone (query, document) pair is still accepted
+        scores_single = np.array(list(model.rerank_pairs(pairs[0])))
+        assert np.allclose(scores_single, expected[:1], atol=1e-5)
+
+
+@pytest.mark.parametrize("model_name", ["Xenova/ms-marco-MiniLM-L-6-v2"])
 def test_token_count(model_cache, model_name: str) -> None:
     with model_cache(model_name) as model:
         pairs = [

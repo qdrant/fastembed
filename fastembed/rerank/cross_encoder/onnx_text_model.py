@@ -1,7 +1,7 @@
 import os
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Iterable, Sequence, Type
+from typing import Any, Iterable, Sequence, Type, cast
 
 import numpy as np
 from tokenizers import Encoding
@@ -118,8 +118,13 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         is_small = False
 
         if isinstance(pairs, tuple):
-            pairs = [pairs]
-            is_small = True
+            # a single (query, document) pair is a tuple of two strings,
+            # while a tuple of pairs is just another sequence of pairs
+            if len(pairs) == 2 and all(isinstance(item, str) for item in pairs):
+                pairs = [cast(tuple[str, str], pairs)]
+                is_small = True
+            else:
+                pairs = list(pairs)
 
         if isinstance(pairs, list):
             if len(pairs) < batch_size:
