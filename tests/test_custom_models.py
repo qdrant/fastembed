@@ -284,6 +284,42 @@ def test_custom_text_model_lookup_is_case_insensitive():
     assert model.model._normalization is True
 
 
+@pytest.mark.parametrize("dtype", [np.float16, np.float32, np.float64])
+@pytest.mark.parametrize("token_output", [False, True])
+@pytest.mark.parametrize("normalization", [False, True])
+def test_custom_disabled_pooling_normalizes_each_vector(
+    dtype, token_output: bool, normalization: bool
+) -> None:
+    """Unpooled token outputs normalize along the embedding axis, like sentence outputs."""
+    model_name = "local/disabled-pooling"
+    TextEmbedding.add_custom_model(
+        model_name,
+        pooling=PoolingType.DISABLED,
+        normalization=normalization,
+        sources=ModelSource(hf="local/unused"),
+        dim=2,
+    )
+    model = CustomTextEmbedding(model_name, lazy_load=True, specific_model_path="./")
+    vectors = np.array([[[3, 4], [-5, 12], [0, 0]], [[3, 4], [3, 4], [0, 0]]], dtype=dtype)
+    expected = np.array(
+        [[[0.6, 0.8], [-5 / 13, 12 / 13], [0, 0]], [[0.6, 0.8], [0.6, 0.8], [0, 0]]],
+        dtype=dtype,
+    )
+    if not token_output:
+        vectors, expected = vectors[:, 0], expected[:, 0]
+    if not normalization:
+        expected = vectors.copy()
+    original = vectors.copy()
+
+    output = np.stack(
+        list(model._post_process_onnx_output(OnnxOutputContext(model_output=vectors)))
+    )
+
+    np.testing.assert_allclose(output, expected, rtol=1e-3 if dtype == np.float16 else 1e-6)
+    np.testing.assert_array_equal(vectors, original)
+    assert output.dtype == dtype
+
+
 def test_do_not_add_existing_model():
     existing_base_model = "sentence-transformers/all-MiniLM-L6-v2"
     custom_model_name = "intfloat/multilingual-e5-small"

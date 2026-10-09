@@ -119,7 +119,7 @@ class CustomTextEmbedding(OnnxTextEmbedding):
         )
 
     def _normalize(self, embeddings: NumpyArray) -> NumpyArray:
-        return normalize(embeddings) if self._normalization else embeddings
+        return normalize(embeddings, dim=-1) if self._normalization else embeddings
 
     @classmethod
     def add_model(
