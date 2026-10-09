@@ -64,20 +64,20 @@ class VocabResolver:
         return len(self.vocab) + 1
 
     def save_vocab(self, path: str) -> None:
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             for word in self.words:
                 f.write(word + "\n")
 
     def save_json_vocab(self, path: str) -> None:
         import json
 
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump({"vocab": self.words, "stem_mapping": self.stem_mapping}, f, indent=2)
 
     def load_json_vocab(self, path: str) -> None:
         import json
 
-        with open(path, "r") as f:
+        with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
             self.words = data["vocab"]
             self.vocab = {word: idx + 1 for idx, word in enumerate(self.words)}
@@ -98,7 +98,7 @@ class VocabResolver:
                     self.stem_mapping[stem] = word
 
     def load_vocab(self, path: str) -> None:
-        with open(path, "r") as f:
+        with open(path, "r", encoding="utf-8") as f:
             for line in f:
                 self.add_word(line.strip())
 
