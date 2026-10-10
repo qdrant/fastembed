@@ -9,6 +9,7 @@ from fastembed.common.preprocessor_utils import load_tokenizer
 
 
 def write_tokenizer(model_dir: Path, pad_token: str | dict[str, Any]) -> None:
+    """Write a minimal tokenizer with padding defined only in its config."""
     tokenizer = Tokenizer(models.WordLevel({"[UNK]": 0, "hello": 1, "world": 2, "[PAD]": 3}))
     tokenizer.pre_tokenizer = pre_tokenizers.Whitespace()
     tokenizer.save(str(model_dir / "tokenizer.json"))
@@ -22,6 +23,7 @@ def write_tokenizer(model_dir: Path, pad_token: str | dict[str, Any]) -> None:
     ["[PAD]", {"content": "[PAD]", "special": True, "normalized": False, "__type": "AddedToken"}],
 )
 def test_config_pad_token_accepts_string_and_added_token(tmp_path: Path, pad_token: Any) -> None:
+    """Both supported token representations must pad the shorter sequence."""
     write_tokenizer(tmp_path, pad_token)
 
     tokenizer, _ = load_tokenizer(tmp_path)
@@ -35,6 +37,7 @@ def test_config_pad_token_accepts_string_and_added_token(tmp_path: Path, pad_tok
 
 
 def test_serialized_padding_still_takes_precedence(tmp_path: Path) -> None:
+    """Saved tokenizer padding must override conflicting config padding."""
     write_tokenizer(tmp_path, {"content": "[OTHER]", "special": True})
     tokenizer = Tokenizer.from_file(str(tmp_path / "tokenizer.json"))
     tokenizer.enable_padding(pad_id=3, pad_token="[PAD]", direction="left")
