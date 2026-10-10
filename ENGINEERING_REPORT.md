@@ -20,9 +20,9 @@ the Python reporting applications' dependencies.
 | Repository | Assessment |
 | --- | --- |
 | `Chatting-with-Local-RAG` | The clearest personal AI project: MIT-licensed PDF RAG using LangChain, Chroma, and Ollama. Last push December 2024; a single notebook, no automated tests, invalid package names such as `OllamaEmbeddings` in requirements, and deprecated imports. Reviving it would require establishing a maintained application structure and dependency baseline. |
-| `DSR`, `DSR_2.0` | Flask/SQL reporting applications. Their dependency lists and inspected structure show reporting rather than an established AI pipeline. |
+| `DSR_2.0` and a private reporting repository | Flask/SQL reporting applications. Their dependency lists and inspected structure show reporting rather than an established AI pipeline. |
 | `rafithub` | TypeScript fitness website. |
-| `portfolionew`, `newPortfolio` | TypeScript portfolio websites. |
+| `newPortfolio` and a private portfolio repository | TypeScript portfolio websites. |
 | `irulappan151204` | GitHub profile configuration. |
 
 Three external Python projects were compared: FastEmbed, NeuML's txtai, and
@@ -166,8 +166,5 @@ Testing, static checks, and the dependency-advisory audit are recorded separatel
   issues rather than applying broad compatibility changes without their tests.
 - Keep the development tooling pin and advisory checks current. No throughput
   improvement or memory-performance benchmark is claimed.
-- During screening, a hardcoded database credential was observed in private
-  `DSR/summ.py`. It was not used or reproduced in this report. Rotate it and
-  review repository history in a separately authorized security task.
 - Review this fork's branch before proposing an upstream contribution. No
   upstream pull request or production deployment was made.
