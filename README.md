@@ -48,6 +48,33 @@ len(embeddings_list[0]) # Vector of 384 dimensions
 
 Fastembed supports a variety of models for different tasks and modalities.
 The list of all the available models can be found [here](https://qdrant.github.io/fastembed/examples/Supported_Models/)
+
+## Model cache
+
+FastEmbed downloads model files the first time a model is initialized. By default,
+the cache directory is named `fastembed_cache` inside the system temporary
+directory. If that location is cleaned up between runs, models may need to be
+downloaded again.
+
+To use a persistent location, pass `cache_dir` when creating a model:
+
+```python
+from fastembed import TextEmbedding
+
+embedding_model = TextEmbedding(cache_dir="./fastembed_cache")
+```
+
+You can also set the `FASTEMBED_CACHE_PATH` environment variable to choose the
+default cache location for model classes that do not receive an explicit
+`cache_dir`:
+
+```bash
+export FASTEMBED_CACHE_PATH=/var/cache/fastembed
+```
+
+When running FastEmbed in a container, mount the chosen cache directory as a
+volume so downloaded model files survive container restarts.
+
 ### 🎒 Dense text embeddings
 
 ```python
