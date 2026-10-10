@@ -78,6 +78,12 @@ CANONICAL_VECTOR_VALUES = {
     "google/embeddinggemma-300m": np.array(
         [-0.08181356, 0.0214127, 0.05120273, -0.03690156, -0.0254504]
     ),
+    "google/embeddinggemma-2": np.array(
+        [-0.03013361, 0.01577923, 0.05849417, -0.00649917, -0.03439925]
+    ),
+    "google/embeddinggemma-2-Q": np.array(
+        [-0.03013361, 0.01577923, 0.05849417, -0.00649917, -0.03439925]
+    ),
     "Qwen/Qwen3-Embedding-0.6B": np.array(
         [-0.01476084, 0.01723184, -0.01195498, -0.07275258, 0.00281229]
     ),
@@ -113,15 +119,25 @@ QWEN3_INSTRUCT_PREFIX = (
 
 DOC_PREFIXES = {
     "google/embeddinggemma-300m": "title: none | text: ",
+    "google/embeddinggemma-2": "title: none | text: ",
+    "google/embeddinggemma-2-Q": "title: none | text: ",
 }
 QUERY_PREFIXES = {
     "google/embeddinggemma-300m": "task: search result | query: ",
+    "google/embeddinggemma-2": "task: search result | query: ",
+    "google/embeddinggemma-2-Q": "task: search result | query: ",
     "Qwen/Qwen3-Embedding-0.6B": QWEN3_INSTRUCT_PREFIX,
     "Qwen/Qwen3-Embedding-0.6B-Q": QWEN3_INSTRUCT_PREFIX,
 }
 CANONICAL_QUERY_VECTOR_VALUES = {
     "google/embeddinggemma-300m": np.array(
         [-0.22990295, 0.03311195, 0.04290345, -0.03558498, -0.01399477]
+    ),
+    "google/embeddinggemma-2": np.array(
+        [-0.02504013, 0.05100445, 0.05460444, -0.02423813, -0.04161748]
+    ),
+    "google/embeddinggemma-2-Q": np.array(
+        [-0.02504013, 0.05100445, 0.05460444, -0.02423813, -0.04161748]
     ),
     "Qwen/Qwen3-Embedding-0.6B": np.array(
         [-0.01908712, 0.01635596, -0.00356586, -0.03947155, -0.01387356]
