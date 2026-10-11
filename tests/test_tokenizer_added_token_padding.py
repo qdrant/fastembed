@@ -48,3 +48,7 @@ def test_serialized_padding_still_takes_precedence(tmp_path: Path) -> None:
 
     assert encoded[1].ids == [3, 1]
     assert encoded[1].attention_mask == [0, 1]
+    assert loaded.padding is not None
+    assert loaded.padding["pad_token"] == "[PAD]"
+    assert loaded.padding["pad_id"] == 3
+    assert loaded.padding["direction"] == "left"
