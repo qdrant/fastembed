@@ -57,17 +57,64 @@ def test_second_queue_failure_closes_real_input_queue(monkeypatch, legacy_cleanu
         queue._writer.close()
 
 
+@pytest.mark.parametrize("failure_stage", ["value", "first_worker", "second_worker"])
+def test_startup_failure_closes_real_queue_endpoints(monkeypatch, failure_stage):
+    pool = ParallelWorkerPool(2, EchoWorker, start_method="spawn")
+    error = OSError("pool startup failed")
+    workers = []
+    if failure_stage == "value":
+        monkeypatch.setattr(pool.ctx, "Value", Mock(side_effect=error))
+    else:
+        create_process = pool.ctx.Process
+
+        def process_factory(*args, **kwargs):
+            process = create_process(*args, **kwargs)
+            workers.append(process)
+            failed_worker = 1 if failure_stage == "first_worker" else 2
+            if len(workers) == failed_worker:
+                monkeypatch.setattr(process, "start", Mock(side_effect=error))
+            return process
+
+        monkeypatch.setattr(pool.ctx, "Process", process_factory)
+
+    try:
+        with pytest.raises(OSError, match="pool startup failed") as raised:
+            list(pool.ordered_map([1]))
+        assert raised.value is error
+        assert pool.processes == []
+        assert not any(worker.is_alive() for worker in workers)
+        for queue in (pool.input_queue, pool.output_queue):
+            assert queue is not None
+            assert queue._closed
+            assert queue._joincancelled
+            assert queue._reader.closed
+            assert queue._writer.closed
+    finally:
+        for queue in (pool.input_queue, pool.output_queue):
+            if queue is not None:
+                queue.close()
+                queue._reader.close()
+                queue._writer.close()
+
+
 @pytest.mark.parametrize("items", [[], [1, 2, 3]])
 def test_completed_mapping_stops_workers(items):
     pool = ParallelWorkerPool(2, EchoWorker, start_method="spawn")
     assert list(pool.ordered_map(items)) == items
     assert pool.processes == []
+    for queue in (pool.input_queue, pool.output_queue):
+        assert queue is not None
+        assert queue._reader.closed
+        assert queue._writer.closed
 
 
 # semi_ordered_map is closed by garbage collection, so an error in its cleanup is only reported as unraisable
 @pytest.mark.filterwarnings("error::pytest.PytestUnraisableExceptionWarning")
-def test_closing_partially_consumed_iterator_stops_workers():
-    start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
+@pytest.mark.parametrize(
+    "start_method",
+    [method for method in ("spawn", "forkserver") if method in get_all_start_methods()],
+)
+def test_closing_partially_consumed_iterator_stops_workers(start_method):
     pool = ParallelWorkerPool(2, EchoWorker, start_method=start_method)
     # the stream never ends, so the workers never get their stop signals
     results = pool.ordered_map(count())
@@ -82,6 +129,9 @@ def test_closing_partially_consumed_iterator_stops_workers():
     try:
         assert not closer.is_alive(), "closing the iterator hung"
         assert not any(worker.is_alive() for worker in workers)
+        assert pool.output_queue is not None
+        assert pool.output_queue._reader.closed
+        assert pool.output_queue._writer.closed
     finally:
         for worker in workers:
             if worker.is_alive():
