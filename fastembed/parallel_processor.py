@@ -222,6 +222,9 @@ class ParallelWorkerPool:
                         terminate_broken()
                     else:
                         self.input_queue._reader.close()  # type: ignore[attr-defined]
+                    # An unused queue has no feeder to close its writer via queue.close().
+                    if self.input_queue._thread is None:  # type: ignore[attr-defined]
+                        self.input_queue._writer.close()  # type: ignore[attr-defined]
             # start() can fail before either queue has been allocated. Clean up only
             # initialized queues, without masking the original startup exception.
             for queue in (self.input_queue, self.output_queue):
