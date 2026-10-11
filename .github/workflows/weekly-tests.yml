@@ -1,0 +1,112 @@
+name: Weekly tests
+
+# PR runs test one representative model per family, scheduled and manual runs test every model,
+# see is_manual_run in tests/utils.py
+on:
+  schedule:
+    - cron: '5 9 * * 1' # Mondays, 09:05 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+
+    # linux runners have 16 GB of RAM, enough for every model tested in ci (colpali is skipped in ci,
+    # gpu tests are skipped everywhere)
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    name: Python 3.14 weekly test
+
+    outputs:
+      report: ${{ steps.report.outputs.report }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14.x'
+      - name: Install dependencies
+        run: |
+          python -m pip install poetry
+          poetry config virtualenvs.create false
+          poetry install --no-interaction --no-ansi --without dev,docs
+
+      - name: Run pytest
+        # explicit bash runs with pipefail, so tee keeps pytest's exit code
+        shell: bash
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          PYTHONUNBUFFERED: '1'
+        run: |
+          poetry run pytest --durations=20 2>&1 | tee pytest.log
+
+      - name: Collect failure report
+        id: report
+        if: failure() || cancelled()
+        shell: bash
+        run: |
+          {
+            if grep -q 'short test summary info' pytest.log 2>/dev/null; then
+              sed -n '/short test summary info/,$p' pytest.log
+            elif [ -s pytest.log ]; then
+              echo "No pytest test summary, last lines of its output:"
+              tail -n 50 pytest.log
+            fi
+          } > summary.txt
+          head -c 60000 summary.txt > report.txt  # issue bodies are limited to 65536 characters
+          if [ -s report.txt ]; then
+            delimiter="EOF_$(openssl rand -hex 16)"
+            {
+              echo "report<<$delimiter"
+              sed '$a\' report.txt  # appends a newline only if the cut left the last line without one
+              echo "$delimiter"
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+  report:
+    # a timed out job is cancelled rather than failed, so check the result instead of failure()
+    needs: test
+    if: always() && github.event_name == 'schedule' && needs.test.result != 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write # open the failure issue or comment on it
+
+    name: Report weekly test failure
+
+    steps:
+      - name: Open an issue or comment on the open one
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RESULT: ${{ needs.test.result }}
+          REPORT: ${{ needs.test.outputs.report }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SHA: ${{ github.sha }}
+        run: |
+          title="Weekly tests failed"
+          {
+            echo "Run: $RUN_URL"
+            echo "Result: $RESULT"
+            echo "Commit: $SHA"
+            echo
+            if [ -n "$REPORT" ]; then
+              echo '```text'
+              printf '%s\n' "$REPORT"
+              echo '```'
+            else
+              echo "No pytest summary: tests failed to start or the job timed out, see the run log."
+            fi
+          } > body.md
+          issue=$(gh issue list --state open --search "in:title \"$title\"" --json number,title \
+            --jq "map(select(.title == \"$title\")) | first | .number // empty")
+          if [ -n "$issue" ]; then
+            gh issue comment "$issue" --body-file body.md
+          else
+            gh issue create --title "$title" --body-file body.md --assignee joein
+          fi

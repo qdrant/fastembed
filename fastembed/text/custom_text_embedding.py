@@ -20,6 +20,7 @@ from fastembed.text.onnx_text_model import TextEmbeddingWorker
 class PostprocessingConfig:
     pooling: PoolingType
     normalization: bool
+    output_name: str | None = None
 
 
 class CustomTextEmbedding(OnnxTextEmbedding):
@@ -54,6 +55,19 @@ class CustomTextEmbedding(OnnxTextEmbedding):
         postprocessing_config = self.POSTPROCESSING_MAPPING[self.model_description.model]
         self._pooling = postprocessing_config.pooling
         self._normalization = postprocessing_config.normalization
+        if postprocessing_config.output_name is not None:
+            self.ONNX_OUTPUT_NAMES = [postprocessing_config.output_name]
+
+    def load_onnx_model(self) -> None:
+        super().load_onnx_model()
+        # with eager loading this runs inside super().__init__(), before ONNX_OUTPUT_NAMES is set,
+        # so the output name is taken from the registered config
+        output_name = self.POSTPROCESSING_MAPPING[self.model_description.model].output_name
+        output_names = [output.name for output in self.model.get_outputs()]  # type: ignore[union-attr]
+        if output_name is not None and output_name not in output_names:
+            raise ValueError(
+                f"Output {output_name!r} not found in the model, available outputs: {output_names}"
+            )
 
     @classmethod
     def _list_supported_models(cls) -> list[DenseModelDescription]:
@@ -96,6 +110,14 @@ class CustomTextEmbedding(OnnxTextEmbedding):
             return last_token_pooling(embeddings, attention_mask)
 
         if self._pooling == PoolingType.DISABLED:
+            if embeddings.ndim != 2:
+                raise ValueError(
+                    f"{PoolingType.DISABLED} pooling expects the model to output sentence "
+                    f"embeddings of shape (batch_size, dim), got an output of shape "
+                    f"{embeddings.shape}. Use {PoolingType.CLS}, {PoolingType.MEAN} or "
+                    f"{PoolingType.LAST_TOKEN} pooling, or set `output_name` to a pooled output "
+                    "of the model, e.g. `sentence_embedding`."
+                )
             return embeddings
 
         raise ValueError(
@@ -113,10 +135,11 @@ class CustomTextEmbedding(OnnxTextEmbedding):
         model_description: DenseModelDescription,
         pooling: PoolingType,
         normalization: bool,
+        output_name: str | None = None,
     ) -> None:
         cls.SUPPORTED_MODELS.append(model_description)
         cls.POSTPROCESSING_MAPPING[model_description.model] = PostprocessingConfig(
-            pooling=pooling, normalization=normalization
+            pooling=pooling, normalization=normalization, output_name=output_name
         )
 
 
@@ -140,6 +163,7 @@ class CustomTextEmbeddingWorker(TextEmbeddingWorker[NumpyArray]):
             model_description,
             pooling=postprocessing_config.pooling,
             normalization=postprocessing_config.normalization,
+            output_name=postprocessing_config.output_name,
         )
         return CustomTextEmbedding(
             model_name=model_name,

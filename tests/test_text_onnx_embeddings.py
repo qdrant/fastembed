@@ -10,7 +10,7 @@ from fastembed.text.custom_text_embedding import CustomTextEmbedding
 from fastembed.text.last_token_normalized_embedding import LastTokenNormalizedEmbedding
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
 from fastembed.text.text_embedding import TextEmbedding
-from tests.utils import delete_model_cache, should_test_model
+from tests.utils import delete_model_cache, is_manual_run, should_test_model
 
 CANONICAL_VECTOR_VALUES = {
     "BAAI/bge-small-en": np.array([-0.0232, -0.0255, 0.0174, -0.0639, -0.0006]),
@@ -166,7 +166,7 @@ def model_cache():
 def test_embedding(model_cache, model_name: str) -> None:
     is_ci = os.getenv("CI")
     is_mac = platform.system() == "Darwin"
-    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    is_manual = is_manual_run()
 
     for model_desc in TextEmbedding._list_supported_models():
         if model_desc.model in MULTI_TASK_MODELS or (
@@ -196,7 +196,7 @@ def test_embedding(model_cache, model_name: str) -> None:
 def test_query_embedding(model_cache) -> None:
     is_ci = os.getenv("CI")
     is_mac = platform.system() == "Darwin"
-    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    is_manual = is_manual_run()
 
     for model_desc in TextEmbedding._list_supported_models():
         if model_desc.model in MULTI_TASK_MODELS or (

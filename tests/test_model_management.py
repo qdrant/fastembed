@@ -1,4 +1,4 @@
-"""Offline cache-verification tests for ModelManagement.
+"""Cache-verification tests for ModelManagement.
 
 The offline probe must distinguish a corrupt *model* file (which would make ONNX Runtime
 fail with a cryptic protobuf error) from a benign size drift on an auxiliary file. A corrupt
@@ -10,9 +10,11 @@ repo-relative path, not the bare filename.
 
 import json
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from huggingface_hub.hf_api import RepoFile
 
 from fastembed.common import model_management
 from fastembed.common.model_management import ModelManagement
@@ -90,3 +92,38 @@ def test_offline_probe_tolerates_auxiliary_file_drift(
         local_files_only=True,
     )
     assert result == str(snapshot)
+
+
+def test_online_download_ignores_older_cached_snapshot(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo_dir = tmp_path / "models--qdrant--fake-onnx"
+    new_tokenizer = b"new tokenizer, longer than the old one"
+
+    # an older revision is still in the cache
+    old_file = repo_dir / "snapshots" / "old" / "tokenizer.json"
+    old_file.parent.mkdir(parents=True)
+    old_file.write_bytes(b"old tokenizer")
+
+    # the hub has a newer revision, which the download puts next to the old one
+    def fake_snapshot_download(**kwargs: Any) -> str:
+        new_file = repo_dir / "snapshots" / "new" / "tokenizer.json"
+        new_file.parent.mkdir(parents=True)
+        new_file.write_bytes(new_tokenizer)
+        return str(new_file.parent)
+
+    hub_file = RepoFile(path="tokenizer.json", size=len(new_tokenizer), oid="new")
+    monkeypatch.setattr(model_management, "snapshot_download", fake_snapshot_download)
+    monkeypatch.setattr(model_management, "list_repo_tree", lambda *a, **kw: [hub_file])
+    monkeypatch.setattr(
+        model_management, "model_info", lambda *a, **kw: SimpleNamespace(sha="new")
+    )
+
+    result = ModelManagement.download_files_from_huggingface(
+        "qdrant/fake-onnx", cache_dir=str(tmp_path), extra_patterns=[]
+    )
+
+    assert result == str(repo_dir / "snapshots" / "new")
+    # the size check ran on the new file, and only on it (keys use the OS path separator)
+    metadata = json.loads((repo_dir / ModelManagement.METADATA_FILE).read_text())
+    assert list(metadata) == [str(Path("snapshots/new/tokenizer.json"))]

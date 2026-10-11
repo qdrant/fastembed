@@ -32,6 +32,18 @@ jobs:
         poetry install
     - name: Build package
       run: poetry build
+    - name: Smoke-test built package
+      # run outside the checkout so the source tree's fastembed/ can't shadow the installed wheel
+      working-directory: ${{ runner.temp }}
+      run: |
+        python -m venv smoke-venv
+        smoke-venv/bin/pip install --quiet "$GITHUB_WORKSPACE"/dist/*.whl
+        smoke-venv/bin/python -c "
+        from fastembed import TextEmbedding
+        embedding = next(iter(TextEmbedding('sentence-transformers/all-MiniLM-L6-v2').embed(['hello world'])))
+        assert embedding.shape == (384,), embedding.shape
+        print('Smoke test OK')
+        "
     - name: Publish package
       uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
       with:

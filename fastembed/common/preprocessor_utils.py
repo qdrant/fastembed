@@ -95,7 +95,13 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
     tokens_map = load_special_tokens(model_dir)
 
     tokenizer = Tokenizer.from_file(str(tokenizer_path))
-    tokenizer.enable_truncation(max_length=max_context)
+    # enable_truncation resets the direction to right unless it is passed. The direction is
+    # resolved as in transformers: tokenizer_config.json, then tokenizer.json, then right.
+    truncation = tokenizer.truncation or {}
+    tokenizer.enable_truncation(
+        max_length=max_context,
+        direction=tokenizer_config.get("truncation_side") or truncation.get("direction", "right"),
+    )
 
     # Registered before the padding is resolved: the map may name a pad token that
     # tokenizer.json does not carry, and it only gets an id once it is added.
@@ -107,8 +113,10 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
 
     # Padding is always normalized to batch-longest. A serialized fixed length shorter than the
     # truncation limit leaves longer encodings untouched, which produces ragged batches, and a
-    # fixed length equal to it pads every batch to the maximum. Direction and pad token metadata
-    # are taken from the serialized settings, since some models pad on the left.
+    # fixed length equal to it pads every batch to the maximum. Pad token metadata is taken from
+    # the serialized settings. The direction follows transformers: `padding_side` from
+    # tokenizer_config.json wins over the serialized direction, since some models pad on the left
+    # and set it only in the config.
     padding = tokenizer.padding or {}
     pad_token = padding.get("pad_token") or tokenizer_config.get("pad_token")
     if pad_token is None:
@@ -123,7 +131,7 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
         raise ValueError(f"Could not resolve an id for the pad token {pad_token!r} in {model_dir}")
 
     tokenizer.enable_padding(
-        direction=padding.get("direction", "right"),
+        direction=tokenizer_config.get("padding_side") or padding.get("direction", "right"),
         pad_id=pad_id,
         pad_type_id=padding.get("pad_type_id", 0),
         pad_token=pad_token,

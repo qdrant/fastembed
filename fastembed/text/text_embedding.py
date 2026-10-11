@@ -58,6 +58,7 @@ class TextEmbedding(TextEmbeddingBase):
         license: str = "",
         size_in_gb: float = 0.0,
         additional_files: list[str] | None = None,
+        output_name: str | None = None,
     ) -> None:
         registered_models = cls._list_supported_models()
         for registered_model in registered_models:
@@ -80,6 +81,7 @@ class TextEmbedding(TextEmbeddingBase):
             ),
             pooling=pooling,
             normalization=normalization,
+            output_name=output_name,
         )
 
     def __init__(

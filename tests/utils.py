@@ -1,3 +1,4 @@
+import os
 import shutil
 import traceback
 
@@ -39,6 +40,11 @@ def delete_model_cache(model_dir: str | Path) -> None:
         shutil.rmtree(model_dir, onerror=on_error)
 
 
+def is_manual_run() -> bool:
+    """Whether ci runs the heavyweight tests: on a manual dispatch or on the weekly schedule"""
+    return os.getenv("GITHUB_EVENT_NAME") in ("workflow_dispatch", "schedule")
+
+
 def should_test_model(
     model_desc: BaseModelDescription,
     autotest_model_name: str,
@@ -55,6 +61,7 @@ def should_test_model(
     2) Run heavyweight (manual) tests in ci:
         - test all models
         Running tests in ci each time is too expensive, however, it's fine to run it one time with a manual dispatch
+        or weekly on a schedule
     3) Run tests locally:
         - test all models, which are not too heavy, since network speed might be a bottleneck
 
