@@ -35,9 +35,12 @@ def test_queue_creation_failure_preserves_error_and_cleans_up(monkeypatch, faile
         queue.cancel_join_thread.assert_called_once_with()
 
 
-def test_second_queue_failure_closes_real_input_queue(monkeypatch):
+@pytest.mark.parametrize("legacy_cleanup", [False, True])
+def test_second_queue_failure_closes_real_input_queue(monkeypatch, legacy_cleanup):
     pool = ParallelWorkerPool(2, EchoWorker, start_method="spawn")
     queue = pool.ctx.Queue(pool.queue_size)
+    if legacy_cleanup:
+        monkeypatch.setattr(queue, "_terminate_broken", None, raising=False)
     monkeypatch.setattr(
         pool.ctx, "Queue", Mock(side_effect=[queue, OSError("output queue allocation failed")])
     )
@@ -46,8 +49,12 @@ def test_second_queue_failure_closes_real_input_queue(monkeypatch):
             list(pool.ordered_map([1]))
         assert queue._closed
         assert queue._joincancelled
+        assert queue._reader.closed
+        assert queue._writer.closed
     finally:
         queue.close()
+        queue._reader.close()
+        queue._writer.close()
 
 
 @pytest.mark.parametrize("items", [[], [1, 2, 3]])
