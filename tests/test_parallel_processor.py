@@ -1,6 +1,7 @@
 import threading
 from itertools import count
 from multiprocessing import get_all_start_methods
+from unittest.mock import Mock
 
 import pytest
 
@@ -14,6 +15,46 @@ class EchoWorker(Worker):
 
     def process(self, items):
         yield from items
+
+
+@pytest.mark.parametrize("failed_queue", [1, 2])
+def test_queue_creation_failure_preserves_error_and_cleans_up(monkeypatch, failed_queue):
+    pool = ParallelWorkerPool(2, EchoWorker, start_method="spawn")
+    queue = Mock()
+    error = OSError("queue allocation failed")
+    side_effect = [error] if failed_queue == 1 else [queue, error]
+    monkeypatch.setattr(pool.ctx, "Queue", Mock(side_effect=side_effect))
+
+    with pytest.raises(OSError, match="queue allocation failed") as raised:
+        list(pool.ordered_map([1]))
+
+    assert raised.value is error
+    assert pool.processes == []
+    if failed_queue == 2:
+        queue.close.assert_called_once_with()
+        queue.cancel_join_thread.assert_called_once_with()
+
+
+def test_second_queue_failure_closes_real_input_queue(monkeypatch):
+    pool = ParallelWorkerPool(2, EchoWorker, start_method="spawn")
+    queue = pool.ctx.Queue(pool.queue_size)
+    monkeypatch.setattr(
+        pool.ctx, "Queue", Mock(side_effect=[queue, OSError("output queue allocation failed")])
+    )
+    try:
+        with pytest.raises(OSError, match="output queue allocation failed"):
+            list(pool.ordered_map([1]))
+        assert queue._closed
+        assert queue._joincancelled
+    finally:
+        queue.close()
+
+
+@pytest.mark.parametrize("items", [[], [1, 2, 3]])
+def test_completed_mapping_stops_workers(items):
+    pool = ParallelWorkerPool(2, EchoWorker, start_method="spawn")
+    assert list(pool.ordered_map(items)) == items
+    assert pool.processes == []
 
 
 # semi_ordered_map is closed by garbage collection, so an error in its cleanup is only reported as unraisable
