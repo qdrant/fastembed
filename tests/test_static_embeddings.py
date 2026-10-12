@@ -1,5 +1,6 @@
 import json
 import os
+import warnings
 from typing import Iterator
 
 import numpy as np
@@ -135,3 +136,25 @@ def test_load_safetensors(tmp_path) -> None:
     for name in ("f32", "f16", "bf16"):
         assert np.array_equal(np.asarray(tensors[name], dtype=np.float32), values), name
     assert tensors["mapping"].tolist() == [2, 0, 1]
+
+
+@pytest.mark.parametrize(
+    "option",
+    [
+        {"threads": 2},
+        {"providers": ["CPUExecutionProvider"]},
+        {"cuda": True},
+        {"device_ids": [0]},
+        {"enable_cpu_mem_arena": False},
+    ],
+    ids=lambda option: next(iter(option)),
+)
+def test_unsupported_options_warn(option: dict) -> None:
+    with pytest.warns(UserWarning, match=next(iter(option))):
+        TextEmbedding(CI_MODEL, lazy_load=True, **option)
+
+
+def test_default_options_do_not_warn() -> None:
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        TextEmbedding(CI_MODEL, lazy_load=True)
