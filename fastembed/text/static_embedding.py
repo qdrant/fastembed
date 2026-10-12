@@ -1,4 +1,3 @@
-import itertools
 import json
 import os
 import warnings
@@ -8,7 +7,7 @@ from typing import Any, Iterable, Type
 
 import numpy as np
 from numpy.typing import NDArray
-from tokenizers import Tokenizer
+from tokenizers import Tokenizer, Truncation
 
 from fastembed.common.model_description import DenseModelDescription, ModelSource
 from fastembed.common.safetensors_utils import load_safetensors
@@ -71,8 +70,8 @@ def load_static_tokenizer(model_dir: Path) -> tuple[Tokenizer, int | None]:
         raise ValueError(f"Could not find tokenizer.json in {model_dir}")
 
     tokenizer = Tokenizer.from_file(str(tokenizer_path))
-    tokenizer.enable_truncation(max_length=MAX_LENGTH)
-    tokenizer.no_padding()
+    tokenizer.truncation = Truncation(MAX_LENGTH)
+    tokenizer.padding = None
 
     with open(tokenizer_path, encoding="utf-8") as f:
         tokenizer_model = json.load(f)["model"]
@@ -179,16 +178,16 @@ class StaticTextEmbedding(TextEmbeddingBase):
         if self.embeddings is None or self.tokenizer is None:
             self.load_model()
 
-    def _token_ids(self, documents: list[str]) -> tuple[NDArray[np.int64], NDArray[np.int64]]:
+    def _token_ids(
+        self, documents: list[str]
+    ) -> tuple[NDArray[np.integer[Any]], NDArray[np.int64]]:
         """Tokenize a batch into one flat id array plus the number of ids of each document."""
         assert self.tokenizer is not None
-        # encode_batch_fast skips the character offsets, which are not needed here.
-        encodings = self.tokenizer.encode_batch_fast(documents, add_special_tokens=False)
-        id_lists = [encoding.ids for encoding in encodings]
-        lengths = np.fromiter(map(len, id_lists), dtype=np.int64, count=len(documents))
-        ids = np.fromiter(
-            itertools.chain.from_iterable(id_lists), dtype=np.int64, count=int(lengths.sum())
-        )
+        # The ids come as numpy views over the encodings, so no Python lists are built.
+        encodings = self.tokenizer.encode_batch(documents, add_special_tokens=False)
+        ids_per_doc = [encoding.ids_array for encoding in encodings]
+        lengths = np.fromiter(map(len, ids_per_doc), dtype=np.int64, count=len(documents))
+        ids = np.concatenate(ids_per_doc) if ids_per_doc else np.empty(0, dtype=np.uint32)
         return ids, lengths
 
     def raw_embed(self, documents: list[str]) -> NumpyArray:
@@ -209,7 +208,7 @@ class StaticTextEmbedding(TextEmbeddingBase):
         # direction. Empty documents stay zero vectors.
         return normalize(sums)
 
-    def _sum_rows(self, ids: NDArray[np.int64], lengths: NDArray[np.int64]) -> NumpyArray:
+    def _sum_rows(self, ids: NDArray[np.integer[Any]], lengths: NDArray[np.int64]) -> NumpyArray:
         """Sum the vectors of each document's tokens.
 
         The sums are a product of a (documents x distinct tokens) count matrix with the rows of
