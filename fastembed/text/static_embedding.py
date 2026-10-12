@@ -215,12 +215,20 @@ class StaticTextEmbedding(TextEmbeddingBase):
         The sums are a product of a (documents x distinct tokens) count matrix with the rows of
         those tokens: one matrix multiplication, several times faster than segment sums with
         np.add.reduceat or a loop over the documents. Documents whose count matrix would exceed
-        POOLING_CELLS are halved until it fits, which bounds the temporary memory.
+        POOLING_CELLS are halved until it fits, which bounds the temporary memory. A single
+        document sums its rows directly.
         """
         assert self.embeddings is not None
         if not ids.size:
             return np.zeros((len(lengths), self.embeddings.shape[1]), dtype=np.float32)
         rows = ids if self.token_mapping is None else self.token_mapping[ids]
+        if len(lengths) == 1:
+            # A single text, typically a query: summing its rows skips the fixed cost of building
+            # a count matrix, which dominates for short texts.
+            vectors = self.embeddings[rows]
+            if self.weights is not None:
+                vectors = vectors * self.weights[ids, None]
+            return vectors.sum(axis=0, keepdims=True, dtype=np.float32)
         distinct_rows, row_index = np.unique(rows, return_inverse=True)
         if len(lengths) > 1 and len(lengths) * len(distinct_rows) > self.POOLING_CELLS:
             half = len(lengths) // 2

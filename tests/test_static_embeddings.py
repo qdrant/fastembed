@@ -173,3 +173,17 @@ def test_pooling_budget_splits_without_changing_embeddings(model: TextEmbedding)
     tiny_budget = TextEmbedding(CI_MODEL)
     tiny_budget.model.POOLING_CELLS = 5
     assert np.allclose(np.stack(list(tiny_budget.embed(docs))), expected, atol=1e-6)
+
+
+def test_single_text_matches_batch(model: TextEmbedding) -> None:
+    docs = [
+        "hello world",
+        "",
+        "🤗",
+        "hello 🤗 world",
+        "a much longer document about vectors " * 30,
+    ]
+    batch = np.stack(list(model.embed(docs, batch_size=len(docs))))
+    single = np.stack([next(iter(model.embed(doc))) for doc in docs])
+    assert np.allclose(single, batch, atol=1e-6)
+    assert single.dtype == np.float32
