@@ -1,0 +1,46 @@
+name: tmp quantized cpu check
+
+# temporary, remove before merging: samples several runners to check the per-cpu canonical values
+# of the int8 models, see #803
+on:
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        sample: [1, 2, 3, 4, 5, 6, 7, 8]
+    runs-on: ubuntu-latest
+    name: sample ${{ matrix.sample }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14.x'
+      - name: Install dependencies
+        run: |
+          python -m pip install poetry
+          poetry config virtualenvs.create false
+          poetry install --no-interaction --no-ansi --without dev,docs
+      - name: CPU
+        run: |
+          lscpu | grep -E 'Model name|^CPU\(s\)'
+          echo "int8 relevant flags: $(grep -m1 -owE 'avx2|avx512f|avx512_vnni|avx_vnni|amx_int8' /proc/cpuinfo | sort -u | tr '\n' ' ')"
+      - name: Run the int8 model tests
+        env:
+          CI: '' # local mode tests every model under 1 GB, restrict_models keeps the three int8 ones
+          PYTHONPATH: .github/tmp
+        run: |
+          poetry run pytest -p restrict_models -q --durations=0 \
+            tests/test_text_onnx_embeddings.py::test_embedding \
+            tests/test_image_onnx_embeddings.py::test_embedding \
+            tests/test_text_cross_encoder.py::test_rerank
