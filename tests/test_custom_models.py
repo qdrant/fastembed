@@ -284,6 +284,21 @@ def test_custom_text_model_lookup_is_case_insensitive():
     assert model.model._normalization is True
 
 
+def test_custom_cross_encoder_lookup_is_case_insensitive():
+    model_name = "Org/Model"
+
+    TextCrossEncoder.add_custom_model(
+        model_name,
+        sources=ModelSource(hf="artificial"),
+        size_in_gb=0.1,
+    )
+
+    model = TextCrossEncoder("org/model", lazy_load=True, specific_model_path="./")
+
+    assert isinstance(model.model, CustomTextCrossEncoder)
+    assert model.model.model_description.sources.hf == "artificial"
+
+
 def test_do_not_add_existing_model():
     existing_base_model = "sentence-transformers/all-MiniLM-L6-v2"
     custom_model_name = "intfloat/multilingual-e5-small"
@@ -322,12 +337,13 @@ def test_do_not_add_existing_cross_encoder():
     existing_base_model = "Xenova/ms-marco-MiniLM-L-6-v2"
     custom_model_name = "Xenova/ms-marco-MiniLM-L-4-v2"
 
-    with pytest.raises(ValueError, match=f"Model {existing_base_model} is already registered"):
-        TextCrossEncoder.add_custom_model(
-            existing_base_model,
-            sources=ModelSource(hf=existing_base_model),
-            size_in_gb=0.08,
-        )
+    for name in (existing_base_model, existing_base_model.lower()):
+        with pytest.raises(ValueError, match=f"Model {name} is already registered"):
+            TextCrossEncoder.add_custom_model(
+                name,
+                sources=ModelSource(hf=existing_base_model),
+                size_in_gb=0.08,
+            )
 
     TextCrossEncoder.add_custom_model(
         custom_model_name,
@@ -335,9 +351,12 @@ def test_do_not_add_existing_cross_encoder():
         size_in_gb=0.08,
     )
 
-    with pytest.raises(ValueError, match=f"Model {custom_model_name} is already registered"):
-        TextCrossEncoder.add_custom_model(
-            custom_model_name,
-            sources=ModelSource(hf=custom_model_name),
-            size_in_gb=0.08,
-        )
+    for name in (custom_model_name, custom_model_name.upper()):
+        with pytest.raises(ValueError, match=f"Model {name} is already registered"):
+            TextCrossEncoder.add_custom_model(
+                name,
+                sources=ModelSource(hf=custom_model_name),
+                size_in_gb=0.08,
+            )
+
+    assert len(CustomTextCrossEncoder.SUPPORTED_MODELS) == 1
