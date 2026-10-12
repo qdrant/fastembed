@@ -9,6 +9,7 @@ from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.text.custom_text_embedding import CustomTextEmbedding
 from fastembed.text.last_token_normalized_embedding import LastTokenNormalizedEmbedding
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
+from fastembed.text.static_embedding import StaticTextEmbedding
 from fastembed.text.text_embedding import TextEmbedding
 from tests.utils import delete_model_cache, is_manual_run, should_test_model
 
@@ -256,8 +257,12 @@ def test_quantized_model_reports_onnxruntime_requirement(monkeypatch) -> None:
 
 @pytest.mark.parametrize(
     "embedding_class",
-    # custom models are covered in test_custom_models.py
-    [cls for cls in TextEmbedding.EMBEDDINGS_REGISTRY if cls is not CustomTextEmbedding],
+    # custom models are covered in test_custom_models.py, static models have no onnx output
+    [
+        cls
+        for cls in TextEmbedding.EMBEDDINGS_REGISTRY
+        if cls not in (CustomTextEmbedding, StaticTextEmbedding)
+    ],
     ids=lambda cls: cls.__name__,
 )
 def test_post_processing_keeps_model_dtype(embedding_class) -> None:
