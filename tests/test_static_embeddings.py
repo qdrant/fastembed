@@ -118,7 +118,8 @@ def _write_safetensors(path, tensors: dict[str, tuple[str, list[int], bytes]]) -
         f.write(data)
 
 
-def test_load_safetensors(tmp_path) -> None:
+@pytest.mark.parametrize("mmap", [True, False])
+def test_load_safetensors(tmp_path, mmap: bool) -> None:
     values = np.arange(6, dtype=np.float32).reshape(2, 3) / 4
     bf16 = (values.view(np.uint32) >> 16).astype("<u2")
     path = tmp_path / "model.safetensors"
@@ -131,7 +132,8 @@ def test_load_safetensors(tmp_path) -> None:
             "mapping": ("I64", [3], np.array([2, 0, 1], dtype="<i8").tobytes()),
         },
     )
-    tensors = load_safetensors(path)
+    tensors = load_safetensors(path, mmap=mmap)
+    assert isinstance(tensors["f32"], np.memmap) == mmap
     assert set(tensors) == {"f32", "f16", "bf16", "mapping"}
     for name in ("f32", "f16", "bf16"):
         assert np.array_equal(np.asarray(tensors[name], dtype=np.float32), values), name
@@ -187,3 +189,14 @@ def test_single_text_matches_batch(model: TextEmbedding) -> None:
     single = np.stack([next(iter(model.embed(doc))) for doc in docs])
     assert np.allclose(single, batch, atol=1e-6)
     assert single.dtype == np.float32
+
+
+def test_mmap(model: TextEmbedding) -> None:
+    assert not isinstance(model.model.embeddings, np.memmap)  # read into memory by default
+    docs = ["hello world", "", "a much longer document about vectors " * 30] * 40
+    expected = np.stack(list(model.embed(docs, batch_size=16)))
+    mapped = TextEmbedding(CI_MODEL, mmap=True)
+    assert isinstance(mapped.model.embeddings, np.memmap)
+    assert np.array_equal(np.stack(list(mapped.embed(docs, batch_size=16))), expected)
+    parallel = np.stack(list(mapped.embed(docs, batch_size=16, parallel=2)))
+    assert np.allclose(parallel, expected, atol=1e-6)
