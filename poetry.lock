@@ -4048,37 +4048,40 @@ test = ["pytest", "ruff"]
 
 [[package]]
 name = "tokenizers"
-version = "0.23.2"
-description = ""
+version = "1.0.0rc2"
+description = "Reworked tokenizers Python bindings, over the pipeline encode path (not for release yet)"
 optional = false
 python-versions = ">=3.10"
 files = [
-    {file = "tokenizers-0.23.2-cp310-abi3-macosx_10_12_x86_64.whl", hash = "sha256:85a9a357a3764aecc904ee76bdaf8cf1ad8e5a67a1b929a487c4a39b49ed0e90"},
-    {file = "tokenizers-0.23.2-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:986670e43691469dcee610ea0f846f91a8f84e91fc6f7a48d4c064414c0ec2bf"},
-    {file = "tokenizers-0.23.2-cp310-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a37039b5dfc4af84eb3ef0a92f4307e28936c8f9adccba2629d36f652e9bf7a2"},
-    {file = "tokenizers-0.23.2-cp310-abi3-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:7b7e37ba198f24150f523e1242e83c4970de4a525480586be5dcc24d9add32c5"},
-    {file = "tokenizers-0.23.2-cp310-abi3-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:43e4f2071e3cc8d5d86421c874aebc82659bb51a68bcdef5a0da75ee89511ccb"},
-    {file = "tokenizers-0.23.2-cp310-abi3-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:325fee2e0418a9dc6c9ecf736a5f5f0db7875183ace9549ae339da76f7a1fbb7"},
-    {file = "tokenizers-0.23.2-cp310-abi3-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:950d7c9426fa72406a0ffeacdbc0bb9985f5db20eb8b263f29c79aaf83105703"},
-    {file = "tokenizers-0.23.2-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:41c2f84d172449b4dadb9cdc508e3e364076613c35b16e76ecfe47a60d1e3305"},
-    {file = "tokenizers-0.23.2-cp310-abi3-manylinux_2_31_riscv64.whl", hash = "sha256:12f0835dc2ee694746a76adf7b1567d4346a4a502ebe93fb1f5f80ea49799b78"},
-    {file = "tokenizers-0.23.2-cp310-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:eb2f9c8a24da020ea8c11a01a19c1c2547912d92121ae4a01cfbca46125dee40"},
-    {file = "tokenizers-0.23.2-cp310-abi3-musllinux_1_2_armv7l.whl", hash = "sha256:f486f402f6f9abee5bb032553736813af0c710a86b2e0ca592634c55cea1f835"},
-    {file = "tokenizers-0.23.2-cp310-abi3-musllinux_1_2_i686.whl", hash = "sha256:bef235815a067b2648caf6dcc7a71091b0b0fff9ee8057f6451eb9335fae52ef"},
-    {file = "tokenizers-0.23.2-cp310-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:5c56bda1511921587789163e524d196ed8284174ac23abd7685d5ea8da6c4718"},
-    {file = "tokenizers-0.23.2-cp310-abi3-win32.whl", hash = "sha256:debf978920d93ba9c219bd67cc4bbfaf912c9039e41e7a28b91ec15e3728c95a"},
-    {file = "tokenizers-0.23.2-cp310-abi3-win_amd64.whl", hash = "sha256:2e96f5699d5249c9c64aa8412e044f727aae3a4098cf830f9901ec1afc361cde"},
-    {file = "tokenizers-0.23.2-cp310-abi3-win_arm64.whl", hash = "sha256:e49c394456dd9985787fec76132438ba3fb8911f857b1bf3d40119f9292d41aa"},
-    {file = "tokenizers-0.23.2.tar.gz", hash = "sha256:7f0f085686b9de0d0079e6f874ae053600db64c5d13049e0bbc0119926d25aac"},
+    {file = "tokenizers-1.0.0rc2-cp310-abi3-macosx_10_12_x86_64.whl", hash = "sha256:f8d6b7c7ff5ef8b01ac52129a232763e6e7fd17fa860c6b7f29691664ae4cf7b"},
+    {file = "tokenizers-1.0.0rc2-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:167d6893c8464cd1a912e6c388b95c70db913213001a7c5c031c7098e727a285"},
+    {file = "tokenizers-1.0.0rc2-cp310-abi3-manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:602434e9aa1240d3614ebdf593d9fa794170486d03fd0a4432fb6c94e35f0c04"},
+    {file = "tokenizers-1.0.0rc2-cp310-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:8e7dddf58f96d6e558ab2aa139341ac1106035c89c2ca8a2d6b2ed9c0bb9fa76"},
+    {file = "tokenizers-1.0.0rc2-cp310-abi3-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:14c277774d26f18f25ba0b286770e743cfa09bebb205c7a7bb243e0cecaf440c"},
+    {file = "tokenizers-1.0.0rc2-cp310-abi3-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:f9b81f3dd2323fee1329e73cadd113f3567fe99f82d145ff723bae6c39b06cde"},
+    {file = "tokenizers-1.0.0rc2-cp310-abi3-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:a002eeed70d06c3c71332f3ea9474d3c41589bca4c674f74f30ba8ae0a4fdb86"},
+    {file = "tokenizers-1.0.0rc2-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e82445c74adec349df4f07e7e2554910bd40b52ca9cd9d28d97a2fb578f58097"},
+    {file = "tokenizers-1.0.0rc2-cp310-abi3-manylinux_2_31_riscv64.whl", hash = "sha256:b98424f01e946ed77c743db96dda1c2f6234434a7acff55c1b7dbf149b630f19"},
+    {file = "tokenizers-1.0.0rc2-cp310-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:40bb88114f1656cab5c1026528c1d98f0cea5292f9fa210d3adb16311200db1c"},
+    {file = "tokenizers-1.0.0rc2-cp310-abi3-musllinux_1_2_armv7l.whl", hash = "sha256:e3477fc3d37eb49a9484977f62250df866e6a3cea028dcba068228e379041541"},
+    {file = "tokenizers-1.0.0rc2-cp310-abi3-musllinux_1_2_i686.whl", hash = "sha256:0f1e7a8abf539d5008d7ea4593758e36e5be9a91951a7225243ebe167fd7a553"},
+    {file = "tokenizers-1.0.0rc2-cp310-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:8359d9a05abf1836527ae06f9b505cac0bd444fbc9548b7cca83d5c238a452c2"},
+    {file = "tokenizers-1.0.0rc2-cp310-abi3-win32.whl", hash = "sha256:be5c799f11caba2fcd2ee9ce0d11721a76bc6f2950eaa3a60a93a4873a3594a6"},
+    {file = "tokenizers-1.0.0rc2-cp310-abi3-win_amd64.whl", hash = "sha256:ab5565047d8b594381846c998cdca3d684066b8f4f4e8c9c53ed9d44597259e8"},
+    {file = "tokenizers-1.0.0rc2-cp310-abi3-win_arm64.whl", hash = "sha256:8df4a64847ce41aa80b2326510fd1c36dd03ffaa9086d9d1db1a86c1e82447ae"},
+    {file = "tokenizers-1.0.0rc2-cp314-cp314t-macosx_10_12_x86_64.whl", hash = "sha256:70fd82cdbaaafd9f71da138376168d612f9f5f7f41447d47606bb3cf5b88be63"},
+    {file = "tokenizers-1.0.0rc2-cp314-cp314t-macosx_11_0_arm64.whl", hash = "sha256:1f736eefda19196c1a915697db3c2e964f5d1c05ee42c772c6751015834bf3ec"},
+    {file = "tokenizers-1.0.0rc2-cp314-cp314t-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:354d92f0c8d0cd2ea310047041b8dfe1052fc94c55f18e5f1274cfd0c62fa085"},
+    {file = "tokenizers-1.0.0rc2-cp314-cp314t-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:609f5436f65515c13cdf8cda1f8be34e51f5c531036021c1e336cc3fd85fb213"},
+    {file = "tokenizers-1.0.0rc2-cp314-cp314t-musllinux_1_2_aarch64.whl", hash = "sha256:b5733a287bb114d6c2c868589ca2d948ba01a8ffb8be66c667494871effb13aa"},
+    {file = "tokenizers-1.0.0rc2-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:2b7641d25cba9758782cf46d179057dfc48935f38448fde87a072086211dd260"},
+    {file = "tokenizers-1.0.0rc2-cp314-cp314t-win_amd64.whl", hash = "sha256:8653788b31702761c3480be2c43ff379cc73f2ff8d6e895f893d1b87cbfe400f"},
+    {file = "tokenizers-1.0.0rc2.tar.gz", hash = "sha256:2947d381b0072ba9b4f2c7bd0aae725c8d712676151466ef361092fef0bafaa2"},
 ]
 
 [package.dependencies]
 huggingface-hub = ">=0.16.4,<2.0"
-
-[package.extras]
-dev = ["tokenizers[testing]"]
-docs = ["setuptools-rust", "sphinx", "sphinx-rtd-theme"]
-testing = ["datasets", "numpy", "pytest", "pytest-asyncio", "requests", "ruff", "ty"]
+numpy = "*"
 
 [[package]]
 name = "tomli"
@@ -4419,4 +4422,4 @@ dev = ["black (>=19.3b0)", "pytest (>=4.6.2)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10.0"
-content-hash = "964982e7dbb361b896623936c15a28dd49c1b585b3b15dd6c712f703051e5aca"
+content-hash = "8ab04ef2e7033f74b6ad315c4e401ab3a757dc1be8d8a69ff6222cce725b9864"

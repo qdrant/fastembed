@@ -1,3 +1,22 @@
+# Experimental branch: static embeddings with tokenizers 1.0, not meant to be merged
+
+The minishlab potion models (`minishlab/potion-base-8M`, `minishlab/potion-retrieval-32M` and `minishlab/potion-multilingual-128M`) are static: an embedding is the mean of token vectors, computed with numpy. They run on [tokenizers](https://github.com/huggingface/tokenizers) 1.0, which makes them several times faster than with tokenizers 0.x.
+
+```python
+from fastembed import TextEmbedding
+
+model = TextEmbedding(model_name="minishlab/potion-base-8M")
+embeddings = list(model.embed(documents))
+```
+
+The tokenizers 1.0 wheels on PyPI are built without a regex backend, so tokenizers with a regex pattern, such as the one of `minishlab/potion-multilingual-128M`, fail to load with them. To use that model, build tokenizers from source with the regex feature (this needs a [Rust toolchain](https://rustup.rs)):
+
+```bash
+MATURIN_PEP517_ARGS="--features tk-encode/fancy-regex,tk-serialize/fancy-regex" pip install --no-binary tokenizers --pre "tokenizers==1.0.0rc2"
+```
+
+Models other than the static ones still use the tokenizers 0.x API and are not supported with tokenizers 1.0.
+
 # ⚡️ What is FastEmbed?
 
 FastEmbed is a lightweight, fast, Python library built for embedding generation. We [support popular text models](https://qdrant.github.io/fastembed/examples/Supported_Models/). Please [open a GitHub issue](https://github.com/qdrant/fastembed/issues/new) if you want us to add a new model.

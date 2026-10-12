@@ -3,7 +3,7 @@ import sys
 from typing import Any, Iterator
 from pathlib import Path
 
-from tokenizers import AddedToken, Tokenizer
+from tokenizers import Tokenizer
 
 from fastembed.image.transform.operators import Compose
 
@@ -109,6 +109,10 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
         if isinstance(token, str):
             tokenizer.add_special_tokens([token])
         elif isinstance(token, dict):
+            # Imported here: tokenizers 1.0 has no AddedToken, and the static models, which work
+            # with 1.0, must not fail on importing fastembed.
+            from tokenizers import AddedToken
+
             tokenizer.add_special_tokens([AddedToken(**token)])
 
     # Padding is always normalized to batch-longest. A serialized fixed length shorter than the

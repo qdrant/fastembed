@@ -27,7 +27,7 @@ onnxruntime = [
 ]
 tqdm = "^4.66"
 requests = "^2.31"
-tokenizers = ">=0.15,<1.0"
+tokenizers = { version = ">=1.0.0rc2,<2.0", allow-prereleases = true }
 huggingface-hub = ">=0.20,<2.0"
 loguru = "^0.7.2"
 pillow = [
@@ -65,6 +65,20 @@ mypy = ">=1,<3"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[[tool.mypy.overrides]]
+# Only the static embeddings support tokenizers 1.0. These modules still use the tokenizers 0.x API,
+# so they are not type checked against tokenizers 1.0.
+module = [
+    "fastembed.common.preprocessor_utils",
+    "fastembed.late_interaction.colbert",
+    "fastembed.rerank.cross_encoder.onnx_text_model",
+    "fastembed.sparse.bm42",
+    "fastembed.sparse.minicoil",
+    "fastembed.sparse.utils.vocab_resolver",
+    "fastembed.text.siglip_embedding",
+]
+ignore_errors = true
 
 [tool.pyright]
 typeCheckingMode = "strict"
