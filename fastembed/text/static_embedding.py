@@ -19,8 +19,6 @@ from fastembed.text.text_embedding_base import TextEmbeddingBase
 
 # Same cap as the onnx exports of these models and model2vec's default `max_length`.
 MAX_LENGTH = 512
-# Documents pooled per matrix product, which bounds the count matrix whatever the batch size.
-POOLING_CHUNK = 256
 
 supported_static_models: list[DenseModelDescription] = [
     DenseModelDescription(
@@ -93,6 +91,11 @@ class StaticTextEmbedding(TextEmbeddingBase):
     There is no network to run, so tokenization dominates the cost. The vectors are read straight
     from `model.safetensors` and pooled without the padding an onnx graph needs.
     """
+
+    # Cells of the (documents x distinct tokens) count matrix pooled per matrix product. It bounds
+    # the temporary memory of pooling to about 60 MiB, however long, diverse or many the documents
+    # are.
+    POOLING_CELLS = 4_000_000
 
     @classmethod
     def _list_supported_models(cls) -> list[DenseModelDescription]:
@@ -201,12 +204,7 @@ class StaticTextEmbedding(TextEmbeddingBase):
                 lengths = np.bincount(doc_index[known], minlength=len(documents))
                 ids = ids[known]
 
-        sums = np.zeros((len(documents), self.embeddings.shape[1]), dtype=np.float32)
-        ends = np.cumsum(lengths)
-        for start in range(0, len(documents), POOLING_CHUNK):
-            stop = min(start + POOLING_CHUNK, len(documents))
-            first, last = ends[start] - lengths[start], ends[stop - 1]
-            sums[start:stop] = self._sum_rows(ids[first:last], lengths[start:stop])
+        sums = self._sum_rows(ids, lengths)
         # The mean and the sum point the same way, so normalizing the sum gives the mean's
         # direction. Empty documents stay zero vectors.
         return normalize(sums)
@@ -216,13 +214,23 @@ class StaticTextEmbedding(TextEmbeddingBase):
 
         The sums are a product of a (documents x distinct tokens) count matrix with the rows of
         those tokens: one matrix multiplication, several times faster than segment sums with
-        np.add.reduceat or a loop over the documents.
+        np.add.reduceat or a loop over the documents. Documents whose count matrix would exceed
+        POOLING_CELLS are halved until it fits, which bounds the temporary memory.
         """
         assert self.embeddings is not None
         if not ids.size:
             return np.zeros((len(lengths), self.embeddings.shape[1]), dtype=np.float32)
         rows = ids if self.token_mapping is None else self.token_mapping[ids]
         distinct_rows, row_index = np.unique(rows, return_inverse=True)
+        if len(lengths) > 1 and len(lengths) * len(distinct_rows) > self.POOLING_CELLS:
+            half = len(lengths) // 2
+            split = int(lengths[:half].sum())
+            return np.concatenate(
+                [
+                    self._sum_rows(ids[:split], lengths[:half]),
+                    self._sum_rows(ids[split:], lengths[half:]),
+                ]
+            )
         doc_index = np.repeat(np.arange(len(lengths)), lengths)
         counts = np.bincount(
             doc_index * len(distinct_rows) + row_index,

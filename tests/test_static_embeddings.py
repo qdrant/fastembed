@@ -158,3 +158,18 @@ def test_default_options_do_not_warn() -> None:
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         TextEmbedding(CI_MODEL, lazy_load=True)
+
+
+def test_pooling_budget_splits_without_changing_embeddings(model: TextEmbedding) -> None:
+    docs = [
+        "",
+        "hello world",
+        "a much longer document about vectors " * 30,
+        "🤗",
+        "flag embedding",
+    ] * 9
+    expected = np.stack(list(model.embed(docs)))
+    # a budget below one document's tokens halves every batch down to single documents
+    tiny_budget = TextEmbedding(CI_MODEL)
+    tiny_budget.model.POOLING_CELLS = 5
+    assert np.allclose(np.stack(list(tiny_budget.embed(docs))), expected, atol=1e-6)
