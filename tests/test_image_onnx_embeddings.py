@@ -5,7 +5,6 @@ from io import BytesIO
 
 import numpy as np
 import pytest
-import requests
 from PIL import Image
 
 from fastembed import ImageEmbedding
@@ -29,8 +28,15 @@ CANONICAL_VECTOR_VALUES = {
     "nomic-ai/nomic-embed-vision-v1.5": np.array(
         [0.0048, -0.0254, 0.0067, -0.0296, -0.0435, -0.0123, 0.0024, -0.0361, -0.0703, -0.0186]
     ),
-    "nomic-ai/nomic-embed-vision-v1.5-Q": np.array(
-        [-0.0011, -0.0477, 0.0024, -0.049, -0.0458, -0.0314, 0.017, -0.0383, -0.0537, -0.021]
+    # onnxruntime's avx2 int8 kernel saturates on this model's full-range int8 weights, while vnni
+    # and amx compute them exactly, ci runners come with either
+    "nomic-ai/nomic-embed-vision-v1.5-Q": (
+        np.array(  # x86-64 avx2
+            [-0.0006, -0.0446, 0.0069, -0.0553, -0.0459, -0.0261, 0.0058, -0.0463, -0.0606, -0.019]
+        ),
+        np.array(  # x86-64 vnni
+            [0.0020, -0.0376, 0.0094, -0.0402, -0.0457, -0.0216, 0.0100, -0.0378, -0.0650, -0.0205]
+        ),
     ),
     "google/siglip2-base-patch16-224": np.array(
         [-0.02095927, -0.0075177, -0.00144479, -0.0080948, 0.05031789]
@@ -82,21 +88,26 @@ def test_embedding(model_cache, model_name: str) -> None:
         dim = model_desc.dim
 
         with model_cache(model_desc.model) as model:
+            # quantized models scale activations over the whole batch, so the first embedding
+            # depends on every image here, keep them local files
             images = [
                 TEST_MISC_DIR / "image.jpeg",
                 str(TEST_MISC_DIR / "small_image.jpeg"),
                 Image.open((TEST_MISC_DIR / "small_image.jpeg")),
-                Image.open(BytesIO(requests.get("https://qdrant.tech/img/logo.png").content)),
+                Image.open(BytesIO((TEST_MISC_DIR / "logo.png").read_bytes())),
             ]
             embeddings = list(model.embed(images))
             embeddings = np.stack(embeddings, axis=0)
             assert embeddings.shape == (len(images), dim)
 
             canonical_vector = CANONICAL_VECTOR_VALUES[model_desc.model]
-
-            assert np.allclose(
-                embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3
-            ), model_desc.model
+            canonical_variants = (
+                canonical_vector if isinstance(canonical_vector, tuple) else (canonical_vector,)
+            )
+            prefix = embeddings[0, : canonical_variants[0].shape[0]]
+            assert any(
+                np.allclose(prefix, expected, atol=1e-3) for expected in canonical_variants
+            ), f"{model_desc.model}: {prefix}"
 
             assert np.allclose(embeddings[1], embeddings[2]), model_desc.model
 

@@ -13,8 +13,9 @@ CANONICAL_SCORE_VALUES = {
     "BAAI/bge-reranker-base": np.array([6.15733337, -3.65939403]),
     "BAAI/bge-reranker-v2-m3": np.array([8.78182220, -5.46485329]),
     "BAAI/bge-reranker-v2-m3-int8": (
-        np.array([8.59202957, -5.39362288]),  # ONNX Runtime 1.27.0
-        np.array([8.51154804, -5.56898642]),  # ONNX Runtime 1.30.0
+        np.array([8.59202957, -5.39362288]),  # arm64, ONNX Runtime 1.27.0
+        np.array([8.51154804, -5.56898642]),  # arm64, ONNX Runtime 1.30.0
+        np.array([8.85104847, -5.73784494]),  # x86-64 avx2 and vnni, ONNX Runtime 1.30.0
     ),
     "jinaai/jina-reranker-v1-tiny-en": np.array([2.5911, 0.1122]),
     "jinaai/jina-reranker-v1-turbo-en": np.array([1.8295, -2.8908]),

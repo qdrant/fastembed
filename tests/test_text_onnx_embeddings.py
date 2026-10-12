@@ -56,8 +56,11 @@ CANONICAL_VECTOR_VALUES = {
     "nomic-ai/nomic-embed-text-v1.5": np.array(
         [-0.15407836, -0.03053198, -3.9138033, 0.1910364, 0.13224715]
     ),
-    "nomic-ai/nomic-embed-text-v1.5-Q": np.array(
-        [0.0802303, 0.3700881, -4.3053818, 0.4431803, -0.271572]
+    # onnxruntime's avx2 int8 kernel saturates on this model's full-range int8 weights, while vnni
+    # and amx compute them exactly, ci runners come with either
+    "nomic-ai/nomic-embed-text-v1.5-Q": (
+        np.array([0.0802303, 0.3700881, -4.3053818, 0.4431803, -0.271572]),  # x86-64 avx2
+        np.array([0.12422204, 0.14779393, -3.8240886, 0.47303754, -0.14925367]),  # x86-64 vnni
     ),
     "thenlper/gte-large": np.array(
         [-0.00986551, -0.00018734, 0.00605892, -0.03289612, -0.0387564],
@@ -188,9 +191,13 @@ def test_embedding(model_cache, model_name: str) -> None:
             assert embeddings.shape == (2, dim)
 
             canonical_vector = CANONICAL_VECTOR_VALUES[model_desc.model]
-            assert np.allclose(
-                embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3
-            ), model_desc.model
+            canonical_variants = (
+                canonical_vector if isinstance(canonical_vector, tuple) else (canonical_vector,)
+            )
+            prefix = embeddings[0, : canonical_variants[0].shape[0]]
+            assert any(
+                np.allclose(prefix, expected, atol=1e-3) for expected in canonical_variants
+            ), f"{model_desc.model}: {prefix}"
 
 
 def test_query_embedding(model_cache) -> None:
