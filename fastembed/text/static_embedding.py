@@ -76,7 +76,7 @@ def load_static_tokenizer(model_dir: Path) -> tuple[Tokenizer, int | None]:
     tokenizer.enable_truncation(max_length=MAX_LENGTH)
     tokenizer.no_padding()
 
-    with open(tokenizer_path) as f:
+    with open(tokenizer_path, encoding="utf-8") as f:
         tokenizer_model = json.load(f)["model"]
     if tokenizer_model.get("type") == "Unigram":
         unk_token_id = tokenizer_model.get("unk_id")
