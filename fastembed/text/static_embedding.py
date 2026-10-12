@@ -319,7 +319,7 @@ class StaticTextEmbedding(TextEmbeddingBase):
     def token_count(
         self, texts: str | Iterable[str], batch_size: int = 1024, **kwargs: Any
     ) -> int:
-        """Returns the number of tokens that are averaged, after truncation."""
+        """Returns the number of tokens after truncation, unknown tokens included."""
         self._ensure_model()
         texts = [texts] if isinstance(texts, str) else texts
         return sum(int(self._token_ids(batch)[1].sum()) for batch in iter_batch(texts, batch_size))
