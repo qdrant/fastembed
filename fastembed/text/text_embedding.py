@@ -97,6 +97,31 @@ class TextEmbedding(TextEmbeddingBase):
         lazy_load: bool = False,
         **kwargs: Any,
     ):
+        """
+        Args:
+            model_name (str): The name of the model to use.
+            cache_dir (str, optional): The path to the cache directory.
+                Can be set using the `FASTEMBED_CACHE_PATH` env variable.
+                Defaults to `fastembed_cache` in the system's temp directory.
+            threads (int, optional): The number of threads single onnxruntime session can use.
+            providers (Sequence[OnnxProvider], optional): The list of onnxruntime providers to use.
+                Mutually exclusive with the `cuda` and `device_ids` arguments.
+            cuda (Union[bool, Device], optional): Whether to use cuda for inference.
+                Mutually exclusive with `providers`. Defaults to Device.AUTO.
+            device_ids (list[int], optional): The list of device ids to use for data parallel
+                processing in workers.
+            lazy_load (bool, optional): Whether to load the model during class initialization or
+                on demand. Defaults to False.
+            **kwargs: Options passed on to the model class:
+                local_files_only (bool): Only use the files in the cache, never download them.
+                    Defaults to False.
+                specific_model_path (str): A local directory with the model files to load
+                    instead of downloading the model.
+                enable_cpu_mem_arena (bool): For onnx models, whether onnxruntime uses its CPU
+                    memory arena. Defaults to onnxruntime's own default.
+                mmap (bool): For static models (minishlab potion), whether to memory-map the
+                    embedding matrix instead of reading it into memory. Defaults to False.
+        """
         super().__init__(model_name, cache_dir, threads, **kwargs)
         if model_name.lower() == "jinaai/jina-embeddings-v2-base-de":
             warnings.warn(

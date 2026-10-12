@@ -108,6 +108,7 @@ class StaticTextEmbedding(TextEmbeddingBase):
         threads: int | None = None,
         lazy_load: bool = False,
         specific_model_path: str | None = None,
+        mmap: bool = False,
         **kwargs: Any,
     ):
         """
@@ -123,6 +124,10 @@ class StaticTextEmbedding(TextEmbeddingBase):
                 on demand. Defaults to False.
             specific_model_path (str, optional): A local directory with `model.safetensors` and
                 `tokenizer.json` to load instead of downloading the model.
+            mmap (bool, optional): Whether to memory-map the embedding matrix instead of reading it
+                into memory. Memory-mapping loads instantly, takes memory only for the rows in use
+                and lets parallel workers share one copy; reading it into memory embeds a few
+                percent faster and keeps no file open. Defaults to False.
         """
         # TextEmbedding passes its onnx runtime options to every model class. Static models run
         # on the CPU with numpy and ignore them, so only options set to something else than their
@@ -150,6 +155,7 @@ class StaticTextEmbedding(TextEmbeddingBase):
         self.model_description = self._get_model_description(model_name)
         self.cache_dir = str(define_cache_dir(cache_dir))
         self._specific_model_path = specific_model_path
+        self.mmap = mmap
         self._model_dir = self.download_model(
             self.model_description,
             self.cache_dir,
@@ -166,7 +172,9 @@ class StaticTextEmbedding(TextEmbeddingBase):
             self.load_model()
 
     def load_model(self) -> None:
-        tensors = load_safetensors(self._model_dir / self.model_description.model_file)
+        tensors = load_safetensors(
+            self._model_dir / self.model_description.model_file, mmap=self.mmap
+        )
         if "embeddings" not in tensors:
             raise ValueError(f"No `embeddings` tensor in {self._model_dir}")
         self.embeddings = tensors["embeddings"]
@@ -276,6 +284,7 @@ class StaticTextEmbedding(TextEmbeddingBase):
             parallel=parallel,
             local_files_only=self._local_files_only,
             specific_model_path=self._specific_model_path,
+            mmap=self.mmap,
         )
 
     def _embed_documents(
@@ -287,6 +296,7 @@ class StaticTextEmbedding(TextEmbeddingBase):
         parallel: int | None = None,
         local_files_only: bool = False,
         specific_model_path: str | None = None,
+        mmap: bool = False,
     ) -> Iterable[NumpyArray]:
         is_small = False
 
@@ -311,6 +321,7 @@ class StaticTextEmbedding(TextEmbeddingBase):
                 "cache_dir": cache_dir,
                 "local_files_only": local_files_only,
                 "specific_model_path": specific_model_path,
+                "mmap": mmap,
             }
             pool = ParallelWorkerPool(
                 num_workers=parallel or 1,

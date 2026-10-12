@@ -19,12 +19,17 @@ _DTYPES: dict[str, str] = {
 }
 
 
-def load_safetensors(path: str | Path) -> dict[str, NumpyArray]:
+def load_safetensors(path: str | Path, mmap: bool = False) -> dict[str, NumpyArray]:
     """Read every tensor of a safetensors file with numpy, without the `safetensors` package.
 
     The format is an 8 byte little-endian header size, a JSON header with the dtype, shape and
-    byte offsets of each tensor, then the raw tensor data. Tensors are memory-mapped read-only, so
-    loading is instant and parallel workers share the pages of one file.
+    byte offsets of each tensor, then the raw tensor data.
+
+    Args:
+        path: The safetensors file.
+        mmap: Memory-map the tensors read-only, so loading is instant, only the rows in use take
+            memory and parallel workers share the pages of one file. Otherwise the tensors are
+            read into memory, which avoids page faults and keeps no file open.
     """
     path = Path(path)
     with open(path, "rb") as f:
@@ -41,12 +46,17 @@ def load_safetensors(path: str | Path) -> dict[str, NumpyArray]:
             tensors[name] = np.zeros(shape, dtype=np.float32)
             continue
         if info["dtype"] == "BF16":
-            raw = np.memmap(path, dtype="<u2", mode="r", offset=data_start + start, shape=shape)
+            raw = _read(path, "<u2", data_start + start, shape, mmap)
             tensors[name] = (raw.astype(np.uint32) << 16).view(np.float32)
             continue
         if info["dtype"] not in _DTYPES:
             raise ValueError(f"Unsupported safetensors dtype {info['dtype']} for {name} in {path}")
-        tensors[name] = np.memmap(
-            path, dtype=_DTYPES[info["dtype"]], mode="r", offset=data_start + start, shape=shape
-        )
+        tensors[name] = _read(path, _DTYPES[info["dtype"]], data_start + start, shape, mmap)
     return tensors
+
+
+def _read(path: Path, dtype: str, offset: int, shape: tuple[int, ...], mmap: bool) -> NumpyArray:
+    if mmap:
+        return np.memmap(path, dtype=dtype, mode="r", offset=offset, shape=shape)
+    count = int(np.prod(shape))
+    return np.fromfile(path, dtype=dtype, count=count, offset=offset).reshape(shape)
