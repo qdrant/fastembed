@@ -1,3 +1,4 @@
+# Modified in this fork: close download streams and omit source URLs from diagnostics.
 import os
 import time
 import gzip
@@ -126,7 +127,9 @@ class ModelManagement(Generic[T]):
     @classmethod
     def download_file_from_gcs(cls, url: str, output_path: str, show_progress: bool = True) -> str:
         """
-        Downloads a file from Google Cloud Storage.
+        Downloads a file from Google Cloud Storage, closing its HTTP stream on every exit.
+
+        Download warnings omit the URL because custom sources may contain credentials.
 
         Args:
             url (str): The URL to download the file from.
@@ -137,37 +140,38 @@ class ModelManagement(Generic[T]):
             str: The path to the downloaded file.
         """
 
-        response = requests.get(url, stream=True, timeout=(10, 120))
+        with requests.get(url, stream=True, timeout=(10, 120)) as response:
+            # Handle HTTP errors
+            if response.status_code == 403:
+                raise PermissionError(
+                    "Authentication Error: You do not have permission to access this resource. "
+                    "Please check your credentials."
+                )
+            # Otherwise an error page gets written out as though it were the archive.
+            response.raise_for_status()
 
-        # Handle HTTP errors
-        if response.status_code == 403:
-            raise PermissionError(
-                "Authentication Error: You do not have permission to access this resource. "
-                "Please check your credentials."
-            )
-        # Otherwise an error page gets written out as though it were the archive.
-        response.raise_for_status()
+            # Get the total size of the file
+            total_size_in_bytes = int(response.headers.get("content-length", 0))
 
-        # Get the total size of the file
-        total_size_in_bytes = int(response.headers.get("content-length", 0))
+            # Do not log signed URLs or credentials embedded in custom source URLs.
+            if total_size_in_bytes == 0:
+                logger.warning(
+                    "Content-length header is missing or zero; download progress is disabled."
+                )
 
-        # Warn if the total size is zero
-        if total_size_in_bytes == 0:
-            print(f"Warning: Content-length header is missing or zero in the response from {url}.")
+            show_progress = bool(total_size_in_bytes and show_progress)
 
-        show_progress = bool(total_size_in_bytes and show_progress)
-
-        with tqdm(
-            total=total_size_in_bytes,
-            unit="iB",
-            unit_scale=True,
-            disable=not show_progress,
-        ) as progress_bar:
-            with open(output_path, "wb") as file:
-                for chunk in response.iter_content(chunk_size=_DOWNLOAD_CHUNK_SIZE):
-                    if chunk:  # Filter out keep-alive new chunks
-                        progress_bar.update(len(chunk))
-                        file.write(chunk)
+            with tqdm(
+                total=total_size_in_bytes,
+                unit="iB",
+                unit_scale=True,
+                disable=not show_progress,
+            ) as progress_bar:
+                with open(output_path, "wb") as file:
+                    for chunk in response.iter_content(chunk_size=_DOWNLOAD_CHUNK_SIZE):
+                        if chunk:  # Filter out keep-alive new chunks
+                            progress_bar.update(len(chunk))
+                            file.write(chunk)
         return output_path
 
     @classmethod
@@ -583,7 +587,7 @@ class ModelManagement(Generic[T]):
             model_tmp_dir = staging_dir / fast_model_name
             if not model_tmp_dir.is_dir() or model_tmp_dir.is_symlink():
                 raise ValueError(
-                    f"The archive from {source_url} has no {fast_model_name} directory"
+                    f"The archive for {model_name} has no {fast_model_name} directory"
                 )
 
             # Replace a stale empty model_dir, which Windows will not rename onto. rmdir leaves
@@ -726,7 +730,7 @@ class ModelManagement(Generic[T]):
                     )
                 except Exception:
                     if not local_files_only:
-                        logger.error(f"Could not download model from url: {url_source}")
+                        logger.error(f"Could not download model {model.model} from its URL source")
             elif model.sources.deprecated_tar_struct:
                 # Nothing is downloaded from the bucket anymore, but an old copy may still be cached.
                 legacy_dir = Path(cache_dir) / f"fast-{model.model.split('/')[-1]}"
