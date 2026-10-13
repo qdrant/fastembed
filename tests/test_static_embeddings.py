@@ -140,6 +140,32 @@ def test_load_safetensors(tmp_path, mmap: bool) -> None:
     assert tensors["mapping"].tolist() == [2, 0, 1]
 
 
+@pytest.mark.parametrize("mmap", [True, False])
+def test_load_safetensors_empty(tmp_path, mmap: bool) -> None:
+    path = tmp_path / "model.safetensors"
+    _write_safetensors(
+        path,
+        {
+            "i64": ("I64", [2, 0, 3], b""),
+            "f16": ("F16", [0], b""),
+            "bool": ("BOOL", [0, 4], b""),
+            "bf16": ("BF16", [0, 2], b""),
+        },
+    )
+    tensors = load_safetensors(path, mmap=mmap)
+    assert tensors["i64"].dtype == np.int64 and tensors["i64"].shape == (2, 0, 3)
+    assert tensors["f16"].dtype == np.float16 and tensors["f16"].shape == (0,)
+    assert tensors["bool"].dtype == np.bool_ and tensors["bool"].shape == (0, 4)
+    assert tensors["bf16"].dtype == np.float32 and tensors["bf16"].shape == (0, 2)
+
+
+def test_load_safetensors_unsupported_dtype(tmp_path) -> None:
+    path = tmp_path / "model.safetensors"
+    _write_safetensors(path, {"empty": ("F8_E4M3", [0], b"")})
+    with pytest.raises(ValueError, match="F8_E4M3"):
+        load_safetensors(path)
+
+
 @pytest.mark.parametrize(
     "option",
     [

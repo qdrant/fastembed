@@ -42,16 +42,19 @@ def load_safetensors(path: str | Path, mmap: bool = False) -> dict[str, NumpyArr
     for name, info in header.items():
         start, end = info["data_offsets"]
         shape = tuple(info["shape"])
+        dtype = info["dtype"]
+        if dtype != "BF16" and dtype not in _DTYPES:
+            raise ValueError(f"Unsupported safetensors dtype {dtype} for {name} in {path}")
         if end == start:
-            tensors[name] = np.zeros(shape, dtype=np.float32)
+            tensors[name] = np.empty(
+                shape, dtype=np.float32 if dtype == "BF16" else _DTYPES[dtype]
+            )
             continue
-        if info["dtype"] == "BF16":
+        if dtype == "BF16":
             raw = _read(path, "<u2", data_start + start, shape, mmap)
             tensors[name] = (raw.astype(np.uint32) << 16).view(np.float32)
             continue
-        if info["dtype"] not in _DTYPES:
-            raise ValueError(f"Unsupported safetensors dtype {info['dtype']} for {name} in {path}")
-        tensors[name] = _read(path, _DTYPES[info["dtype"]], data_start + start, shape, mmap)
+        tensors[name] = _read(path, _DTYPES[dtype], data_start + start, shape, mmap)
     return tensors
 
 
