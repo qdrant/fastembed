@@ -47,7 +47,9 @@ def _valid_context(value: Any) -> int | None:
     return value
 
 
-def _resolve_max_context(tokenizer_config: dict[str, Any], model_dir: Path) -> int:
+def _resolve_max_context(
+    tokenizer_config: dict[str, Any], model_dir: Path, max_context: int | None = None
+) -> int:
     """Pick the truncation limit, preferring the stricter of the two tokenizer config keys.
 
     `config.json:max_position_embeddings` deliberately is not used as a fallback: it is the size
@@ -62,6 +64,11 @@ def _resolve_max_context(tokenizer_config: dict[str, Any], model_dir: Path) -> i
         )
         if context is not None
     ]
+    if max_context is not None:
+        context = _valid_context(max_context)
+        if context is None:
+            raise ValueError("max_context must be a positive integer truncation limit")
+        candidates.append(context)
     if not candidates:
         raise ValueError(
             f"Could not determine the maximum context length for {model_dir}. Set a positive "
@@ -71,7 +78,10 @@ def _resolve_max_context(tokenizer_config: dict[str, Any], model_dir: Path) -> i
     return min(candidates)
 
 
-def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
+def load_tokenizer(
+    model_dir: Path, max_context: int | None = None
+) -> tuple[Tokenizer, dict[str, int]]:
+    """Load a tokenizer, optionally capping it at a model's verified context limit."""
     tokenizer_path = model_dir / "tokenizer.json"
     if not tokenizer_path.exists():
         raise ValueError(f"Could not find tokenizer.json in {model_dir}")
@@ -90,7 +100,7 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
     with open(str(tokenizer_config_path)) as tokenizer_config_file:
         tokenizer_config = json.load(tokenizer_config_file)
 
-    max_context = _resolve_max_context(tokenizer_config, model_dir)
+    max_context = _resolve_max_context(tokenizer_config, model_dir, max_context=max_context)
 
     tokens_map = load_special_tokens(model_dir)
 

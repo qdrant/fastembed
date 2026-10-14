@@ -1,9 +1,11 @@
 from typing import Any, Iterable, Sequence, Type
+from pathlib import Path
 
 from fastembed.common.model_description import DenseModelDescription, ModelSource
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.types import Device, NumpyArray, OnnxProvider
 from fastembed.common.utils import define_cache_dir, normalize
+from fastembed.common.preprocessor_utils import load_tokenizer
 from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
 from fastembed.text.text_embedding_base import TextEmbeddingBase
 
@@ -91,6 +93,18 @@ supported_onnx_models: list[DenseModelDescription] = [
             _deprecated_tar_struct=True,
         ),
         model_file="model_optimized.onnx",
+    ),
+    DenseModelDescription(
+        model="BAAI/bge-large-zh-v1.5",
+        dim=1024,
+        description=(
+            "Text embeddings, Unimodal (text), Chinese, 512 input tokens truncation, "
+            "Prefixes for queries/documents: not so necessary, 2023 year."
+        ),
+        license="mit",
+        size_in_GB=1.30,
+        sources=ModelSource(hf="Xenova/bge-large-zh-v1.5"),
+        model_file="onnx/model.onnx",
     ),
     DenseModelDescription(
         model="mixedbread-ai/mxbai-embed-large-v1",
@@ -207,6 +221,12 @@ supported_onnx_models: list[DenseModelDescription] = [
 
 class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):
     """Implementation of the Flag Embedding model."""
+
+    def _load_tokenizer(self, model_dir: Path) -> None:
+        if self.model_description.model != "BAAI/bge-large-zh-v1.5":
+            return super()._load_tokenizer(model_dir)
+        # This export has an unknown-length sentinel, but BGE's usable context is 512 tokens.
+        self.tokenizer, self.special_token_to_id = load_tokenizer(model_dir, max_context=512)
 
     @classmethod
     def _list_supported_models(cls) -> list[DenseModelDescription]:
