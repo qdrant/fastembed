@@ -103,8 +103,8 @@ class ParallelWorkerPool:
         self.num_workers = num_workers
         self.input_queue: Queue | None = None
         self.output_queue: Queue | None = None
-        self.ctx: BaseContext = get_context(start_method)
         self.processes: list[BaseProcess] = []
+        self.ctx: BaseContext = get_context(start_method)
         self.queue_size = self.num_workers * max_internal_batch_size
         self.emergency_shutdown = False
         self.device_ids = device_ids
