@@ -1,12 +1,25 @@
 # This code is a modified copy of the `NLTKWordTokenizer` class from `NLTK` library.
 
 import re
+from functools import lru_cache
+
+from fastembed.common.utils import get_all_marks
+
+
+@lru_cache(maxsize=None)
+def _non_word_pattern() -> re.Pattern[str]:
+    return re.compile(rf"[^\w{get_all_marks()}]")
 
 
 class SimpleTokenizer:
     @staticmethod
     def tokenize(text: str) -> list[str]:
-        text = re.sub(r"[^\w]", " ", text.lower())
+        text = text.lower()
+        # ASCII text has no combining marks, and the plain class is faster to match.
+        if text.isascii():
+            text = re.sub(r"[^\w]", " ", text)
+        else:
+            text = _non_word_pattern().sub(" ", text)
         text = re.sub(r"\s+", " ", text)
 
         return text.strip().split()
