@@ -2,6 +2,9 @@ name: type-checkers
 
 on: [push, pull_request]
 
+env:
+  UV_PYTHON_PREFERENCE: only-managed
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -16,23 +19,21 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - name: Set up uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip poetry
-          poetry install --no-interaction --no-ansi --without dev,docs,test
+        run: uv sync --locked --no-default-groups --group types
 
       - name: mypy
         run: |
-            poetry run mypy fastembed \
+            uv run --no-sync mypy fastembed \
               --disallow-incomplete-defs \
               --disallow-untyped-defs \
               --disable-error-code=import-untyped
 
       - name: pyright
         run: |
-          poetry run pyright tests/type_stub.py
+          uv run --no-sync pyright tests/type_stub.py
