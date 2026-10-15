@@ -342,6 +342,10 @@ class Bm25(SparseTextEmbeddingBase):
 
         Returns:
             dict[int, float]: The token_id to term frequency mapping.
+
+        Counts and document length refer to the processed tokens supplied here.
+        This experimental collision policy adds separate lexical-token weights
+        at a shared ID; it does not merge counts before applying the BM25 formula.
         """
         tf_map: dict[int, float] = {}
         counter: defaultdict[str, int] = defaultdict(int)
@@ -352,10 +356,9 @@ class Bm25(SparseTextEmbeddingBase):
         for stemmed_token in counter:
             token_id = self.compute_token_id(stemmed_token)
             num_occurrences = counter[stemmed_token]
-            tf_map[token_id] = num_occurrences * (self.k + 1)
-            tf_map[token_id] /= num_occurrences + self.k * (
-                1 - self.b + self.b * doc_len / self.avg_len
-            )
+            weight = num_occurrences * (self.k + 1)
+            weight /= num_occurrences + self.k * (1 - self.b + self.b * doc_len / self.avg_len)
+            tf_map[token_id] = tf_map.get(token_id, 0.0) + weight
         return tf_map
 
     @classmethod
