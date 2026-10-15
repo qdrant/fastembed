@@ -19,8 +19,7 @@ supported_pooled_normalized_models: list[DenseModelDescription] = [
         license="apache-2.0",
         size_in_GB=0.09,
         sources=ModelSource(
-            url="https://storage.googleapis.com/qdrant-fastembed/sentence-transformers-all-MiniLM-L6-v2.tar.gz",
-            hf="qdrant/all-MiniLM-L6-v2-onnx",
+            hf="Qdrant/all-MiniLM-L6-v2-onnx",
             _deprecated_tar_struct=True,
         ),
         model_file="model.onnx",
@@ -34,7 +33,7 @@ supported_pooled_normalized_models: list[DenseModelDescription] = [
         ),
         license="apache-2.0",
         size_in_GB=0.52,
-        sources=ModelSource(hf="xenova/jina-embeddings-v2-base-en"),
+        sources=ModelSource(hf="Xenova/jina-embeddings-v2-base-en"),
         model_file="onnx/model.onnx",
     ),
     DenseModelDescription(
@@ -46,7 +45,7 @@ supported_pooled_normalized_models: list[DenseModelDescription] = [
         ),
         license="apache-2.0",
         size_in_GB=0.12,
-        sources=ModelSource(hf="xenova/jina-embeddings-v2-small-en"),
+        sources=ModelSource(hf="Xenova/jina-embeddings-v2-small-en"),
         model_file="onnx/model.onnx",
     ),
     DenseModelDescription(
@@ -57,9 +56,9 @@ supported_pooled_normalized_models: list[DenseModelDescription] = [
             "Prefixes for queries/documents: not necessary, 2024 year."
         ),
         license="apache-2.0",
-        size_in_GB=0.32,
+        size_in_GB=0.64,
         sources=ModelSource(hf="jinaai/jina-embeddings-v2-base-de"),
-        model_file="onnx/model_fp16.onnx",
+        model_file="onnx/model.onnx",
     ),
     DenseModelDescription(
         model="jinaai/jina-embeddings-v2-base-code",
@@ -118,7 +117,20 @@ supported_pooled_normalized_models: list[DenseModelDescription] = [
         ),
         license="mit",
         size_in_GB=1.20,
-        sources=ModelSource(hf="qdrant/gte-large-onnx"),
+        sources=ModelSource(hf="Qdrant/gte-large-onnx"),
+        model_file="model.onnx",
+    ),
+    DenseModelDescription(
+        model="Qdrant/constella-nano",
+        dim=1024,
+        description=(
+            "Text embeddings, Unimodal (text), English, 512 input tokens truncation, "
+            "Query-side 34.5M-parameter transformer, embeds into the document space of "
+            "stella_en_400M_v5, Prefixes for queries/documents: not necessary, 2026 year."
+        ),
+        license="mit",
+        size_in_GB=0.14,
+        sources=ModelSource(hf="Qdrant/constella-nano"),
         model_file="model.onnx",
     ),
 ]
@@ -146,7 +158,11 @@ class PooledNormalizedEmbedding(PooledEmbedding):
 
         embeddings = output.model_output
         attn_mask = output.attention_mask
-        return normalize(self.mean_pooling(embeddings, attn_mask))
+        # mean pooling returns float64, embeddings keep the dtype of the model,
+        # the cast goes after normalization to normalize in full precision
+        return normalize(self.mean_pooling(embeddings, attn_mask)).astype(
+            embeddings.dtype, copy=False
+        )
 
 
 class PooledNormalizedEmbeddingWorker(OnnxTextEmbeddingWorker):

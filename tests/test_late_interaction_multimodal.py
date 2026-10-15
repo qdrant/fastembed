@@ -1,4 +1,5 @@
 import os
+import platform
 from contextlib import contextmanager
 
 import pytest
@@ -97,6 +98,10 @@ def model_cache():
 
 
 def test_batch_embedding(model_cache):
+    # image splitting makes colmodernvbert slow on CI runners, so only linux runs it
+    if platform.system() != "Linux" and os.getenv("CI"):
+        pytest.skip("too slow on macOS and Windows CI runners")
+
     for model_name, expected_result in CANONICAL_IMAGE_VALUES.items():
         if model_name.lower() == "Qdrant/colpali-v1.3-fp16".lower() and os.getenv("CI"):
             continue  # colpali is too large for ci
@@ -111,6 +116,10 @@ def test_batch_embedding(model_cache):
 
 
 def test_single_embedding(model_cache):
+    # image splitting makes colmodernvbert slow on CI runners, so only linux runs it
+    if platform.system() != "Linux" and os.getenv("CI"):
+        pytest.skip("too slow on macOS and Windows CI runners")
+
     for model_name, expected_result in CANONICAL_IMAGE_VALUES.items():
         if model_name.lower() == "Qdrant/colpali-v1.3-fp16".lower() and os.getenv("CI"):
             continue  # colpali is too large for ci
@@ -119,6 +128,26 @@ def test_single_embedding(model_cache):
             result = next(iter(model.embed_image(images, batch_size=6)))
             token_num, abridged_dim = expected_result.shape
             assert np.allclose(result[:token_num, :abridged_dim], expected_result, atol=2e-3)
+
+
+def test_batch_embedding_mixed_tile_counts(model_cache):
+    # image splitting makes colmodernvbert slow on CI runners, so only linux runs it
+    if platform.system() != "Linux" and os.getenv("CI"):
+        pytest.skip("too slow on macOS and Windows CI runners")
+
+    model_name = "Qdrant/colmodernvbert"
+    image = Image.open(TEST_MISC_DIR / "image.jpeg")
+    # the 4:1 strip is split into 5 tiles and the full image into 13, so the strip gets padded
+    # with empty tiles, which must not leak into the image after it
+    strip = image.crop((0, 0, image.width, image.width // 4))
+    mixed_images = [strip, image]
+    with model_cache(model_name) as model:
+        batch_result = list(model.embed_image(mixed_images, batch_size=len(mixed_images)))
+        single_result = list(model.embed_image(mixed_images, batch_size=1))
+
+    for batch_value, single_value in zip(batch_result, single_result):
+        assert batch_value.shape == single_value.shape
+        assert np.allclose(batch_value, single_value, atol=1e-3)
 
 
 def test_single_embedding_query(model_cache):
@@ -147,6 +176,17 @@ def test_embedding_size():
     model_name = "Qdrant/colmodernvbert"
     model = LateInteractionMultimodalEmbedding(model_name=model_name, lazy_load=True)
     assert model.embedding_size == 128
+
+
+def test_lazy_load() -> None:
+    model_name = "Qdrant/colmodernvbert"
+    model = LateInteractionMultimodalEmbedding(model_name=model_name, lazy_load=True)
+    assert not hasattr(model.model, "model")
+
+    # token counting only needs the tokenizer; embedding is not exercised here, since loading
+    # a second copy of the model next to the one `model_cache` keeps takes several GB
+    assert model.token_count(queries) > 0
+    assert not hasattr(model.model, "model")
 
 
 def test_token_count(model_cache) -> None:

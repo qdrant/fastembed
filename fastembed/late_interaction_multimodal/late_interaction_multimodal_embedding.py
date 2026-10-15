@@ -1,3 +1,4 @@
+import warnings
 from typing import Any, Iterable, Sequence, Type
 from dataclasses import asdict
 
@@ -33,7 +34,7 @@ class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase)
                          "model": "Qdrant/colpali-v1.3-fp16",
                          "dim": 128,
                          "description": "Text embeddings, Unimodal (text), Aligned to image latent space, ColBERT-compatible, 512 tokens max, 2024.",
-                         "license": "mit",
+                         "license": "gemma",
                          "size_in_GB": 6.06,
                          "sources": {
                             "hf": "Qdrant/colpali-v1.3-fp16",
@@ -67,6 +68,14 @@ class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase)
         **kwargs: Any,
     ):
         super().__init__(model_name, cache_dir, threads, **kwargs)
+        # keep for a couple of releases after the 2026-10 re-export of the model
+        if model_name.lower() == "qdrant/colmodernvbert":
+            warnings.warn(
+                "The model 'Qdrant/colmodernvbert' has been updated: re-embed images that were "
+                "embedded in batches with images of other aspect ratios.",
+                UserWarning,
+                stacklevel=2,
+            )
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
             supported_models = EMBEDDING_MODEL_TYPE._list_supported_models()
             if any(model_name.lower() == model.model.lower() for model in supported_models):
@@ -147,7 +156,7 @@ class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase)
     def embed_image(
         self,
         images: ImageInput | Iterable[ImageInput],
-        batch_size: int = 16,
+        batch_size: int = 2,
         parallel: int | None = None,
         **kwargs: Any,
     ) -> Iterable[NumpyArray]:

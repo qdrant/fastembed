@@ -42,9 +42,10 @@ def center_crop(
     new_shape = image.shape[:-2] + (new_height, new_width)
     new_image = np.zeros_like(image, shape=new_shape, dtype=np.float32)
 
-    top_pad = (new_height - orig_height) // 2
+    # Round padding up to offset the floor-rounded crop origin when the difference is odd.
+    top_pad = (new_height - orig_height + 1) // 2
     bottom_pad = top_pad + orig_height
-    left_pad = (new_width - orig_width) // 2
+    left_pad = (new_width - orig_width + 1) // 2
     right_pad = left_pad + orig_width
     new_image[..., top_pad:bottom_pad, left_pad:right_pad] = image
 
@@ -65,7 +66,13 @@ def normalize(
     mean: float | list[float],
     std: float | list[float],
 ) -> NumpyArray:
-    num_channels = image.shape[1] if len(image.shape) == 4 else image.shape[0]
+    if image.ndim < 3:
+        raise ValueError(f"image must be (C, H, W) or (N, C, H, W), got shape {image.shape}")
+
+    # Channels sit on the third axis from the end, which covers (C, H, W) and
+    # (N, C, H, W) alike. Transposing instead reversed every axis, which put the
+    # batch dimension where the channels were meant to be.
+    num_channels = image.shape[-3]
 
     if not np.issubdtype(image.dtype, np.floating):
         image = image.astype(np.float32)
@@ -78,7 +85,9 @@ def normalize(
             f"{len(mean_list)}"
         )
 
-    mean_arr = np.array(mean_list, dtype=np.float32)
+    # (C, 1, 1) lines the channels up with the trailing (C, H, W) axes under numpy
+    # broadcasting, whatever batch dimensions lead them.
+    mean_arr = np.array(mean_list, dtype=np.float32).reshape(-1, 1, 1)
 
     std_list = std if isinstance(std, list) else [std] * num_channels
     if len(std_list) != num_channels:
@@ -86,9 +95,9 @@ def normalize(
             f"std must have the same number of channels as the image, image has {num_channels} channels, got {len(std_list)}"
         )
 
-    std_arr = np.array(std_list, dtype=np.float32)
+    std_arr = np.array(std_list, dtype=np.float32).reshape(-1, 1, 1)
 
-    image_upd = ((image.T - mean_arr) / std_arr).T
+    image_upd = (image - mean_arr) / std_arr
     return image_upd
 
 
@@ -98,7 +107,12 @@ def resize(
     resample: int | Image.Resampling = Image.Resampling.BILINEAR,
 ) -> Image.Image:
     if isinstance(size, tuple):
-        return image.resize(size, resample)
+        # fastembed keeps sizes as (height, width) — `Compose.from_config` builds the
+        # tuple as (size["height"], size["width"]) — while Pillow's resize takes
+        # (width, height). The two agree for square sizes, so this only shows up on a
+        # non-square image processor configuration.
+        height, width = size
+        return image.resize((width, height), resample)
 
     height, width = image.height, image.width
     short, long = (width, height) if width <= height else (height, width)
@@ -131,14 +145,16 @@ def pad2square(
     left, right = 0, width
     top, bottom = 0, height
 
+    # Jina's reference crops with torchvision's CenterCrop, which rounds the offset half to
+    # even like round() instead of flooring it: a 227 px edge is cropped from 2, not 1
     crop_required = False
     if width > size:
-        left = (width - size) // 2
+        left = round((width - size) / 2)
         right = left + size
         crop_required = True
 
     if height > size:
-        top = (height - size) // 2
+        top = round((height - size) / 2)
         bottom = top + size
         crop_required = True
 
@@ -170,7 +186,8 @@ def resize_longest_edge(
     if new_width % 2 != 0:
         new_width += 1
 
-    return image.resize((new_width, new_height), resample)
+    # A very narrow image can round down to zero along its shorter edge.
+    return image.resize((max(1, new_width), max(1, new_height)), resample)
 
 
 def crop_ndarray(

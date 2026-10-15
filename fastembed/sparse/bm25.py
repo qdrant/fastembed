@@ -2,7 +2,7 @@ import os
 from collections import defaultdict
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Iterable, Type
+from typing import Any, Iterable, Protocol, Type
 
 import mmh3
 import numpy as np
@@ -20,6 +20,16 @@ from fastembed.sparse.sparse_embedding_base import (
 )
 from fastembed.sparse.utils.tokenizer import SimpleTokenizer
 from fastembed.common.model_description import SparseModelDescription, ModelSource
+
+
+class Stemmer(Protocol):
+    """Protocol for custom stemmers pluggable into Bm25.
+
+    Any object exposing a `stem_word` method, e.g. `py_rust_stemmers.SnowballStemmer`,
+    satisfies this protocol.
+    """
+
+    def stem_word(self, word: str) -> str: ...
 
 
 supported_languages = [
@@ -51,9 +61,13 @@ supported_bm25_models: list[SparseModelDescription] = [
         license="apache-2.0",
         size_in_GB=0.01,
         sources=ModelSource(hf="Qdrant/bm25"),
-        additional_files=[f"{lang}.txt" for lang in supported_languages],
+        # The repo has no tamil.txt, and Tamil works without stopwords. Listing a missing file
+        # would make download_model reject every cached snapshot.
+        additional_files=[f"{lang}.txt" for lang in supported_languages if lang != "tamil"],
         requires_idf=True,
-        model_file="mock.file",
+        # BM25 has no weights, but download_model requires model_file in a cached snapshot, so
+        # point it at the repo's (empty) config.json.
+        model_file="config.json",
     ),
 ]
 
@@ -82,10 +96,23 @@ class Bm25(SparseTextEmbeddingBase):
         b (float, optional): The b parameter in the BM25 formula. Defines the importance of the document length.
             Defaults to 0.75.
         avg_len (float, optional): The average length of the documents in the corpus. Defaults to 256.0.
-        language (str): Specifies the language for the stemmer.
-        disable_stemmer (bool): Disable the stemmer.
+        language (str): Selects the default Snowball stemmer and bundled stopwords.
+            Unsupported languages require a custom stemmer or disable_stemmer=True,
+            and have no bundled stopwords.
+        disable_stemmer (bool): Disable stemming and bundled stopwords. Explicit inline
+            stopwords still apply. Cannot be combined with a custom stemmer. Lowercasing,
+            tokenization, punctuation removal and token_max_length filtering still apply.
+        stemmer (Stemmer, optional): A custom stemmer to use instead of the default SnowballStemmer.
+            Its stem_word method receives lowercase tokens after stopword and length filtering,
+            and returns a stem or an empty string to discard the token. The same stemmer is used
+            for documents and queries. For parallel embedding it must be deepcopyable and
+            pickleable, with its class defined in an importable module. Defaults to None.
+        stopwords (set[str], optional): Inline stopwords to use instead of the stopwords file
+            shipped with the model for the chosen language. Words are lowercased and matched
+            before stemming. None uses the default stopwords; an empty set disables filtering.
     Raises:
-        ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
+        ValueError: If a default stemmer is unavailable for the language, or stemmer is supplied with
+            disable_stemmer=True.
     """
 
     def __init__(
@@ -99,14 +126,22 @@ class Bm25(SparseTextEmbeddingBase):
         token_max_length: int = 40,
         disable_stemmer: bool = False,
         specific_model_path: str | None = None,
+        stemmer: Stemmer | None = None,
+        stopwords: set[str] | None = None,
         **kwargs: Any,
     ):
         super().__init__(model_name, cache_dir, **kwargs)
 
-        if language not in supported_languages:
+        if disable_stemmer and stemmer is not None:
+            raise ValueError("stemmer cannot be supplied with disable_stemmer=True")
+        if not disable_stemmer and stemmer is None and language not in supported_languages:
             raise ValueError(f"{language} language is not supported")
-        else:
-            self.language = language
+        self.language = language
+
+        self._custom_stemmer = stemmer
+        self._custom_stopwords = (
+            {word.lower() for word in stopwords} if stopwords is not None else None
+        )
 
         self.k = k
         self.b = b
@@ -127,11 +162,20 @@ class Bm25(SparseTextEmbeddingBase):
         self.punctuation = set(get_all_punctuation())
         self.disable_stemmer = disable_stemmer
 
-        if disable_stemmer:
-            self.stopwords: set[str] = set()
-            self.stemmer = None
+        self.stopwords: set[str]
+        if self._custom_stopwords is not None:
+            self.stopwords = self._custom_stopwords
+        elif disable_stemmer:
+            self.stopwords = set()
         else:
             self.stopwords = set(self._load_stopwords(self._model_dir, self.language))
+
+        self.stemmer: Stemmer | None
+        if stemmer is not None:
+            self.stemmer = stemmer
+        elif disable_stemmer:
+            self.stemmer = None
+        else:
             self.stemmer = SnowballStemmer(language)
 
         self.tokenizer = SimpleTokenizer
@@ -147,6 +191,9 @@ class Bm25(SparseTextEmbeddingBase):
 
     @classmethod
     def _load_stopwords(cls, model_dir: Path, language: str) -> list[str]:
+        if language not in supported_languages:
+            return []
+
         stopwords_path = model_dir / f"{language}.txt"
         if not stopwords_path.exists():
             return []
@@ -191,6 +238,8 @@ class Bm25(SparseTextEmbeddingBase):
                 "language": self.language,
                 "token_max_length": self.token_max_length,
                 "disable_stemmer": self.disable_stemmer,
+                "stemmer": self._custom_stemmer,
+                "stopwords": self._custom_stopwords,
                 "local_files_only": local_files_only,
                 "specific_model_path": specific_model_path,
             }
@@ -249,7 +298,9 @@ class Bm25(SparseTextEmbeddingBase):
             if len(token) > self.token_max_length:
                 continue
 
-            stemmed_token = self.stemmer.stem_word(lower_token) if self.stemmer else lower_token
+            stemmed_token = (
+                self.stemmer.stem_word(lower_token) if self.stemmer is not None else lower_token
+            )
 
             if stemmed_token:
                 stemmed_tokens.append(stemmed_token)
@@ -324,7 +375,7 @@ class Bm25(SparseTextEmbeddingBase):
             stemmed_tokens = self._stem(tokens)
             token_ids = np.array(
                 list(set(self.compute_token_id(token) for token in stemmed_tokens)),
-                dtype=np.int32,
+                dtype=np.int64,
             )
             values = np.ones_like(token_ids)
             yield SparseEmbedding(indices=token_ids, values=values)

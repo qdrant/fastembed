@@ -6,9 +6,11 @@ from typing import Any, Generic, Iterable, Sequence, Type, TypeVar
 import numpy as np
 import onnxruntime as ort
 
+from loguru import logger
 from numpy.typing import NDArray
 from tokenizers import Tokenizer
 
+from fastembed.common.onnx_external_data import ONNX_SNAPSHOTS_DIR, link_external_data
 from fastembed.common.types import OnnxProvider, NumpyArray, Device
 from fastembed.parallel_processor import Worker
 
@@ -26,10 +28,24 @@ class OnnxOutputContext:
 
 class OnnxModel(Generic[T]):
     EXPOSED_SESSION_OPTIONS = ("enable_cpu_mem_arena",)
+    # set by the concrete model classes in their __init__
+    _model_dir: Path
 
     @classmethod
     def _get_worker_class(cls) -> Type["EmbeddingWorker[T]"]:
         raise NotImplementedError("Subclasses must implement this method")
+
+    def _get_worker_init_kwargs(self) -> dict[str, Any]:
+        """Additional kwargs a worker process needs to reconstruct this model.
+
+        Workers are started with `spawn`/`forkserver`, hence they don't inherit class-level state
+        which has been set up in runtime, e.g. models registered via `add_custom_model`.
+        Such state has to be shipped to the workers explicitly.
+
+        Returns:
+            dict[str, Any]: kwargs to pass to `_get_worker_class().init_embedding`.
+        """
+        return {}
 
     def _post_process_onnx_output(self, output: OnnxOutputContext, **kwargs: Any) -> Iterable[T]:
         """Post-process the ONNX model output to convert it into a usable format.
@@ -64,8 +80,8 @@ class OnnxModel(Generic[T]):
         cuda: bool | Device = Device.AUTO,
         device_id: int | None = None,
         extra_session_options: dict[str, Any] | None = None,
+        additional_files: list[str] | None = None,
     ) -> None:
-        model_path = model_dir / model_file
         # List of Execution Providers: https://onnxruntime.ai/docs/execution-providers
         available_providers = ort.get_available_providers()
         cuda_available = "CUDAExecutionProvider" in available_providers
@@ -110,9 +126,29 @@ class OnnxModel(Generic[T]):
         if extra_session_options is not None:
             self.add_extra_session_options(so, extra_session_options)
 
-        self.model = ort.InferenceSession(
-            str(model_path), providers=onnx_providers, sess_options=so
-        )
+        model_path = model_dir / model_file
+        link_error: OSError | None = None
+        try:
+            model_path = link_external_data(model_dir, model_file, additional_files or [])
+        except OSError as e:
+            # e.g. a read-only cache, which onnxruntime<1.24 loads from all the same
+            link_error = e
+
+        try:
+            self.model = ort.InferenceSession(
+                str(model_path), providers=onnx_providers, sess_options=so
+            )
+        except Exception:
+            if link_error is not None:
+                logger.warning(
+                    f"Could not link the files of {model_path} into {ONNX_SNAPSHOTS_DIR}: "
+                    f"{link_error}. onnxruntime>=1.24 refuses external data that resolves "
+                    "outside of the model directory, as in a huggingface_hub>=1.32 cache. "
+                    "Download the model with fastembed into a writable cache_dir on a "
+                    "filesystem with hardlinks, or delete it from the cache and download it "
+                    "again with HF_HUB_DISABLE_SHARED_BLOBS=1."
+                )
+            raise
         if "CUDAExecutionProvider" in requested_provider_names:
             assert self.model is not None
             current_providers = self.model.get_providers()

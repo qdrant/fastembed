@@ -6,7 +6,8 @@ import numpy as np
 
 from fastembed.sparse.bm25 import Bm25
 from fastembed.sparse.sparse_text_embedding import SparseTextEmbedding
-from tests.utils import delete_model_cache, should_test_model
+from tests.utils import delete_model_cache, is_manual_run, should_test_model
+
 
 CANONICAL_COLUMN_VALUES = {
     "prithivida/Splade_PP_en_v1": {
@@ -58,9 +59,50 @@ CANONICAL_COLUMN_VALUES = {
             -0.12508166,
         ],
     },
+    # first 15 non-zero dimensions of the embedding
+    "opensearch-project/opensearch-neural-sparse-encoding-doc-v3-gte": {
+        "indices": [
+            999,
+            1010,
+            1011,
+            1024,
+            1028,
+            1029,
+            1045,
+            1074,
+            1993,
+            2017,
+            2033,
+            2054,
+            2073,
+            2080,
+            2088,
+        ],
+        "values": [
+            0.16544909,
+            0.00529129,
+            0.0392109,
+            0.12337475,
+            0.09640586,
+            0.05325737,
+            0.09611791,
+            0.03159865,
+            0.01349991,
+            0.09392473,
+            0.01928805,
+            0.05238346,
+            0.05515401,
+            0.03156782,
+            0.98263124,
+        ],
+    },
 }
 
 CANONICAL_QUERY_VALUES = {
+    "opensearch-project/opensearch-neural-sparse-encoding-doc-v3-gte": {
+        "indices": [2088, 7592],
+        "values": [3.42086864, 6.93775654],
+    },
     "Qdrant/minicoil-v1": {
         "indices": [80, 81, 82, 83, 6664, 6665, 6666, 6667],
         "values": [
@@ -82,6 +124,7 @@ _MODELS_TO_CACHE = (
     "Qdrant/minicoil-v1",
     "Qdrant/bm25",
     "Qdrant/bm42-all-minilm-l6-v2-attentions",
+    "opensearch-project/opensearch-neural-sparse-encoding-doc-v3-gte",
 )
 MODELS_TO_CACHE = tuple([x.lower() for x in _MODELS_TO_CACHE])
 
@@ -132,7 +175,7 @@ def test_batch_embedding(model_cache, model_name: str) -> None:
 
 def test_single_embedding(model_cache) -> None:
     is_ci = os.getenv("CI")
-    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    is_manual = is_manual_run()
 
     for model_desc in SparseTextEmbedding._list_supported_models():
         if (
@@ -142,18 +185,23 @@ def test_single_embedding(model_cache) -> None:
             continue
         if not should_test_model(model_desc, model_desc.model, is_ci, is_manual):
             continue
-
         with model_cache(model_desc.model) as model:
             passage_result = next(iter(model.embed(docs, batch_size=6)))
             query_result = next(iter(model.query_embed(docs)))
             expected_result = CANONICAL_COLUMN_VALUES[model_desc.model]
             expected_query_result = CANONICAL_QUERY_VALUES.get(model_desc.model, expected_result)
-            assert passage_result.indices.tolist() == expected_result["indices"]
-            for i, value in enumerate(passage_result.values):
+
+            # canonical values might contain only a prefix of the non-zero dimensions
+            num_dims = len(expected_result["indices"])
+            assert passage_result.indices.tolist()[:num_dims] == expected_result["indices"]
+            for i, value in enumerate(passage_result.values[:num_dims]):
                 assert pytest.approx(value, abs=0.001) == expected_result["values"][i]
 
-            assert query_result.indices.tolist() == expected_query_result["indices"]
-            for i, value in enumerate(query_result.values):
+            num_query_dims = len(expected_query_result["indices"])
+            assert (
+                query_result.indices.tolist()[:num_query_dims] == expected_query_result["indices"]
+            )
+            for i, value in enumerate(query_result.values[:num_query_dims]):
                 assert pytest.approx(value, abs=0.001) == expected_query_result["values"][i]
 
 
@@ -263,6 +311,104 @@ def test_disable_stemmer_behavior(disable_stemmer: bool) -> None:
     assert result == expected, f"Expected {expected}, but got {result}"
 
 
+class _PolishStemmer:
+    def stem_word(self, word: str) -> str:
+        for suffix in ("ami", "ach"):
+            if word.endswith(suffix):
+                return word[: -len(suffix)]
+        return word
+
+
+def test_custom_stemmer_applies_to_documents_and_queries() -> None:
+    model = SparseTextEmbedding(
+        "Qdrant/bm25",
+        language="polish",
+        stemmer=_PolishStemmer(),
+        stopwords={"W"},
+        k=1.0,
+        b=0.0,
+    )
+    text = "Kotami kotach w domach!"
+    document = next(iter(model.embed(text)))
+    query = next(iter(model.query_embed(text)))
+
+    assert dict(zip(document.indices, document.values)) == pytest.approx(
+        {Bm25.compute_token_id("kot"): 4 / 3, Bm25.compute_token_id("dom"): 1.0}
+    )
+    assert dict(zip(query.indices, query.values)) == {
+        Bm25.compute_token_id("kot"): 1.0,
+        Bm25.compute_token_id("dom"): 1.0,
+    }
+
+
+@pytest.mark.parametrize(
+    "disable_stemmer,stopwords,expected",
+    [
+        (False, None, ["fox"]),
+        (True, None, ["the", "and", "fox"]),
+        (False, set(), ["the", "and", "fox"]),
+        (True, set(), ["the", "and", "fox"]),
+        (False, {"The", "FOX"}, ["and"]),
+        (True, {"The", "FOX"}, ["and"]),
+    ],
+)
+def test_stopword_precedence(
+    stopwords: set[str] | None, disable_stemmer: bool, expected: list[str]
+) -> None:
+    model = Bm25(
+        "Qdrant/bm25",
+        stopwords=stopwords,
+        disable_stemmer=disable_stemmer,
+    )
+
+    assert model._stem(["THE", "and", "FOX"]) == expected
+
+
+def test_unsupported_language_requires_custom_or_disabled_stemmer() -> None:
+    with pytest.raises(ValueError, match="polish language is not supported"):
+        Bm25("Qdrant/bm25", language="polish", stopwords=set())
+
+
+def test_custom_and_disabled_stemmer_are_mutually_exclusive() -> None:
+    with pytest.raises(ValueError, match="stemmer cannot be supplied with disable_stemmer=True"):
+        Bm25("Qdrant/bm25", stemmer=_PolishStemmer(), disable_stemmer=True)
+
+
+def test_parallel_matches_serial() -> None:
+    model = SparseTextEmbedding(
+        "Qdrant/bm25",
+        language="polish",
+        stemmer=_PolishStemmer(),
+        stopwords={"w", "kotami"},
+    )
+    documents = ["Kotami kotach w domach", "W domach", "", "kotami"]
+    serial = list(model.embed(documents))
+    # More documents than batch_size ensures this actually starts worker processes.
+    parallel = list(model.embed(documents, batch_size=2, parallel=2))
+
+    assert len(serial) == len(parallel) == len(documents)
+    for expected, actual in zip(serial, parallel):
+        assert actual.indices.tolist() == expected.indices.tolist()
+        assert actual.values.tolist() == pytest.approx(expected.values.tolist())
+
+
+def test_if_splade_query_embed_is_inference_free() -> None:
+    is_ci = os.getenv("CI")
+    model = SparseTextEmbedding(
+        model_name="opensearch-project/opensearch-neural-sparse-encoding-doc-v3-gte",
+        lazy_load=True,
+    )
+    embeddings = list(model.query_embed(["hello world", "flag embedding"]))
+    assert model.token_count(["hello world", "flag embedding"]) > 0
+    # queries are embedded with a tokenizer and an idf lookup table only, and token counting
+    # needs the tokenizer alone, so the onnx model must stay unloaded
+    assert not hasattr(model.model, "model")
+    assert all(len(embedding.indices) > 0 for embedding in embeddings)
+
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
+
+
 @pytest.mark.parametrize("model_name", ["prithivida/Splade_PP_en_v1"])
 def test_lazy_load(model_name: str) -> None:
     is_ci = os.getenv("CI")
@@ -270,6 +416,8 @@ def test_lazy_load(model_name: str) -> None:
     assert not hasattr(model.model, "model")
 
     docs = ["hello world", "flag embedding"]
+    assert model.token_count(docs) > 0
+    assert not hasattr(model.model, "model")
     list(model.embed(docs))
     assert hasattr(model.model, "model")
 

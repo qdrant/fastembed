@@ -50,24 +50,24 @@ supported_pooled_models: list[DenseModelDescription] = [
         model="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
         dim=384,
         description=(
-            "Text embeddings, Unimodal (text), Multilingual (~50 languages), 512 input tokens truncation, "
+            "Text embeddings, Unimodal (text), Multilingual (~50 languages), 128 input tokens truncation, "
             "Prefixes for queries/documents: not necessary, 2019 year."
         ),
         license="apache-2.0",
         size_in_GB=0.22,
-        sources=ModelSource(hf="qdrant/paraphrase-multilingual-MiniLM-L12-v2-onnx-Q"),
+        sources=ModelSource(hf="Qdrant/paraphrase-multilingual-MiniLM-L12-v2-onnx-Q"),
         model_file="model_optimized.onnx",
     ),
     DenseModelDescription(
         model="sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
         dim=768,
         description=(
-            "Text embeddings, Unimodal (text), Multilingual (~50 languages), 384 input tokens truncation, "
+            "Text embeddings, Unimodal (text), Multilingual (~50 languages), 512 input tokens truncation, "
             "Prefixes for queries/documents: not necessary, 2021 year."
         ),
         license="apache-2.0",
         size_in_GB=1.00,
-        sources=ModelSource(hf="xenova/paraphrase-multilingual-mpnet-base-v2"),
+        sources=ModelSource(hf="Xenova/paraphrase-multilingual-mpnet-base-v2"),
         model_file="onnx/model.onnx",
     ),
     DenseModelDescription(
@@ -80,8 +80,7 @@ supported_pooled_models: list[DenseModelDescription] = [
         license="mit",
         size_in_GB=2.24,
         sources=ModelSource(
-            hf="qdrant/multilingual-e5-large-onnx",
-            url="https://storage.googleapis.com/qdrant-fastembed/fast-multilingual-e5-large.tar.gz",
+            hf="Qdrant/multilingual-e5-large-onnx",
             _deprecated_tar_struct=True,
         ),
         model_file="model.onnx",
@@ -118,7 +117,8 @@ class PooledEmbedding(OnnxTextEmbedding):
 
         embeddings = output.model_output
         attn_mask = output.attention_mask
-        return self.mean_pooling(embeddings, attn_mask)
+        # mean pooling returns float64, embeddings keep the dtype of the model
+        return self.mean_pooling(embeddings, attn_mask).astype(embeddings.dtype, copy=False)
 
 
 class PooledEmbeddingWorker(OnnxTextEmbeddingWorker):

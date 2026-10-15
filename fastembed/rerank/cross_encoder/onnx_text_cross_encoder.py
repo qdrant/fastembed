@@ -39,6 +39,23 @@ supported_onnx_models: list[BaseModelDescription] = [
         model_file="onnx/model.onnx",
     ),
     BaseModelDescription(
+        model="BAAI/bge-reranker-v2-m3",
+        description="Multilingual BGE reranker based on BGE-M3.",
+        license="apache-2.0",
+        size_in_GB=2.27,
+        sources=ModelSource(hf="onnx-community/bge-reranker-v2-m3-ONNX"),
+        model_file="onnx/model.onnx",
+        additional_files=["onnx/model.onnx_data"],
+    ),
+    BaseModelDescription(
+        model="BAAI/bge-reranker-v2-m3-int8",
+        description="Multilingual BGE reranker based on BGE-M3 (INT8 ONNX).",
+        license="apache-2.0",
+        size_in_GB=0.57,
+        sources=ModelSource(hf="onnx-community/bge-reranker-v2-m3-ONNX"),
+        model_file="onnx/model_int8.onnx",
+    ),
+    BaseModelDescription(
         model="jinaai/jina-reranker-v1-tiny-en",
         description="Designed for blazing-fast re-ranking with 8K context length and fewer parameters than jina-reranker-v1-turbo-en.",
         license="apache-2.0",
@@ -56,7 +73,7 @@ supported_onnx_models: list[BaseModelDescription] = [
     ),
     BaseModelDescription(
         model="jinaai/jina-reranker-v2-base-multilingual",
-        description="A multi-lingual reranker model for cross-encoder re-ranking with 1K context length and sliding window",
+        description="A multi-lingual reranker model for cross-encoder re-ranking with 1K context length",
         license="cc-by-nc-4.0",
         size_in_GB=1.11,
         sources=ModelSource(hf="jinaai/jina-reranker-v2-base-multilingual"),
@@ -154,6 +171,7 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
             cuda=self.cuda,
             device_id=self.device_id,
             extra_session_options=self._extra_session_options,
+            additional_files=self.model_description.additional_files,
         )
 
     def rerank(

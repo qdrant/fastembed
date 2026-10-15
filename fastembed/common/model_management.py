@@ -1,16 +1,22 @@
 import os
 import time
+import gzip
 import json
 import shutil
 import tarfile
+import tempfile
+import warnings
+import contextlib
 from copy import deepcopy
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Any, TypeVar, Generic
 
 import requests
-from huggingface_hub import snapshot_download, model_info, list_repo_tree
+from huggingface_hub import constants, snapshot_download, model_info, list_repo_tree
+from huggingface_hub.file_download import repo_folder_name
 from huggingface_hub.hf_api import RepoFile
 from huggingface_hub.utils import (
+    HFValidationError,
     RepositoryNotFoundError,
     disable_progress_bars,
     enable_progress_bars,
@@ -18,8 +24,42 @@ from huggingface_hub.utils import (
 from loguru import logger
 from tqdm import tqdm
 from fastembed.common.model_description import BaseModelDescription
+from fastembed.common.onnx_external_data import link_external_data
 
 T = TypeVar("T", bound=BaseModelDescription)
+
+_DOWNLOAD_CHUNK_SIZE = 256 * 1024
+
+
+def _hf_transport_errors() -> tuple[type[Exception], ...]:
+    """Network errors of huggingface_hub's HTTP library that aren't OSError.
+
+    A refused connection, a DNS failure or a timeout raises an OSError in huggingface_hub 0.x,
+    which is built on requests, but a TransportError in 1.x (httpx) and 2.x (httpx2).
+    """
+    try:
+        # huggingface_hub>=1.30 re-exports whichever of httpx and httpx2 it's built on.
+        from huggingface_hub.utils import httpx
+    except ImportError:
+        try:
+            import httpx  # huggingface_hub 1.0 to 1.29
+        except ImportError:  # huggingface_hub 0.x
+            return ()
+    return (httpx.TransportError,)
+
+
+# Errors from an HF download that download_model handles by falling back to url and retrying.
+_HF_DOWNLOAD_ERRORS = (OSError, RepositoryNotFoundError, ValueError) + _hf_transport_errors()
+
+
+class CorruptedCacheError(ValueError):
+    """A cached model file is present but does not match the size recorded for it.
+
+    Distinct from the download failures above so that callers can tell "this snapshot is
+    unusable, look elsewhere" apart from "the hub could not be reached": only the former
+    is worth re-fetching a file the hub's existence-only cache check would otherwise keep.
+    Subclasses ValueError to stay inside _HF_DOWNLOAD_ERRORS for callers that don't care.
+    """
 
 
 class ModelManagement(Generic[T]):
@@ -97,9 +137,7 @@ class ModelManagement(Generic[T]):
             str: The path to the downloaded file.
         """
 
-        if os.path.exists(output_path):
-            return output_path
-        response = requests.get(url, stream=True)
+        response = requests.get(url, stream=True, timeout=(10, 120))
 
         # Handle HTTP errors
         if response.status_code == 403:
@@ -107,6 +145,8 @@ class ModelManagement(Generic[T]):
                 "Authentication Error: You do not have permission to access this resource. "
                 "Please check your credentials."
             )
+        # Otherwise an error page gets written out as though it were the archive.
+        response.raise_for_status()
 
         # Get the total size of the file
         total_size_in_bytes = int(response.headers.get("content-length", 0))
@@ -124,11 +164,46 @@ class ModelManagement(Generic[T]):
             disable=not show_progress,
         ) as progress_bar:
             with open(output_path, "wb") as file:
-                for chunk in response.iter_content(chunk_size=1024):
+                for chunk in response.iter_content(chunk_size=_DOWNLOAD_CHUNK_SIZE):
                     if chunk:  # Filter out keep-alive new chunks
                         progress_bar.update(len(chunk))
                         file.write(chunk)
         return output_path
+
+    @classmethod
+    def _find_legacy_cased_source(cls, cache_dir: str, hf_source_repo: str) -> str | None:
+        """Looks for a cached snapshot of the same repo spelled with a different casing.
+
+        Built-in sources used to be lowercase and were canonicalized once it turned out that
+        relying on the hub's normalizing redirect breaks proxies. Both the hub and fastembed
+        derive the cache directory from the source verbatim, so on a case-sensitive filesystem
+        an offline load would otherwise miss a model an older version had already cached.
+
+        Args:
+            cache_dir (str): The path to the cache directory.
+            hf_source_repo (str): Name of the model on HuggingFace Hub.
+
+        Returns:
+            str | None: The differently cased source found in the cache, None if there is none.
+        """
+        separator = constants.REPO_ID_SEPARATOR
+        try:
+            expected = repo_folder_name(repo_id=hf_source_repo, repo_type="model")
+            entries = list(Path(cache_dir).iterdir())
+        except (HFValidationError, OSError):
+            return None
+
+        # the repo id sits at the tail of the folder name, with every "/" replaced
+        offset = len(expected) - len(hf_source_repo.replace("/", separator))
+
+        for entry in entries:
+            if entry.name == expected or entry.name.lower() != expected.lower():
+                continue
+            if not entry.is_dir():
+                continue
+            # the hub forbids the separator inside a repo id, so it only marks the split
+            return entry.name[offset:].replace(separator, "/")
+        return None
 
     @classmethod
     def download_files_from_huggingface(
@@ -142,7 +217,7 @@ class ModelManagement(Generic[T]):
         """
         Downloads a model from HuggingFace Hub.
         Args:
-            hf_source_repo (str): Name of the model on HuggingFace Hub, e.g. "qdrant/all-MiniLM-L6-v2-onnx".
+            hf_source_repo (str): Name of the model on HuggingFace Hub, e.g. "Qdrant/all-MiniLM-L6-v2-onnx".
             cache_dir (Optional[str]): The path to the cache directory.
             extra_patterns (list[str]): extra patterns to allow in the snapshot download, typically
                 includes the required model files.
@@ -150,6 +225,15 @@ class ModelManagement(Generic[T]):
         Returns:
             Path: The path to the model directory.
         """
+
+        def _repo_relative_path(relative_path: Path) -> str:
+            # Cached files are stored under `snapshots/<revision>/<repo_path>`. Strip that
+            # prefix so the remainder matches a repo file's path, which may itself be nested
+            # (e.g. `onnx/model.onnx`).
+            parts = relative_path.parts
+            if len(parts) > 2 and parts[0] == "snapshots":
+                return "/".join(parts[2:])
+            return relative_path.as_posix()
 
         def _verify_files_from_metadata(
             model_dir: Path, stored_metadata: dict[str, Any], repo_files: list[RepoFile]
@@ -162,7 +246,8 @@ class ModelManagement(Generic[T]):
                         return False
 
                     if repo_files:  # online verification
-                        file_info = next((f for f in repo_files if f.path == file_path.name), None)
+                        repo_path = _repo_relative_path(Path(rel_path))
+                        file_info = next((f for f in repo_files if f.path == repo_path), None)
                         if (
                             not file_info
                             or file_info.size != meta["size"]
@@ -179,15 +264,19 @@ class ModelManagement(Generic[T]):
                 return False
 
         def _collect_file_metadata(
-            model_dir: Path, repo_files: list[RepoFile]
+            model_dir: Path, revision: str, repo_files: list[RepoFile]
         ) -> dict[str, dict[str, int | str]]:
             meta: dict[str, dict[str, int | str]] = {}
             file_info_map = {f.path: f for f in repo_files}
-            for file_path in model_dir.rglob("*"):
+            # Only look at the downloaded revision's folder. The cache may also hold folders of
+            # older revisions, whose files differ from the ones on the hub now, so checking
+            # them would report a good download as corrupted.
+            for file_path in (model_dir / "snapshots" / revision).rglob("*"):
                 if file_path.is_file() and file_path.name != cls.METADATA_FILE:
-                    repo_file = file_info_map.get(file_path.name)
+                    relative_path = file_path.relative_to(model_dir)
+                    repo_file = file_info_map.get(_repo_relative_path(relative_path))
                     if repo_file:
-                        meta[str(file_path.relative_to(model_dir))] = {
+                        meta[str(relative_path)] = {
                             "size": repo_file.size,
                             "blob_id": repo_file.blob_id,
                         }
@@ -211,31 +300,96 @@ class ModelManagement(Generic[T]):
 
         allow_patterns.extend(extra_patterns)
 
-        snapshot_dir = Path(cache_dir) / f"models--{hf_source_repo.replace('/', '--')}"
+        snapshot_dir = Path(cache_dir) / repo_folder_name(
+            repo_id=hf_source_repo, repo_type="model"
+        )
         metadata_file = snapshot_dir / cls.METADATA_FILE
 
         if local_files_only:
             disable_progress_bars()
-            if metadata_file.exists():
-                metadata = json.loads(metadata_file.read_text())
-                verified = _verify_files_from_metadata(snapshot_dir, metadata, repo_files=[])
-                if not verified:
-                    logger.warning(
-                        "Local file sizes do not match the metadata."
-                    )  # do not raise, still make an attempt to load the model
-            result = snapshot_download(
-                repo_id=hf_source_repo,
-                allow_patterns=allow_patterns,
-                cache_dir=cache_dir,
-                local_files_only=local_files_only,
-                **kwargs,
+            # a canonical directory can exist yet hold no usable snapshot, e.g. when an
+            # earlier download was interrupted, so fall back on failure rather than on
+            # the directory being absent
+            sources = [hf_source_repo]
+            legacy_source = cls._find_legacy_cased_source(cache_dir, hf_source_repo)
+            if legacy_source is not None:
+                sources.append(legacy_source)
+
+            # a corrupt candidate is remembered rather than raised on the spot: the next
+            # candidate may still be loadable, and if none is, this is the error worth
+            # reporting, since it is the only one download_model can act on.
+            corruption: CorruptedCacheError | None = None
+
+            for index, source in enumerate(sources):
+                last_source = index == len(sources) - 1
+                snapshot_dir = Path(cache_dir) / repo_folder_name(
+                    repo_id=source, repo_type="model"
+                )
+                metadata_file = snapshot_dir / cls.METADATA_FILE
+                if metadata_file.exists():
+                    metadata = json.loads(metadata_file.read_text())
+                    if not _verify_files_from_metadata(snapshot_dir, metadata, repo_files=[]):
+                        # A size mismatch on one of this model's own files (its weights, or
+                        # whatever else its description lists) means loading would later fail
+                        # with a cryptic error, so the snapshot is not offered at all. A
+                        # mismatch confined to a file nothing asked for is left to best-effort
+                        # loading, preserving the previous behavior.
+                        model_files = set(extra_patterns)
+                        model_file_corrupt = any(
+                            _repo_relative_path(Path(rel_path)) in model_files
+                            and (snapshot_dir / rel_path).is_file()
+                            and (snapshot_dir / rel_path).stat().st_size != meta["size"]
+                            for rel_path, meta in metadata.items()
+                        )
+                        if model_file_corrupt:
+                            corruption = corruption or CorruptedCacheError(
+                                f"Cached model files for {source} in {cache_dir} do not match "
+                                "the stored metadata; the cache appears corrupted."
+                            )
+                            if last_source:
+                                raise corruption
+                            logger.info(
+                                f"{source} is corrupted in {cache_dir}, loading "
+                                f"{sources[index + 1]}, cached from the same repo by an older "
+                                "fastembed version."
+                            )
+                            continue
+                        logger.warning("Local file sizes do not match the metadata.")
+                try:
+                    # a legacy source is only ever resolved against the cache: sending it
+                    # to the hub would ask for the very redirect this casing avoids
+                    return snapshot_download(
+                        repo_id=source,
+                        allow_patterns=allow_patterns,
+                        cache_dir=cache_dir,
+                        local_files_only=True,
+                        **kwargs,
+                    )
+                except _HF_DOWNLOAD_ERRORS:
+                    if last_source:
+                        # an earlier candidate was corrupt and this one is merely absent:
+                        # report the corruption, the only failure a re-download can fix
+                        if corruption is not None:
+                            raise corruption
+                        raise
+                    logger.info(
+                        f"{source} is not usable in {cache_dir}, loading "
+                        f"{sources[index + 1]}, cached from the same repo by an older "
+                        "fastembed version."
+                    )
+
+        # hub sends this request with no timeout unless given one, so an endpoint that accepts
+        # the connection but never answers would block here for good, before download_model can
+        # retry or fall back to another source. list_repo_tree and snapshot_download's own
+        # metadata requests can't be given one, but a silent endpoint now fails here first.
+        repo_revision = model_info(hf_source_repo, timeout=constants.HF_HUB_ETAG_TIMEOUT).sha
+        repo_tree = list(
+            list_repo_tree(
+                hf_source_repo, revision=repo_revision, repo_type="model", recursive=True
             )
-            return result
+        )
 
-        repo_revision = model_info(hf_source_repo).sha
-        repo_tree = list(list_repo_tree(hf_source_repo, revision=repo_revision, repo_type="model"))
-
-        allowed_extensions = {".json", ".onnx", ".txt"}
+        allowed_extensions = {Path(pattern).suffix for pattern in allow_patterns}
         repo_files = (
             [
                 f
@@ -248,9 +402,18 @@ class ModelManagement(Generic[T]):
 
         verified_metadata = False
 
-        if snapshot_dir.exists() and metadata_file.exists():
+        # a forced download re-fetches every file, so show progress and re-collect the metadata
+        if not kwargs.get("force_download") and snapshot_dir.exists() and metadata_file.exists():
             metadata = json.loads(metadata_file.read_text())
-            verified_metadata = _verify_files_from_metadata(snapshot_dir, metadata, repo_files)
+            # metadata lacking a requested file, e.g. a new model_file, can't vouch for it
+            requested_files = {f.path for f in repo_files if f.path in allow_patterns}
+            stored_files = {_repo_relative_path(Path(rel_path)) for rel_path in metadata}
+            # empty metadata lists no files, so it can't vouch for the cached ones
+            verified_metadata = (
+                bool(metadata)
+                and requested_files.issubset(stored_files)
+                and _verify_files_from_metadata(snapshot_dir, metadata, repo_files)
+            )
 
         if verified_metadata:
             disable_progress_bars()
@@ -267,7 +430,10 @@ class ModelManagement(Generic[T]):
             not verified_metadata
         ):  # metadata is not up-to-date, update it and check whether the files have been
             # downloaded correctly
-            metadata = _collect_file_metadata(snapshot_dir, repo_files)
+            # result is <cache_dir>/.../snapshots/<revision>. Only the revision is taken from
+            # it: the hub resolves cache_dir, so the rest of the path may not match ours.
+            downloaded_revision = Path(result).name
+            metadata = _collect_file_metadata(snapshot_dir, downloaded_revision, repo_files)
 
             download_successful = _verify_files_from_metadata(
                 snapshot_dir, metadata, repo_files=[]
@@ -277,7 +443,10 @@ class ModelManagement(Generic[T]):
                     "Files have been corrupted during downloading process. "
                     "Please check your internet connection and try again."
                 )
-            _save_file_metadata(snapshot_dir, metadata)
+            # Empty means no file was checked, e.g. the files went to a local_dir instead of
+            # the cache. Saving it would make later downloads skip this check.
+            if metadata:
+                _save_file_metadata(snapshot_dir, metadata)
 
         return result
 
@@ -286,12 +455,18 @@ class ModelManagement(Generic[T]):
         """
         Decompresses a .tar.gz file to a cache directory.
 
+        Nothing is deleted on failure, since `cache_dir` may hold more than this archive.
+        Cleaning up a partial extraction is the caller's job.
+
         Args:
             targz_path (str): Path to the .tar.gz file.
             cache_dir (str): Path to the cache directory.
 
         Returns:
             cache_dir (str): Path to the cache directory.
+
+        Raises:
+            ValueError: If the archive is missing, corrupt, or holds an unsafe member.
         """
         # Check if targz_path exists and is a file
         if not os.path.isfile(targz_path):
@@ -304,19 +479,49 @@ class ModelManagement(Generic[T]):
         try:
             # Open the tar.gz file
             with tarfile.open(targz_path, "r:gz") as tar:
-                # Extract all files into the cache directory
-                tar.extractall(
-                    path=cache_dir,
-                )
-        except tarfile.TarError as e:
-            # If any error occurs while opening or extracting the tar.gz file,
-            # delete the cache directory (if it was created in this function)
-            # and raise the error again
-            if "tmp" in cache_dir:
-                shutil.rmtree(cache_dir)
-            raise ValueError(f"An error occurred while decompressing {targz_path}: {e}")
+                if hasattr(tarfile, "data_filter"):
+                    tar.extractall(path=cache_dir, filter="data")
+                else:
+                    # No PEP 706 filter before 3.10.12, so vet the members by hand.
+                    members = tar.getmembers()
+                    for member in members:
+                        cls._validate_tar_member(member)
+                    tar.extractall(path=cache_dir, members=members)
+                # tarfile stops at the end-of-archive marker, short of the gzip trailer, so
+                # the CRC is only checked if the rest of the stream is read.
+                while tar.fileobj.read(1 << 20):
+                    pass
+        except (tarfile.TarError, ValueError, EOFError, gzip.BadGzipFile) as e:
+            # gzip raises EOFError for a truncated stream and BadGzipFile for a corrupted one.
+            raise ValueError(f"An error occurred while decompressing {targz_path}: {e}") from e
 
         return cache_dir
+
+    @staticmethod
+    def _is_unsafe_tar_path(path: str) -> bool:
+        """Checks whether a tar member name or link target may escape the extraction dir.
+
+        Lexical on purpose: resolving against the extraction directory is unsound before
+        extraction, since `link/../escape` only escapes once an earlier member has been
+        written as a symlink. Any `..` component is therefore rejected outright.
+        """
+        # PureWindowsPath splits on both separators, so `root` covers POSIX "/evil" as
+        # well as "\\evil", which escapes on Windows without being absolute.
+        windows_path = PureWindowsPath(path)
+        return bool(windows_path.drive or windows_path.root) or ".." in windows_path.parts
+
+    @classmethod
+    def _validate_tar_member(cls, member: tarfile.TarInfo) -> None:
+        """Raises ValueError if a member could write outside the extraction directory."""
+        if cls._is_unsafe_tar_path(member.name):
+            raise ValueError(f"Unsafe tar member path: {member.name}")
+
+        if member.issym() or member.islnk():
+            if cls._is_unsafe_tar_path(member.linkname):
+                raise ValueError(f"Unsafe tar link target: {member.name} -> {member.linkname}")
+        elif not (member.isfile() or member.isdir()):
+            # Devices, fifos and the like have no place in a model archive.
+            raise ValueError(f"Unsupported tar member type: {member.name}")
 
     @classmethod
     def retrieve_model_gcs(
@@ -329,36 +534,27 @@ class ModelManagement(Generic[T]):
     ) -> Path:
         fast_model_name = f"{'fast-' if deprecated_tar_struct else ''}{model_name.split('/')[-1]}"
         cache_tmp_dir = Path(cache_dir) / "tmp"
-        model_tmp_dir = cache_tmp_dir / fast_model_name
         model_dir = Path(cache_dir) / fast_model_name
 
         # check if the model_dir and the model files are both present for macOS
         if model_dir.exists() and len(list(model_dir.glob("*"))) > 0:
+            if deprecated_tar_struct and not source_url:
+                # No built-in model is served from the bucket anymore, only copies of it remain.
+                # A model with a url of its own (a custom one) got its copy from there instead.
+                # stacklevel points at the caller of TextEmbedding(...) via download_model.
+                warnings.warn(
+                    f"Loading {model_name} from {model_dir}, a copy downloaded from Google Cloud "
+                    "Storage by an older fastembed version. Support for such copies is deprecated "
+                    "and will be removed in a future release. To switch to Hugging Face, load the "
+                    "model once while huggingface.co (or an `HF_ENDPOINT` mirror) is reachable, "
+                    "without `local_files_only=True` or `HF_HUB_OFFLINE=1`, then delete "
+                    f"{model_dir}.",
+                    FutureWarning,
+                    stacklevel=5,
+                )
             return model_dir
 
-        if model_tmp_dir.exists():
-            shutil.rmtree(model_tmp_dir)
-
-        cache_tmp_dir.mkdir(parents=True, exist_ok=True)
-
-        model_tar_gz = Path(cache_dir) / f"{fast_model_name}.tar.gz"
-
-        if model_tar_gz.exists():
-            model_tar_gz.unlink()
-
-        if not local_files_only:
-            cls.download_file_from_gcs(
-                source_url,
-                output_path=str(model_tar_gz),
-            )
-
-            cls.decompress_to_cache(targz_path=str(model_tar_gz), cache_dir=str(cache_tmp_dir))
-            assert model_tmp_dir.exists(), f"Could not find {model_tmp_dir} in {cache_tmp_dir}"
-
-            model_tar_gz.unlink()
-            # Rename from tmp to final name is atomic
-            model_tmp_dir.rename(model_dir)
-        else:
+        if local_files_only:
             logger.error(
                 f"Could not find the model tar.gz file at {model_dir} and local_files_only=True."
             )
@@ -366,6 +562,58 @@ class ModelManagement(Generic[T]):
                 f"Could not find the model tar.gz file at {model_dir} and local_files_only=True."
             )
 
+        if cache_tmp_dir.is_symlink():
+            raise ValueError(
+                f"{cache_tmp_dir} is a symlink, refusing to stage downloads through it"
+            )
+        cache_tmp_dir.mkdir(parents=True, exist_ok=True)
+
+        # The archive and everything extracted from it go in a directory of this attempt's own,
+        # so removing it undoes the attempt without touching any other download of the model.
+        staging_dir = Path(tempfile.mkdtemp(dir=cache_tmp_dir, prefix=f"{fast_model_name}-"))
+        try:
+            model_tar_gz = staging_dir / f"{fast_model_name}.tar.gz"
+            cls.download_file_from_gcs(
+                source_url,
+                output_path=str(model_tar_gz),
+            )
+
+            cls.decompress_to_cache(targz_path=str(model_tar_gz), cache_dir=str(staging_dir))
+
+            model_tmp_dir = staging_dir / fast_model_name
+            if not model_tmp_dir.is_dir() or model_tmp_dir.is_symlink():
+                raise ValueError(
+                    f"The archive from {source_url} has no {fast_model_name} directory"
+                )
+
+            # Replace a stale empty model_dir, which Windows will not rename onto. rmdir leaves
+            # anything else alone, including one another download has just filled.
+            with contextlib.suppress(OSError):
+                model_dir.rmdir()
+
+            try:
+                # Rename from the staging dir to the final name is atomic
+                model_tmp_dir.rename(model_dir)
+            except OSError:
+                # Another download of the same model finished first, so keep its copy.
+                if not (model_dir.is_dir() and any(model_dir.iterdir())):
+                    raise
+        finally:
+            shutil.rmtree(staging_dir, ignore_errors=True)
+
+        return model_dir
+
+    @staticmethod
+    def _link_onnx_external_data(model: BaseModelDescription, model_dir: Path) -> Path:
+        """Links the external data of `model` right after its download, see link_external_data.
+
+        Loading the model links it as well, but linking it here also covers lazy_load=True, e.g.
+        in a Docker build step, where links made by a later step would copy the files into a new
+        image layer. A failure, e.g. in a read-only cache, is reported when the model is loaded.
+        """
+        if model.model_file.endswith(".onnx"):
+            with contextlib.suppress(OSError):
+                link_external_data(model_dir, model.model_file, model.additional_files)
         return model_dir
 
     @classmethod
@@ -383,8 +631,7 @@ class ModelManagement(Generic[T]):
                     "description": "Base English model, v1.5",
                     "size_in_GB": 0.44,
                     "sources": {
-                        "url": "https://storage.googleapis.com/qdrant-fastembed/fast-bge-base-en-v1.5.tar.gz",
-                        "hf": "qdrant/bge-base-en-v1.5-onnx-q",
+                        "hf": "Qdrant/bge-base-en-v1.5-onnx-Q",
                     }
                 }
                 ```
@@ -409,11 +656,17 @@ class ModelManagement(Generic[T]):
         extra_patterns = [model.model_file]
         extra_patterns.extend(model.additional_files)
 
+        # Only a cached file that is present but does not match its recorded size needs
+        # force_download: the hub's cache check is existence-only, so a plain snapshot_download
+        # would keep the truncated blob. Every other probe failure (a missing file, an absent
+        # cache) is served by an ordinary download, which re-uses what is already on disk.
+        force_download = False
+
         if hf_source:
             try:
                 cache_kwargs = deepcopy(kwargs)
                 cache_kwargs["local_files_only"] = True
-                return Path(
+                resolved_path = Path(
                     cls.download_files_from_huggingface(
                         hf_source,
                         cache_dir=cache_dir,
@@ -421,6 +674,12 @@ class ModelManagement(Generic[T]):
                         **cache_kwargs,
                     )
                 )
+                if (resolved_path / model.model_file).exists() and all(
+                    (resolved_path / file).exists() for file in extra_patterns
+                ):
+                    return cls._link_onnx_external_data(model, resolved_path)
+            except CorruptedCacheError:
+                force_download = True
             except Exception:
                 pass
             finally:
@@ -432,28 +691,35 @@ class ModelManagement(Generic[T]):
 
             if hf_source and not local_files_only:
                 # we have already tried loading with `local_files_only=True` via hf and we failed
+
+                # Merged into kwargs so a caller-supplied force_download can't raise a
+                # duplicate keyword error. Cleared straight away: force_download deletes the
+                # partially fetched `.incomplete` file, so leaving it on would make every
+                # retry restart a large download from zero instead of resuming it.
+                attempt_kwargs = {**kwargs, "force_download": True} if force_download else kwargs
+                force_download = False
                 try:
-                    return Path(
+                    model_dir = Path(
                         cls.download_files_from_huggingface(
                             hf_source,
                             cache_dir=cache_dir,
                             extra_patterns=extra_patterns,
-                            **kwargs,
+                            **attempt_kwargs,
                         )
                     )
-                except (EnvironmentError, RepositoryNotFoundError, ValueError) as e:
-                    if not local_files_only:
-                        logger.error(
-                            f"Could not download model from HuggingFace: {e} "
-                            "Falling back to other sources."
-                        )
+                    return cls._link_onnx_external_data(model, model_dir)
+                except _HF_DOWNLOAD_ERRORS as e:
+                    logger.error(
+                        f"Could not download model from HuggingFace: {e} "
+                        "Falling back to other sources."
+                    )
                 finally:
                     enable_progress_bars()
             if url_source or local_files_only:
                 try:
                     return cls.retrieve_model_gcs(
                         model.model,
-                        str(url_source),
+                        url_source or "",
                         str(cache_dir),
                         deprecated_tar_struct=model.sources.deprecated_tar_struct,
                         local_files_only=local_files_only,
@@ -461,6 +727,17 @@ class ModelManagement(Generic[T]):
                 except Exception:
                     if not local_files_only:
                         logger.error(f"Could not download model from url: {url_source}")
+            elif model.sources.deprecated_tar_struct:
+                # Nothing is downloaded from the bucket anymore, but an old copy may still be cached.
+                legacy_dir = Path(cache_dir) / f"fast-{model.model.split('/')[-1]}"
+                if legacy_dir.is_dir() and any(legacy_dir.iterdir()):
+                    return cls.retrieve_model_gcs(
+                        model.model,
+                        "",
+                        str(cache_dir),
+                        deprecated_tar_struct=True,
+                        local_files_only=True,
+                    )
 
             if local_files_only:
                 logger.error("Could not find model in cache_dir")

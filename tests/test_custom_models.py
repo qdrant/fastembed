@@ -10,7 +10,7 @@ from fastembed.common.model_description import (
     BaseModelDescription,
 )
 from fastembed.common.onnx_model import OnnxOutputContext
-from fastembed.common.utils import normalize, mean_pooling
+from fastembed.common.utils import normalize, mean_pooling, last_token_pooling
 from fastembed.text.custom_text_embedding import CustomTextEmbedding, PostprocessingConfig
 from fastembed.rerank.cross_encoder.custom_text_cross_encoder import CustomTextCrossEncoder
 from fastembed.rerank.cross_encoder import TextCrossEncoder
@@ -21,9 +21,11 @@ from tests.utils import delete_model_cache
 @pytest.fixture(autouse=True)
 def restore_custom_models_fixture():
     CustomTextEmbedding.SUPPORTED_MODELS = []
+    CustomTextEmbedding.POSTPROCESSING_MAPPING = {}
     CustomTextCrossEncoder.SUPPORTED_MODELS = []
     yield
     CustomTextEmbedding.SUPPORTED_MODELS = []
+    CustomTextEmbedding.POSTPROCESSING_MAPPING = {}
     CustomTextCrossEncoder.SUPPORTED_MODELS = []
 
 
@@ -74,8 +76,66 @@ def test_text_custom_model():
     if is_ci:
         delete_model_cache(model.model._model_dir)
 
-    CustomTextEmbedding.SUPPORTED_MODELS.clear()
-    CustomTextEmbedding.POSTPROCESSING_MAPPING.clear()
+
+def test_text_custom_model_parallel_processing():
+    is_ci = os.getenv("CI")
+    custom_model_name = "intfloat/multilingual-e5-small"
+    dim = 384
+
+    TextEmbedding.add_custom_model(
+        custom_model_name,
+        pooling=PoolingType.MEAN,
+        normalization=True,
+        sources=ModelSource(hf=custom_model_name),
+        dim=dim,
+        size_in_gb=0.47,
+    )
+
+    model = TextEmbedding(custom_model_name)
+    docs = ["hello world", "flag embedding"] * 50
+    embeddings = np.stack(list(model.embed(docs, batch_size=10, parallel=2)), axis=0)
+
+    assert embeddings.shape == (len(docs), dim)
+
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
+
+
+def test_text_custom_model_output_name():
+    is_ci = os.getenv("CI")
+    custom_model_name = "custom/granite-embedding-small-english-r2"
+
+    # onnx outputs are `last_hidden_state` and `sentence_embedding`, the builtin model uses the latter
+    TextEmbedding.add_custom_model(
+        custom_model_name,
+        pooling=PoolingType.DISABLED,
+        normalization=False,
+        sources=ModelSource(hf="onnx-community/granite-embedding-small-english-r2-ONNX"),
+        dim=384,
+        additional_files=["onnx/model.onnx_data"],
+        output_name="sentence_embedding",
+    )
+
+    model = TextEmbedding(custom_model_name)
+    builtin_model = TextEmbedding("ibm-granite/granite-embedding-small-english-r2")
+    docs = ["hello world", "flag embedding"]
+    expected = np.stack(list(builtin_model.embed(docs)), axis=0)
+
+    embeddings = np.stack(list(model.embed(docs)), axis=0)
+    assert np.allclose(embeddings, expected, atol=1e-5)
+
+    # workers re-register the model, so they have to receive the output name too
+    embeddings = np.stack(list(model.embed(docs, batch_size=1, parallel=2)), axis=0)
+    assert np.allclose(embeddings, expected, atol=1e-5)
+
+    CustomTextEmbedding.POSTPROCESSING_MAPPING[custom_model_name] = PostprocessingConfig(
+        pooling=PoolingType.DISABLED, normalization=False, output_name="sentence_embeddings"
+    )
+    with pytest.raises(ValueError, match="available outputs"):
+        TextEmbedding(custom_model_name)
+
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
 
 
 def test_cross_encoder_custom_model():
@@ -114,7 +174,26 @@ def test_cross_encoder_custom_model():
     if is_ci:
         delete_model_cache(model.model._model_dir)
 
-    CustomTextCrossEncoder.SUPPORTED_MODELS.clear()
+
+def test_cross_encoder_custom_model_parallel_processing():
+    is_ci = os.getenv("CI")
+    custom_model_name = "Xenova/ms-marco-MiniLM-L-4-v2"
+
+    TextCrossEncoder.add_custom_model(
+        custom_model_name,
+        model_file="onnx/model.onnx",
+        sources=ModelSource(hf=custom_model_name),
+        size_in_gb=0.08,
+    )
+
+    model = TextCrossEncoder(custom_model_name)
+    pairs = [("What is AI?", "Artificial intelligence is ...")] * 50
+    scores = np.stack(list(model.rerank_pairs(pairs, batch_size=10, parallel=2)), axis=0)
+
+    assert scores.shape == (len(pairs),)
+
+    if is_ci:
+        delete_model_cache(model.model._model_dir)
 
 
 def test_mock_add_custom_models():
@@ -136,6 +215,8 @@ def test_mock_add_custom_models():
         f"{PoolingType.MEAN.lower()}": dummy_token_output,
         f"{PoolingType.CLS.lower()}-normalized": dummy_token_output,
         f"{PoolingType.CLS.lower()}": dummy_token_output,
+        f"{PoolingType.LAST_TOKEN.lower()}-normalized": dummy_token_output,
+        f"{PoolingType.LAST_TOKEN.lower()}": dummy_token_output,
         f"{PoolingType.DISABLED.lower()}-normalized": dummy_pooled_output,
         f"{PoolingType.DISABLED.lower()}": dummy_pooled_output,
     }
@@ -147,12 +228,19 @@ def test_mock_add_custom_models():
         f"{PoolingType.MEAN.lower()}": mean_pooling(dummy_token_embedding, dummy_attention_mask),
         f"{PoolingType.CLS.lower()}-normalized": normalize(dummy_token_embedding[:, 0]),
         f"{PoolingType.CLS.lower()}": dummy_token_embedding[:, 0],
+        f"{PoolingType.LAST_TOKEN.lower()}-normalized": normalize(
+            last_token_pooling(dummy_token_embedding, dummy_attention_mask)
+        ),
+        f"{PoolingType.LAST_TOKEN.lower()}": last_token_pooling(
+            dummy_token_embedding, dummy_attention_mask
+        ),
         f"{PoolingType.DISABLED.lower()}-normalized": normalize(dummy_pooled_embedding),
         f"{PoolingType.DISABLED.lower()}": dummy_pooled_embedding,
     }
 
     for pooling, normalization in itertools.product(
-        (PoolingType.MEAN, PoolingType.CLS, PoolingType.DISABLED), (True, False)
+        (PoolingType.MEAN, PoolingType.CLS, PoolingType.LAST_TOKEN, PoolingType.DISABLED),
+        (True, False),
     ):
         model_name = f"{pooling.name.lower()}{'-normalized' if normalization else ''}"
         TextEmbedding.add_custom_model(
@@ -174,9 +262,41 @@ def test_mock_add_custom_models():
             iter(custom_text_embedding._post_process_onnx_output(input_data[model_name]))
         )
         assert np.allclose(post_processed_output, expected_output[model_name], atol=1e-3)
+        assert post_processed_output.dtype == np.float32, model_name
 
-    CustomTextEmbedding.SUPPORTED_MODELS.clear()
-    CustomTextEmbedding.POSTPROCESSING_MAPPING.clear()
+
+def test_custom_text_model_lookup_is_case_insensitive():
+    model_name = "Org/Model"
+
+    TextEmbedding.add_custom_model(
+        model_name,
+        pooling=PoolingType.MEAN,
+        normalization=True,
+        sources=ModelSource(hf="artificial"),
+        dim=5,
+        size_in_gb=0.1,
+    )
+
+    model = TextEmbedding("org/model", lazy_load=True, specific_model_path="./")
+
+    assert isinstance(model.model, CustomTextEmbedding)
+    assert model.model._pooling == PoolingType.MEAN
+    assert model.model._normalization is True
+
+
+def test_custom_cross_encoder_lookup_is_case_insensitive():
+    model_name = "Org/Model"
+
+    TextCrossEncoder.add_custom_model(
+        model_name,
+        sources=ModelSource(hf="artificial"),
+        size_in_gb=0.1,
+    )
+
+    model = TextCrossEncoder("org/model", lazy_load=True, specific_model_path="./")
+
+    assert isinstance(model.model, CustomTextCrossEncoder)
+    assert model.model.model_description.sources.hf == "artificial"
 
 
 def test_do_not_add_existing_model():
@@ -212,20 +332,18 @@ def test_do_not_add_existing_model():
             size_in_gb=0.47,
         )
 
-    CustomTextEmbedding.SUPPORTED_MODELS.clear()
-    CustomTextEmbedding.POSTPROCESSING_MAPPING.clear()
-
 
 def test_do_not_add_existing_cross_encoder():
     existing_base_model = "Xenova/ms-marco-MiniLM-L-6-v2"
     custom_model_name = "Xenova/ms-marco-MiniLM-L-4-v2"
 
-    with pytest.raises(ValueError, match=f"Model {existing_base_model} is already registered"):
-        TextCrossEncoder.add_custom_model(
-            existing_base_model,
-            sources=ModelSource(hf=existing_base_model),
-            size_in_gb=0.08,
-        )
+    for name in (existing_base_model, existing_base_model.lower()):
+        with pytest.raises(ValueError, match=f"Model {name} is already registered"):
+            TextCrossEncoder.add_custom_model(
+                name,
+                sources=ModelSource(hf=existing_base_model),
+                size_in_gb=0.08,
+            )
 
     TextCrossEncoder.add_custom_model(
         custom_model_name,
@@ -233,11 +351,12 @@ def test_do_not_add_existing_cross_encoder():
         size_in_gb=0.08,
     )
 
-    with pytest.raises(ValueError, match=f"Model {custom_model_name} is already registered"):
-        TextCrossEncoder.add_custom_model(
-            custom_model_name,
-            sources=ModelSource(hf=custom_model_name),
-            size_in_gb=0.08,
-        )
+    for name in (custom_model_name, custom_model_name.upper()):
+        with pytest.raises(ValueError, match=f"Model {name} is already registered"):
+            TextCrossEncoder.add_custom_model(
+                name,
+                sources=ModelSource(hf=custom_model_name),
+                size_in_gb=0.08,
+            )
 
-    CustomTextCrossEncoder.SUPPORTED_MODELS.clear()
+    assert len(CustomTextCrossEncoder.SUPPORTED_MODELS) == 1

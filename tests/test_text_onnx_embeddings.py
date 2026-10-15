@@ -5,8 +5,13 @@ from contextlib import contextmanager
 import numpy as np
 import pytest
 
+from fastembed.common.onnx_model import OnnxOutputContext
+from fastembed.text.custom_text_embedding import CustomTextEmbedding
+from fastembed.text.last_token_normalized_embedding import LastTokenNormalizedEmbedding
+from fastembed.text.onnx_embedding import OnnxTextEmbedding
+from fastembed.text.static_embedding import StaticTextEmbedding
 from fastembed.text.text_embedding import TextEmbedding
-from tests.utils import delete_model_cache, should_test_model
+from tests.utils import delete_model_cache, is_manual_run, should_test_model
 
 CANONICAL_VECTOR_VALUES = {
     "BAAI/bge-small-en": np.array([-0.0232, -0.0255, 0.0174, -0.0639, -0.0006]),
@@ -29,6 +34,9 @@ CANONICAL_VECTOR_VALUES = {
     "BAAI/bge-large-en-v1.5-quantized": np.array(
         [0.03434538, 0.03316108, 0.02191251, -0.03713358, -0.01577825]
     ),
+    "ibm-granite/granite-embedding-small-english-r2": np.array(
+        [0.47021756, -0.08181943, -0.97021246, 0.10116885, -0.16487208]
+    ),
     "sentence-transformers/all-MiniLM-L6-v2": np.array(
         [-0.034478, 0.03102, 0.00673, 0.02611, -0.039362]
     ),
@@ -49,8 +57,11 @@ CANONICAL_VECTOR_VALUES = {
     "nomic-ai/nomic-embed-text-v1.5": np.array(
         [-0.15407836, -0.03053198, -3.9138033, 0.1910364, 0.13224715]
     ),
-    "nomic-ai/nomic-embed-text-v1.5-Q": np.array(
-        [0.0802303, 0.3700881, -4.3053818, 0.4431803, -0.271572]
+    # onnxruntime's avx2 int8 kernel saturates on this model's full-range int8 weights, while vnni
+    # and amx compute them exactly, ci runners come with either
+    "nomic-ai/nomic-embed-text-v1.5-Q": (
+        np.array([0.0802303, 0.3700881, -4.3053818, 0.4431803, -0.271572]),  # x86-64 avx2
+        np.array([0.12422204, 0.14779393, -3.8240886, 0.47303754, -0.14925367]),  # x86-64 vnni
     ),
     "thenlper/gte-large": np.array(
         [-0.00986551, -0.00018734, 0.00605892, -0.03289612, -0.0387564],
@@ -71,19 +82,57 @@ CANONICAL_VECTOR_VALUES = {
     "google/embeddinggemma-300m": np.array(
         [-0.08181356, 0.0214127, 0.05120273, -0.03690156, -0.0254504]
     ),
+    "Qwen/Qwen3-Embedding-0.6B": np.array(
+        [-0.01476084, 0.01723184, -0.01195498, -0.07275258, 0.00281229]
+    ),
+    "Qwen/Qwen3-Embedding-0.6B-Q": np.array(
+        [-0.01599521, 0.01676456, -0.01195119, -0.07132675, 0.00346729]
+    ),
+    "google/siglip2-base-patch16-224": np.array(
+        [-0.01181389, 0.00737596, 0.01118064, 0.0103095, 0.3451049]
+    ),
+    "Qdrant/constella-zero": np.array(
+        [-0.00065711, -0.02646863, -0.03326607, 0.01312574, -0.01599784]
+    ),
+    "Qdrant/constella-nano": np.array(
+        [0.00829927, -0.00579543, -0.05936033, 0.02826244, -0.01873815]
+    ),
+    "Qdrant/stella-en-400M-v5-doc-onnx": np.array(
+        [0.00934642, -0.00412083, -0.0927834, -0.00382371, -0.0415402]
+    ),
+    "minishlab/potion-base-8M": np.array(
+        [-0.03432461, -0.08020256, -0.14396408, 0.08480079, 0.01958815]
+    ),
+    "minishlab/potion-retrieval-32M": np.array(
+        [0.019733, -0.01530093, -0.08678473, 0.0229059, 0.04700558]
+    ),
+    "minishlab/potion-multilingual-128M": np.array(
+        [0.02366836, 0.02973341, 0.05140258, -0.00745248, -0.06740689]
+    ),
 }
 
+QWEN3_INSTRUCT_PREFIX = (
+    "Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery:"
+)
 
 DOC_PREFIXES = {
     "google/embeddinggemma-300m": "title: none | text: ",
 }
 QUERY_PREFIXES = {
     "google/embeddinggemma-300m": "task: search result | query: ",
+    "Qwen/Qwen3-Embedding-0.6B": QWEN3_INSTRUCT_PREFIX,
+    "Qwen/Qwen3-Embedding-0.6B-Q": QWEN3_INSTRUCT_PREFIX,
 }
 CANONICAL_QUERY_VECTOR_VALUES = {
     "google/embeddinggemma-300m": np.array(
         [-0.22990295, 0.03311195, 0.04290345, -0.03558498, -0.01399477]
-    )
+    ),
+    "Qwen/Qwen3-Embedding-0.6B": np.array(
+        [-0.01908712, 0.01635596, -0.00356586, -0.03947155, -0.01387356]
+    ),
+    "Qwen/Qwen3-Embedding-0.6B-Q": np.array(
+        [-0.02221339, 0.01932909, -0.00361797, -0.03888897, -0.01362813]
+    ),
 }
 
 MULTI_TASK_MODELS = ["jinaai/jina-embeddings-v3"]
@@ -121,7 +170,7 @@ def model_cache():
 def test_embedding(model_cache, model_name: str) -> None:
     is_ci = os.getenv("CI")
     is_mac = platform.system() == "Darwin"
-    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    is_manual = is_manual_run()
 
     for model_desc in TextEmbedding._list_supported_models():
         if model_desc.model in MULTI_TASK_MODELS or (
@@ -143,15 +192,19 @@ def test_embedding(model_cache, model_name: str) -> None:
             assert embeddings.shape == (2, dim)
 
             canonical_vector = CANONICAL_VECTOR_VALUES[model_desc.model]
-            assert np.allclose(
-                embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3
-            ), model_desc.model
+            canonical_variants = (
+                canonical_vector if isinstance(canonical_vector, tuple) else (canonical_vector,)
+            )
+            prefix = embeddings[0, : canonical_variants[0].shape[0]]
+            assert any(
+                np.allclose(prefix, expected, atol=1e-3) for expected in canonical_variants
+            ), f"{model_desc.model}: {prefix}"
 
 
 def test_query_embedding(model_cache) -> None:
     is_ci = os.getenv("CI")
     is_mac = platform.system() == "Darwin"
-    is_manual = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    is_manual = is_manual_run()
 
     for model_desc in TextEmbedding._list_supported_models():
         if model_desc.model in MULTI_TASK_MODELS or (
@@ -179,6 +232,62 @@ def test_query_embedding(model_cache) -> None:
             assert np.allclose(
                 embeddings[0, : canonical_vector.shape[0]], canonical_vector, atol=1e-3
             ), model_desc.model
+
+
+def test_external_data_model(model_cache) -> None:
+    # Its weights are ONNX external data, which onnxruntime>=1.24 doesn't load straight from a
+    # huggingface_hub>=1.32 cache, see fastembed.common.onnx_external_data
+    model_name = "ibm-granite/granite-embedding-small-english-r2"
+    with model_cache(model_name) as model:
+        embedding = next(iter(model.embed(["hello world"])))
+
+    canonical_vector = CANONICAL_VECTOR_VALUES[model_name]
+    assert np.allclose(embedding[: canonical_vector.shape[0]], canonical_vector, atol=1e-3)
+
+
+def test_quantized_model_reports_onnxruntime_requirement(monkeypatch) -> None:
+    """Old onnxruntime only implements 4-bit MatMulNBits, the error should say so."""
+    monkeypatch.setattr(
+        OnnxTextEmbedding,
+        "load_onnx_model",
+        lambda self: (_ for _ in ()).throw(RuntimeError("nbits_ == 4 was false")),
+    )
+    model = LastTokenNormalizedEmbedding(
+        "Qwen/Qwen3-Embedding-0.6B-Q",
+        lazy_load=True,
+        specific_model_path="./",  # disable model downloading and loading
+    )
+
+    with pytest.raises(RuntimeError, match="onnxruntime>=1.23"):
+        model.load_onnx_model()
+
+
+@pytest.mark.parametrize(
+    "embedding_class",
+    # custom models are covered in test_custom_models.py, static models have no onnx output
+    [
+        cls
+        for cls in TextEmbedding.EMBEDDINGS_REGISTRY
+        if cls not in (CustomTextEmbedding, StaticTextEmbedding)
+    ],
+    ids=lambda cls: cls.__name__,
+)
+def test_post_processing_keeps_model_dtype(embedding_class) -> None:
+    model_desc = embedding_class._list_supported_models()[0]
+    model = embedding_class(
+        model_desc.model,
+        lazy_load=True,
+        specific_model_path="./",  # disable model downloading and loading
+    )
+    token_embeddings = np.random.default_rng(0).standard_normal((2, 4, model_desc.dim))
+    output = OnnxOutputContext(
+        model_output=token_embeddings.astype(np.float32),
+        attention_mask=np.array([[1, 1, 0, 0], [1, 1, 1, 1]], dtype=np.int64),
+    )
+
+    embeddings = np.stack(list(model._post_process_onnx_output(output)))
+
+    assert embeddings.dtype == np.float32
 
 
 @pytest.mark.parametrize("n_dims,model_name", [(384, "BAAI/bge-small-en-v1.5")])
@@ -215,6 +324,8 @@ def test_lazy_load(model_name: str) -> None:
     model = TextEmbedding(model_name=model_name, lazy_load=True)
     assert not hasattr(model.model, "model")
     docs = ["hello world", "flag embedding"]
+    assert model.token_count(docs) > 0
+    assert not hasattr(model.model, "model")
     list(model.embed(docs))
     assert hasattr(model.model, "model")
 
@@ -269,3 +380,17 @@ def test_token_count(model_cache, model_name) -> None:
         doc_token_count = model.token_count(documents)
         assert first_doc_token_count + second_doc_token_count == doc_token_count
         assert doc_token_count == model.token_count(documents, batch_size=1)
+
+
+@pytest.mark.parametrize(
+    "model_name,dim",
+    [("sentence-transformers/all-MiniLM-L6-v2", 384), ("thenlper/gte-base", 768)],
+)
+def test_mixed_length_batch_with_fixed_padding(model_cache, model_name: str, dim: int) -> None:
+    # both models serialize a fixed padding length of 128 in tokenizer.json; gte-base truncates
+    # at 512, so a document longer than 128 makes the batch ragged unless the padding is relaxed
+    with model_cache(model_name) as model:
+        assert model.model.tokenizer.padding["length"] is None
+
+        embeddings = np.stack(list(model.embed(["hello world", "retrieval " * 200])), axis=0)
+        assert embeddings.shape == (2, dim)

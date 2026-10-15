@@ -49,4 +49,5 @@ class SparseModelDescription(BaseModelDescription):
 class PoolingType(str, Enum):
     CLS = "CLS"
     MEAN = "MEAN"
+    LAST_TOKEN = "LAST_TOKEN"
     DISABLED = "DISABLED"

@@ -33,7 +33,7 @@ supported_onnx_models: list[DenseModelDescription] = [
         model="Qdrant/Unicom-ViT-B-16",
         dim=768,
         description="Image embeddings (more detailed than Unicom-ViT-B-32), Multimodal (text&image), 2023 year",
-        license="apache-2.0",
+        license="mit",
         size_in_GB=0.82,
         sources=ModelSource(hf="Qdrant/Unicom-ViT-B-16"),
         model_file="model.onnx",
@@ -42,7 +42,7 @@ supported_onnx_models: list[DenseModelDescription] = [
         model="Qdrant/Unicom-ViT-B-32",
         dim=512,
         description="Image embeddings, Multimodal (text&image), 2023 year",
-        license="apache-2.0",
+        license="mit",
         size_in_GB=0.48,
         sources=ModelSource(hf="Qdrant/Unicom-ViT-B-32"),
         model_file="model.onnx",
@@ -63,7 +63,6 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[NumpyArray]):
     def __init__(
         self,
         model_name: str,
-
         cache_dir: str | None = None,
         threads: int | None = None,
         providers: Sequence[OnnxProvider] | None = None,
@@ -138,6 +137,7 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[NumpyArray]):
             cuda=self.cuda,
             device_id=self.device_id,
             extra_session_options=self._extra_session_options,
+            additional_files=self.model_description.additional_files,
         )
 
     @classmethod

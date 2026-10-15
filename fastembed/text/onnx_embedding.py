@@ -1,11 +1,11 @@
 from typing import Any, Iterable, Sequence, Type
 
-from fastembed.common.types import NumpyArray, OnnxProvider, Device
+from fastembed.common.model_description import DenseModelDescription, ModelSource
 from fastembed.common.onnx_model import OnnxOutputContext
+from fastembed.common.types import Device, NumpyArray, OnnxProvider
 from fastembed.common.utils import define_cache_dir, normalize
 from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
 from fastembed.text.text_embedding_base import TextEmbeddingBase
-from fastembed.common.model_description import DenseModelDescription, ModelSource
 
 supported_onnx_models: list[DenseModelDescription] = [
     DenseModelDescription(
@@ -19,7 +19,6 @@ supported_onnx_models: list[DenseModelDescription] = [
         size_in_GB=0.42,
         sources=ModelSource(
             hf="Qdrant/fast-bge-base-en",
-            url="https://storage.googleapis.com/qdrant-fastembed/fast-bge-base-en.tar.gz",
             _deprecated_tar_struct=True,
         ),
         model_file="model_optimized.onnx",
@@ -34,8 +33,7 @@ supported_onnx_models: list[DenseModelDescription] = [
         license="mit",
         size_in_GB=0.21,
         sources=ModelSource(
-            hf="qdrant/bge-base-en-v1.5-onnx-q",
-            url="https://storage.googleapis.com/qdrant-fastembed/fast-bge-base-en-v1.5.tar.gz",
+            hf="Qdrant/bge-base-en-v1.5-onnx-Q",
             _deprecated_tar_struct=True,
         ),
         model_file="model_optimized.onnx",
@@ -49,7 +47,7 @@ supported_onnx_models: list[DenseModelDescription] = [
         ),
         license="mit",
         size_in_GB=1.20,
-        sources=ModelSource(hf="qdrant/bge-large-en-v1.5-onnx"),
+        sources=ModelSource(hf="Qdrant/bge-large-en-v1.5-onnx"),
         model_file="model.onnx",
     ),
     DenseModelDescription(
@@ -63,7 +61,6 @@ supported_onnx_models: list[DenseModelDescription] = [
         size_in_GB=0.13,
         sources=ModelSource(
             hf="Qdrant/bge-small-en",
-            url="https://storage.googleapis.com/qdrant-fastembed/BAAI-bge-small-en.tar.gz",
             _deprecated_tar_struct=True,
         ),
         model_file="model_optimized.onnx",
@@ -77,7 +74,7 @@ supported_onnx_models: list[DenseModelDescription] = [
         ),
         license="mit",
         size_in_GB=0.067,
-        sources=ModelSource(hf="qdrant/bge-small-en-v1.5-onnx-q"),
+        sources=ModelSource(hf="Qdrant/bge-small-en-v1.5-onnx-Q"),
         model_file="model_optimized.onnx",
     ),
     DenseModelDescription(
@@ -91,7 +88,6 @@ supported_onnx_models: list[DenseModelDescription] = [
         size_in_GB=0.09,
         sources=ModelSource(
             hf="Qdrant/bge-small-zh-v1.5",
-            url="https://storage.googleapis.com/qdrant-fastembed/fast-bge-small-zh-v1.5.tar.gz",
             _deprecated_tar_struct=True,
         ),
         model_file="model_optimized.onnx",
@@ -117,7 +113,7 @@ supported_onnx_models: list[DenseModelDescription] = [
         ),
         license="apache-2.0",
         size_in_GB=0.09,
-        sources=ModelSource(hf="snowflake/snowflake-arctic-embed-xs"),
+        sources=ModelSource(hf="Snowflake/snowflake-arctic-embed-xs"),
         model_file="onnx/model.onnx",
     ),
     DenseModelDescription(
@@ -129,7 +125,7 @@ supported_onnx_models: list[DenseModelDescription] = [
         ),
         license="apache-2.0",
         size_in_GB=0.13,
-        sources=ModelSource(hf="snowflake/snowflake-arctic-embed-s"),
+        sources=ModelSource(hf="Snowflake/snowflake-arctic-embed-s"),
         model_file="onnx/model.onnx",
     ),
     DenseModelDescription(
@@ -153,7 +149,7 @@ supported_onnx_models: list[DenseModelDescription] = [
         ),
         license="apache-2.0",
         size_in_GB=0.54,
-        sources=ModelSource(hf="snowflake/snowflake-arctic-embed-m-long"),
+        sources=ModelSource(hf="Snowflake/snowflake-arctic-embed-m-long"),
         model_file="onnx/model.onnx",
     ),
     DenseModelDescription(
@@ -165,7 +161,7 @@ supported_onnx_models: list[DenseModelDescription] = [
         ),
         license="apache-2.0",
         size_in_GB=1.02,
-        sources=ModelSource(hf="snowflake/snowflake-arctic-embed-l"),
+        sources=ModelSource(hf="Snowflake/snowflake-arctic-embed-l"),
         model_file="onnx/model.onnx",
     ),
     DenseModelDescription(
@@ -179,6 +175,32 @@ supported_onnx_models: list[DenseModelDescription] = [
         size_in_GB=0.55,
         sources=ModelSource(hf="jinaai/jina-clip-v1"),
         model_file="onnx/text_model.onnx",
+    ),
+    DenseModelDescription(
+        model="Qdrant/constella-zero",
+        dim=1024,
+        description=(
+            "Text embeddings, Unimodal (text), English, 512 input tokens truncation, "
+            "Query-side lookup table with no transformer, embeds into the document space of "
+            "stella_en_400M_v5, Prefixes for queries/documents: not necessary, 2026 year."
+        ),
+        license="mit",
+        size_in_GB=0.03,
+        sources=ModelSource(hf="Qdrant/constella-zero"),
+        model_file="model.onnx",
+    ),
+    DenseModelDescription(
+        model="Qdrant/stella-en-400M-v5-doc-onnx",
+        dim=1024,
+        description=(
+            "Text embeddings, Unimodal (text), English, 512 input tokens truncation, "
+            "Document side of stella_en_400M_v5 only -- queries need its s2p_query prompt, "
+            "Prefixes for queries/documents: necessary, 2026 year."
+        ),
+        license="mit",
+        size_in_GB=1.75,
+        sources=ModelSource(hf="Qdrant/stella-en-400M-v5-doc-onnx"),
+        model_file="model.onnx",
     ),
 ]
 
@@ -330,6 +352,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):
             cuda=self.cuda,
             device_id=self.device_id,
             extra_session_options=self._extra_session_options,
+            additional_files=self.model_description.additional_files,
         )
 
     def token_count(

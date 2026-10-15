@@ -141,6 +141,16 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         if not self.lazy_load:
             self.load_onnx_model()
 
+    def _load_tokenizer(self, model_dir: Path) -> None:
+        super()._load_tokenizer(model_dir=model_dir)
+        # `_reconstruct_bpe` needs the special tokens, and it is also used by `query_embed`,
+        # which runs no inference, so they are derived here rather than in `load_onnx_model`.
+        # The same goes for `invert_vocab`: with `lazy_load` and `parallel`, post-processing
+        # runs in a parent process which never loads the onnx model.
+        self.special_tokens = set(self.special_token_to_id.keys())
+        self.special_tokens_ids = set(self.special_token_to_id.values())
+        self.invert_vocab = {idx: token for token, idx in self.tokenizer.get_vocab().items()}  # type: ignore[union-attr]
+
     def load_onnx_model(self) -> None:
         self._load_onnx_model(
             model_dir=self._model_dir,
@@ -150,12 +160,9 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             cuda=self.cuda,
             device_id=self.device_id,
             extra_session_options=self._extra_session_options,
+            additional_files=self.model_description.additional_files,
         )
 
-        for token, idx in self.tokenizer.get_vocab().items():  # type: ignore[union-attr]
-            self.invert_vocab[idx] = token
-        self.special_tokens = set(self.special_token_to_id.keys())
-        self.special_tokens_ids = set(self.special_token_to_id.values())
         self.stopwords = set(self._load_stopwords(self._model_dir))
 
     def _filter_pair_tokens(self, tokens: list[tuple[str, Any]]) -> list[tuple[str, Any]]:
@@ -235,6 +242,10 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
     ) -> Iterable[SparseEmbedding]:
         if output.input_ids is None:
             raise ValueError("input_ids must be provided for document post-processing")
+
+        # with `lazy_load` and `parallel`, inference runs in the workers and the parent
+        # never calls `load_onnx_model`, so the tokenizer might not be loaded here yet
+        self._ensure_tokenizer()
 
         token_ids_batch = output.input_ids.astype(int)
 
@@ -336,8 +347,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         if isinstance(query, str):
             query = [query]
 
-        if not hasattr(self, "model") or self.model is None:
-            self.load_onnx_model()
+        self._ensure_tokenizer()
 
         for text in query:
             encoded = self.tokenizer.encode(text)  # type: ignore[union-attr]
@@ -355,8 +365,6 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
     def token_count(
         self, texts: str | Iterable[str], batch_size: int = 1024, **kwargs: Any
     ) -> int:
-        if not hasattr(self, "model") or self.model is None:
-            self.load_onnx_model()  # loads the tokenizer as well
         return self._token_count(texts, batch_size=batch_size, **kwargs)
 
 
