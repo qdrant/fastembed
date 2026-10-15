@@ -28,14 +28,16 @@ jobs:
         with:
           persist-credentials: false
       - name: Set up Python
+        id: setup-python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.14.x'
+      - name: Set up uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          python-version: ${{ steps.setup-python.outputs.python-path }}
       - name: Install dependencies
-        run: |
-          python -m pip install poetry
-          poetry config virtualenvs.create false
-          poetry install --no-interaction --no-ansi --without dev,docs
+        run: uv sync --locked --no-group dev --no-group docs
 
       - name: Run pytest
         # explicit bash runs with pipefail, so tee keeps pytest's exit code
@@ -44,7 +46,7 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           PYTHONUNBUFFERED: '1'
         run: |
-          poetry run pytest --durations=20 2>&1 | tee pytest.log
+          uv run --no-sync pytest --durations=20 2>&1 | tee pytest.log
 
       - name: Collect failure report
         id: report
