@@ -176,7 +176,7 @@ class ParallelWorkerPool:
                         out_item = None
                 else:
                     try:
-                        out_item = self.output_queue.get(timeout=processing_timeout)
+                        out_item = self._get_output()
                     except Empty as e:
                         self.join_or_terminate()
                         raise e
@@ -196,7 +196,7 @@ class ParallelWorkerPool:
 
             while read < pushed:
                 self.check_worker_health()
-                out_item = self.output_queue.get(timeout=processing_timeout)
+                out_item = self._get_output()
                 if out_item == QueueSignals.error:
                     self.join_or_terminate()
                     raise RuntimeError("Thread unexpectedly terminated")
@@ -231,6 +231,19 @@ class ParallelWorkerPool:
             else:
                 self.input_queue.join_thread()
                 self.output_queue.join_thread()
+
+    def _get_output(self) -> Any:
+        """Wait for output, checking worker health without resetting the overall timeout."""
+        assert self.output_queue is not None, "Output queue was not initialized"
+        deadline = time.monotonic() + processing_timeout
+        while True:
+            remaining = max(0.0, deadline - time.monotonic())
+            try:
+                return self.output_queue.get(timeout=min(1.0, remaining))
+            except Empty:
+                self.check_worker_health()
+                if time.monotonic() >= deadline:
+                    raise
 
     def check_worker_health(self) -> None:
         """
