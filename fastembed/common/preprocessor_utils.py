@@ -47,12 +47,15 @@ def _valid_context(value: Any) -> int | None:
     return value
 
 
-def _resolve_max_context(tokenizer_config: dict[str, Any], model_dir: Path) -> int:
+def _resolve_max_context(
+    tokenizer_config: dict[str, Any], model_dir: Path, default_max_length: int | None = None
+) -> int:
     """Pick the truncation limit, preferring the stricter of the two tokenizer config keys.
 
     `config.json:max_position_embeddings` deliberately is not used as a fallback: it is the size
     of the position table, not the usable context, and the two differ per architecture, e.g.
-    roberta reports 514 for a usable 512.
+    roberta reports 514 for a usable 512. `default_max_length` is a limit the model class
+    declares for an export whose tokenizer config carries none; the config keys still win.
     """
     candidates = [
         context
@@ -62,6 +65,8 @@ def _resolve_max_context(tokenizer_config: dict[str, Any], model_dir: Path) -> i
         )
         if context is not None
     ]
+    if not candidates and default_max_length is not None:
+        candidates = [default_max_length]
     if not candidates:
         raise ValueError(
             f"Could not determine the maximum context length for {model_dir}. Set a positive "
@@ -71,7 +76,9 @@ def _resolve_max_context(tokenizer_config: dict[str, Any], model_dir: Path) -> i
     return min(candidates)
 
 
-def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
+def load_tokenizer(
+    model_dir: Path, default_max_length: int | None = None
+) -> tuple[Tokenizer, dict[str, int]]:
     tokenizer_path = model_dir / "tokenizer.json"
     if not tokenizer_path.exists():
         raise ValueError(f"Could not find tokenizer.json in {model_dir}")
@@ -90,7 +97,7 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
     with open(str(tokenizer_config_path)) as tokenizer_config_file:
         tokenizer_config = json.load(tokenizer_config_file)
 
-    max_context = _resolve_max_context(tokenizer_config, model_dir)
+    max_context = _resolve_max_context(tokenizer_config, model_dir, default_max_length)
 
     tokens_map = load_special_tokens(model_dir)
 
