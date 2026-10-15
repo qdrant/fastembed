@@ -75,4 +75,4 @@ Even documentation improvements and tests are most welcome:
 We use ruff for code linting. It's installed by `uv sync` since it's part of the `test` dependency group.
 
 ### Pre-Commit Hooks
-We use pre-commit hooks to ensure that the code is linted before it's committed. You can install pre-commit hooks by running `pre-commit install` in the root directory of the project.
+We use pre-commit hooks to ensure that the code is linted before it's committed. You can install pre-commit hooks by running `uv run pre-commit install` in the root directory of the project.
