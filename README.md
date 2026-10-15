@@ -24,6 +24,9 @@ pip install fastembed
 pip install fastembed-gpu
 ```
 
+To run a local HTTP embedding service, install `fastembed[server]` and run
+`fastembed serve`. See the [embedding server guide](docs/embedding_server.md).
+
 ## 📖 Quickstart
 
 ```python
