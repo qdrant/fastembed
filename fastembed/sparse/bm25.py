@@ -132,6 +132,7 @@ class Bm25(SparseTextEmbeddingBase):
         stopwords: set[str] | None = None,
         **kwargs: Any,
     ):
+        """Initialize BM25, rejecting invalid avg_len before loading model files."""
         super().__init__(model_name, cache_dir, **kwargs)
 
         if not isfinite(avg_len) or avg_len <= 0:

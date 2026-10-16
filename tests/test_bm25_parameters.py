@@ -15,7 +15,10 @@ def test_bm25_rejects_invalid_average_length(
     model_class: type[Bm25] | type[SparseTextEmbedding],
     avg_len: float,
 ) -> None:
+    """Reject non-positive and non-finite lengths through both public entry points."""
+
     def unexpected_download(*args, **kwargs):
+        """Fail if invalid parameters reach model download."""
         pytest.fail("Invalid avg_len must be rejected before downloading model files")
 
     monkeypatch.setattr(Bm25, "download_model", unexpected_download)
@@ -44,6 +47,7 @@ def test_bm25_positive_average_length_preserves_weights(
     avg_len: float,
     expected_weights: dict[str, float],
 ) -> None:
+    """Keep BM25 weights and empty-input behavior unchanged for positive lengths."""
     model = model_class(
         "Qdrant/bm25",
         avg_len=avg_len,
@@ -61,6 +65,7 @@ def test_bm25_positive_average_length_preserves_weights(
 
 
 def test_bm25_average_length_preserved_in_parallel(tmp_path: Path) -> None:
+    """Pass the configured corpus length to workers without changing embedding values."""
     model = SparseTextEmbedding(
         "Qdrant/bm25",
         avg_len=64.0,
