@@ -5,6 +5,8 @@ from typing import Iterator
 
 import numpy as np
 import pytest
+from tokenizers import Tokenizer
+from tokenizers.models import WordLevel
 
 from fastembed.common.safetensors_utils import load_safetensors
 from fastembed.text.static_embedding import StaticTextEmbedding
@@ -116,6 +118,39 @@ def _write_safetensors(path, tensors: dict[str, tuple[str, list[int], bytes]]) -
         f.write(len(encoded).to_bytes(8, "little"))
         f.write(encoded)
         f.write(data)
+
+
+@pytest.mark.parametrize("mmap", [False, True])
+@pytest.mark.parametrize("dtype", ["F16", "F32"])
+@pytest.mark.parametrize("vector_scale,weight", [(1e-4, 1e-4), (1e4, 10.0)])
+def test_weighted_pooling_matches_across_batch_sizes(tmp_path, mmap, dtype, vector_scale, weight):
+    tokenizer = Tokenizer(WordLevel({"[UNK]": 0, "hello": 1}, unk_token="[UNK]"))
+    tokenizer.save(str(tmp_path / "tokenizer.json"))
+    numpy_dtype = "<f2" if dtype == "F16" else "<f4"
+    embeddings = np.zeros((2, 256), dtype=numpy_dtype)
+    embeddings[1, :2] = [vector_scale, 2 * vector_scale]
+    weights = np.array([1.0, weight], dtype=numpy_dtype)
+    _write_safetensors(
+        tmp_path / "model.safetensors",
+        {
+            "embeddings": (dtype, list(embeddings.shape), embeddings.tobytes()),
+            "weights": (dtype, list(weights.shape), weights.tobytes()),
+        },
+    )
+    model = TextEmbedding(
+        CI_MODEL,
+        specific_model_path=str(tmp_path),
+        cache_dir=str(tmp_path / "cache"),
+        mmap=mmap,
+    )
+
+    single = np.stack(list(model.embed(["hello", "hello"], batch_size=1)))
+    batched = np.stack(list(model.embed(["hello", "hello"], batch_size=2)))
+
+    assert single.dtype == batched.dtype == np.float32
+    assert np.isfinite(single).all()
+    np.testing.assert_allclose(single, batched, rtol=1e-5, atol=1e-7)
+    np.testing.assert_allclose(single[0, :2], np.array([1.0, 2.0]) / np.sqrt(5), rtol=1e-5)
 
 
 @pytest.mark.parametrize("mmap", [True, False])
