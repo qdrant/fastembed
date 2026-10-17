@@ -235,7 +235,11 @@ class StaticTextEmbedding(TextEmbeddingBase):
             # a count matrix, which dominates for short texts.
             vectors = self.embeddings[rows]
             if self.weights is not None:
-                vectors = vectors * self.weights[ids, None]
+                vectors = np.multiply(
+                    vectors,
+                    self.weights[ids, None],
+                    dtype=np.result_type(vectors.dtype, self.weights.dtype, np.float32),
+                )
             return vectors.sum(axis=0, keepdims=True, dtype=np.float32)
         distinct_rows, row_index = np.unique(rows, return_inverse=True)
         if len(lengths) > 1 and len(lengths) * len(distinct_rows) > self.POOLING_CELLS:
