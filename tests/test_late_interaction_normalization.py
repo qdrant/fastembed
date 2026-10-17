@@ -12,7 +12,7 @@ from fastembed.late_interaction.lateon import LateOn, MLateOn
 @pytest.fixture(params=[Colbert, JinaColbert, LateOn, MLateOn])
 def model(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> Colbert:
     model = object.__new__(request.param)
-    model.skip_list = {9}
+    model.skip_list = set() if isinstance(model, MLateOn) else {9}
     model.pad_token_id = 0
     monkeypatch.setattr(model, "_ensure_tokenizer", lambda: None)
     return model
@@ -47,10 +47,11 @@ def test_normalize_finite_document_embeddings(model: Colbert, dtype: Any) -> Non
 
 
 @pytest.mark.parametrize("dtype", [np.float16, np.float32, np.float64])
-def test_padding_and_punctuation_are_still_filtered(model: Colbert, dtype: Any) -> None:
+def test_document_token_filtering_preserves_model_semantics(model: Colbert, dtype: Any) -> None:
     vectors = np.ones((1, 4, 128), dtype=dtype)
     vectors[0, 3] = np.linspace(-1, 1, 128)
-    expected = reference_normalize(vectors[0, [0, 3]])
+    retained_tokens = [0, 1, 3] if isinstance(model, MLateOn) else [0, 3]
+    expected = reference_normalize(vectors[0, retained_tokens])
     output = OnnxOutputContext(
         model_output=vectors,
         attention_mask=np.array([[1, 1, 0, 1]], dtype=np.int64),
@@ -65,9 +66,10 @@ def test_padding_and_punctuation_are_still_filtered(model: Colbert, dtype: Any) 
 
 
 def test_documents_with_no_retained_tokens(model: Colbert) -> None:
+    attention_mask = [[0, 0]] if isinstance(model, MLateOn) else [[0, 1]]
     output = OnnxOutputContext(
         model_output=np.ones((1, 2, 128), dtype=np.float16),
-        attention_mask=np.array([[0, 1]], dtype=np.int64),
+        attention_mask=np.array(attention_mask, dtype=np.int64),
         input_ids=np.array([[0, 9]], dtype=np.int64),
     )
 
