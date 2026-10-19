@@ -230,8 +230,7 @@ def test_mmap(model: TextEmbedding) -> None:
 
 @pytest.mark.skipif(bool(os.getenv("CI")) and not is_manual_run(), reason="large model")
 def test_constella_zero_pooling() -> None:
-    # The model card's rule: special and unknown tokens included, a token seen c times weighs
-    # sqrt(c).
+    """Verify model-card pooling: keep special and unknown tokens and weigh counts by sqrt(c)."""
     model = TextEmbedding("Qdrant/constella-zero")
     text = "data data data 🤗 pipeline"
     ids, counts = np.unique(model.model.tokenizer.encode(text).ids, return_counts=True)
