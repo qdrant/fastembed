@@ -294,7 +294,7 @@ class StaticTextEmbedding(TextEmbeddingBase):
             .reshape(len(lengths), len(distinct_rows))
         )
         if sqrt_counts:
-            counts = np.sqrt(counts)
+            np.sqrt(counts, out=counts)
             if self.weights is not None:  # rows are token ids: no sqrt model has a `mapping`
                 counts *= self.weights[distinct_rows]
         return counts @ self.embeddings[distinct_rows]
