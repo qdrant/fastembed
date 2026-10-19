@@ -2,6 +2,7 @@ import itertools
 import json
 import os
 import warnings
+from dataclasses import dataclass
 from multiprocessing import get_all_start_methods
 from pathlib import Path
 from typing import Any, Iterable, Type
@@ -20,8 +21,20 @@ from fastembed.text.text_embedding_base import TextEmbeddingBase
 # Same cap as the onnx exports of these models and model2vec's default `max_length`.
 MAX_LENGTH = 512
 
+
+@dataclass(frozen=True)
+class StaticModelDescription(DenseModelDescription):
+    """How a static model pools its tokens. The defaults are model2vec's."""
+
+    add_special_tokens: bool = False
+    skip_unknown_tokens: bool = True
+    # Weigh a token seen c times in a text by sqrt(c) instead of c. A `weights` tensor still
+    # scales each token's row, which lets an int8 table carry its per-row scales.
+    sqrt_token_counts: bool = False
+
+
 supported_static_models: list[DenseModelDescription] = [
-    DenseModelDescription(
+    StaticModelDescription(
         model="minishlab/potion-base-8M",
         dim=256,
         description=(
@@ -33,7 +46,7 @@ supported_static_models: list[DenseModelDescription] = [
         sources=ModelSource(hf="minishlab/potion-base-8M"),
         model_file="model.safetensors",
     ),
-    DenseModelDescription(
+    StaticModelDescription(
         model="minishlab/potion-retrieval-32M",
         dim=512,
         description=(
@@ -45,7 +58,7 @@ supported_static_models: list[DenseModelDescription] = [
         sources=ModelSource(hf="minishlab/potion-retrieval-32M"),
         model_file="model.safetensors",
     ),
-    DenseModelDescription(
+    StaticModelDescription(
         model="minishlab/potion-multilingual-128M",
         dim=256,
         description=(
@@ -56,6 +69,22 @@ supported_static_models: list[DenseModelDescription] = [
         size_in_GB=0.512,
         sources=ModelSource(hf="minishlab/potion-multilingual-128M"),
         model_file="model.safetensors",
+    ),
+    StaticModelDescription(
+        model="Qdrant/constella-zero",
+        dim=1024,
+        description=(
+            "Text embeddings, Unimodal (text), English, 512 input tokens truncation, "
+            "Query-side lookup table with no transformer, embeds into the document space of "
+            "stella_en_400M_v5, Prefixes for queries/documents: not necessary, 2026 year."
+        ),
+        license="mit",
+        size_in_GB=0.031,
+        sources=ModelSource(hf="Qdrant/constella-zero"),
+        model_file="model.safetensors",
+        add_special_tokens=True,
+        skip_unknown_tokens=False,
+        sqrt_token_counts=True,
     ),
 ]
 
@@ -133,6 +162,8 @@ class StaticTextEmbedding(TextEmbeddingBase):
         # on the CPU with numpy and ignore them, so only options set to something else than their
         # default are reported.
         ignored = {"threads": threads} if threads is not None else {}
+        if kwargs.get("cuda") in (False, Device.CPU):  # qdrant-client passes cuda=False
+            kwargs.pop("cuda")
         for option, default in (
             ("providers", None),
             ("cuda", Device.AUTO),
@@ -152,7 +183,9 @@ class StaticTextEmbedding(TextEmbeddingBase):
             )
         super().__init__(model_name, cache_dir, threads, **kwargs)
         self.lazy_load = lazy_load
-        self.model_description = self._get_model_description(model_name)
+        model_description = self._get_model_description(model_name)
+        assert isinstance(model_description, StaticModelDescription)
+        self.model_description = model_description
         self.cache_dir = str(define_cache_dir(cache_dir))
         self._specific_model_path = specific_model_path
         self.mmap = mmap
@@ -181,6 +214,8 @@ class StaticTextEmbedding(TextEmbeddingBase):
         # Vocabulary-quantized model2vec models map token ids to shared rows and reweight them.
         self.weights = tensors.get("weights")
         self.token_mapping = tensors.get("mapping")
+        if self.model_description.sqrt_token_counts and self.token_mapping is not None:
+            raise ValueError("sqrt_token_counts needs one row per token, without a `mapping`")
         self.tokenizer, self.unk_token_id = load_static_tokenizer(self._model_dir)
 
     def _ensure_model(self) -> None:
@@ -191,7 +226,9 @@ class StaticTextEmbedding(TextEmbeddingBase):
         """Tokenize a batch into one flat id array plus the number of ids of each document."""
         assert self.tokenizer is not None
         # encode_batch_fast skips the character offsets, which are not needed here.
-        encodings = self.tokenizer.encode_batch_fast(documents, add_special_tokens=False)
+        encodings = self.tokenizer.encode_batch_fast(
+            documents, add_special_tokens=self.model_description.add_special_tokens
+        )
         id_lists = [encoding.ids for encoding in encodings]
         lengths = np.fromiter(map(len, id_lists), dtype=np.int64, count=len(documents))
         ids = np.fromiter(
@@ -205,7 +242,7 @@ class StaticTextEmbedding(TextEmbeddingBase):
         assert self.embeddings is not None
         ids, lengths = self._token_ids(documents)
 
-        if self.unk_token_id is not None:
+        if self.unk_token_id is not None and self.model_description.skip_unknown_tokens:
             known = ids != self.unk_token_id
             if not known.all():
                 doc_index = np.repeat(np.arange(len(documents)), lengths)
@@ -230,7 +267,8 @@ class StaticTextEmbedding(TextEmbeddingBase):
         if not ids.size:
             return np.zeros((len(lengths), self.embeddings.shape[1]), dtype=np.float32)
         rows = ids if self.token_mapping is None else self.token_mapping[ids]
-        if len(lengths) == 1:
+        sqrt_counts = self.model_description.sqrt_token_counts
+        if len(lengths) == 1 and not sqrt_counts:
             # A single text, typically a query: summing its rows skips the fixed cost of building
             # a count matrix, which dominates for short texts.
             vectors = self.embeddings[rows]
@@ -248,12 +286,20 @@ class StaticTextEmbedding(TextEmbeddingBase):
                 ]
             )
         doc_index = np.repeat(np.arange(len(lengths)), lengths)
-        counts = np.bincount(
-            doc_index * len(distinct_rows) + row_index,
-            weights=None if self.weights is None else self.weights[ids],
-            minlength=len(lengths) * len(distinct_rows),
-        ).astype(np.float32)
-        return counts.reshape(len(lengths), len(distinct_rows)) @ self.embeddings[distinct_rows]
+        counts = (
+            np.bincount(
+                doc_index * len(distinct_rows) + row_index,
+                weights=None if self.weights is None or sqrt_counts else self.weights[ids],
+                minlength=len(lengths) * len(distinct_rows),
+            )
+            .astype(np.float32)
+            .reshape(len(lengths), len(distinct_rows))
+        )
+        if sqrt_counts:
+            counts = np.sqrt(counts)
+            if self.weights is not None:  # rows are token ids here, see load_model
+                counts *= self.weights[distinct_rows]
+        return counts @ self.embeddings[distinct_rows]
 
     def embed(
         self,
