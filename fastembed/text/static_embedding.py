@@ -214,8 +214,6 @@ class StaticTextEmbedding(TextEmbeddingBase):
         # Vocabulary-quantized model2vec models map token ids to shared rows and reweight them.
         self.weights = tensors.get("weights")
         self.token_mapping = tensors.get("mapping")
-        if self.model_description.sqrt_token_counts and self.token_mapping is not None:
-            raise ValueError("sqrt_token_counts needs one row per token, without a `mapping`")
         self.tokenizer, self.unk_token_id = load_static_tokenizer(self._model_dir)
 
     def _ensure_model(self) -> None:
@@ -297,7 +295,7 @@ class StaticTextEmbedding(TextEmbeddingBase):
         )
         if sqrt_counts:
             counts = np.sqrt(counts)
-            if self.weights is not None:  # rows are token ids here, see load_model
+            if self.weights is not None:  # rows are token ids: no sqrt model has a `mapping`
                 counts *= self.weights[distinct_rows]
         return counts @ self.embeddings[distinct_rows]
 
