@@ -74,9 +74,8 @@ supported_static_models: list[DenseModelDescription] = [
         model="Qdrant/constella-zero",
         dim=1024,
         description=(
-            "Text embeddings, Unimodal (text), English, 512 input tokens truncation, "
-            "Query-side lookup table with no transformer, embeds into the document space of "
-            "stella_en_400M_v5, Prefixes for queries/documents: not necessary, 2026 year."
+            "Text embeddings, Unimodal (text), English, 512 input tokens truncation, Query encoder"
+            " for stella_en_400M_v5, Prefixes for queries/documents: not necessary, 2026 year."
         ),
         license="mit",
         size_in_GB=0.031,
