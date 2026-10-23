@@ -201,6 +201,11 @@ class TextEmbedding(TextEmbeddingBase):
                 If > 1, data-parallel encoding will be used, recommended for offline encoding of large datasets.
                 If 0, use all available cores.
                 If None, don't use data-parallel processing, use default onnxruntime threading instead.
+            inference_workers (via **kwargs):
+                Number of concurrent batches for CPU-only ONNX text inference.
+                Defaults to 1, preserving the existing serial behavior.
+                Cannot be combined with parallel. Performance depends on
+                document length, batch size, and ONNX Runtime thread settings.
 
         Returns:
             List of embeddings, one per document
