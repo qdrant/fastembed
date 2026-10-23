@@ -206,6 +206,11 @@ class TextEmbedding(TextEmbeddingBase):
                 Defaults to 1, preserving the existing serial behavior.
                 Cannot be combined with parallel. Performance depends on
                 document length, batch size, and ONNX Runtime thread settings.
+            inference_workers (via **kwargs):
+                Number of concurrent batches for CPU-only ONNX text inference.
+                Defaults to 1, preserving the existing serial behavior.
+                Cannot be combined with parallel. Performance depends on
+                document length, batch size, and ONNX Runtime thread settings.
 
         Returns:
             List of embeddings, one per document
