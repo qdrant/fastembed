@@ -14,7 +14,7 @@ def load_special_tokens(model_dir: Path) -> dict[str, Any]:
     if not tokens_map_path.exists():
         return {}
 
-    with open(str(tokens_map_path)) as tokens_map_file:
+    with open(str(tokens_map_path), encoding="utf-8") as tokens_map_file:
         tokens_map = json.load(tokens_map_file)
 
     return tokens_map
@@ -84,10 +84,10 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
     config_path = model_dir / "config.json"
     config: dict[str, Any] = {}
     if config_path.exists():
-        with open(str(config_path)) as config_file:
+        with open(str(config_path), encoding="utf-8") as config_file:
             config = json.load(config_file)
 
-    with open(str(tokenizer_config_path)) as tokenizer_config_file:
+    with open(str(tokenizer_config_path), encoding="utf-8") as tokenizer_config_file:
         tokenizer_config = json.load(tokenizer_config_file)
 
     max_context = _resolve_max_context(tokenizer_config, model_dir)
@@ -153,7 +153,7 @@ def load_preprocessor(model_dir: Path) -> Compose:
     if not preprocessor_config_path.exists():
         raise ValueError(f"Could not find preprocessor_config.json in {model_dir}")
 
-    with open(str(preprocessor_config_path)) as preprocessor_config_file:
+    with open(str(preprocessor_config_path), encoding="utf-8") as preprocessor_config_file:
         preprocessor_config = json.load(preprocessor_config_file)
         transforms = Compose.from_config(preprocessor_config)
     return transforms
