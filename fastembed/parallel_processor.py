@@ -105,6 +105,8 @@ class ParallelWorkerPool:
         self.output_queue: Queue | None = None
         self.ctx: BaseContext = get_context(start_method)
         self.processes: list[BaseProcess] = []
+        if num_workers <= 0:
+            raise ValueError(f"num_workers must be greater than zero, got {num_workers}")
         self.queue_size = self.num_workers * max_internal_batch_size
         self.emergency_shutdown = False
         self.device_ids = device_ids
