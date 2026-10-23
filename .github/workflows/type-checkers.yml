@@ -25,7 +25,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: uv sync --locked --no-default-groups --group types
+        run: uv sync --locked --no-default-groups --group types --extra server
 
       - name: mypy
         run: |
