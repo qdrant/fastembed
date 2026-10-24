@@ -73,6 +73,28 @@ def iter_batch(iterable: Iterable[T], size: int) -> Iterable[list[T]]:
     return batches()
 
 
+def iter_length_sorted_batches(
+    texts: Iterable[str], batch_size: int, window_batches: int = 8
+) -> Iterable[tuple[list[int], list[str]]]:
+    offset = 0
+    for window in iter_batch(texts, batch_size * window_batches):
+        order = sorted(range(len(window)), key=lambda i: len(window[i]), reverse=True)
+        for start in range(0, len(order), batch_size):
+            indices = order[start : start + batch_size]
+            yield [offset + i for i in indices], [window[i] for i in indices]
+        offset += len(window)
+
+
+def restore_order(indexed_outputs: Iterable[tuple[list[int], Iterable[T]]]) -> Iterable[T]:
+    pending: dict[int, T] = {}
+    next_index = 0
+    for indices, outputs in indexed_outputs:
+        pending.update(zip(indices, outputs))
+        while next_index in pending:
+            yield pending.pop(next_index)
+            next_index += 1
+
+
 def define_cache_dir(cache_dir: str | None = None) -> Path:
     """
     Define the cache directory for fastembed
