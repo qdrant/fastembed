@@ -204,8 +204,6 @@ class ParallelWorkerPool:
                 read += 1
             completed = True
         finally:
-            assert self.input_queue is not None, "Input queue is None"
-            assert self.output_queue is not None, "Output queue is None"
             if completed:
                 self.join()
             else:
@@ -218,19 +216,26 @@ class ParallelWorkerPool:
                 # Nothing reads the input pipe anymore, so the feeder thread can be stuck
                 # writing to it, holding every item it hasn't sent. On POSIX, closing our
                 # read end fails that write with EPIPE; Windows also needs to cancel the send.
-                terminate_broken = getattr(self.input_queue, "_terminate_broken", None)
-                if terminate_broken is not None:
-                    terminate_broken()
-                else:
-                    self.input_queue._reader.close()  # type: ignore[attr-defined]
-            self.input_queue.close()
-            self.output_queue.close()
-            if self.emergency_shutdown:
-                self.input_queue.cancel_join_thread()
-                self.output_queue.cancel_join_thread()
-            else:
-                self.input_queue.join_thread()
-                self.output_queue.join_thread()
+                if self.input_queue is not None:
+                    terminate_broken = getattr(self.input_queue, "_terminate_broken", None)
+                    if terminate_broken is not None:
+                        terminate_broken()
+                    else:
+                        self.input_queue._reader.close()  # type: ignore[attr-defined]
+            # start() can fail before either queue has been allocated. Clean up only
+            # initialized queues, without masking the original startup exception.
+            for queue in (self.input_queue, self.output_queue):
+                if queue is not None:
+                    # Without a local feeder, close() cannot close the pipe endpoints.
+                    # Workers have already stopped, so neither queue is still in use.
+                    if queue._thread is None:  # type: ignore[attr-defined]
+                        queue._reader.close()  # type: ignore[attr-defined]
+                        queue._writer.close()  # type: ignore[attr-defined]
+                    queue.close()
+                    if self.emergency_shutdown:
+                        queue.cancel_join_thread()
+                    else:
+                        queue.join_thread()
 
     def check_worker_health(self) -> None:
         """
