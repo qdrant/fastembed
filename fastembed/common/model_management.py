@@ -326,8 +326,40 @@ class ModelManagement(Generic[T]):
                     repo_id=source, repo_type="model"
                 )
                 metadata_file = snapshot_dir / cls.METADATA_FILE
+                # Resolve the requested revision before checking integrity: metadata belongs
+                # to the entire repo cache and may describe a different cached revision.
+                resolved_snapshot: str | None = None
+                resolution_error: Exception | None = None
+                try:
+                    # a legacy source is only ever resolved against the cache: sending it
+                    # to the hub would ask for the very redirect this casing avoids
+                    resolved_snapshot = snapshot_download(
+                        repo_id=source,
+                        allow_patterns=allow_patterns,
+                        cache_dir=cache_dir,
+                        local_files_only=True,
+                        **kwargs,
+                    )
+                except _HF_DOWNLOAD_ERRORS as e:
+                    resolution_error = e
+
                 if metadata_file.exists():
                     metadata = json.loads(metadata_file.read_text())
+                    if (
+                        resolved_snapshot is not None
+                        and Path(resolved_snapshot).parent.resolve()
+                        == (snapshot_dir / "snapshots").resolve()
+                    ):
+                        revision = Path(resolved_snapshot).name
+                        metadata = {
+                            rel_path: meta
+                            for rel_path, meta in metadata.items()
+                            if not (
+                                len(Path(rel_path).parts) > 2
+                                and Path(rel_path).parts[0] == "snapshots"
+                                and Path(rel_path).parts[1] != revision
+                            )
+                        }
                     if not _verify_files_from_metadata(snapshot_dir, metadata, repo_files=[]):
                         # A size mismatch on one of this model's own files (its weights, or
                         # whatever else its description lists) means loading would later fail
@@ -356,15 +388,10 @@ class ModelManagement(Generic[T]):
                             continue
                         logger.warning("Local file sizes do not match the metadata.")
                 try:
-                    # a legacy source is only ever resolved against the cache: sending it
-                    # to the hub would ask for the very redirect this casing avoids
-                    return snapshot_download(
-                        repo_id=source,
-                        allow_patterns=allow_patterns,
-                        cache_dir=cache_dir,
-                        local_files_only=True,
-                        **kwargs,
-                    )
+                    if resolution_error is not None:
+                        raise resolution_error
+                    assert resolved_snapshot is not None
+                    return resolved_snapshot
                 except _HF_DOWNLOAD_ERRORS:
                     if last_source:
                         # an earlier candidate was corrupt and this one is merely absent:
