@@ -710,7 +710,7 @@ wheels = [
 
 [[package]]
 name = "fastembed"
-version = "0.9.0"
+version = "0.9.1"
 source = { editable = "." }
 default-groups = "all"
 dependencies = [
