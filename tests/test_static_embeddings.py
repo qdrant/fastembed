@@ -226,3 +226,17 @@ def test_mmap(model: TextEmbedding) -> None:
     assert np.array_equal(np.stack(list(mapped.embed(docs, batch_size=16))), expected)
     parallel = np.stack(list(mapped.embed(docs, batch_size=16, parallel=2)))
     assert np.allclose(parallel, expected, atol=1e-6)
+
+
+@pytest.mark.skipif(bool(os.getenv("CI")) and not is_manual_run(), reason="large model")
+def test_constella_zero_pooling() -> None:
+    """Verify model-card pooling: keep special and unknown tokens and weigh counts by sqrt(c)."""
+    model = TextEmbedding("Qdrant/constella-zero")
+    text = "data data data 🤗 pipeline"
+    ids, counts = np.unique(model.model.tokenizer.encode(text).ids, return_counts=True)
+    assert 100 in ids and 101 in ids and 102 in ids  # [UNK], [CLS], [SEP]
+    # int8 rows, dequantized by their per-row scales in `weights`
+    scales = model.model.weights[ids]
+    expected = (np.sqrt(counts) * scales).astype(np.float32) @ model.model.embeddings[ids]
+    expected /= np.linalg.norm(expected)
+    assert np.allclose(next(iter(model.embed(text))), expected, atol=1e-6)
