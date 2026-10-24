@@ -126,8 +126,14 @@ class Muvera:
                                          reproducible results. Defaults to 42.
 
         Raises:
-            ValueError: If dim_proj > dim (cannot project to higher dimensionality)
+            ValueError: If dim, dim_proj, or r_reps are not positive, or if dim_proj > dim
         """
+        if dim <= 0:
+            raise ValueError(f"dim must be positive, got {dim}")
+        if dim_proj <= 0:
+            raise ValueError(f"dim_proj must be positive, got {dim_proj}")
+        if r_reps <= 0:
+            raise ValueError(f"r_reps must be positive, got {r_reps}")
         if dim_proj > dim:
             raise ValueError(
                 f"Cannot project to a higher dimensionality (dim_proj={dim_proj} > dim={dim})"
@@ -186,7 +192,8 @@ class Muvera:
             Muvera: A configured MUVERA instance ready to process embeddings from the given model.
 
         Raises:
-            ValueError: If dim_proj > model.embedding_size (cannot project to higher dimensionality)
+            ValueError: If the model dimension, dim_proj, or r_reps are not positive, or if
+                        dim_proj > model.embedding_size
 
         Example:
             >>> from fastembed import LateInteractionTextEmbedding

@@ -18,6 +18,20 @@ DIM_PROJ = 16
 R_REPS = 20
 
 
+@pytest.mark.parametrize(
+    ("kwargs", "message"),
+    [
+        ({"dim": 0, "dim_proj": 0}, "dim must be positive"),
+        ({"dim": 4, "dim_proj": 0}, "dim_proj must be positive"),
+        ({"dim": 4, "dim_proj": 2, "r_reps": 0}, "r_reps must be positive"),
+    ],
+)
+def test_muvera_rejects_non_positive_sizes(kwargs: dict[str, int], message: str) -> None:
+    """Configurations that cannot produce an embedding must fail during construction."""
+    with pytest.raises(ValueError, match=message):
+        Muvera(**kwargs)
+
+
 def test_single_input():
     model = LateInteractionTextEmbedding("colbert-ir/colbertv2.0", lazy_load=True)
     random_generator = np.random.default_rng(42)
