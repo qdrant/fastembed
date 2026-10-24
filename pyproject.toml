@@ -1,6 +1,6 @@
 [project]
 name = "fastembed"
-version = "0.9.0"
+version = "0.9.1"
 description = "Fast, light, accurate library built for retrieval embedding generation"
 authors = [{name = "Qdrant Team", email = "info@qdrant.tech"}, {name = "NirantK", email = "nirant.bits@gmail.com"}]
 license = "Apache-2.0"
