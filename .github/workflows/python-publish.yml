@@ -20,6 +20,9 @@ jobs:
 
     runs-on: ubuntu-latest
     environment: release
+    permissions:
+      id-token: write  # PyPI trusted publishing
+      contents: read
 
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -45,6 +48,3 @@ jobs:
         "
     - name: Publish package
       uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
-      with:
-        user: __token__
-        password: ${{ secrets.PYPI_API_TOKEN }}
