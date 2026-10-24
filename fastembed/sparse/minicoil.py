@@ -84,6 +84,7 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         lazy_load: bool = False,
         device_id: int | None = None,
         specific_model_path: str | None = None,
+        max_sequence_length: int | None = None,
         **kwargs: Any,
     ):
         """
@@ -108,12 +109,23 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
                 Should be set to True when using multiple-gpu and parallel encoding. Defaults to False.
             device_id (Optional[int], optional): The device id to use for loading the model in the worker process.
             specific_model_path (Optional[str], optional): The specific path to the onnx model dir if it should be imported from somewhere else
+            max_sequence_length (Optional[int], optional): Maximum number of input tokens, including
+                special tokens. Defaults to the model's tokenizer limit. Values above the model's limit
+                are capped at that limit. Applies to document and query embeddings, including workers.
 
         Raises:
             ValueError: If the model_name is not in the format <org>/<model> e.g. BAAI/bge-base-en.
         """
 
+        if max_sequence_length is not None and (
+            isinstance(max_sequence_length, bool)
+            or not isinstance(max_sequence_length, int)
+            or max_sequence_length <= 0
+        ):
+            raise ValueError("max_sequence_length must be a positive integer or None")
+
         super().__init__(model_name, cache_dir, threads, **kwargs)
+        self.max_sequence_length = max_sequence_length
         self.providers = providers
         self.lazy_load = lazy_load
         self.device_ids = device_ids
@@ -150,6 +162,7 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             self.load_onnx_model()
 
     def load_onnx_model(self) -> None:
+        self._ensure_tokenizer()
         self._load_onnx_model(
             model_dir=self._model_dir,
             model_file=self.model_description.model_file,
@@ -164,9 +177,27 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
     def _load_tokenizer(self, model_dir: Path) -> None:
         super()._load_tokenizer(model_dir=model_dir)
         assert self.tokenizer is not None
+        if self.max_sequence_length is not None:
+            assert self.tokenizer.truncation is not None
+            minimum_length = self.tokenizer.num_special_tokens_to_add(is_pair=False) + 1
+            if self.max_sequence_length < minimum_length:
+                self.tokenizer = None
+                self.special_token_to_id = {}
+                raise ValueError(
+                    f"max_sequence_length must be at least {minimum_length} to include a text token"
+                )
+            model_max_length = self.tokenizer.truncation["max_length"]
+            self.tokenizer.enable_truncation(
+                max_length=min(self.max_sequence_length, model_max_length)
+            )
         self.invert_vocab = {idx: token for token, idx in self.tokenizer.get_vocab().items()}
         self.special_tokens = set(self.special_token_to_id.keys())
         self.special_tokens_ids = set(self.special_token_to_id.values())
+
+    def _get_worker_init_kwargs(self) -> dict[str, Any]:
+        if self.max_sequence_length is None:
+            return {}
+        return {"max_sequence_length": self.max_sequence_length}
 
     def _load_post_processing_state(self) -> None:
         """Load the vocab resolver, the encoder and the sparse vector converter.
