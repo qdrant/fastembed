@@ -232,7 +232,8 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
         """Load the document and the query tokenizers, and apply colbert's own configuration.
 
         Both tokenizers are always (re)loaded from disk here, so the truncation length is
-        derived from the on-disk value and never decremented twice.
+        derived from the on-disk value and never decremented twice. Both preserve the
+        truncation direction resolved by `load_tokenizer`.
         """
         tokenizer, special_token_to_id = load_tokenizer(model_dir=model_dir)
         query_tokenizer, _ = load_tokenizer(model_dir=model_dir)
@@ -247,8 +248,9 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
         }
         # ensure not to overflow after adding document-marker
         max_length = tokenizer.truncation["max_length"] - self.RESERVED_MARKER_TOKENS
-        tokenizer.enable_truncation(max_length=max_length)
-        query_tokenizer.enable_truncation(max_length=max_length)
+        truncation_direction = tokenizer.truncation["direction"]
+        tokenizer.enable_truncation(max_length=max_length, direction=truncation_direction)
+        query_tokenizer.enable_truncation(max_length=max_length, direction=truncation_direction)
         query_tokenizer.enable_padding(
             pad_token=self.MASK_TOKEN,
             pad_id=mask_token_id,
