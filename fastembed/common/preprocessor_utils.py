@@ -95,12 +95,13 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
     tokens_map = load_special_tokens(model_dir)
 
     tokenizer = Tokenizer.from_file(str(tokenizer_path))
-    # enable_truncation resets the direction to right unless it is passed. The direction is
+    # Preserve the saved strategy when updating the context limit. The direction is
     # resolved as in transformers: tokenizer_config.json, then tokenizer.json, then right.
     truncation = tokenizer.truncation or {}
     tokenizer.enable_truncation(
         max_length=max_context,
         direction=tokenizer_config.get("truncation_side") or truncation.get("direction", "right"),
+        strategy=truncation.get("strategy", "longest_first"),
     )
 
     # Registered before the padding is resolved: the map may name a pad token that
