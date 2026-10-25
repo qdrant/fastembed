@@ -109,6 +109,9 @@ CANONICAL_VECTOR_VALUES = {
     "minishlab/potion-multilingual-128M": np.array(
         [0.02366836, 0.02973341, 0.05140258, -0.00745248, -0.06740689]
     ),
+    "divakantpandey/code-embed-v2": np.array(
+        [0.02376552, 0.04980106, 0.01059011, 0.00316836, -0.00166992]
+    ),
 }
 
 QWEN3_INSTRUCT_PREFIX = (

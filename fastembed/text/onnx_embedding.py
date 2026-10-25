@@ -202,6 +202,18 @@ supported_onnx_models: list[DenseModelDescription] = [
         sources=ModelSource(hf="Qdrant/stella-en-400M-v5-doc-onnx"),
         model_file="model.onnx",
     ),
+    DenseModelDescription(
+        model="divakantpandey/code-embed-v2",
+        dim=1536,
+        description=(
+            "Code embeddings, Multilingual (Python, JS, TS, Go, Java, Ruby, PHP, SQL) and technical English, "
+            "8192 input tokens truncation, Matryoshka dimensions (1536, 768, 512, 256, 128, 64), 2026 year."
+        ),
+        license="cc-by-nc-4.0",
+        size_in_GB=0.14,
+        sources=ModelSource(hf="divakantpandey/code-embed-v2"),
+        model_file="model_optimized.onnx",
+    ),
 ]
 
 
