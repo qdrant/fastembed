@@ -1,24 +1,25 @@
 import warnings
-from typing import Any, Iterable, Sequence, Type
+from collections.abc import Iterable, Sequence
 from dataclasses import asdict
+from typing import Any, ClassVar
 
-from fastembed.common.types import NumpyArray, OnnxProvider, Device
+from fastembed.common.model_description import DenseModelDescription, ModelSource, PoolingType
+from fastembed.common.types import Device, NumpyArray, OnnxProvider
+from fastembed.text.builtin_sentence_embedding import BuiltinSentenceEmbedding
 from fastembed.text.clip_embedding import CLIPOnnxEmbedding
 from fastembed.text.custom_text_embedding import CustomTextEmbedding
-from fastembed.text.pooled_normalized_embedding import PooledNormalizedEmbedding
-from fastembed.text.pooled_embedding import PooledEmbedding
-from fastembed.text.multitask_embedding import JinaEmbeddingV3
-from fastembed.text.builtin_sentence_embedding import BuiltinSentenceEmbedding
 from fastembed.text.last_token_normalized_embedding import LastTokenNormalizedEmbedding
+from fastembed.text.multitask_embedding import JinaEmbeddingV3
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
+from fastembed.text.pooled_embedding import PooledEmbedding
+from fastembed.text.pooled_normalized_embedding import PooledNormalizedEmbedding
 from fastembed.text.siglip_embedding import SiglipOnnxTextEmbedding
 from fastembed.text.static_embedding import StaticTextEmbedding
 from fastembed.text.text_embedding_base import TextEmbeddingBase
-from fastembed.common.model_description import DenseModelDescription, ModelSource, PoolingType
 
 
 class TextEmbedding(TextEmbeddingBase):
-    EMBEDDINGS_REGISTRY: list[Type[TextEmbeddingBase]] = [
+    EMBEDDINGS_REGISTRY: ClassVar[list[type[TextEmbeddingBase]]] = [
         OnnxTextEmbedding,
         CLIPOnnxEmbedding,
         SiglipOnnxTextEmbedding,
@@ -201,6 +202,11 @@ class TextEmbedding(TextEmbeddingBase):
                 If > 1, data-parallel encoding will be used, recommended for offline encoding of large datasets.
                 If 0, use all available cores.
                 If None, don't use data-parallel processing, use default onnxruntime threading instead.
+            inference_workers (via **kwargs):
+                Number of concurrent batches for CPU-only ONNX text inference.
+                Defaults to 1, preserving the existing serial behavior.
+                Cannot be combined with parallel. Performance depends on
+                document length, batch size, and ONNX Runtime thread settings.
 
         Returns:
             List of embeddings, one per document

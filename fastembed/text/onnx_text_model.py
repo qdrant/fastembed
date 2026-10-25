@@ -1,15 +1,18 @@
 import os
+from collections import deque
+from collections.abc import Iterable, Sequence
+from concurrent.futures import Future, ThreadPoolExecutor
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Iterable, Sequence, Type
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
 from tokenizers import Encoding, Tokenizer
 
-from fastembed.common.types import NumpyArray, OnnxProvider, Device
 from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
 from fastembed.common.preprocessor_utils import load_tokenizer
+from fastembed.common.types import Device, NumpyArray, OnnxProvider
 from fastembed.common.utils import iter_batch
 from fastembed.parallel_processor import ParallelWorkerPool
 
@@ -18,7 +21,7 @@ class OnnxTextModel(OnnxModel[T]):
     ONNX_OUTPUT_NAMES: list[str] | None = None
 
     @classmethod
-    def _get_worker_class(cls) -> Type["TextEmbeddingWorker[T]"]:
+    def _get_worker_class(cls) -> type["TextEmbeddingWorker[T]"]:
         raise NotImplementedError("Subclasses must implement this method")
 
     def _post_process_onnx_output(self, output: OnnxOutputContext, **kwargs: Any) -> Iterable[T]:
@@ -121,6 +124,46 @@ class OnnxTextModel(OnnxModel[T]):
     ) -> NumpyArray:
         return self.model.run(onnx_output_names, onnx_input)[0]  # type: ignore[union-attr]
 
+    def _embed_cpu_batches_concurrently(
+        self,
+        documents: Iterable[str],
+        batch_size: int,
+        inference_workers: int,
+        kwargs: dict[str, Any],
+    ) -> Iterable[T]:
+        """Embed a bounded number of batches on a shared CPU ONNX session.
+
+        ONNX Runtime permits concurrent Run calls. Futures are consumed in
+        submission order to keep the result sequence stable. At most twice
+        the worker count is outstanding, even for an infinite input iterator.
+        This is opt-in and uses no extra model sessions or processes.
+        """
+        batches = iter(iter_batch(documents, batch_size))
+        executor = ThreadPoolExecutor(max_workers=inference_workers)
+        pending: deque[Future[OnnxOutputContext]] = deque()
+        try:
+            for _ in range(inference_workers * 2):
+                try:
+                    batch = next(batches)
+                except StopIteration:
+                    break
+                pending.append(executor.submit(self.onnx_embed, batch, **kwargs))
+
+            while pending:
+                context = pending.popleft().result()
+                yield from self._post_process_onnx_output(context, **kwargs)
+                try:
+                    batch = next(batches)
+                except StopIteration:
+                    continue
+                pending.append(executor.submit(self.onnx_embed, batch, **kwargs))
+        finally:
+            # Do not run batches that have not started when consumers stop early.
+            # Tasks already running still finish before the executor is released.
+            for future in pending:
+                future.cancel()
+            executor.shutdown(wait=True, cancel_futures=True)
+
     def _embed_documents(
         self,
         model_name: str,
@@ -134,25 +177,44 @@ class OnnxTextModel(OnnxModel[T]):
         local_files_only: bool = False,
         specific_model_path: str | None = None,
         extra_session_options: dict[str, Any] | None = None,
+        inference_workers: int = 1,
         **kwargs: Any,
     ) -> Iterable[T]:
+        # Preserve the old single-session code path unless explicitly requested.
+        if (
+            isinstance(inference_workers, bool)
+            or not isinstance(inference_workers, int)
+            or inference_workers < 1
+        ):
+            raise ValueError("inference_workers must be a positive integer")
+        if inference_workers > 1 and parallel is not None:
+            raise ValueError("inference_workers cannot be combined with parallel")
         is_small = False
 
         if isinstance(documents, str):
             documents = [documents]
             is_small = True
 
-        if isinstance(documents, list):
-            if len(documents) < batch_size:
-                is_small = True
+        if isinstance(documents, list) and len(documents) < batch_size:
+            is_small = True
 
         if parallel is None or is_small:
             if not hasattr(self, "model") or self.model is None:
                 self.load_onnx_model()
-            for batch in iter_batch(documents, batch_size):
-                yield from self._post_process_onnx_output(
-                    self.onnx_embed(batch, **kwargs), **kwargs
+            if inference_workers > 1 and (
+                self.model is None or self.model.get_providers() != ["CPUExecutionProvider"]
+            ):
+                raise ValueError("inference_workers requires a CPU-only ONNX session")
+            if inference_workers > 1 and not is_small:
+                self._ensure_tokenizer()
+                yield from self._embed_cpu_batches_concurrently(
+                    documents, batch_size, inference_workers, kwargs
                 )
+            else:
+                for batch in iter_batch(documents, batch_size):
+                    yield from self._post_process_onnx_output(
+                        self.onnx_embed(batch, **kwargs), **kwargs
+                    )
         else:
             if parallel == 0:
                 parallel = os.cpu_count()
