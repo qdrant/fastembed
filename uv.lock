@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.10.0"
 resolution-markers = [
     "python_full_version >= '3.15'",
@@ -711,6 +711,7 @@ wheels = [
 name = "fastembed"
 version = "0.9.0"
 source = { editable = "." }
+default-groups = "all"
 dependencies = [
     { name = "huggingface-hub" },
     { name = "loguru" },
@@ -768,7 +769,7 @@ requires-dist = [
     { name = "pillow", marker = "python_full_version >= '3.14'", specifier = ">=12.0.0,<13.0" },
     { name = "py-rust-stemmers", specifier = ">=0.1.0,<0.2" },
     { name = "requests", specifier = ">=2.31,<3" },
-    { name = "tokenizers", specifier = ">=0.15,<1.0" },
+    { name = "tokenizers", specifier = ">=0.20,<1.0" },
     { name = "tqdm", specifier = ">=4.66,<5" },
 ]
 
