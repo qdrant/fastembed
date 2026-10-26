@@ -20,6 +20,7 @@ from fastembed.text.text_embedding_base import TextEmbeddingBase
 # Same cap as the onnx exports of these models and model2vec's default `max_length`.
 MAX_LENGTH = 512
 
+
 supported_static_models: list[DenseModelDescription] = [
     DenseModelDescription(
         model="minishlab/potion-base-8M",
@@ -55,6 +56,21 @@ supported_static_models: list[DenseModelDescription] = [
         license="mit",
         size_in_GB=0.512,
         sources=ModelSource(hf="minishlab/potion-multilingual-128M"),
+        model_file="model.safetensors",
+    ),
+]
+
+supported_sqrt_tf_models: list[DenseModelDescription] = [
+    DenseModelDescription(
+        model="Qdrant/constella-zero",
+        dim=1024,
+        description=(
+            "Text embeddings, Unimodal (text), English, 512 input tokens truncation, Query encoder"
+            " for stella_en_400M_v5, Prefixes for queries/documents: not necessary, 2026 year."
+        ),
+        license="mit",
+        size_in_GB=0.031,
+        sources=ModelSource(hf="Qdrant/constella-zero"),
         model_file="model.safetensors",
     ),
 ]
@@ -97,6 +113,14 @@ class StaticTextEmbedding(TextEmbeddingBase):
     # are.
     POOLING_CELLS = 4_000_000
 
+    # How tokens are pooled. The defaults are model2vec's: no special tokens, [UNK] left out of
+    # the mean, and a token seen c times in a text (its term frequency) weighs c. With
+    # SQRT_TERM_FREQUENCY it weighs sqrt(c), and a `weights` tensor still scales each token's
+    # row, which lets an int8 table carry its per-row scales.
+    ADD_SPECIAL_TOKENS = False
+    SKIP_UNKNOWN_TOKENS = True
+    SQRT_TERM_FREQUENCY = False
+
     @classmethod
     def _list_supported_models(cls) -> list[DenseModelDescription]:
         return supported_static_models
@@ -133,6 +157,8 @@ class StaticTextEmbedding(TextEmbeddingBase):
         # on the CPU with numpy and ignore them, so only options set to something else than their
         # default are reported.
         ignored = {"threads": threads} if threads is not None else {}
+        if kwargs.get("cuda") in (False, Device.CPU):  # qdrant-client passes cuda=False
+            kwargs.pop("cuda")
         for option, default in (
             ("providers", None),
             ("cuda", Device.AUTO),
@@ -191,7 +217,9 @@ class StaticTextEmbedding(TextEmbeddingBase):
         """Tokenize a batch into one flat id array plus the number of ids of each document."""
         assert self.tokenizer is not None
         # encode_batch_fast skips the character offsets, which are not needed here.
-        encodings = self.tokenizer.encode_batch_fast(documents, add_special_tokens=False)
+        encodings = self.tokenizer.encode_batch_fast(
+            documents, add_special_tokens=self.ADD_SPECIAL_TOKENS
+        )
         id_lists = [encoding.ids for encoding in encodings]
         lengths = np.fromiter(map(len, id_lists), dtype=np.int64, count=len(documents))
         ids = np.fromiter(
@@ -205,7 +233,7 @@ class StaticTextEmbedding(TextEmbeddingBase):
         assert self.embeddings is not None
         ids, lengths = self._token_ids(documents)
 
-        if self.unk_token_id is not None:
+        if self.unk_token_id is not None and self.SKIP_UNKNOWN_TOKENS:
             known = ids != self.unk_token_id
             if not known.all():
                 doc_index = np.repeat(np.arange(len(documents)), lengths)
@@ -224,15 +252,23 @@ class StaticTextEmbedding(TextEmbeddingBase):
         those tokens: one matrix multiplication, several times faster than segment sums with
         np.add.reduceat or a loop over the documents. Documents whose count matrix would exceed
         POOLING_CELLS are halved until it fits, which bounds the temporary memory. A single
-        document sums its rows directly.
+        document skips the count matrix.
         """
         assert self.embeddings is not None
         if not ids.size:
             return np.zeros((len(lengths), self.embeddings.shape[1]), dtype=np.float32)
         rows = ids if self.token_mapping is None else self.token_mapping[ids]
+        sqrt_term_frequency = self.SQRT_TERM_FREQUENCY
         if len(lengths) == 1:
-            # A single text, typically a query: summing its rows skips the fixed cost of building
-            # a count matrix, which dominates for short texts.
+            # A single text, typically a query, skips the fixed cost of building a count matrix,
+            # which dominates for short texts: it sums its rows, or with sqrt term frequency its
+            # distinct rows scaled by the square roots of their counts.
+            if sqrt_term_frequency:
+                distinct_rows, term_frequency = np.unique(rows, return_counts=True)
+                scales = np.sqrt(term_frequency, dtype=np.float32)
+                if self.weights is not None:  # rows are token ids: no sqrt model has a `mapping`
+                    scales *= self.weights[distinct_rows]
+                return (scales @ self.embeddings[distinct_rows])[None]
             vectors = self.embeddings[rows]
             if self.weights is not None:
                 vectors = vectors * self.weights[ids, None]
@@ -248,12 +284,20 @@ class StaticTextEmbedding(TextEmbeddingBase):
                 ]
             )
         doc_index = np.repeat(np.arange(len(lengths)), lengths)
-        counts = np.bincount(
-            doc_index * len(distinct_rows) + row_index,
-            weights=None if self.weights is None else self.weights[ids],
-            minlength=len(lengths) * len(distinct_rows),
-        ).astype(np.float32)
-        return counts.reshape(len(lengths), len(distinct_rows)) @ self.embeddings[distinct_rows]
+        counts = (
+            np.bincount(
+                doc_index * len(distinct_rows) + row_index,
+                weights=None if self.weights is None or sqrt_term_frequency else self.weights[ids],
+                minlength=len(lengths) * len(distinct_rows),
+            )
+            .astype(np.float32)
+            .reshape(len(lengths), len(distinct_rows))
+        )
+        if sqrt_term_frequency:
+            np.sqrt(counts, out=counts)
+            if self.weights is not None:  # rows are token ids: no sqrt model has a `mapping`
+                counts *= self.weights[distinct_rows]
+        return counts @ self.embeddings[distinct_rows]
 
     def embed(
         self,
@@ -364,3 +408,29 @@ class StaticTextEmbeddingWorker(Worker):
     @staticmethod
     def init_embedding(model_name: str, cache_dir: str, **kwargs: Any) -> StaticTextEmbedding:
         return StaticTextEmbedding(model_name=model_name, cache_dir=cache_dir, **kwargs)
+
+
+class SqrtTfStaticEmbedding(StaticTextEmbedding):
+    """Static embeddings that weigh tokens by the square root of their term frequency.
+
+    A token seen c times in a text (its term frequency) weighs sqrt(c) instead of c. Special
+    tokens and [UNK] stay in the bag.
+    """
+
+    ADD_SPECIAL_TOKENS = True
+    SKIP_UNKNOWN_TOKENS = False
+    SQRT_TERM_FREQUENCY = True
+
+    @classmethod
+    def _list_supported_models(cls) -> list[DenseModelDescription]:
+        return supported_sqrt_tf_models
+
+    @classmethod
+    def _get_worker_class(cls) -> Type[StaticTextEmbeddingWorker]:
+        return SqrtTfStaticEmbeddingWorker
+
+
+class SqrtTfStaticEmbeddingWorker(StaticTextEmbeddingWorker):
+    @staticmethod
+    def init_embedding(model_name: str, cache_dir: str, **kwargs: Any) -> StaticTextEmbedding:
+        return SqrtTfStaticEmbedding(model_name=model_name, cache_dir=cache_dir, **kwargs)
