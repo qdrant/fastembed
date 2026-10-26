@@ -2,7 +2,6 @@ import itertools
 import json
 import os
 import warnings
-from dataclasses import dataclass
 from multiprocessing import get_all_start_methods
 from pathlib import Path
 from typing import Any, Iterable, Type
@@ -22,19 +21,8 @@ from fastembed.text.text_embedding_base import TextEmbeddingBase
 MAX_LENGTH = 512
 
 
-@dataclass(frozen=True)
-class StaticModelDescription(DenseModelDescription):
-    """How a static model pools its tokens. The defaults are model2vec's."""
-
-    add_special_tokens: bool = False
-    skip_unknown_tokens: bool = True
-    # Weigh a token seen c times in a text by sqrt(c) instead of c. A `weights` tensor still
-    # scales each token's row, which lets an int8 table carry its per-row scales.
-    sqrt_token_counts: bool = False
-
-
 supported_static_models: list[DenseModelDescription] = [
-    StaticModelDescription(
+    DenseModelDescription(
         model="minishlab/potion-base-8M",
         dim=256,
         description=(
@@ -46,7 +34,7 @@ supported_static_models: list[DenseModelDescription] = [
         sources=ModelSource(hf="minishlab/potion-base-8M"),
         model_file="model.safetensors",
     ),
-    StaticModelDescription(
+    DenseModelDescription(
         model="minishlab/potion-retrieval-32M",
         dim=512,
         description=(
@@ -58,7 +46,7 @@ supported_static_models: list[DenseModelDescription] = [
         sources=ModelSource(hf="minishlab/potion-retrieval-32M"),
         model_file="model.safetensors",
     ),
-    StaticModelDescription(
+    DenseModelDescription(
         model="minishlab/potion-multilingual-128M",
         dim=256,
         description=(
@@ -70,7 +58,10 @@ supported_static_models: list[DenseModelDescription] = [
         sources=ModelSource(hf="minishlab/potion-multilingual-128M"),
         model_file="model.safetensors",
     ),
-    StaticModelDescription(
+]
+
+supported_sqrt_tf_models: list[DenseModelDescription] = [
+    DenseModelDescription(
         model="Qdrant/constella-zero",
         dim=1024,
         description=(
@@ -81,9 +72,6 @@ supported_static_models: list[DenseModelDescription] = [
         size_in_GB=0.031,
         sources=ModelSource(hf="Qdrant/constella-zero"),
         model_file="model.safetensors",
-        add_special_tokens=True,
-        skip_unknown_tokens=False,
-        sqrt_token_counts=True,
     ),
 ]
 
@@ -124,6 +112,14 @@ class StaticTextEmbedding(TextEmbeddingBase):
     # the temporary memory of pooling to about 60 MiB, however long, diverse or many the documents
     # are.
     POOLING_CELLS = 4_000_000
+
+    # How tokens are pooled. The defaults are model2vec's: no special tokens, [UNK] left out of
+    # the mean, and a token seen c times in a text (its term frequency) weighs c. With
+    # SQRT_TERM_FREQUENCY it weighs sqrt(c), and a `weights` tensor still scales each token's
+    # row, which lets an int8 table carry its per-row scales.
+    ADD_SPECIAL_TOKENS = False
+    SKIP_UNKNOWN_TOKENS = True
+    SQRT_TERM_FREQUENCY = False
 
     @classmethod
     def _list_supported_models(cls) -> list[DenseModelDescription]:
@@ -182,9 +178,7 @@ class StaticTextEmbedding(TextEmbeddingBase):
             )
         super().__init__(model_name, cache_dir, threads, **kwargs)
         self.lazy_load = lazy_load
-        model_description = self._get_model_description(model_name)
-        assert isinstance(model_description, StaticModelDescription)
-        self.model_description = model_description
+        self.model_description = self._get_model_description(model_name)
         self.cache_dir = str(define_cache_dir(cache_dir))
         self._specific_model_path = specific_model_path
         self.mmap = mmap
@@ -224,7 +218,7 @@ class StaticTextEmbedding(TextEmbeddingBase):
         assert self.tokenizer is not None
         # encode_batch_fast skips the character offsets, which are not needed here.
         encodings = self.tokenizer.encode_batch_fast(
-            documents, add_special_tokens=self.model_description.add_special_tokens
+            documents, add_special_tokens=self.ADD_SPECIAL_TOKENS
         )
         id_lists = [encoding.ids for encoding in encodings]
         lengths = np.fromiter(map(len, id_lists), dtype=np.int64, count=len(documents))
@@ -239,7 +233,7 @@ class StaticTextEmbedding(TextEmbeddingBase):
         assert self.embeddings is not None
         ids, lengths = self._token_ids(documents)
 
-        if self.unk_token_id is not None and self.model_description.skip_unknown_tokens:
+        if self.unk_token_id is not None and self.SKIP_UNKNOWN_TOKENS:
             known = ids != self.unk_token_id
             if not known.all():
                 doc_index = np.repeat(np.arange(len(documents)), lengths)
@@ -258,16 +252,23 @@ class StaticTextEmbedding(TextEmbeddingBase):
         those tokens: one matrix multiplication, several times faster than segment sums with
         np.add.reduceat or a loop over the documents. Documents whose count matrix would exceed
         POOLING_CELLS are halved until it fits, which bounds the temporary memory. A single
-        document sums its rows directly.
+        document skips the count matrix.
         """
         assert self.embeddings is not None
         if not ids.size:
             return np.zeros((len(lengths), self.embeddings.shape[1]), dtype=np.float32)
         rows = ids if self.token_mapping is None else self.token_mapping[ids]
-        sqrt_counts = self.model_description.sqrt_token_counts
-        if len(lengths) == 1 and not sqrt_counts:
-            # A single text, typically a query: summing its rows skips the fixed cost of building
-            # a count matrix, which dominates for short texts.
+        sqrt_term_frequency = self.SQRT_TERM_FREQUENCY
+        if len(lengths) == 1:
+            # A single text, typically a query, skips the fixed cost of building a count matrix,
+            # which dominates for short texts: it sums its rows, or with sqrt term frequency its
+            # distinct rows scaled by the square roots of their counts.
+            if sqrt_term_frequency:
+                distinct_rows, term_frequency = np.unique(rows, return_counts=True)
+                scales = np.sqrt(term_frequency, dtype=np.float32)
+                if self.weights is not None:  # rows are token ids: no sqrt model has a `mapping`
+                    scales *= self.weights[distinct_rows]
+                return (scales @ self.embeddings[distinct_rows])[None]
             vectors = self.embeddings[rows]
             if self.weights is not None:
                 vectors = vectors * self.weights[ids, None]
@@ -286,13 +287,13 @@ class StaticTextEmbedding(TextEmbeddingBase):
         counts = (
             np.bincount(
                 doc_index * len(distinct_rows) + row_index,
-                weights=None if self.weights is None or sqrt_counts else self.weights[ids],
+                weights=None if self.weights is None or sqrt_term_frequency else self.weights[ids],
                 minlength=len(lengths) * len(distinct_rows),
             )
             .astype(np.float32)
             .reshape(len(lengths), len(distinct_rows))
         )
-        if sqrt_counts:
+        if sqrt_term_frequency:
             np.sqrt(counts, out=counts)
             if self.weights is not None:  # rows are token ids: no sqrt model has a `mapping`
                 counts *= self.weights[distinct_rows]
@@ -407,3 +408,29 @@ class StaticTextEmbeddingWorker(Worker):
     @staticmethod
     def init_embedding(model_name: str, cache_dir: str, **kwargs: Any) -> StaticTextEmbedding:
         return StaticTextEmbedding(model_name=model_name, cache_dir=cache_dir, **kwargs)
+
+
+class SqrtTfStaticEmbedding(StaticTextEmbedding):
+    """Static embeddings that weigh tokens by the square root of their term frequency.
+
+    A token seen c times in a text (its term frequency) weighs sqrt(c) instead of c. Special
+    tokens and [UNK] stay in the bag.
+    """
+
+    ADD_SPECIAL_TOKENS = True
+    SKIP_UNKNOWN_TOKENS = False
+    SQRT_TERM_FREQUENCY = True
+
+    @classmethod
+    def _list_supported_models(cls) -> list[DenseModelDescription]:
+        return supported_sqrt_tf_models
+
+    @classmethod
+    def _get_worker_class(cls) -> Type[StaticTextEmbeddingWorker]:
+        return SqrtTfStaticEmbeddingWorker
+
+
+class SqrtTfStaticEmbeddingWorker(StaticTextEmbeddingWorker):
+    @staticmethod
+    def init_embedding(model_name: str, cache_dir: str, **kwargs: Any) -> StaticTextEmbedding:
+        return SqrtTfStaticEmbedding(model_name=model_name, cache_dir=cache_dir, **kwargs)

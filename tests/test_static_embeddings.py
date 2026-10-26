@@ -7,12 +7,16 @@ import numpy as np
 import pytest
 
 from fastembed.common.safetensors_utils import load_safetensors
-from fastembed.text.static_embedding import StaticTextEmbedding
+from fastembed.text.static_embedding import SqrtTfStaticEmbedding, StaticTextEmbedding
 from fastembed.text.text_embedding import TextEmbedding
 from tests.test_text_onnx_embeddings import CANONICAL_VECTOR_VALUES
 from tests.utils import delete_model_cache, is_manual_run
 
-STATIC_MODELS = [model.model for model in StaticTextEmbedding._list_supported_models()]
+STATIC_MODELS = [
+    model.model
+    for model in StaticTextEmbedding._list_supported_models()
+    + SqrtTfStaticEmbedding._list_supported_models()
+]
 
 CI_MODEL = "minishlab/potion-base-8M"
 
