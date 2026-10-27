@@ -155,7 +155,9 @@ class OnnxTextModel(OnnxModel[T]):
                     indices,
                     self._post_process_onnx_output(self.onnx_embed(batch, **kwargs), **kwargs),
                 )
-                for indices, batch in iter_length_sorted_batches(documents, batch_size)
+                for indices, batch in iter_length_sorted_batches(
+                    documents, batch_size, self._token_count
+                )
             )
         else:
             if parallel == 0:
@@ -185,7 +187,9 @@ class OnnxTextModel(OnnxModel[T]):
             batch_indices: deque[list[int]] = deque()
 
             def batches() -> Iterable[list[str]]:
-                for indices, batch in iter_length_sorted_batches(documents, batch_size):
+                for indices, batch in iter_length_sorted_batches(
+                    documents, batch_size, self._token_count
+                ):
                     batch_indices.append(indices)
                     yield batch
 
