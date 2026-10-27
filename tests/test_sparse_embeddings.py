@@ -1,4 +1,5 @@
 import os
+import shutil
 from contextlib import contextmanager
 
 import pytest
@@ -44,6 +45,137 @@ CANONICAL_COLUMN_VALUES = {
             2.803262710571289,
             2.1904349327087402,
             1.0531445741653442,
+        ],
+    },
+    # Generated with the original PyTorch model, not the ONNX export.
+    # from transformers import AutoModelForMaskedLM, AutoTokenizer
+    # import torch
+    # name = "prithivida/Splade_PP_en_v2"
+    # tokenizer = AutoTokenizer.from_pretrained(name)
+    # model = AutoModelForMaskedLM.from_pretrained(name).eval()
+    # inputs = tokenizer(["Hello World"], return_tensors="pt")
+    # with torch.no_grad():
+    #     logits = model(**inputs).logits
+    #     values = (torch.log1p(torch.relu(logits))
+    #               * inputs["attention_mask"].unsqueeze(-1)).max(dim=1).values[0]
+    # indices = values.nonzero().flatten()
+    # print(indices.tolist(), values[indices].tolist())
+    "prithivida/Splade_PP_en_v2": {
+        "indices": [
+            2033,
+            2047,
+            2088,
+            2141,
+            2194,
+            2248,
+            2299,
+            2320,
+            2338,
+            2466,
+            2518,
+            2544,
+            2614,
+            2643,
+            2653,
+            2726,
+            2868,
+            3112,
+            3260,
+            3610,
+            3795,
+            3959,
+            4074,
+            4132,
+            4182,
+            4400,
+            4471,
+            4774,
+            5199,
+            5220,
+            5343,
+            5379,
+            5415,
+            5811,
+            5861,
+            6045,
+            6128,
+            6160,
+            6209,
+            7344,
+            7484,
+            7592,
+            7861,
+            8404,
+            8457,
+            8484,
+            8957,
+            9340,
+            9445,
+            9703,
+            10098,
+            11108,
+            12122,
+            12652,
+            14806,
+            17021,
+        ],
+        "values": [
+            0.11606094241142273,
+            0.7968177795410156,
+            2.831770181655884,
+            0.8192029595375061,
+            0.2629775106906891,
+            0.0210606437176466,
+            0.3554501533508301,
+            0.45315608382225037,
+            0.15322156250476837,
+            0.04712503403425217,
+            0.2806353271007538,
+            0.040995679795742035,
+            0.019605368375778198,
+            0.38618311285972595,
+            0.30527234077453613,
+            0.20706582069396973,
+            0.13612231612205505,
+            0.1594061702489853,
+            0.6123039126396179,
+            0.3223448693752289,
+            0.18442149460315704,
+            0.10909411311149597,
+            0.36350950598716736,
+            0.16135023534297943,
+            0.017721381038427353,
+            0.41068100929260254,
+            0.6859607696533203,
+            0.46051332354545593,
+            0.19398435950279236,
+            0.732393741607666,
+            0.06977448612451553,
+            0.18760798871517181,
+            1.0278979539871216,
+            0.30799600481987,
+            0.19138136506080627,
+            0.1603812277317047,
+            0.141157865524292,
+            0.20201238989830017,
+            0.04342735558748245,
+            0.12269419431686401,
+            0.054840270429849625,
+            3.1569836139678955,
+            0.23258404433727264,
+            0.4087274372577667,
+            0.0046224286779761314,
+            1.3340345621109009,
+            0.10418354719877243,
+            0.18512246012687683,
+            0.1457865983247757,
+            0.066911980509758,
+            0.012725194916129112,
+            1.1638319492340088,
+            0.11543674767017365,
+            0.05061672255396843,
+            0.4979062080383301,
+            0.0045175873674452305,
         ],
     },
     "Qdrant/minicoil-v1": {
@@ -121,6 +253,7 @@ CANONICAL_QUERY_VALUES = {
 
 _MODELS_TO_CACHE = (
     "prithivida/Splade_PP_en_v1",
+    "prithivida/Splade_PP_en_v2",
     "Qdrant/minicoil-v1",
     "Qdrant/bm25",
     "Qdrant/bm42-all-minilm-l6-v2-attentions",
@@ -159,7 +292,7 @@ docs = ["Hello World"]
 
 @pytest.mark.parametrize(
     "model_name",
-    ["prithivida/Splade_PP_en_v1", "Qdrant/minicoil-v1"],
+    ["prithivida/Splade_PP_en_v1", "prithivida/Splade_PP_en_v2", "Qdrant/minicoil-v1"],
 )
 def test_batch_embedding(model_cache, model_name: str) -> None:
     docs_to_embed = docs * 10
@@ -171,6 +304,44 @@ def test_batch_embedding(model_cache, model_name: str) -> None:
 
         for i, value in enumerate(result.values):
             assert pytest.approx(value, abs=0.001) == expected_result["values"][i]
+
+
+@pytest.mark.parametrize(
+    "model_name", ["prithivida/Splade_PP_en_v1", "prithivida/Splade_PP_en_v2"]
+)
+@pytest.mark.parametrize("query", [False, True])
+def test_splade_padding_does_not_change_embedding(
+    model_cache, model_name: str, query: bool
+) -> None:
+    with model_cache(model_name) as model:
+        documents = ["Hello World", "A much longer sentence about sparse retrieval and search."]
+        embed = model.query_embed if query else model.embed
+        batched = next(iter(embed(documents, batch_size=2)))
+        single = next(iter(embed(documents[0])))
+        expected = CANONICAL_COLUMN_VALUES[model_name]
+
+        assert batched.indices.tolist() == single.indices.tolist() == expected["indices"]
+        assert np.allclose(batched.values, expected["values"], atol=1e-3)
+        assert np.allclose(single.values, expected["values"], atol=1e-3)
+
+
+def test_splade_v2_with_standard_input_names(model_cache, tmp_path) -> None:
+    with model_cache("prithivida/Splade_PP_en_v1") as original:
+        # Reuse the v1 export to exercise a custom path with standard ONNX input names.
+        model_dir = tmp_path / "model"
+        shutil.copytree(original.model._model_dir, model_dir)
+        (model_dir / "onnx").mkdir()
+        (model_dir / "model.onnx").rename(model_dir / "onnx" / "model.onnx")
+        model = SparseTextEmbedding(
+            "prithivida/Splade_PP_en_v2",
+            specific_model_path=str(model_dir),
+            threads=1,
+            cuda=False,
+        )
+        result = next(iter(model.embed("Hello World")))
+        expected = CANONICAL_COLUMN_VALUES["prithivida/Splade_PP_en_v1"]
+        assert result.indices.tolist() == expected["indices"]
+        assert np.allclose(result.values, expected["values"], atol=1e-3)
 
 
 def test_single_embedding(model_cache) -> None:
@@ -207,7 +378,7 @@ def test_single_embedding(model_cache) -> None:
 
 @pytest.mark.parametrize(
     "model_name",
-    ["prithivida/Splade_PP_en_v1", "Qdrant/minicoil-v1"],
+    ["prithivida/Splade_PP_en_v1", "prithivida/Splade_PP_en_v2", "Qdrant/minicoil-v1"],
 )
 def test_parallel_processing(model_cache, model_name: str) -> None:
     with model_cache(model_name) as model:
@@ -409,7 +580,9 @@ def test_if_splade_query_embed_is_inference_free() -> None:
         delete_model_cache(model.model._model_dir)
 
 
-@pytest.mark.parametrize("model_name", ["prithivida/Splade_PP_en_v1"])
+@pytest.mark.parametrize(
+    "model_name", ["prithivida/Splade_PP_en_v1", "prithivida/Splade_PP_en_v2"]
+)
 def test_lazy_load(model_name: str) -> None:
     is_ci = os.getenv("CI")
     model = SparseTextEmbedding(model_name=model_name, lazy_load=True)
