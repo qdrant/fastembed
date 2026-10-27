@@ -1,4 +1,5 @@
 import os
+from collections import deque
 from multiprocessing import get_all_start_methods
 from pathlib import Path
 from typing import Any, Iterable, Sequence, Type
@@ -14,7 +15,7 @@ from fastembed.common.onnx_model import (
 )
 from fastembed.common.types import NumpyArray, Device
 from fastembed.common.preprocessor_utils import load_tokenizer
-from fastembed.common.utils import iter_batch
+from fastembed.common.utils import iter_batch, iter_length_sorted_batches, restore_order
 from fastembed.parallel_processor import ParallelWorkerPool
 
 
@@ -97,8 +98,12 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
     ) -> Iterable[float]:
         if not hasattr(self, "model") or self.model is None:
             self.load_onnx_model()
-        for batch in iter_batch(documents, batch_size):
-            yield from self._post_process_onnx_output(self.onnx_embed(query, batch, **kwargs))
+        yield from restore_order(
+            (indices, self._post_process_onnx_output(self.onnx_embed(query, batch, **kwargs)))
+            for indices, batch in iter_length_sorted_batches(
+                documents, batch_size, lambda doc: self._token_count([(query, doc)])
+            )
+        )
 
     def _rerank_pairs(
         self,
@@ -128,8 +133,12 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         if parallel is None or is_small:
             if not hasattr(self, "model") or self.model is None:
                 self.load_onnx_model()
-            for batch in iter_batch(pairs, batch_size):
-                yield from self._post_process_onnx_output(self.onnx_embed_pairs(batch, **kwargs))
+            yield from restore_order(
+                (indices, self._post_process_onnx_output(self.onnx_embed_pairs(batch, **kwargs)))
+                for indices, batch in iter_length_sorted_batches(
+                    pairs, batch_size, lambda pair: self._token_count([pair])
+                )
+            )
         else:
             if parallel == 0:
                 parallel = os.cpu_count()
@@ -155,8 +164,19 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
                 device_ids=device_ids,
                 start_method=start_method,
             )
-            for batch in pool.ordered_map(iter_batch(pairs, batch_size), **params):
-                yield from self._post_process_onnx_output(batch)  # type: ignore
+            batch_indices: deque[list[int]] = deque()
+
+            def batches() -> Iterable[list[tuple[str, str]]]:
+                for indices, batch in iter_length_sorted_batches(
+                    pairs, batch_size, lambda pair: self._token_count([pair])
+                ):
+                    batch_indices.append(indices)
+                    yield batch
+
+            yield from restore_order(
+                (batch_indices.popleft(), self._post_process_onnx_output(output))
+                for output in pool.ordered_map(batches(), **params)
+            )
 
     def _post_process_onnx_output(
         self, output: OnnxOutputContext, **kwargs: Any
