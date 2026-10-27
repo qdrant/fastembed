@@ -288,6 +288,51 @@ def test_absent_max_context_keys_raise(make_model_dir) -> None:
         load_tokenizer(model_dir)
 
 
+@pytest.mark.parametrize(
+    "configured,limit,expected",
+    [(HF_SENTINEL, 512, 512), (128, 512, 128), (512, 256, 256)],
+)
+def test_explicit_context_limit_never_extends_a_configured_limit(
+    make_model_dir, configured, limit, expected
+) -> None:
+    model_dir = make_model_dir(
+        tokenizer_config={"model_max_length": configured, "max_length": None}
+    )
+    tokenizer, _ = load_tokenizer(model_dir, max_context=limit)
+    assert tokenizer.truncation["max_length"] == expected
+
+
+@pytest.mark.parametrize("limit", [0, -1, True, HF_SENTINEL])
+def test_unusable_explicit_context_limit_raises(make_model_dir, limit) -> None:
+    with pytest.raises(ValueError, match="max_context must be a positive integer"):
+        load_tokenizer(make_model_dir(), max_context=limit)
+
+
+@pytest.mark.parametrize(
+    "model_name,configured,expected",
+    [
+        ("BAAI/bge-large-zh-v1.5", HF_SENTINEL, 512),
+        ("baai/BGE-LARGE-ZH-v1.5", HF_SENTINEL, 512),
+        ("BAAI/bge-large-zh-v1.5", 128, 128),
+        (BASE_MODEL, 256, 256),
+    ],
+)
+def test_model_tokenizer_context_without_onnx_weights(
+    make_model_dir, model_name, configured, expected
+) -> None:
+    model_dir = make_model_dir(
+        tokenizer_config={"model_max_length": configured, "max_length": None}
+    )
+    embedding = TextEmbedding(
+        model_name, lazy_load=True, specific_model_path=str(model_dir), cuda=False
+    )
+
+    embedding.token_count("hello world")
+
+    assert embedding.model.tokenizer.truncation["max_length"] == expected
+    assert getattr(embedding.model, "model", None) is None
+
+
 @pytest.fixture(scope="module")
 def token_id(make_model_dir):
     """Resolve vocabulary ids by name, so the cases below carry no magic numbers."""
