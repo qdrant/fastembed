@@ -5,7 +5,7 @@ import tempfile
 import unicodedata
 from pathlib import Path
 from itertools import islice
-from typing import Iterable, TypeVar
+from typing import Callable, Iterable, TypeVar
 
 import numpy as np
 from numpy.typing import NDArray
@@ -71,6 +71,39 @@ def iter_batch(iterable: Iterable[T], size: int) -> Iterable[list[T]]:
             yield b
 
     return batches()
+
+
+def iter_length_sorted_batches(
+    texts: Iterable[str],
+    batch_size: int,
+    token_count: Callable[[str], int],
+    window_batches: int = 8,
+) -> Iterable[tuple[list[int], list[str]]]:
+    """Batch texts of similar length together, sorting within windows of `window_batches` batches.
+
+    A larger window saves more padding, but reads more texts ahead and delays the first output.
+    Length is the token count after truncation, so truncated texts tie and keep their order.
+    """
+    if batch_size < 1:
+        raise ValueError(f"batch_size must be >= 1, got {batch_size}")
+    offset = 0
+    for window in iter_batch(texts, batch_size * window_batches):
+        lengths = [token_count(text) for text in window]
+        order = sorted(range(len(window)), key=lambda i: lengths[i], reverse=True)
+        for start in range(0, len(order), batch_size):
+            indices = order[start : start + batch_size]
+            yield [offset + i for i in indices], [window[i] for i in indices]
+        offset += len(window)
+
+
+def restore_order(indexed_outputs: Iterable[tuple[list[int], Iterable[T]]]) -> Iterable[T]:
+    pending: dict[int, T] = {}
+    next_index = 0
+    for indices, outputs in indexed_outputs:
+        pending.update(zip(indices, outputs, strict=True))
+        while next_index in pending:
+            yield pending.pop(next_index)
+            next_index += 1
 
 
 def define_cache_dir(cache_dir: str | None = None) -> Path:
