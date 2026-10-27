@@ -74,11 +74,11 @@ def iter_batch(iterable: Iterable[T], size: int) -> Iterable[list[T]]:
 
 
 def iter_length_sorted_batches(
-    texts: Iterable[str],
+    texts: Iterable[T],
     batch_size: int,
-    token_count: Callable[[str], int],
+    token_count: Callable[[T], int],
     window_batches: int = 8,
-) -> Iterable[tuple[list[int], list[str]]]:
+) -> Iterable[tuple[list[int], list[T]]]:
     """Batch texts of similar length together, sorting within windows of `window_batches` batches.
 
     A larger window saves more padding, but reads more texts ahead and delays the first output.
