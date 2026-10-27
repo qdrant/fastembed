@@ -271,7 +271,8 @@ class StaticTextEmbedding(TextEmbeddingBase):
                 return (scales @ self.embeddings[distinct_rows])[None]
             vectors = self.embeddings[rows]
             if self.weights is not None:
-                vectors = vectors * self.weights[ids, None]
+                # float32, as in the count matrix: float16 products round, underflow and overflow.
+                vectors = np.multiply(vectors, self.weights[ids, None], dtype=np.float32)
             return vectors.sum(axis=0, keepdims=True, dtype=np.float32)
         distinct_rows, row_index = np.unique(rows, return_inverse=True)
         if len(lengths) > 1 and len(lengths) * len(distinct_rows) > self.POOLING_CELLS:
