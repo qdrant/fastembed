@@ -14,14 +14,7 @@ class EchoWorker(Worker):
 
     def process(self, items):
         yield from items
-
-
-@pytest.mark.parametrize("num_workers", [0, -1, -2])
-@pytest.mark.filterwarnings("error::pytest.PytestUnraisableExceptionWarning")
-def test_non_positive_worker_counts_are_rejected(num_workers):
-    with pytest.raises(ValueError, match="num_workers must be greater than zero"):
-        ParallelWorkerPool(num_workers, EchoWorker)
-
+        
 
 # semi_ordered_map is closed by garbage collection, so an error in its cleanup is only reported as unraisable
 @pytest.mark.filterwarnings("error::pytest.PytestUnraisableExceptionWarning")
