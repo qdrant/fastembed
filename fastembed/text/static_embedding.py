@@ -198,6 +198,7 @@ class StaticTextEmbedding(TextEmbeddingBase):
             self.load_model()
 
     def load_model(self) -> None:
+        """Load the embedding tensors and initialize the tokenizer if needed."""
         tensors = load_safetensors(
             self._model_dir / self.model_description.model_file, mmap=self.mmap
         )
@@ -207,7 +208,12 @@ class StaticTextEmbedding(TextEmbeddingBase):
         # Vocabulary-quantized model2vec models map token ids to shared rows and reweight them.
         self.weights = tensors.get("weights")
         self.token_mapping = tensors.get("mapping")
-        self.tokenizer, self.unk_token_id = load_static_tokenizer(self._model_dir)
+        self._ensure_tokenizer()
+
+    def _ensure_tokenizer(self) -> None:
+        """Load the tokenizer without reading the embedding table, e.g. for token counting."""
+        if self.tokenizer is None:
+            self.tokenizer, self.unk_token_id = load_static_tokenizer(self._model_dir)
 
     def _ensure_model(self) -> None:
         if self.embeddings is None or self.tokenizer is None:
@@ -385,7 +391,7 @@ class StaticTextEmbedding(TextEmbeddingBase):
         self, texts: str | Iterable[str], batch_size: int = 1024, **kwargs: Any
     ) -> int:
         """Returns the number of tokens after truncation, unknown tokens included."""
-        self._ensure_model()
+        self._ensure_tokenizer()
         texts = [texts] if isinstance(texts, str) else texts
         return sum(int(self._token_ids(batch)[1].sum()) for batch in iter_batch(texts, batch_size))
 

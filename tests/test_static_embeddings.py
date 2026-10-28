@@ -1,13 +1,22 @@
 import json
 import os
 import warnings
+from pathlib import Path
 from typing import Iterator
+from unittest.mock import patch
 
 import numpy as np
 import pytest
+from tokenizers import Tokenizer
+from tokenizers.models import WordLevel
+from tokenizers.pre_tokenizers import Whitespace
 
 from fastembed.common.safetensors_utils import load_safetensors
-from fastembed.text.static_embedding import SqrtTfStaticEmbedding, StaticTextEmbedding
+from fastembed.text.static_embedding import (
+    SqrtTfStaticEmbedding,
+    StaticTextEmbedding,
+    load_static_tokenizer,
+)
 from fastembed.text.text_embedding import TextEmbedding
 from tests.test_text_onnx_embeddings import CANONICAL_VECTOR_VALUES
 from tests.utils import delete_model_cache, is_manual_run
@@ -120,6 +129,47 @@ def _write_safetensors(path, tensors: dict[str, tuple[str, list[int], bytes]]) -
         f.write(len(encoded).to_bytes(8, "little"))
         f.write(encoded)
         f.write(data)
+
+
+@pytest.mark.parametrize("embedding_class", [StaticTextEmbedding, SqrtTfStaticEmbedding])
+@pytest.mark.parametrize("lazy_load", [True, False])
+def test_token_count_keeps_static_weights_lazy(
+    tmp_path: Path, embedding_class: type[StaticTextEmbedding], lazy_load: bool
+) -> None:
+    """Counting tokens loads only the tokenizer; embedding still loads the tensor table."""
+    tokenizer = Tokenizer(WordLevel({"[UNK]": 0, "hello": 1, "world": 2}, unk_token="[UNK]"))
+    tokenizer.pre_tokenizer = Whitespace()
+    tokenizer.save(str(tmp_path / "tokenizer.json"))
+    values = np.array([[0, 0], [3, 0], [0, 4]], dtype="<f4")
+    _write_safetensors(
+        tmp_path / "model.safetensors", {"embeddings": ("F32", [3, 2], values.tobytes())}
+    )
+
+    with (
+        patch(
+            "fastembed.text.static_embedding.load_safetensors", wraps=load_safetensors
+        ) as load_tensors,
+        patch(
+            "fastembed.text.static_embedding.load_static_tokenizer", wraps=load_static_tokenizer
+        ) as load_tokenizer,
+    ):
+        model = embedding_class(
+            embedding_class._list_supported_models()[0].model,
+            specific_model_path=str(tmp_path),
+            lazy_load=lazy_load,
+        )
+        assert load_tensors.call_count == (0 if lazy_load else 1)
+        assert model.token_count("hello world") == 2
+        assert model.token_count(iter(["hello", "", "world world"]), batch_size=1) == 3
+        assert model.token_count("hello " * 600) == 512
+        assert load_tokenizer.call_count == 1
+        assert load_tensors.call_count == (0 if lazy_load else 1)
+        assert (model.embeddings is None) == lazy_load
+
+        embedding = next(iter(model.embed("hello world")))
+        assert np.allclose(embedding, [0.6, 0.8])
+        assert model.token_count("hello") == 1
+        assert load_tokenizer.call_count == load_tensors.call_count == 1
 
 
 @pytest.mark.parametrize("mmap", [True, False])
