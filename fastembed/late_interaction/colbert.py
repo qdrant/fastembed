@@ -9,7 +9,7 @@ from fastembed.common.preprocessor_utils import load_tokenizer
 from fastembed.common.types import NumpyArray, Device
 from fastembed.common import OnnxProvider
 from fastembed.common.onnx_model import OnnxOutputContext
-from fastembed.common.utils import define_cache_dir, iter_batch
+from fastembed.common.utils import define_cache_dir, iter_batch, normalize
 from fastembed.late_interaction.late_interaction_embedding_base import (
     LateInteractionTextEmbeddingBase,
 )
@@ -69,13 +69,8 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
                     if token_id in self.skip_list or token_id == self.pad_token_id:
                         output.attention_mask[i, j] = 0
 
-            output.model_output *= np.expand_dims(output.attention_mask, 2)
-            norm = np.linalg.norm(output.model_output, ord=2, axis=2, keepdims=True)
-            norm_clamped = np.maximum(norm, 1e-12)
-            output.model_output /= norm_clamped
-
             for embedding, attention_mask in zip(output.model_output, output.attention_mask):
-                yield embedding[attention_mask == 1]
+                yield normalize(embedding[attention_mask == 1])
 
     def _preprocess_onnx_input(
         self, onnx_input: dict[str, NumpyArray], is_doc: bool = True, **kwargs: Any
