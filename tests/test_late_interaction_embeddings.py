@@ -58,6 +58,15 @@ CANONICAL_COLUMN_VALUES = {
             [0.06737, -0.12068, -0.00429, -0.00843, -0.04418],
         ]
     ),
+    "mixedbread-ai/mxbai-edge-colbert-v0-17m": np.array(
+        [
+            [0.00174, 0.00832, 0.21842, -0.16001, -0.0219],
+            [0.07135, -0.04004, 0.25478, -0.12711, -0.00311],
+            [0.05888, 0.06583, 0.22556, -0.13442, -0.00859],
+            [0.05017, 0.01771, 0.26255, -0.12311, 0.01601],
+            [0.0746, 0.01976, 0.30002, -0.12311, -0.0063],
+        ]
+    ),
 }
 
 CANONICAL_QUERY_VALUES = {
@@ -185,6 +194,15 @@ CANONICAL_QUERY_VALUES = {
             [0.09968, -0.1013, 0.02409, -0.04671, -0.02976],
             [0.09301, -0.09293, 0.03714, -0.07039, -0.06817],
             [0.10895, -0.10447, 0.01298, -0.0075, -0.05043],
+        ]
+    ),
+    "mixedbread-ai/mxbai-edge-colbert-v0-17m": np.array(
+        [
+            [0.01335, 0.02067, 0.192, -0.19178, -0.04561],
+            [0.05477, -0.02287, 0.19882, -0.15113, 0.0262],
+            [0.05003, 0.08878, 0.19211, -0.12322, -0.02023],
+            [0.05508, 0.01415, 0.24523, -0.11247, 0.01566],
+            [0.07463, 0.01984, 0.29991, -0.12322, -0.00634],
         ]
     ),
 }
@@ -341,6 +359,9 @@ def test_get_embedding_size():
 
     model_name = "lightonai/mLateOn"
     assert LateInteractionTextEmbedding.get_embedding_size(model_name) == 128
+
+    model_name = "mixedbread-ai/mxbai-edge-colbert-v0-17m"
+    assert LateInteractionTextEmbedding.get_embedding_size(model_name) == 48
 
 
 def test_embedding_size():
