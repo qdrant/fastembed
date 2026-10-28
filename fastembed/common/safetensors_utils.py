@@ -48,10 +48,10 @@ def load_safetensors(path: str | Path, mmap: bool = False) -> dict[str, NumpyArr
             raise ValueError(f"Unsupported safetensors dtype {dtype} for {name} in {path}")
         item_size = 2 if dtype == "BF16" else np.dtype(_DTYPES[dtype]).itemsize
         expected_size = math.prod(shape) * item_size
-        if end - start != expected_size:
+        if end < start or end - start != expected_size:
             raise ValueError(
-                f"Invalid safetensors byte size for {name} in {path}: "
-                f"expected {expected_size}, got {end - start}"
+                f"Invalid safetensors data offsets [{start}, {end}] for {name} in {path}: "
+                f"expected {expected_size} bytes for shape {list(shape)}"
             )
         if end == start:
             tensors[name] = np.empty(
