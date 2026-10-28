@@ -43,6 +43,8 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           PYTHONUNBUFFERED: '1'
+          # /tmp is a ram-backed tmpfs with a ~6 GB quota on ubuntu-26.04, too small for every model
+          FASTEMBED_CACHE_PATH: ${{ runner.temp }}/fastembed_cache
         run: |
           uv run --no-sync pytest --durations=20 2>&1 | tee pytest.log
 
