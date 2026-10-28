@@ -73,7 +73,8 @@ def iter_batch(iterable: Iterable[T], size: int) -> Iterable[list[T]]:
     return batches()
 
 
-MAX_BATCH_TOKENS = 8192
+# padded tokens per batch on CPU, see `iter_length_sorted_batches`
+MAX_BATCH_TOKENS = 4096
 # past this length the attention matrices (texts x length x length) outgrow the other activations
 ATTENTION_LENGTH = 512
 
@@ -83,14 +84,15 @@ def iter_length_sorted_batches(
     batch_size: int,
     token_count: Callable[[T], int],
     window_batches: int = 8,
-    max_batch_tokens: int | None = MAX_BATCH_TOKENS,
+    max_batch_tokens: int | None = None,
 ) -> Iterable[tuple[list[int], list[T]]]:
     """Batch texts of similar length together, sorting within windows of `window_batches` batches.
 
     A larger window saves more padding, but reads more texts ahead and delays the first output.
     Length is the token count after truncation, so truncated texts tie and keep their order.
 
-    `max_batch_tokens` caps a batch of long texts below `batch_size` texts: up to
+    `max_batch_tokens` (e.g. `MAX_BATCH_TOKENS`) caps a batch of long texts below `batch_size`
+    texts: up to
     `ATTENTION_LENGTH` tokens a batch holds at most that many padded tokens, beyond it the
     budget shrinks with the length, so the attention matrices stay as large as at
     `ATTENTION_LENGTH`. A single text always makes a batch.

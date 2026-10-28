@@ -156,7 +156,10 @@ class OnnxTextModel(OnnxModel[T]):
                     self._post_process_onnx_output(self.onnx_embed(batch, **kwargs), **kwargs),
                 )
                 for indices, batch in iter_length_sorted_batches(
-                    documents, batch_size, self._token_count
+                    documents,
+                    batch_size,
+                    self._token_count,
+                    max_batch_tokens=self._batch_token_budget(),
                 )
             )
         else:
@@ -186,9 +189,11 @@ class OnnxTextModel(OnnxModel[T]):
             )
             batch_indices: deque[list[int]] = deque()
 
+            max_batch_tokens = self._batch_token_budget(providers, cuda)
+
             def batches() -> Iterable[list[str]]:
                 for indices, batch in iter_length_sorted_batches(
-                    documents, batch_size, self._token_count
+                    documents, batch_size, self._token_count, max_batch_tokens=max_batch_tokens
                 ):
                     batch_indices.append(indices)
                     yield batch

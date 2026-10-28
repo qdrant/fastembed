@@ -12,6 +12,7 @@ from tokenizers import Tokenizer
 
 from fastembed.common.onnx_external_data import ONNX_SNAPSHOTS_DIR, link_external_data
 from fastembed.common.types import OnnxProvider, NumpyArray, Device
+from fastembed.common.utils import MAX_BATCH_TOKENS
 from fastembed.parallel_processor import Worker
 
 # Holds type of the embedding result
@@ -70,6 +71,26 @@ class OnnxModel(Generic[T]):
         Preprocess the onnx input.
         """
         return onnx_input
+
+    def _batch_token_budget(
+        self,
+        providers: Sequence[OnnxProvider] | None = None,
+        cuda: bool | Device = Device.AUTO,
+    ) -> int | None:
+        """Padded tokens per batch for sessions on the CPU only, None to keep batches of
+        `batch_size` on accelerators, which run large batches faster. A loaded model reports
+        its providers, the workers' are resolved like `_load_onnx_model` resolves them."""
+        if getattr(self, "model", None) is not None:
+            names = self.model.get_providers()  # type: ignore[union-attr]
+        elif providers is not None:
+            names = [p if isinstance(p, str) else p[0] for p in providers]
+        elif cuda is True or cuda == Device.CUDA or (
+            cuda == Device.AUTO and "CUDAExecutionProvider" in ort.get_available_providers()
+        ):
+            names = ["CUDAExecutionProvider"]
+        else:
+            names = ["CPUExecutionProvider"]
+        return MAX_BATCH_TOKENS if names == ["CPUExecutionProvider"] else None
 
     def _load_onnx_model(
         self,
