@@ -69,7 +69,6 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
                     if token_id in self.skip_list or token_id == self.pad_token_id:
                         output.attention_mask[i, j] = 0
 
-            output.model_output *= np.expand_dims(output.attention_mask, 2)
             for embedding, attention_mask in zip(output.model_output, output.attention_mask):
                 yield normalize(embedding[attention_mask == 1])
 

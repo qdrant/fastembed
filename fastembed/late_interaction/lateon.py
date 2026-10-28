@@ -3,11 +3,10 @@ from typing import Any, Iterable, Type
 
 import numpy as np
 
-from fastembed.common.utils import normalize
-
 from fastembed.common.model_description import DenseModelDescription, ModelSource
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.types import NumpyArray
+from fastembed.common.utils import normalize
 from fastembed.late_interaction.colbert import Colbert, ColbertEmbeddingWorker
 
 
