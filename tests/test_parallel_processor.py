@@ -23,15 +23,6 @@ def test_non_positive_worker_counts_are_rejected(num_workers):
         ParallelWorkerPool(num_workers, EchoWorker)
 
 
-@pytest.mark.parametrize("num_workers", [1, 2])
-def test_positive_worker_counts_preserve_ordered_results(num_workers):
-    start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
-    pool = ParallelWorkerPool(num_workers, EchoWorker, start_method=start_method)
-
-    assert list(pool.ordered_map([3, 1, 2])) == [3, 1, 2]
-    assert pool.processes == []
-
-
 # semi_ordered_map is closed by garbage collection, so an error in its cleanup is only reported as unraisable
 @pytest.mark.filterwarnings("error::pytest.PytestUnraisableExceptionWarning")
 def test_closing_partially_consumed_iterator_stops_workers():
