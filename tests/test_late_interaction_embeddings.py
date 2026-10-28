@@ -1,8 +1,10 @@
+import json
 import os
 from contextlib import contextmanager
 
 import pytest
 import numpy as np
+from tokenizers import Tokenizer, models
 
 from fastembed.late_interaction.late_interaction_text_embedding import (
     LateInteractionTextEmbedding,
@@ -412,3 +414,20 @@ def test_token_count_without_query_expansion(model_cache, model_name: str) -> No
         long_text = "token " * 400
         assert model.token_count(long_text, include_extension=True) == 300
         assert model.token_count(long_text, is_doc=False, include_extension=True) == 300
+
+
+def test_colbert_keeps_truncation_direction(tmp_path) -> None:
+    vocab = {"[PAD]": 0, "[UNK]": 1, "[MASK]": 2}
+    tokenizer = Tokenizer(models.WordLevel(vocab, unk_token="[UNK]"))
+    tokenizer.add_special_tokens(list(vocab))
+    tokenizer.save(str(tmp_path / "tokenizer.json"))
+    tokenizer_config = {"model_max_length": 8, "pad_token": "[PAD]", "truncation_side": "left"}
+    (tmp_path / "tokenizer_config.json").write_text(json.dumps(tokenizer_config))
+
+    model = LateInteractionTextEmbedding(
+        "colbert-ir/colbertv2.0", lazy_load=True, specific_model_path=str(tmp_path)
+    ).model
+    model._load_tokenizer(tmp_path)
+
+    assert model.tokenizer.truncation["direction"] == "left"
+    assert model.query_tokenizer.truncation["direction"] == "left"
