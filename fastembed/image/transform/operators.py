@@ -1,5 +1,5 @@
-import math
 from typing import Any
+import math
 
 from PIL import Image
 
