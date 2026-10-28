@@ -119,6 +119,8 @@ def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
     # and set it only in the config.
     padding = tokenizer.padding or {}
     pad_token = padding.get("pad_token") or tokenizer_config.get("pad_token")
+    if isinstance(pad_token, dict):
+        pad_token = pad_token.get("content")
     if pad_token is None:
         raise ValueError(f"Could not find a pad token for {model_dir}")
 
