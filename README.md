@@ -24,6 +24,88 @@ pip install fastembed
 pip install fastembed-gpu
 ```
 
+## Development of this fork
+
+This fork is based on [Qdrant FastEmbed](https://github.com/qdrant/fastembed) at
+`d076f083519746d132888079e6e790f2193c9c08` (FastEmbed 0.9.0). It preserves
+the upstream architecture, public API, dependency declarations, `poetry.lock`,
+`LICENSE`, and `NOTICE`.
+
+### Install and test the source
+
+Python 3.10 or newer is required; this change was tested on Python 3.11.15 on
+Windows using Poetry 2.5.1 and the existing dependency lockfile.
+
+```bash
+git clone https://github.com/irulappan151204/fastembed.git
+cd fastembed
+git switch fix/model-download-resources
+python -m pip install "poetry==2.5.1"
+poetry install --only main,test,types
+poetry run pytest tests/test_gcs_download.py tests/test_model_management.py tests/test_common.py tests/test_image_transform.py tests/test_parallel_processor.py
+poetry run mypy fastembed --disallow-incomplete-defs --disallow-untyped-defs --disable-error-code=import-untyped
+```
+
+For linting, the upstream pre-commit hooks pin Ruff 0.3.4. With `uv` installed:
+
+```bash
+uv tool run --from "ruff==0.3.4" ruff check --config pyproject.toml fastembed/common/model_management.py tests/test_gcs_download.py
+uv tool run --from "ruff==0.3.4" ruff format --check --config pyproject.toml fastembed/common/model_management.py tests/test_gcs_download.py
+```
+
+The tests above use local HTTP fixtures and require no model weights, GPU, API
+keys, paid services, or external model endpoints. The full suite is
+`poetry run pytest`; it includes model downloads and hardware-dependent tests.
+To run the representative reranker tests using CPU inference and the upstream
+CI model-selection policy (which also cleans up downloaded test models):
+
+```bash
+CI=1 poetry run pytest tests/test_text_cross_encoder.py
+```
+
+### Environment configuration
+
+FastEmbed accepts constructor arguments such as `cache_dir`, `threads`,
+`providers`, and `local_files_only`. The following environment variables are
+also useful:
+
+| Variable | Purpose |
+| --- | --- |
+| `FASTEMBED_CACHE_PATH` | Choose a writable directory for downloaded models. |
+| `HF_HUB_OFFLINE=1` | Require cached models; uncached inference tests will fail. |
+| `HF_ENDPOINT` | Select a trusted Hugging Face mirror if required. |
+| `HF_TOKEN` | Optional authentication for restricted models; set privately and never commit it. |
+
+For example, in PowerShell:
+
+```powershell
+$env:FASTEMBED_CACHE_PATH = Join-Path $env:TEMP "fastembed-models"
+poetry run pytest tests/test_text_cross_encoder.py
+```
+
+In restricted Windows environments, a missing `PROCESSOR_ARCHITECTURE` can
+cause Poetry to report `Could not parse version constraint`. Set that variable
+to the actual architecture for the current process (`AMD64` on the tested
+64-bit Windows host). If Documents disallows tool writes, put the checkout and
+virtual environment in a writable development directory, or redirect tool
+caches to a writable directory. `pytest -p no:cacheprovider` and Ruff's
+`--no-cache` avoid writing their caches into the checkout.
+
+### Fixes in this fork
+
+- Streamed model-download responses now close on success and failure, including
+  HTTP errors, malformed length headers, and destination-open errors. Existing
+  exception types, timeouts, chunk sizes, and return values are preserved.
+- The missing-length warning, fallback-download log, and missing-model-directory
+  error omit custom source URLs, which may contain signed access tokens. The
+  warning uses the existing Loguru logger and still explains disabled progress.
+- Nine regression and compatibility tests use a real local HTTP server to
+  verify resource cleanup, unchanged file bytes, and safe diagnostics.
+
+These changes do not sanitize every third-party exception; callers should avoid
+logging raw HTTP exceptions or sensitive configuration. Model weights have
+their own licenses; see `NOTICE` and each model's license before using them.
+
 ## 📖 Quickstart
 
 ```python
