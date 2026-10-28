@@ -14,7 +14,7 @@ class EchoWorker(Worker):
 
     def process(self, items):
         yield from items
-
+        
 
 # semi_ordered_map is closed by garbage collection, so an error in its cleanup is only reported as unraisable
 @pytest.mark.filterwarnings("error::pytest.PytestUnraisableExceptionWarning")
