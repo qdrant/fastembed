@@ -8,7 +8,7 @@ from multiprocessing import Queue, get_context
 from multiprocessing.context import BaseContext
 from multiprocessing.process import BaseProcess
 from multiprocessing.sharedctypes import Synchronized as BaseValue
-from queue import Empty
+from queue import Empty, Full
 from typing import Any, Iterable, Type
 
 from fastembed.common.types import Device
@@ -178,7 +178,7 @@ class ParallelWorkerPool:
                         out_item = None
                 else:
                     try:
-                        out_item = self.output_queue.get(timeout=processing_timeout)
+                        out_item = self._get_output()
                     except Empty as e:
                         self.join_or_terminate()
                         raise e
@@ -194,11 +194,11 @@ class ParallelWorkerPool:
                 pushed += 1
 
             for _ in range(self.num_workers):
-                self.input_queue.put(QueueSignals.stop)
+                self._put_stop_signal()
 
             while read < pushed:
                 self.check_worker_health()
-                out_item = self.output_queue.get(timeout=processing_timeout)
+                out_item = self._get_output()
                 if out_item == QueueSignals.error:
                     self.join_or_terminate()
                     raise RuntimeError("Thread unexpectedly terminated")
@@ -233,6 +233,37 @@ class ParallelWorkerPool:
             else:
                 self.input_queue.join_thread()
                 self.output_queue.join_thread()
+
+    def _get_output(self) -> Any:
+        """Wait for output, checking worker health without resetting the overall timeout."""
+        assert self.output_queue is not None, "Output queue was not initialized"
+        deadline = time.monotonic() + processing_timeout
+        while True:
+            remaining = max(0.0, deadline - time.monotonic())
+            try:
+                return self.output_queue.get(timeout=min(1.0, remaining))
+            except Empty:
+                pass
+            # outside the except block, so a worker crash isn't reported as raised while handling Empty
+            self.check_worker_health()
+            if time.monotonic() >= deadline:
+                raise Empty
+
+    def _put_stop_signal(self) -> None:
+        """Send a stop signal, failing instead of blocking forever if no worker is left to make room."""
+        assert self.input_queue is not None, "Input queue was not initialized"
+        while True:
+            try:
+                self.input_queue.put(QueueSignals.stop, timeout=1.0)
+                return
+            except Full:
+                pass
+            self.check_worker_health()
+            # A worker that fails to start reports an error and exits with code 0, which the health
+            # check accepts. While the queue is full no worker can have taken a stop signal yet, so
+            # if none is alive, nothing will ever make room.
+            if not any(process.is_alive() for process in self.processes):
+                raise RuntimeError("Thread unexpectedly terminated")
 
     def check_worker_health(self) -> None:
         """
