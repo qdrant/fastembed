@@ -1,8 +1,7 @@
 import json
 import sys
-from collections.abc import Iterator
+from typing import Any, Iterator
 from pathlib import Path
-from typing import Any
 
 from tokenizers import AddedToken, Tokenizer
 
@@ -73,11 +72,6 @@ def _resolve_max_context(tokenizer_config: dict[str, Any], model_dir: Path) -> i
 
 
 def load_tokenizer(model_dir: Path) -> tuple[Tokenizer, dict[str, int]]:
-    """Load a local tokenizer with configured truncation and batch-longest padding.
-
-    Serialized padding supplies the token, while config may override its direction.
-    Returns the tokenizer and the optional model configuration.
-    """
     tokenizer_path = model_dir / "tokenizer.json"
     if not tokenizer_path.exists():
         raise ValueError(f"Could not find tokenizer.json in {model_dir}")
