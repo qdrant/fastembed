@@ -228,11 +228,6 @@ class ParallelWorkerPool:
             # initialized queues, without masking the original startup exception.
             for queue in (self.input_queue, self.output_queue):
                 if queue is not None:
-                    # Without a local feeder, close() cannot close the pipe endpoints.
-                    # Workers have already stopped, so neither queue is still in use.
-                    if queue._thread is None:  # type: ignore[attr-defined]
-                        queue._reader.close()  # type: ignore[attr-defined]
-                        queue._writer.close()  # type: ignore[attr-defined]
                     queue.close()
                     if self.emergency_shutdown:
                         queue.cancel_join_thread()
