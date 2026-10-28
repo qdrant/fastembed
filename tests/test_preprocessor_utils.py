@@ -279,6 +279,27 @@ def test_unusable_max_context_raises(make_model_dir, model_max_length, max_lengt
         load_tokenizer(model_dir)
 
 
+@pytest.mark.parametrize(
+    "model_max_length,max_length,expected",
+    [
+        (HF_SENTINEL, None, 8192),  # onnx-community/embeddinggemma-2-ONNX
+        (None, None, 8192),
+        (512, None, 512),  # a usable config key still wins over the declared default
+        (HF_SENTINEL, 256, 256),
+    ],
+)
+def test_default_max_length_fills_unusable_config(
+    make_model_dir, model_max_length, max_length, expected
+) -> None:
+    model_dir = make_model_dir(
+        tokenizer_config={"model_max_length": model_max_length, "max_length": max_length},
+    )
+
+    tokenizer, _ = load_tokenizer(model_dir, default_max_length=8192)
+
+    assert tokenizer.truncation["max_length"] == expected
+
+
 def test_absent_max_context_keys_raise(make_model_dir) -> None:
     model_dir = make_model_dir(
         drop_from_tokenizer_config=("model_max_length", "max_length"),
