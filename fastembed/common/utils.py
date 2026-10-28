@@ -73,7 +73,7 @@ def iter_batch(iterable: Iterable[T], size: int) -> Iterable[list[T]]:
     return batches()
 
 
-MAX_BATCH_TOKENS = 16384
+MAX_BATCH_TOKENS = 8192
 # past this length the attention matrices (texts x length x length) outgrow the other activations
 ATTENTION_LENGTH = 512
 
