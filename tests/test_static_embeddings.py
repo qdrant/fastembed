@@ -170,6 +170,46 @@ def test_load_safetensors_unsupported_dtype(tmp_path) -> None:
         load_safetensors(path)
 
 
+@pytest.mark.parametrize("mmap", [True, False])
+@pytest.mark.parametrize("dtype,item_size", [("F32", 4), ("BF16", 2)])
+@pytest.mark.parametrize("stored_elements", [0, 1, 3])
+def test_load_safetensors_rejects_inconsistent_byte_size(
+    tmp_path, mmap: bool, dtype: str, item_size: int, stored_elements: int
+) -> None:
+    """A tensor's declared byte range must match its shape and stored dtype."""
+    path = tmp_path / "model.safetensors"
+    _write_safetensors(
+        path,
+        {
+            "invalid": (dtype, [1, 2], bytes(stored_elements * item_size)),
+            # Enough following data to expose reads beyond the first tensor's range.
+            "following": (dtype, [2], bytes(2 * item_size)),
+        },
+    )
+
+    with pytest.raises(ValueError, match="byte size.*invalid"):
+        load_safetensors(path, mmap=mmap)
+
+
+@pytest.mark.parametrize("mmap", [True, False])
+@pytest.mark.parametrize("dtype", ["F32", "BF16"])
+def test_load_safetensors_scalar(tmp_path, mmap: bool, dtype: str) -> None:
+    """A zero-rank tensor contains one element, unlike a tensor with a zero dimension."""
+    path = tmp_path / "model.safetensors"
+    value = np.array(1.5, dtype="<f4")
+    raw = (
+        value.tobytes()
+        if dtype == "F32"
+        else (value.view(np.uint32) >> 16).astype("<u2").tobytes()
+    )
+    _write_safetensors(path, {"scalar": (dtype, [], raw)})
+
+    tensor = load_safetensors(path, mmap=mmap)["scalar"]
+    assert tensor.shape == ()
+    assert tensor.dtype == np.float32
+    assert tensor.item() == 1.5
+
+
 @pytest.mark.parametrize(
     "option",
     [

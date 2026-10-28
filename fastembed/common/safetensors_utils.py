@@ -1,4 +1,5 @@
 import json
+import math
 from pathlib import Path
 
 import numpy as np
@@ -45,6 +46,13 @@ def load_safetensors(path: str | Path, mmap: bool = False) -> dict[str, NumpyArr
         dtype = info["dtype"]
         if dtype != "BF16" and dtype not in _DTYPES:
             raise ValueError(f"Unsupported safetensors dtype {dtype} for {name} in {path}")
+        item_size = 2 if dtype == "BF16" else np.dtype(_DTYPES[dtype]).itemsize
+        expected_size = math.prod(shape) * item_size
+        if end - start != expected_size:
+            raise ValueError(
+                f"Invalid safetensors byte size for {name} in {path}: "
+                f"expected {expected_size}, got {end - start}"
+            )
         if end == start:
             tensors[name] = np.empty(
                 shape, dtype=np.float32 if dtype == "BF16" else _DTYPES[dtype]
