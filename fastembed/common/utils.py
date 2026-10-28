@@ -73,16 +73,27 @@ def iter_batch(iterable: Iterable[T], size: int) -> Iterable[list[T]]:
     return batches()
 
 
+MAX_BATCH_TOKENS = 16384
+# past this length the attention matrices (texts x length x length) outgrow the other activations
+ATTENTION_LENGTH = 512
+
+
 def iter_length_sorted_batches(
     texts: Iterable[T],
     batch_size: int,
     token_count: Callable[[T], int],
     window_batches: int = 8,
+    max_batch_tokens: int | None = MAX_BATCH_TOKENS,
 ) -> Iterable[tuple[list[int], list[T]]]:
     """Batch texts of similar length together, sorting within windows of `window_batches` batches.
 
     A larger window saves more padding, but reads more texts ahead and delays the first output.
     Length is the token count after truncation, so truncated texts tie and keep their order.
+
+    `max_batch_tokens` caps a batch of long texts below `batch_size` texts: up to
+    `ATTENTION_LENGTH` tokens a batch holds at most that many padded tokens, beyond it the
+    budget shrinks with the length, so the attention matrices stay as large as at
+    `ATTENTION_LENGTH`. A single text always makes a batch.
     """
     if batch_size < 1:
         raise ValueError(f"batch_size must be >= 1, got {batch_size}")
@@ -90,9 +101,16 @@ def iter_length_sorted_batches(
     for window in iter_batch(texts, batch_size * window_batches):
         lengths = [token_count(text) for text in window]
         order = sorted(range(len(window)), key=lambda i: lengths[i], reverse=True)
-        for start in range(0, len(order), batch_size):
-            indices = order[start : start + batch_size]
+        start = 0
+        while start < len(order):
+            size = batch_size
+            if max_batch_tokens is not None:
+                longest = max(lengths[order[start]], 1)
+                budget = max_batch_tokens * ATTENTION_LENGTH // max(longest, ATTENTION_LENGTH)
+                size = max(1, min(size, budget // longest))
+            indices = order[start : start + size]
             yield [offset + i for i in indices], [window[i] for i in indices]
+            start += size
         offset += len(window)
 
 
