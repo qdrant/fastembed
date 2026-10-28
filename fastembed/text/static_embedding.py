@@ -204,11 +204,12 @@ class StaticTextEmbedding(TextEmbeddingBase):
         )
         if "embeddings" not in tensors:
             raise ValueError(f"No `embeddings` tensor in {self._model_dir}")
-        self.embeddings = tensors["embeddings"]
         # Vocabulary-quantized model2vec models map token ids to shared rows and reweight them.
         self.weights = tensors.get("weights")
         self.token_mapping = tensors.get("mapping")
         self._ensure_tokenizer()
+        # Once the tokenizer exists, _ensure_model treats a published table as ready to use.
+        self.embeddings = tensors["embeddings"]
 
     def _ensure_tokenizer(self) -> None:
         """Load the tokenizer without reading the embedding table, e.g. for token counting."""

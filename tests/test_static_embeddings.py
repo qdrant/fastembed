@@ -1,7 +1,9 @@
 import json
 import os
 import warnings
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from threading import Event
 from typing import Iterator
 from unittest.mock import patch
 
@@ -170,6 +172,56 @@ def test_token_count_keeps_static_weights_lazy(
         assert np.allclose(embedding, [0.6, 0.8])
         assert model.token_count("hello") == 1
         assert load_tokenizer.call_count == load_tensors.call_count == 1
+
+
+def test_embedding_during_lazy_load_after_token_count(tmp_path: Path) -> None:
+    """Concurrent embedding must use the weights and mapping after tokenizer-only loading."""
+    tokenizer = Tokenizer(WordLevel({"[UNK]": 0, "hello": 1, "world": 2}, unk_token="[UNK]"))
+    tokenizer.pre_tokenizer = Whitespace()
+    tokenizer.save(str(tmp_path / "tokenizer.json"))
+    _write_safetensors(
+        tmp_path / "model.safetensors",
+        {
+            "embeddings": (
+                "F32",
+                [3, 2],
+                np.array([[0, 0], [3, 0], [0, 4]], dtype="<f4").tobytes(),
+            ),
+            "weights": ("F32", [3], np.array([1, 2, 3], dtype="<f4").tobytes()),
+            "mapping": ("I64", [3], np.array([0, 2, 1], dtype="<i8").tobytes()),
+        },
+    )
+    embeddings_published = Event()
+    resume_load = Event()
+
+    class PausingStaticEmbedding(StaticTextEmbedding):
+        """Hold the first loader at the point where another caller can see its table."""
+
+        def __setattr__(self, name: str, value: object) -> None:
+            """Make the publication interleaving deterministic without changing tensor values."""
+            super().__setattr__(name, value)
+            if name == "embeddings" and value is not None:
+                embeddings_published.set()
+                assert resume_load.wait(timeout=10), "Timed out waiting to resume model loading"
+
+    model = PausingStaticEmbedding(CI_MODEL, specific_model_path=str(tmp_path), lazy_load=True)
+    assert model.token_count("hello world") == 2
+    assert model.embeddings is None
+    # hello maps to [0, 4] with weight 2; world maps to [3, 0] with weight 3.
+    expected = np.array([9, 8], dtype=np.float32)
+    expected /= np.linalg.norm(expected)
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        first = executor.submit(lambda: next(iter(model.embed("hello world"))))
+        try:
+            assert embeddings_published.wait(timeout=10), "Embedding table was not published"
+            concurrent_embedding = next(iter(model.embed("hello world")))
+        finally:
+            resume_load.set()
+        first_embedding = first.result(timeout=10)
+
+    np.testing.assert_allclose(concurrent_embedding, expected)
+    np.testing.assert_allclose(first_embedding, expected)
 
 
 @pytest.mark.parametrize("mmap", [True, False])
