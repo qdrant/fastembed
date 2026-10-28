@@ -8,7 +8,7 @@ from multiprocessing import Queue, get_context
 from multiprocessing.context import BaseContext
 from multiprocessing.process import BaseProcess
 from multiprocessing.sharedctypes import Synchronized as BaseValue
-from queue import Empty
+from queue import Empty, Full
 from typing import Any, Iterable, Type
 
 from fastembed.common.types import Device
@@ -192,7 +192,7 @@ class ParallelWorkerPool:
                 pushed += 1
 
             for _ in range(self.num_workers):
-                self.input_queue.put(QueueSignals.stop)
+                self._put_stop_signal()
 
             while read < pushed:
                 self.check_worker_health()
@@ -246,6 +246,22 @@ class ParallelWorkerPool:
             self.check_worker_health()
             if time.monotonic() >= deadline:
                 raise Empty
+
+    def _put_stop_signal(self) -> None:
+        """Send a stop signal, failing instead of blocking forever if no worker is left to make room."""
+        assert self.input_queue is not None, "Input queue was not initialized"
+        while True:
+            try:
+                self.input_queue.put(QueueSignals.stop, timeout=1.0)
+                return
+            except Full:
+                pass
+            self.check_worker_health()
+            # A worker that fails to start reports an error and exits with code 0, which the health
+            # check accepts. While the queue is full no worker can have taken a stop signal yet, so
+            # if none is alive, nothing will ever make room.
+            if not any(process.is_alive() for process in self.processes):
+                raise RuntimeError("Thread unexpectedly terminated")
 
     def check_worker_health(self) -> None:
         """
