@@ -18,7 +18,6 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - '3.10'
           - '3.11'
           - '3.12'
           - '3.13'
@@ -28,17 +27,13 @@ jobs:
           - macos-latest
           - windows-latest
         exclude:
-          # Exclude 3.10–3.13 for macOS and Windows
-          - os: macos-latest
-            python-version: '3.10'
+          # Exclude 3.11–3.13 for macOS and Windows
           - os: macos-latest
             python-version: '3.11'
           - os: macos-latest
             python-version: '3.12'
           - os: macos-latest
             python-version: '3.13'
-          - os: windows-latest
-            python-version: '3.10'
           - os: windows-latest
             python-version: '3.11'
           - os: windows-latest

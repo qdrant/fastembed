@@ -482,7 +482,7 @@ class ModelManagement(Generic[T]):
                 if hasattr(tarfile, "data_filter"):
                     tar.extractall(path=cache_dir, filter="data")
                 else:
-                    # No PEP 706 filter before 3.10.12, so vet the members by hand.
+                    # No PEP 706 filter before 3.11.4, so vet the members by hand.
                     members = tar.getmembers()
                     for member in members:
                         cls._validate_tar_member(member)
