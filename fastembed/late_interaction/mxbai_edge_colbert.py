@@ -1,7 +1,6 @@
-from pathlib import Path
-from typing import Any, Type
+from typing import Any, Iterable, Type
 
-from tokenizers import normalizers
+from tokenizers import Encoding
 
 from fastembed.common.model_description import DenseModelDescription, ModelSource
 from fastembed.late_interaction.colbert import ColbertEmbeddingWorker
@@ -39,17 +38,28 @@ class MxbaiEdgeColbert(LateOn):
         """
         return supported_mxbai_edge_colbert_models
 
-    def _load_tokenizer(self, model_dir: Path) -> None:
-        super()._load_tokenizer(model_dir)
-        # sentence-transformers lowercases the text (`do_lower_case` in sentence_bert_config.json),
-        # tokenizer.json itself only applies NFC
-        lowercase = normalizers.Lowercase()
-        for tokenizer in (self.tokenizer, self.query_tokenizer):
-            assert tokenizer is not None
-            normalizer = tokenizer.normalizer
-            tokenizer.normalizer = (
-                normalizers.Sequence([normalizer, lowercase]) if normalizer else lowercase
-            )
+    # sentence-transformers lowercases the raw text (`do_lower_case` in sentence_bert_config.json).
+    # A tokenizer normalizer would differ: it runs after special tokens like [MASK] are matched,
+    # and lowercases char by char, so a word-final Σ never becomes ς
+    def tokenize(self, documents: list[str], is_doc: bool = True, **kwargs: Any) -> list[Encoding]:
+        return super().tokenize([document.lower() for document in documents], is_doc, **kwargs)
+
+    def token_count(
+        self,
+        texts: str | Iterable[str],
+        batch_size: int = 1024,
+        is_doc: bool = True,
+        include_extension: bool = False,
+        **kwargs: Any,
+    ) -> int:
+        texts = [texts] if isinstance(texts, str) else texts
+        return super().token_count(
+            (text.lower() for text in texts),
+            batch_size=batch_size,
+            is_doc=is_doc,
+            include_extension=include_extension,
+            **kwargs,
+        )
 
 
 class MxbaiEdgeColbertEmbeddingWorker(ColbertEmbeddingWorker):
