@@ -1,5 +1,5 @@
 import os
-from collections import defaultdict
+from collections import Counter
 from multiprocessing import get_all_start_methods
 from pathlib import Path
 from typing import Any, Iterable, Protocol, Type
@@ -70,6 +70,10 @@ supported_bm25_models: list[SparseModelDescription] = [
         model_file="config.json",
     ),
 ]
+
+
+# entries per cache of a Bm25 instance, a few MB; a full cache starts over
+TOKEN_CACHE_SIZE = 1 << 16
 
 
 class Bm25(SparseTextEmbeddingBase):
@@ -179,6 +183,9 @@ class Bm25(SparseTextEmbeddingBase):
             self.stemmer = SnowballStemmer(language)
 
         self.tokenizer = SimpleTokenizer
+        # words repeat across documents: cache what each token stems to and each stem's id
+        self._stem_cache: dict[str, str] = {}
+        self._token_id_cache: dict[str, int] = {}
 
     @classmethod
     def _list_supported_models(cls) -> list[SparseModelDescription]:
@@ -285,26 +292,42 @@ class Bm25(SparseTextEmbeddingBase):
         )
 
     def _stem(self, tokens: list[str]) -> list[str]:
+        cache = self._stem_cache
         stemmed_tokens: list[str] = []
         for token in tokens:
-            lower_token = token.lower()
-
-            if token in self.punctuation:
-                continue
-
-            if lower_token in self.stopwords:
-                continue
-
-            if len(token) > self.token_max_length:
-                continue
-
-            stemmed_token = (
-                self.stemmer.stem_word(lower_token) if self.stemmer is not None else lower_token
-            )
-
+            stemmed_token = cache.get(token)
+            if stemmed_token is None:
+                stemmed_token = self._stem_token(token)
+                if len(cache) >= TOKEN_CACHE_SIZE:
+                    cache.clear()
+                cache[token] = stemmed_token
             if stemmed_token:
                 stemmed_tokens.append(stemmed_token)
         return stemmed_tokens
+
+    def _stem_token(self, token: str) -> str:
+        """The stemmed token, or "" for a token that doesn't count."""
+        lower_token = token.lower()
+
+        if token in self.punctuation:
+            return ""
+
+        if lower_token in self.stopwords:
+            return ""
+
+        if len(token) > self.token_max_length:
+            return ""
+
+        return self.stemmer.stem_word(lower_token) if self.stemmer is not None else lower_token
+
+    def _cached_token_id(self, token: str) -> int:
+        token_id = self._token_id_cache.get(token)
+        if token_id is None:
+            token_id = self.compute_token_id(token)
+            if len(self._token_id_cache) >= TOKEN_CACHE_SIZE:
+                self._token_id_cache.clear()
+            self._token_id_cache[token] = token_id
+        return token_id
 
     def raw_embed(
         self,
@@ -344,18 +367,12 @@ class Bm25(SparseTextEmbeddingBase):
             dict[int, float]: The token_id to term frequency mapping.
         """
         tf_map: dict[int, float] = {}
-        counter: defaultdict[str, int] = defaultdict(int)
-        for stemmed_token in tokens:
-            counter[stemmed_token] += 1
-
         doc_len = len(tokens)
-        for stemmed_token in counter:
-            token_id = self.compute_token_id(stemmed_token)
-            num_occurrences = counter[stemmed_token]
+        length_norm = self.k * (1 - self.b + self.b * doc_len / self.avg_len)
+        for stemmed_token, num_occurrences in Counter(tokens).items():
+            token_id = self._cached_token_id(stemmed_token)
             tf_map[token_id] = num_occurrences * (self.k + 1)
-            tf_map[token_id] /= num_occurrences + self.k * (
-                1 - self.b + self.b * doc_len / self.avg_len
-            )
+            tf_map[token_id] /= num_occurrences + length_norm
         return tf_map
 
     @classmethod

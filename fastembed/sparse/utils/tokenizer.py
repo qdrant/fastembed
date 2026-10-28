@@ -6,10 +6,8 @@ import re
 class SimpleTokenizer:
     @staticmethod
     def tokenize(text: str) -> list[str]:
-        text = re.sub(r"[^\w]", " ", text.lower())
-        text = re.sub(r"\s+", " ", text)
-
-        return text.strip().split()
+        # the runs of word characters, as splitting after replacing every other character with a space
+        return re.findall(r"\w+", text.lower())
 
 
 class WordTokenizer:
