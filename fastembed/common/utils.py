@@ -92,9 +92,8 @@ def iter_length_sorted_batches(
     Length is the token count after truncation, so truncated texts tie and keep their order.
 
     `max_batch_tokens` (e.g. `MAX_BATCH_TOKENS`) caps a batch of long texts below `batch_size`
-    texts: up to
-    `ATTENTION_LENGTH` tokens a batch holds at most that many padded tokens, beyond it the
-    budget shrinks with the length, so the attention matrices stay as large as at
+    texts: up to `ATTENTION_LENGTH` tokens a batch holds at most that many padded tokens, beyond
+    it the budget shrinks with the length, so the attention matrices stay as large as at
     `ATTENTION_LENGTH`. A single text always makes a batch.
     """
     if batch_size < 1:
