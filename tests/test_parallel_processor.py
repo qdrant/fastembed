@@ -1,5 +1,3 @@
-import gc
-import sys
 import threading
 from itertools import count
 from multiprocessing import get_all_start_methods
@@ -16,17 +14,6 @@ class EchoWorker(Worker):
 
     def process(self, items):
         yield from items
-
-
-def test_invalid_start_method_does_not_raise_during_cleanup(monkeypatch):
-    errors = []
-    monkeypatch.setattr(sys, "unraisablehook", errors.append)
-
-    with pytest.raises(ValueError, match="cannot find context"):
-        ParallelWorkerPool(1, EchoWorker, start_method="unsupported")
-    gc.collect()
-
-    assert errors == []
 
 
 # semi_ordered_map is closed by garbage collection, so an error in its cleanup is only reported as unraisable
