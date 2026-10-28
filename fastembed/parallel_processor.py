@@ -241,9 +241,11 @@ class ParallelWorkerPool:
             try:
                 return self.output_queue.get(timeout=min(1.0, remaining))
             except Empty:
-                self.check_worker_health()
-                if time.monotonic() >= deadline:
-                    raise
+                pass
+            # outside the except block, so a worker crash isn't reported as raised while handling Empty
+            self.check_worker_health()
+            if time.monotonic() >= deadline:
+                raise Empty
 
     def check_worker_health(self) -> None:
         """
