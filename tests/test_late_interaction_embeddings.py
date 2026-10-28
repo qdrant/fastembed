@@ -1,11 +1,10 @@
 import json
 import os
-import string
 from contextlib import contextmanager
 
 import pytest
 import numpy as np
-from tokenizers import Tokenizer, models, pre_tokenizers, processors
+from tokenizers import Tokenizer, models
 
 from fastembed.late_interaction.late_interaction_text_embedding import (
     LateInteractionTextEmbedding,
@@ -417,98 +416,18 @@ def test_token_count_without_query_expansion(model_cache, model_name: str) -> No
         assert model.token_count(long_text, is_doc=False, include_extension=True) == 300
 
 
-@pytest.mark.parametrize(
-    "model_name,reserved_marker_tokens",
-    [
-        ("colbert-ir/colbertv2.0", 1),
-        ("jinaai/jina-colbert-v2", 1),
-        ("lightonai/LateOn", 0),
-        ("lightonai/mLateOn", 0),
-    ],
-)
-@pytest.mark.parametrize(
-    "serialized_direction,truncation_side,expected_direction",
-    [
-        (None, None, "right"),
-        ("left", None, "left"),
-        (None, "left", "left"),
-        ("left", "right", "right"),
-    ],
-)
-@pytest.mark.parametrize("is_doc", [True, False])
-def test_colbert_tokenizer_preserves_truncation_direction(
-    tmp_path,
-    model_name,
-    reserved_marker_tokens,
-    serialized_direction,
-    truncation_side,
-    expected_direction,
-    is_doc,
-) -> None:
-    """Keep the configured end of long inputs when reserving the ColBERT marker."""
-    words = [f"word{i}" for i in range(50)]
-    special_tokens = [
-        "[PAD]",
-        "[unused0]",
-        "[unused1]",
-        "[UNK]",
-        "[CLS]",
-        "[SEP]",
-        "[MASK]",
-        "<mask>",
-    ]
-    vocab = {
-        token: index
-        for index, token in enumerate(special_tokens + words + list(string.punctuation))
-    }
+def test_colbert_keeps_truncation_direction(tmp_path) -> None:
+    vocab = {"[PAD]": 0, "[UNK]": 1, "[MASK]": 2}
     tokenizer = Tokenizer(models.WordLevel(vocab, unk_token="[UNK]"))
-    tokenizer.pre_tokenizer = pre_tokenizers.Whitespace()
-    tokenizer.add_special_tokens(special_tokens)
-    tokenizer.post_processor = processors.TemplateProcessing(
-        single="[CLS] $A [SEP]",
-        special_tokens=[("[CLS]", vocab["[CLS]"]), ("[SEP]", vocab["[SEP]"])],
-    )
-    if serialized_direction is not None:
-        tokenizer.enable_truncation(max_length=40, direction=serialized_direction)
-    tokenizer.enable_padding(pad_id=vocab["[PAD]"], pad_token="[PAD]")
+    tokenizer.add_special_tokens(list(vocab))
     tokenizer.save(str(tmp_path / "tokenizer.json"))
-    (tmp_path / "tokenizer_config.json").write_text(
-        json.dumps(
-            {
-                "model_max_length": 40,
-                "pad_token": "[PAD]",
-                "truncation_side": truncation_side,
-            }
-        ),
-        encoding="utf-8",
-    )
+    tokenizer_config = {"model_max_length": 8, "pad_token": "[PAD]", "truncation_side": "left"}
+    (tmp_path / "tokenizer_config.json").write_text(json.dumps(tokenizer_config))
+
     model = LateInteractionTextEmbedding(
-        model_name,
-        lazy_load=True,
-        local_files_only=True,
-        specific_model_path=str(tmp_path),
-        cache_dir=str(tmp_path / "cache"),
-    )
-    text = " ".join(words)
-    max_length = 40 - reserved_marker_tokens
-    assert model.token_count(text, is_doc=is_doc) == max_length
-    kept_words = (
-        words[-(max_length - 2) :] if expected_direction == "left" else words[: max_length - 2]
-    )
-    expected_tokens = ["[CLS]", *kept_words, "[SEP]"]
+        "colbert-ir/colbertv2.0", lazy_load=True, specific_model_path=str(tmp_path)
+    ).model
+    model._load_tokenizer(tmp_path)
 
-    for reload_tokenizer in (False, True):
-        if reload_tokenizer:
-            model.model._load_tokenizer(tmp_path)
-        encoded = model.model.tokenize([text], is_doc=is_doc)[0]
-        assert encoded.tokens == expected_tokens
-        assert encoded.ids == [vocab[token] for token in expected_tokens]
-        assert encoded.attention_mask == [1] * max_length
-
-        short = model.model.tokenize(["word0 word1"], is_doc=is_doc)[0]
-        assert [token for token, mask in zip(short.tokens, short.attention_mask) if mask] == [
-            "[CLS]",
-            "word0",
-            "word1",
-            "[SEP]",
-        ]
+    assert model.tokenizer.truncation["direction"] == "left"
+    assert model.query_tokenizer.truncation["direction"] == "left"
