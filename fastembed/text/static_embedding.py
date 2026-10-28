@@ -242,8 +242,9 @@ class StaticTextEmbedding(TextEmbeddingBase):
 
         sums = self._sum_rows(ids, lengths)
         # The mean and the sum point the same way, so normalizing the sum gives the mean's
-        # direction. Empty documents stay zero vectors.
-        return normalize(sums)
+        # direction. Empty documents stay zero vectors. Float32 like every other model, also for
+        # float64 tables, which the batched sums would otherwise keep.
+        return normalize(sums.astype(np.float32, copy=False))
 
     def _sum_rows(self, ids: NDArray[np.int64], lengths: NDArray[np.int64]) -> NumpyArray:
         """Sum the vectors of each document's tokens.
