@@ -742,7 +742,7 @@ class ModelManagement(Generic[T]):
             if local_files_only:
                 logger.error("Could not find model in cache_dir")
                 break
-            else:
+            elif retries > 0:
                 logger.error(
                     f"Could not download model from either source, sleeping for {sleep} seconds, {retries} retries left."
                 )
