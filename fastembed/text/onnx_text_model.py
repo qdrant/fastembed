@@ -160,6 +160,7 @@ class OnnxTextModel(OnnxModel[T]):
                     batch_size,
                     self._token_count,
                     max_batch_tokens=self._batch_token_budget(),
+                    attention_heads=self._attention_heads,
                 )
             )
         else:
@@ -193,7 +194,11 @@ class OnnxTextModel(OnnxModel[T]):
 
             def batches() -> Iterable[list[str]]:
                 for indices, batch in iter_length_sorted_batches(
-                    documents, batch_size, self._token_count, max_batch_tokens=max_batch_tokens
+                    documents,
+                    batch_size,
+                    self._token_count,
+                    max_batch_tokens=max_batch_tokens,
+                    attention_heads=self._attention_heads,
                 ):
                     batch_indices.append(indices)
                     yield batch

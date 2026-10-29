@@ -1,5 +1,7 @@
+import json
 import warnings
 from dataclasses import dataclass
+from functools import cached_property
 from pathlib import Path
 from typing import Any, Generic, Iterable, Sequence, Type, TypeVar
 
@@ -82,6 +84,17 @@ class OnnxModel(Generic[T]):
         if self._max_batch_tokens is not None:
             return self._max_batch_tokens or None
         return MAX_BATCH_TOKENS
+
+    @cached_property
+    def _attention_heads(self) -> int | None:
+        """Attention heads per layer from config.json, None when the model doesn't say."""
+        config_path = getattr(self, "_model_dir", Path()) / "config.json"
+        if not config_path.is_file():
+            return None
+        with open(config_path, encoding="utf-8") as config_file:
+            config = json.load(config_file)
+        heads = config.get("num_attention_heads", config.get("n_head"))
+        return heads if isinstance(heads, int) and heads > 0 else None
 
     def _load_onnx_model(
         self,
