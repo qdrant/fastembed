@@ -87,7 +87,9 @@ def load_static_tokenizer(model_dir: Path) -> tuple[Tokenizer, int | None]:
         raise ValueError(f"Could not find tokenizer.json in {model_dir}")
 
     tokenizer = Tokenizer.from_file(str(tokenizer_path))
-    tokenizer.enable_truncation(max_length=MAX_LENGTH)
+    # enable_truncation resets the direction to right unless it is passed.
+    truncation_direction = tokenizer.truncation["direction"] if tokenizer.truncation else "right"
+    tokenizer.enable_truncation(max_length=MAX_LENGTH, direction=truncation_direction)
     tokenizer.no_padding()
 
     with open(tokenizer_path, encoding="utf-8") as f:
