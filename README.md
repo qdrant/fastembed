@@ -207,6 +207,49 @@ scores = list(model.rerank_pairs(
 ))
 ```
 
+## ⚙️ ONNX Runtime and local-only loading
+
+For ONNX-backed models, `threads` sets both the intra-op and inter-op thread counts for each ONNX Runtime session. `enable_cpu_mem_arena` is currently the only additional ONNX session option exposed by FastEmbed; set it to `False` to disable ONNX Runtime's CPU memory arena. Benchmark runtime settings with your workload.
+
+```python
+from fastembed import TextEmbedding
+
+model = TextEmbedding(
+    model_name="BAAI/bge-small-en-v1.5",
+    threads=4,
+    enable_cpu_mem_arena=False,
+)
+```
+
+To prepare a model for a later run without network access, first populate a known cache directory while online:
+
+```python
+from fastembed import TextEmbedding
+
+model_name = "BAAI/bge-small-en-v1.5"
+cache_dir = "./fastembed_cache"
+
+# This run may download the model into cache_dir.
+model = TextEmbedding(model_name=model_name, cache_dir=cache_dir)
+```
+
+A subsequent run can use the same model and cache without downloading files:
+
+```python
+from fastembed import TextEmbedding
+
+model_name = "BAAI/bge-small-en-v1.5"
+cache_dir = "./fastembed_cache"
+
+model = TextEmbedding(
+    model_name=model_name,
+    cache_dir=cache_dir,
+    local_files_only=True,
+)
+```
+
+If the required model files are missing from that cache, initialization with `local_files_only=True` raises a `ValueError` instead of downloading them.
+
 ## ⚡️ FastEmbed on a GPU
 
 FastEmbed supports running on GPU devices.
