@@ -97,3 +97,18 @@ def test_iter_batch_rejects_non_positive_size():
 
     with pytest.raises(ValueError, match="batch_size must be >= 1, got -1"):
         iter_batch([1, 2, 3], -1)
+
+
+def test_last_token_pooling_with_fully_masked_sequences():
+    embeddings = np.array([[[9.0, 8.0], [7.0, 6.0]], [[1.0, 2.0], [3.0, 4.0]]], dtype=np.float32)
+    mask = np.array([[0, 0], [1, 0]], dtype=np.int64)
+    result = last_token_pooling(embeddings, mask)
+    np.testing.assert_array_equal(result, [[0.0, 0.0], [1.0, 2.0]])
+    assert result.dtype == embeddings.dtype
+
+
+def test_last_token_pooling_with_zero_length_sequences():
+    embeddings = np.empty((2, 0, 3), dtype=np.float32)
+    mask = np.empty((2, 0), dtype=np.int64)
+    result = last_token_pooling(embeddings, mask)
+    np.testing.assert_array_equal(result, np.zeros((2, 3), dtype=np.float32))
