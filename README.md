@@ -98,6 +98,39 @@ embeddings = list(model.embed(documents))
 # ]
 ```
 
+#### Chinese BM25 tokenization
+
+BM25 accepts a custom `tokenizer` with a `tokenize(text)` method returning a list of
+non-empty, non-whitespace tokens. For Chinese text, install Jieba separately with
+`pip install jieba` and use an adapter like this. Jieba is optional and the default tokenizer is unchanged.
+
+```python
+import jieba
+from fastembed import SparseTextEmbedding
+
+
+class JiebaTokenizer:
+    def tokenize(self, text: str) -> list[str]:
+        return [token for token in jieba.cut(text) if token.strip()]
+
+
+model = SparseTextEmbedding(
+    "Qdrant/bm25",
+    language="chinese",
+    disable_stemmer=True,
+    tokenizer=JiebaTokenizer(),
+)
+documents = list(model.embed(["北京大学是一所大学"]))
+query = next(iter(model.query_embed("北京大学")))
+```
+
+Use the same tokenizer and dictionary settings when indexing and querying. There
+are no bundled Chinese stopwords, but you can supply a `stopwords` set. For
+`parallel` embedding, define the adapter class in an importable module so worker
+processes can load it.
+Load custom Jieba dictionaries in that module in every process. Dictionary changes
+made only in the parent process are not inherited by spawned workers.
+
 <!--
 * BM42 - ([link](ToDo))
 
