@@ -47,10 +47,13 @@ def last_token_pooling(input_array: NumpyArray, attention_mask: NDArray[np.int64
     """Take the embedding of the last non-padding token of each sequence.
 
     Locates the last position the attention mask marks as real, so it holds whichever
-    side the tokenizer pads on.
+    side the tokenizer pads on. Fully masked or empty sequences return zeros.
     """
+    if attention_mask.shape[1] == 0:
+        return np.zeros((input_array.shape[0], input_array.shape[2]), dtype=input_array.dtype)
     last_token_indices = attention_mask.shape[1] - 1 - np.argmax(attention_mask[:, ::-1], axis=1)
-    return input_array[np.arange(input_array.shape[0]), last_token_indices]
+    pooled = input_array[np.arange(input_array.shape[0]), last_token_indices]
+    return np.where(attention_mask.any(axis=1, keepdims=True), pooled, 0)
 
 
 def iter_batch(iterable: Iterable[T], size: int) -> Iterable[list[T]]:
