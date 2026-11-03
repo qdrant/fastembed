@@ -137,6 +137,7 @@ class ResizeForVisionEncoder(Transform):
         self.resample = resample
 
     def __call__(self, images: list[NumpyArray]) -> list[NumpyArray]:
+        """Resize CHW images to positive multiples of the vision encoder tile size."""
         result = []
         for image in images:
             # Assume (C, H, W) format
