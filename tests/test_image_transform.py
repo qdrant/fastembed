@@ -3,7 +3,7 @@ import pytest
 from PIL import Image
 
 from fastembed.image.transform.functional import normalize, resize
-from fastembed.image.transform.operators import Compose
+from fastembed.image.transform.operators import Compose, ResizeForVisionEncoder
 
 
 def test_center_crop_odd_padding_keeps_batch_shape_and_pixels() -> None:
@@ -109,3 +109,12 @@ def test_normalize_channel_count_mismatch_raises(
     image = np.zeros((3, 4, 4), dtype=np.float32)
     with pytest.raises(ValueError, match=expected):
         normalize(image, mean=mean, std=std)
+
+
+def test_resize_for_vision_encoder_keeps_narrow_dimension_positive() -> None:
+    # Multiplying 392 by its floating-point reciprocal rounds just below one.
+    image = np.zeros((3, 392, 1), dtype=np.uint8)
+
+    [resized] = ResizeForVisionEncoder(max_size=8)([image])
+
+    assert resized.shape == (3, 392, 8)
