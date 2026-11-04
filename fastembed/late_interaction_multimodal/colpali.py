@@ -162,7 +162,10 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
         Returns:
             Iterable[NumpyArray]: Post-processed output as NumPy arrays.
         """
-        return output.model_output
+        assert output.attention_mask is not None
+        # drop the padding rows, so a query gets the same vectors whatever else is in its batch
+        for embedding, attention_mask in zip(output.model_output, output.attention_mask):
+            yield embedding[attention_mask == 1]
 
     def tokenize(self, documents: list[str], **kwargs: Any) -> list[Encoding]:
         texts_query: list[str] = []
