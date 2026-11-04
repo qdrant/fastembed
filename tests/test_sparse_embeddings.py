@@ -374,6 +374,23 @@ def test_custom_and_disabled_stemmer_are_mutually_exclusive() -> None:
         Bm25("Qdrant/bm25", stemmer=_PolishStemmer(), disable_stemmer=True)
 
 
+def test_bm25_legacy_tokenization_strips_combining_marks_by_default() -> None:
+    model = Bm25("Qdrant/bm25", disable_stemmer=True)
+    cafe = next(iter(model.query_embed("cafe")))
+    cafe_combining = next(iter(model.query_embed("cafe\u0301")))
+
+    assert set(cafe.indices) == set(cafe_combining.indices) == {Bm25.compute_token_id("cafe")}
+
+
+def test_bm25_opt_in_preserves_combining_marks() -> None:
+    model = Bm25("Qdrant/bm25", disable_stemmer=True, preserve_combining_marks=True)
+    cafe = next(iter(model.query_embed("cafe")))
+    cafe_combining = next(iter(model.query_embed("cafe\u0301")))
+
+    assert set(cafe.indices) == {Bm25.compute_token_id("cafe")}
+    assert set(cafe_combining.indices) == {Bm25.compute_token_id("cafe\u0301")}
+
+
 def test_parallel_matches_serial() -> None:
     model = SparseTextEmbedding(
         "Qdrant/bm25",

@@ -13,10 +13,17 @@ def _non_word_pattern() -> re.Pattern[str]:
 
 class SimpleTokenizer:
     @staticmethod
-    def tokenize(text: str) -> list[str]:
+    def tokenize(text: str, preserve_combining_marks: bool = False) -> list[str]:
+        """Split ``text`` on non-word characters after lowercasing.
+
+        By default, Unicode combining marks are treated as non-word characters,
+        matching the legacy BM25 tokenizer (``cafe\\u0301`` becomes ``cafe``).
+        Pass ``preserve_combining_marks=True`` to keep those marks so words in
+        scripts such as Tamil, Devanagari, and Arabic stay intact.
+        """
         text = text.lower()
         # ASCII text has no combining marks, and the plain class is faster to match.
-        if text.isascii():
+        if text.isascii() or not preserve_combining_marks:
             text = re.sub(r"[^\w]", " ", text)
         else:
             text = _non_word_pattern().sub(" ", text)

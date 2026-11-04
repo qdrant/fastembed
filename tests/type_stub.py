@@ -23,6 +23,7 @@ bm25_embedder = Bm25(
     specific_model_path="models",
     stemmer=CustomStemmer(),
     stopwords={"the", "a"},
+    preserve_combining_marks=False,
 )
 
 text_embedder.list_supported_models()

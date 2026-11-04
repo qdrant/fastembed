@@ -152,8 +152,18 @@ def _non_alphanumeric_pattern() -> re.Pattern[str]:
     return re.compile(rf"[^\w\s{get_all_marks()}]")
 
 
-def remove_non_alphanumeric(text: str) -> str:
+def remove_non_alphanumeric(text: str, preserve_combining_marks: bool = False) -> str:
+    """Replace characters that are not word characters or whitespace with spaces.
+
+    The default path is the legacy ``[^\\w\\s]`` pattern. Combining marks
+    (Unicode category M) are not word characters, so ``cafe\\u0301`` becomes
+    ``cafe``. Existing BM25 indexes were built with that behavior.
+
+    Pass ``preserve_combining_marks=True`` to keep combining marks, which
+    avoids splitting words in scripts such as Tamil, Devanagari, and Arabic.
+    Re-embed collections after enabling this so queries match the new tokens.
+    """
     # ASCII text has no combining marks, and the plain class is faster to match.
-    if text.isascii():
-        return re.sub(r"[^\w\s]", " ", text)
+    if text.isascii() or not preserve_combining_marks:
+        return re.sub(r"[^\w\s]", " ", text, flags=re.UNICODE)
     return _non_alphanumeric_pattern().sub(" ", text)

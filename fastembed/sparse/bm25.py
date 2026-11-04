@@ -110,6 +110,10 @@ class Bm25(SparseTextEmbeddingBase):
         stopwords (set[str], optional): Inline stopwords to use instead of the stopwords file
             shipped with the model for the chosen language. Words are lowercased and matched
             before stemming. None uses the default stopwords; an empty set disables filtering.
+        preserve_combining_marks (bool): If True, keep Unicode combining marks (category M)
+            such as Tamil/Devanagari vowel signs and Arabic harakat in tokens. Defaults to
+            False so existing BM25 indexes stay searchable (``cafe\\u0301`` hashes as
+            ``cafe``). Re-embed collections after enabling this.
     Raises:
         ValueError: If a default stemmer is unavailable for the language, or stemmer is supplied with
             disable_stemmer=True.
@@ -128,6 +132,7 @@ class Bm25(SparseTextEmbeddingBase):
         specific_model_path: str | None = None,
         stemmer: Stemmer | None = None,
         stopwords: set[str] | None = None,
+        preserve_combining_marks: bool = False,
         **kwargs: Any,
     ):
         super().__init__(model_name, cache_dir, **kwargs)
@@ -161,6 +166,7 @@ class Bm25(SparseTextEmbeddingBase):
         self.token_max_length = token_max_length
         self.punctuation = set(get_all_punctuation())
         self.disable_stemmer = disable_stemmer
+        self.preserve_combining_marks = preserve_combining_marks
 
         self.stopwords: set[str]
         if self._custom_stopwords is not None:
@@ -240,6 +246,7 @@ class Bm25(SparseTextEmbeddingBase):
                 "disable_stemmer": self.disable_stemmer,
                 "stemmer": self._custom_stemmer,
                 "stopwords": self._custom_stopwords,
+                "preserve_combining_marks": self.preserve_combining_marks,
                 "local_files_only": local_files_only,
                 "specific_model_path": specific_model_path,
             }
@@ -312,20 +319,25 @@ class Bm25(SparseTextEmbeddingBase):
     ) -> list[SparseEmbedding]:
         embeddings: list[SparseEmbedding] = []
         for document in documents:
-            document = remove_non_alphanumeric(document)
-            tokens = self.tokenizer.tokenize(document)
+            tokens = self._tokenize_text(document)
             stemmed_tokens = self._stem(tokens)
             token_id2value = self._term_frequency(stemmed_tokens)
             embeddings.append(SparseEmbedding.from_dict(token_id2value))
         return embeddings
 
+    def _tokenize_text(self, text: str) -> list[str]:
+        document = remove_non_alphanumeric(
+            text, preserve_combining_marks=self.preserve_combining_marks
+        )
+        return self.tokenizer.tokenize(
+            document, preserve_combining_marks=self.preserve_combining_marks
+        )
+
     def token_count(self, texts: str | Iterable[str], **kwargs: Any) -> int:
         token_num = 0
         texts = [texts] if isinstance(texts, str) else texts
         for text in texts:
-            document = remove_non_alphanumeric(text)
-            tokens = self.tokenizer.tokenize(document)
-            token_num += len(tokens)
+            token_num += len(self._tokenize_text(text))
         return token_num
 
     def _term_frequency(self, tokens: list[str]) -> dict[int, float]:
@@ -370,8 +382,7 @@ class Bm25(SparseTextEmbeddingBase):
             query = [query]
 
         for text in query:
-            text = remove_non_alphanumeric(text)
-            tokens = self.tokenizer.tokenize(text)
+            tokens = self._tokenize_text(text)
             stemmed_tokens = self._stem(tokens)
             token_ids = np.array(
                 list(set(self.compute_token_id(token) for token in stemmed_tokens)),

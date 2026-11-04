@@ -106,17 +106,29 @@ def test_iter_batch_rejects_non_positive_size():
         iter_batch([1, 2, 3], -1)
 
 
-def test_remove_non_alphanumeric_keeps_combining_marks_inside_words():
+def test_remove_non_alphanumeric_legacy_default_strips_combining_marks():
+    # Existing BM25 indexes hashed cafe\u0301 as cafe. The default must keep that.
+    assert remove_non_alphanumeric("cafe\u0301") == "cafe "
+    assert remove_non_alphanumeric("café") == "café"
+
+
+def test_remove_non_alphanumeric_opt_in_keeps_combining_marks_inside_words():
     # Tamil and Devanagari vowel signs and Arabic harakat are combining marks (Unicode
     # category M). The word class does not match them, so a pattern that keeps only word
     # characters cuts every word in these scripts at each mark.
-    assert remove_non_alphanumeric("தமிழ், हिन्दी!") == "தமிழ்  हिन्दी "
+    assert remove_non_alphanumeric("தமிழ், हिन्दी!", preserve_combining_marks=True) == "தமிழ்  हिन्दी "
+    assert remove_non_alphanumeric("cafe\u0301", preserve_combining_marks=True) == "cafe\u0301"
 
 
-def test_tokenize_keeps_combining_marks_inside_words():
+def test_tokenize_legacy_default_strips_combining_marks():
+    assert SimpleTokenizer.tokenize("cafe\u0301") == ["cafe"]
+    assert SimpleTokenizer.tokenize("café") == ["café"]
+
+
+def test_tokenize_opt_in_keeps_combining_marks_inside_words():
     text = "தமிழ் மொழி, हिन्दी भाषा! ذَهَبَ الطَّالِبُ"
 
-    assert SimpleTokenizer.tokenize(text) == [
+    assert SimpleTokenizer.tokenize(text, preserve_combining_marks=True) == [
         "தமிழ்",
         "மொழி",
         "हिन्दी",
@@ -124,6 +136,7 @@ def test_tokenize_keeps_combining_marks_inside_words():
         "ذَهَبَ",
         "الطَّالِبُ",
     ]
+    assert SimpleTokenizer.tokenize("cafe\u0301", preserve_combining_marks=True) == ["cafe\u0301"]
 
 
 def test_remove_non_alphanumeric_leaves_ascii_alphanumeric_queries_intact():
