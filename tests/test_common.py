@@ -117,7 +117,7 @@ def test_remove_non_alphanumeric_opt_in_keeps_combining_marks_inside_words():
     # category M). The word class does not match them, so a pattern that keeps only word
     # characters cuts every word in these scripts at each mark.
     assert remove_non_alphanumeric("தமிழ், हिन्दी!", preserve_combining_marks=True) == "தமிழ்  हिन्दी "
-    assert remove_non_alphanumeric("cafe\u0301", preserve_combining_marks=True) == "cafe\u0301"
+    assert remove_non_alphanumeric("cafe\u0301", preserve_combining_marks=True) == "café"
 
 
 def test_tokenize_legacy_default_strips_combining_marks():
@@ -136,7 +136,18 @@ def test_tokenize_opt_in_keeps_combining_marks_inside_words():
         "ذَهَبَ",
         "الطَّالِبُ",
     ]
-    assert SimpleTokenizer.tokenize("cafe\u0301", preserve_combining_marks=True) == ["cafe\u0301"]
+    assert SimpleTokenizer.tokenize("cafe\u0301", preserve_combining_marks=True) == ["café"]
+
+
+def test_tokenize_opt_in_nfc_unifies_equivalent_forms():
+    decomposed = SimpleTokenizer.tokenize("cafe\u0301", preserve_combining_marks=True)
+    precomposed = SimpleTokenizer.tokenize("café", preserve_combining_marks=True)
+    acute_then_dot = SimpleTokenizer.tokenize("a\u0301\u0323", preserve_combining_marks=True)
+    dot_then_acute = SimpleTokenizer.tokenize("a\u0323\u0301", preserve_combining_marks=True)
+
+    assert decomposed == precomposed == ["café"]
+    assert acute_then_dot == dot_then_acute
+    assert acute_then_dot != ["a"]
 
 
 def test_tokenize_opt_in_strips_orphan_combining_marks():
@@ -149,9 +160,23 @@ def test_tokenize_opt_in_strips_orphan_combining_marks():
     assert SimpleTokenizer.tokenize("\ufe0f", preserve_combining_marks=True) == []
 
 
+def test_tokenize_opt_in_separates_keycap_emoji_from_following_word():
+    # Digit + VS16 + enclosing keycap is the 1️⃣ emoji and must not glue to hello.
+    assert SimpleTokenizer.tokenize("1\ufe0f\u20e3hello", preserve_combining_marks=True) == [
+        "1",
+        "hello",
+    ]
+
+
 def test_tokenize_opt_in_maps_dotted_capital_i_to_ascii_i():
     assert SimpleTokenizer.tokenize("İstanbul", preserve_combining_marks=True) == ["istanbul"]
     assert SimpleTokenizer.tokenize("istanbul", preserve_combining_marks=True) == ["istanbul"]
+
+
+def test_tokenize_opt_in_keeps_lowercase_lithuanian_dotted_i():
+    # A combining dot already present in lowercase text is not an U+0130 artifact.
+    assert SimpleTokenizer.tokenize("i\u0307", preserve_combining_marks=True) == ["i\u0307"]
+    assert SimpleTokenizer.tokenize("i\u0307\u0301", preserve_combining_marks=True) != ["i\u0301"]
 
 
 def test_tokenize_legacy_dotted_i_still_splits_on_combining_dot():
@@ -159,7 +184,7 @@ def test_tokenize_legacy_dotted_i_still_splits_on_combining_dot():
 
 
 def test_remove_non_alphanumeric_opt_in_strips_orphan_combining_marks():
-    assert remove_non_alphanumeric("\u2764\ufe0fhello", preserve_combining_marks=True) == " hello"
+    assert remove_non_alphanumeric("\u2764\ufe0fhello", preserve_combining_marks=True) == "  hello"
 
 
 def test_remove_non_alphanumeric_leaves_ascii_alphanumeric_queries_intact():

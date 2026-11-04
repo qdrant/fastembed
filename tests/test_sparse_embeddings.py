@@ -388,7 +388,7 @@ def test_bm25_opt_in_preserves_combining_marks() -> None:
     cafe_combining = next(iter(model.query_embed("cafe\u0301")))
 
     assert set(cafe.indices) == {Bm25.compute_token_id("cafe")}
-    assert set(cafe_combining.indices) == {Bm25.compute_token_id("cafe\u0301")}
+    assert set(cafe_combining.indices) == {Bm25.compute_token_id("café")}
 
 
 def test_bm25_opt_in_istanbul_document_and_query_match() -> None:
@@ -405,6 +405,19 @@ def test_bm25_legacy_istanbul_does_not_match_istanbul() -> None:
     query = next(iter(model.query_embed("istanbul")))
 
     assert set(document.indices) != set(query.indices)
+
+
+def test_bm25_opt_in_custom_stopwords_use_same_dotted_i_fold() -> None:
+    model = Bm25(
+        "Qdrant/bm25",
+        disable_stemmer=True,
+        preserve_combining_marks=True,
+        stopwords={"İÇİN"},
+    )
+    document = next(iter(model.embed("İÇİN hello")))
+    query = next(iter(model.query_embed("için hello")))
+
+    assert set(document.indices) == set(query.indices) == {Bm25.compute_token_id("hello")}
 
 
 def test_parallel_matches_serial() -> None:
