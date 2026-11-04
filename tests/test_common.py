@@ -139,6 +139,29 @@ def test_tokenize_opt_in_keeps_combining_marks_inside_words():
     assert SimpleTokenizer.tokenize("cafe\u0301", preserve_combining_marks=True) == ["cafe\u0301"]
 
 
+def test_tokenize_opt_in_strips_orphan_combining_marks():
+    # U+2764 U+FE0F is the heart emoji; the variation selector is a mark with no
+    # letter/digit base and must not attach to the following word.
+    assert SimpleTokenizer.tokenize("\u2764\ufe0fhello", preserve_combining_marks=True) == [
+        "hello"
+    ]
+    assert SimpleTokenizer.tokenize("\ufe0fhello", preserve_combining_marks=True) == ["hello"]
+    assert SimpleTokenizer.tokenize("\ufe0f", preserve_combining_marks=True) == []
+
+
+def test_tokenize_opt_in_maps_dotted_capital_i_to_ascii_i():
+    assert SimpleTokenizer.tokenize("İstanbul", preserve_combining_marks=True) == ["istanbul"]
+    assert SimpleTokenizer.tokenize("istanbul", preserve_combining_marks=True) == ["istanbul"]
+
+
+def test_tokenize_legacy_dotted_i_still_splits_on_combining_dot():
+    assert SimpleTokenizer.tokenize("İstanbul") == ["i", "stanbul"]
+
+
+def test_remove_non_alphanumeric_opt_in_strips_orphan_combining_marks():
+    assert remove_non_alphanumeric("\u2764\ufe0fhello", preserve_combining_marks=True) == " hello"
+
+
 def test_remove_non_alphanumeric_leaves_ascii_alphanumeric_queries_intact():
     # The fast path for ASCII text must keep the previous word/whitespace semantics.
     assert remove_non_alphanumeric("Errore 0x000006D9") == "Errore 0x000006D9"

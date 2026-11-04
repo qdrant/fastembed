@@ -391,6 +391,22 @@ def test_bm25_opt_in_preserves_combining_marks() -> None:
     assert set(cafe_combining.indices) == {Bm25.compute_token_id("cafe\u0301")}
 
 
+def test_bm25_opt_in_istanbul_document_and_query_match() -> None:
+    model = Bm25("Qdrant/bm25", disable_stemmer=True, preserve_combining_marks=True)
+    document = next(iter(model.embed("İstanbul")))
+    query = next(iter(model.query_embed("istanbul")))
+
+    assert set(document.indices) == set(query.indices) == {Bm25.compute_token_id("istanbul")}
+
+
+def test_bm25_legacy_istanbul_does_not_match_istanbul() -> None:
+    model = Bm25("Qdrant/bm25", disable_stemmer=True)
+    document = next(iter(model.embed("İstanbul")))
+    query = next(iter(model.query_embed("istanbul")))
+
+    assert set(document.indices) != set(query.indices)
+
+
 def test_parallel_matches_serial() -> None:
     model = SparseTextEmbedding(
         "Qdrant/bm25",

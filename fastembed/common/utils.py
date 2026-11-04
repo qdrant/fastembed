@@ -152,6 +152,26 @@ def _non_alphanumeric_pattern() -> re.Pattern[str]:
     return re.compile(rf"[^\w\s{get_all_marks()}]")
 
 
+def _strip_unattached_combining_marks(text: str) -> str:
+    """Drop combining marks that are not attached to a letter or digit.
+
+    Marks that follow a letter or digit, including further marks on the same
+    base, are kept. Leading marks and marks after symbols or whitespace are
+    removed, so a variation selector after an emoji does not prefix the next
+    word.
+    """
+    kept: list[str] = []
+    attached_to_alnum = False
+    for char in text:
+        if unicodedata.category(char).startswith("M"):
+            if attached_to_alnum:
+                kept.append(char)
+            continue
+        kept.append(char)
+        attached_to_alnum = char.isalnum()
+    return "".join(kept)
+
+
 def remove_non_alphanumeric(text: str, preserve_combining_marks: bool = False) -> str:
     """Replace characters that are not word characters or whitespace with spaces.
 
@@ -159,11 +179,12 @@ def remove_non_alphanumeric(text: str, preserve_combining_marks: bool = False) -
     (Unicode category M) are not word characters, so ``cafe\\u0301`` becomes
     ``cafe``. Existing BM25 indexes were built with that behavior.
 
-    Pass ``preserve_combining_marks=True`` to keep combining marks, which
-    avoids splitting words in scripts such as Tamil, Devanagari, and Arabic.
+    Pass ``preserve_combining_marks=True`` to keep combining marks that follow
+    a letter or digit, which avoids splitting words in scripts such as Tamil,
+    Devanagari, and Arabic. Orphan and leading marks are still stripped.
     Re-embed collections after enabling this so queries match the new tokens.
     """
     # ASCII text has no combining marks, and the plain class is faster to match.
     if text.isascii() or not preserve_combining_marks:
         return re.sub(r"[^\w\s]", " ", text, flags=re.UNICODE)
-    return _non_alphanumeric_pattern().sub(" ", text)
+    return _strip_unattached_combining_marks(_non_alphanumeric_pattern().sub(" ", text))

@@ -3,7 +3,7 @@
 import re
 from functools import cache
 
-from fastembed.common.utils import get_all_marks
+from fastembed.common.utils import _strip_unattached_combining_marks, get_all_marks
 
 
 @cache
@@ -18,15 +18,21 @@ class SimpleTokenizer:
 
         By default, Unicode combining marks are treated as non-word characters,
         matching the legacy BM25 tokenizer (``cafe\\u0301`` becomes ``cafe``).
-        Pass ``preserve_combining_marks=True`` to keep those marks so words in
-        scripts such as Tamil, Devanagari, and Arabic stay intact.
+        Pass ``preserve_combining_marks=True`` to keep marks that follow a
+        letter or digit so words in scripts such as Tamil, Devanagari, and
+        Arabic stay intact. Orphan and leading marks are stripped. Dotted
+        capital I (U+0130) is mapped to ``i`` so ``İstanbul`` matches
+        ``istanbul``.
         """
         text = text.lower()
+        if preserve_combining_marks:
+            # U+0130 lowercases to i + combining dot above; fold that back to i.
+            text = text.replace("i\u0307", "i")
         # ASCII text has no combining marks, and the plain class is faster to match.
         if text.isascii() or not preserve_combining_marks:
             text = re.sub(r"[^\w]", " ", text)
         else:
-            text = _non_word_pattern().sub(" ", text)
+            text = _strip_unattached_combining_marks(_non_word_pattern().sub(" ", text))
         text = re.sub(r"\s+", " ", text)
 
         return text.strip().split()
