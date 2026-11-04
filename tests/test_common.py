@@ -8,7 +8,14 @@ from fastembed import (
     LateInteractionMultimodalEmbedding,
     LateInteractionTextEmbedding,
 )
-from fastembed.common.utils import iter_batch, last_token_pooling, mean_pooling, normalize
+from fastembed.common.utils import (
+    iter_batch,
+    last_token_pooling,
+    mean_pooling,
+    normalize,
+    remove_non_alphanumeric,
+)
+from fastembed.sparse.utils.tokenizer import SimpleTokenizer
 
 
 def test_text_list_supported_models():
@@ -97,3 +104,29 @@ def test_iter_batch_rejects_non_positive_size():
 
     with pytest.raises(ValueError, match="batch_size must be >= 1, got -1"):
         iter_batch([1, 2, 3], -1)
+
+
+def test_remove_non_alphanumeric_keeps_combining_marks_inside_words():
+    # Tamil and Devanagari vowel signs and Arabic harakat are combining marks (Unicode
+    # category M). The word class does not match them, so a pattern that keeps only word
+    # characters cuts every word in these scripts at each mark.
+    assert remove_non_alphanumeric("தமிழ், हिन्दी!") == "தமிழ்  हिन्दी "
+
+
+def test_tokenize_keeps_combining_marks_inside_words():
+    text = "தமிழ் மொழி, हिन्दी भाषा! ذَهَبَ الطَّالِبُ"
+
+    assert SimpleTokenizer.tokenize(text) == [
+        "தமிழ்",
+        "மொழி",
+        "हिन्दी",
+        "भाषा",
+        "ذَهَبَ",
+        "الطَّالِبُ",
+    ]
+
+
+def test_remove_non_alphanumeric_leaves_ascii_alphanumeric_queries_intact():
+    # The fast path for ASCII text must keep the previous word/whitespace semantics.
+    assert remove_non_alphanumeric("Errore 0x000006D9") == "Errore 0x000006D9"
+    assert remove_non_alphanumeric("hello, world!") == "hello  world "
