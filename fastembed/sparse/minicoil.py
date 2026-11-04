@@ -118,7 +118,14 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         self.lazy_load = lazy_load
         self.device_ids = device_ids
         self.cuda = cuda
-        self.device_id = device_id
+
+        # This device_id will be used if we need to load model in current process
+        self.device_id: int | None = None
+        if device_id is not None:
+            self.device_id = device_id
+        elif self.device_ids:
+            self.device_id = self.device_ids[0]
+
         self._extra_session_options = self._select_exposed_session_options(kwargs)
 
         self.k = k
