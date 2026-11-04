@@ -374,6 +374,59 @@ def test_custom_and_disabled_stemmer_are_mutually_exclusive() -> None:
         Bm25("Qdrant/bm25", stemmer=_PolishStemmer(), disable_stemmer=True)
 
 
+def test_bm25_legacy_tokenization_strips_combining_marks_by_default() -> None:
+    model = Bm25("Qdrant/bm25", disable_stemmer=True)
+    cafe = next(iter(model.query_embed("cafe")))
+    cafe_combining = next(iter(model.query_embed("cafe\u0301")))
+
+    assert set(cafe.indices) == set(cafe_combining.indices) == {Bm25.compute_token_id("cafe")}
+
+
+def test_bm25_opt_in_preserves_combining_marks() -> None:
+    model = Bm25("Qdrant/bm25", disable_stemmer=True, preserve_combining_marks=True)
+    cafe = next(iter(model.query_embed("cafe")))
+    cafe_combining = next(iter(model.query_embed("cafe\u0301")))
+
+    assert set(cafe.indices) == {Bm25.compute_token_id("cafe")}
+    assert set(cafe_combining.indices) == {Bm25.compute_token_id("café")}
+
+
+def test_bm25_opt_in_istanbul_document_and_query_match() -> None:
+    model = Bm25("Qdrant/bm25", disable_stemmer=True, preserve_combining_marks=True)
+    document = next(iter(model.embed("İstanbul")))
+    query = next(iter(model.query_embed("istanbul")))
+
+    assert set(document.indices) == set(query.indices) == {Bm25.compute_token_id("istanbul")}
+
+
+def test_bm25_legacy_istanbul_does_not_match_istanbul() -> None:
+    model = Bm25("Qdrant/bm25", disable_stemmer=True)
+    document = next(iter(model.embed("İstanbul")))
+    query = next(iter(model.query_embed("istanbul")))
+
+    assert set(document.indices) != set(query.indices)
+
+
+@pytest.mark.parametrize(
+    "stopword,text",
+    [
+        ("İÇİN", "I\u0307ÇİN hello"),
+        ("I\u0307ÇİN", "İÇİN hello"),
+    ],
+)
+def test_bm25_opt_in_custom_stopwords_use_same_dotted_i_fold(stopword: str, text: str) -> None:
+    model = Bm25(
+        "Qdrant/bm25",
+        disable_stemmer=True,
+        preserve_combining_marks=True,
+        stopwords={stopword},
+    )
+    document = next(iter(model.embed(text)))
+    query = next(iter(model.query_embed("için hello")))
+
+    assert set(document.indices) == set(query.indices) == {Bm25.compute_token_id("hello")}
+
+
 def test_parallel_matches_serial() -> None:
     model = SparseTextEmbedding(
         "Qdrant/bm25",
