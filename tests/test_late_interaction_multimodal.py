@@ -7,6 +7,8 @@ from PIL import Image
 import numpy as np
 
 from fastembed import LateInteractionMultimodalEmbedding
+from fastembed.common.onnx_model import OnnxOutputContext
+from fastembed.late_interaction_multimodal.colpali import ColPali
 from tests.config import TEST_MISC_DIR
 from tests.utils import delete_model_cache
 
@@ -159,6 +161,23 @@ def test_single_embedding_query(model_cache):
             result = next(iter(model.embed_text(queries)))
             token_num, abridged_dim = expected_result.shape
             assert np.allclose(result[:token_num, :abridged_dim], expected_result, atol=2e-3)
+
+
+def test_colpali_query_drops_batch_padding() -> None:
+    model = ColPali(
+        "Qdrant/colpali-v1.3-fp16",
+        lazy_load=True,
+        specific_model_path="./",  # disable model downloading and loading
+    )
+    # the model zeroes padded positions, the second query is padded to the batch length
+    token_embeddings = np.ones((2, 4, 128), dtype=np.float32)
+    attention_mask = np.array([[1, 1, 1, 1], [1, 1, 0, 0]], dtype=np.int64)
+    token_embeddings[1, 2:] = 0.0
+    output = OnnxOutputContext(model_output=token_embeddings, attention_mask=attention_mask)
+
+    embeddings = list(model._post_process_onnx_text_output(output))
+
+    assert [embedding.shape for embedding in embeddings] == [(4, 128), (2, 128)]
 
 
 def test_get_embedding_size():
