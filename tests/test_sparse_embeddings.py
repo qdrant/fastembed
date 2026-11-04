@@ -441,6 +441,9 @@ def test_minicoil_device_id_defaults_to_first_device_ids() -> None:
     )
     assert model.model.device_id == 2
 
+    model = SparseTextEmbedding(model_name="Qdrant/minicoil-v1", device_ids=[], lazy_load=True)
+    assert model.model.device_id is None
+
     if is_ci:
         delete_model_cache(model.model._model_dir)
 
