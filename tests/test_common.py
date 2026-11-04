@@ -169,7 +169,10 @@ def test_tokenize_opt_in_separates_keycap_emoji_from_following_word():
 
 
 def test_tokenize_opt_in_maps_dotted_capital_i_to_ascii_i():
-    assert SimpleTokenizer.tokenize("İstanbul", preserve_combining_marks=True) == ["istanbul"]
+    composed = SimpleTokenizer.tokenize("İstanbul", preserve_combining_marks=True)
+    decomposed = SimpleTokenizer.tokenize("I\u0307stanbul", preserve_combining_marks=True)
+
+    assert composed == decomposed == ["istanbul"]
     assert SimpleTokenizer.tokenize("istanbul", preserve_combining_marks=True) == ["istanbul"]
 
 

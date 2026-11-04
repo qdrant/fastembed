@@ -407,14 +407,21 @@ def test_bm25_legacy_istanbul_does_not_match_istanbul() -> None:
     assert set(document.indices) != set(query.indices)
 
 
-def test_bm25_opt_in_custom_stopwords_use_same_dotted_i_fold() -> None:
+@pytest.mark.parametrize(
+    "stopword,text",
+    [
+        ("İÇİN", "I\u0307ÇİN hello"),
+        ("I\u0307ÇİN", "İÇİN hello"),
+    ],
+)
+def test_bm25_opt_in_custom_stopwords_use_same_dotted_i_fold(stopword: str, text: str) -> None:
     model = Bm25(
         "Qdrant/bm25",
         disable_stemmer=True,
         preserve_combining_marks=True,
-        stopwords={"İÇİN"},
+        stopwords={stopword},
     )
-    document = next(iter(model.embed("İÇİN hello")))
+    document = next(iter(model.embed(text)))
     query = next(iter(model.query_embed("için hello")))
 
     assert set(document.indices) == set(query.indices) == {Bm25.compute_token_id("hello")}

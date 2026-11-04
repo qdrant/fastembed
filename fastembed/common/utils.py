@@ -140,15 +140,17 @@ def _is_non_linguistic_mark(code: int, category: str) -> bool:
 
 
 def normalize_for_preserved_marks(text: str) -> str:
-    """Case-fold U+0130, lowercase, and NFC-normalize for the opt-in path.
+    """NFC-normalize, fold U+0130, lowercase, and NFC-normalize again.
 
-    LATIN CAPITAL LETTER I WITH DOT ABOVE is replaced with ASCII ``i`` *before*
-    lowercasing so Python does not emit ``i`` + U+0307. Dots already present
-    in lowercase input (for example Lithuanian ``i\\u0307``) are left intact.
-    NFC makes canonically equivalent mark orders and precomposed/decomposed
-    forms hash as the same token.
+    NFC first composes ``I`` + U+0307 into U+0130 so both spellings of dotted
+    capital I fold to ASCII ``i``. The replacement happens *before* lowercasing
+    so Python does not emit ``i`` + U+0307 from U+0130. Dots already present
+    in lowercase input (for example Lithuanian ``i\\u0307``) are left intact
+    because they do not compose to U+0130. The final NFC pass unifies other
+    canonically equivalent mark orders.
     """
-    return unicodedata.normalize("NFC", text.replace("\u0130", "i").lower())
+    text = unicodedata.normalize("NFC", text).replace("\u0130", "i").lower()
+    return unicodedata.normalize("NFC", text)
 
 
 @cache
