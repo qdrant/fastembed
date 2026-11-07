@@ -9,13 +9,98 @@ repo-relative path, not the bare filename.
 """
 
 import json
+import shutil
+import tarfile
+from functools import partial
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from threading import Thread
 from typing import Any
 
+import onnx
 import pytest
+from onnx import TensorProto as T
+from onnx import helper as h
+from tokenizers import Tokenizer
+from tokenizers.models import WordLevel
+from tokenizers.pre_tokenizers import Whitespace
 
+from fastembed import TextEmbedding
 from fastembed.common import model_management
+from fastembed.common.model_description import ModelSource, PoolingType
 from fastembed.common.model_management import ModelManagement
+from fastembed.text.custom_text_embedding import CustomTextEmbedding
+
+
+@pytest.fixture(autouse=True)
+def restore_custom_models_fixture():
+    supported_models = CustomTextEmbedding.SUPPORTED_MODELS
+    postprocessing_mapping = CustomTextEmbedding.POSTPROCESSING_MAPPING
+    CustomTextEmbedding.SUPPORTED_MODELS = []
+    CustomTextEmbedding.POSTPROCESSING_MAPPING = {}
+    yield
+    CustomTextEmbedding.SUPPORTED_MODELS = supported_models
+    CustomTextEmbedding.POSTPROCESSING_MAPPING = postprocessing_mapping
+
+
+def _build_url_model_archive(root: Path, name: str, factor: float) -> None:
+    """Builds a tiny two-dimensional ONNX model and packs it as ``<name>.tar.gz``.
+
+    The archive's top-level directory is always "shared-model", mirroring a
+    URL-backed custom model whose basename collides with another model's.
+    The ``factor`` distinguishes the two models: embedding "hello world"
+    (token ids 2 and 3, summing to 5) yields [5.0, 5.0 * factor].
+    """
+    folder = root / name / "shared-model"
+    folder.mkdir(parents=True)
+    tokenizer = Tokenizer(
+        WordLevel({"[UNK]": 0, "[PAD]": 1, "hello": 2, "world": 3}, unk_token="<redacted>")
+    )
+    tokenizer.pre_tokenizer = Whitespace()
+    tokenizer.enable_padding(pad_id=1, pad_token="<redacted>")
+    tokenizer.enable_truncation(max_length=8)
+    tokenizer.save(str(folder / "tokenizer.json"))
+    (folder / "tokenizer_config.json").write_text(
+        json.dumps({"model_max_length": 8, "pad_token": "[PAD]"})
+    )
+    (folder / "special_tokens_map.json").write_text(
+        json.dumps({"unk_token": "[UNK]", "pad_token": "[PAD]"})
+    )
+    graph = h.make_graph(
+        [
+            h.make_node("Cast", ["input_ids"], ["tokens"], to=T.FLOAT),
+            h.make_node("ReduceSum", ["tokens"], ["sum"], axes=[1], keepdims=1),
+            h.make_node("Mul", ["sum", "factor"], ["scaled"]),
+            h.make_node("Concat", ["sum", "scaled"], ["embedding"], axis=1),
+        ],
+        name,
+        [h.make_tensor_value_info("input_ids", T.INT64, ["batch", "sequence"])],
+        [h.make_tensor_value_info("embedding", T.FLOAT, ["batch", 2])],
+        [h.make_tensor("factor", T.FLOAT, [1], [factor])],
+    )
+    model = h.make_model(graph, opset_imports=[h.make_opsetid("", 11)], ir_version=9)
+    onnx.checker.check_model(model)
+    onnx.save(model, str(folder / "model.onnx"))
+    with tarfile.open(root / f"{name}.tar.gz", "w:gz") as out:
+        out.add(folder, arcname="shared-model")
+
+
+def _register_url_models(base_url: str) -> None:
+    for owner in ("a", "b"):
+        TextEmbedding.add_custom_model(
+            model=f"owner-{owner}/shared-model",
+            pooling=PoolingType.DISABLED,
+            normalization=False,
+            sources=ModelSource(url=f"{base_url}/{owner}.tar.gz"),
+            dim=2,
+            model_file="model.onnx",
+        )
+
+
+def _embed_first(model_name: str, cache_dir: Path, **kwargs: Any) -> list[float]:
+    model = TextEmbedding(model_name, cache_dir=str(cache_dir), threads=1, **kwargs)
+    return next(model.embed(["hello world"])).tolist()
+
 
 REVISION = "0123456789abcdef0123456789abcdef01234567"
 
@@ -90,3 +175,75 @@ def test_offline_probe_tolerates_auxiliary_file_drift(
         local_files_only=True,
     )
     assert result == str(snapshot)
+
+
+def test_url_models_with_same_basename_use_separate_cache_dirs(tmp_path: Path) -> None:
+    root = tmp_path / "server"
+    root.mkdir()
+    _build_url_model_archive(root, "a", 1.0)
+    _build_url_model_archive(root, "b", -1.0)
+    cache = tmp_path / "shared"
+
+    with ThreadingHTTPServer(
+        ("127.0.0.1", 0), partial(SimpleHTTPRequestHandler, directory=root)
+    ) as server:
+        thread = Thread(target=server.serve_forever)
+        thread.start()
+        try:
+            _register_url_models(f"http://127.0.0.1:{server.server_port}")
+            assert _embed_first("owner-a/shared-model", cache) == [5.0, 5.0]
+            # Previously returned [5.0, 5.0]: the second model reused the first
+            # model's files from the shared basename cache directory.
+            assert _embed_first("owner-b/shared-model", cache) == [5.0, -5.0]
+        finally:
+            server.shutdown()
+            thread.join()
+
+    assert (cache / "owner-a--shared-model" / "model.onnx").exists()
+    assert (cache / "owner-b--shared-model" / "model.onnx").exists()
+    assert not (cache / "shared-model").exists()
+
+
+def test_url_model_ignores_legacy_basename_cache_dir_when_online(tmp_path: Path) -> None:
+    root = tmp_path / "server"
+    root.mkdir()
+    _build_url_model_archive(root, "a", 1.0)
+    _build_url_model_archive(root, "b", -1.0)
+    cache = tmp_path / "shared"
+    # A legacy basename-only copy of a's files, as an older fastembed version cached it.
+    shutil.copytree(root / "a" / "shared-model", cache / "shared-model")
+
+    with ThreadingHTTPServer(
+        ("127.0.0.1", 0), partial(SimpleHTTPRequestHandler, directory=root)
+    ) as server:
+        thread = Thread(target=server.serve_forever)
+        thread.start()
+        try:
+            _register_url_models(f"http://127.0.0.1:{server.server_port}")
+            assert _embed_first("owner-b/shared-model", cache) == [5.0, -5.0]
+        finally:
+            server.shutdown()
+            thread.join()
+
+    assert (cache / "owner-b--shared-model" / "model.onnx").exists()
+
+
+def test_url_model_uses_legacy_basename_cache_dir_when_offline(tmp_path: Path) -> None:
+    root = tmp_path / "server"
+    root.mkdir()
+    _build_url_model_archive(root, "a", 1.0)
+    cache = tmp_path / "shared"
+    # Only a legacy basename-only copy exists and there is no server to fetch
+    # from, so the legacy copy is the only usable one.
+    shutil.copytree(root / "a" / "shared-model", cache / "shared-model")
+
+    TextEmbedding.add_custom_model(
+        model="owner-a/shared-model",
+        pooling=PoolingType.DISABLED,
+        normalization=False,
+        sources=ModelSource(url="http://127.0.0.1:1/a.tar.gz"),
+        dim=2,
+        model_file="model.onnx",
+    )
+
+    assert _embed_first("owner-a/shared-model", cache, local_files_only=True) == [5.0, 5.0]

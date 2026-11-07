@@ -513,27 +513,48 @@ class ModelManagement(Generic[T]):
         deprecated_tar_struct: bool = False,
         local_files_only: bool = False,
     ) -> Path:
-        fast_model_name = f"{'fast-' if deprecated_tar_struct else ''}{model_name.split('/')[-1]}"
+        # The archive's top-level directory is still the bare basename (with a "fast-"
+        # prefix for the deprecated GCS layout); that name is only used to locate the
+        # extracted files inside the staging directory.
+        archive_dir_name = f"{'fast-' if deprecated_tar_struct else ''}{model_name.split('/')[-1]}"
+        # The on-disk cache directory, by contrast, is keyed by the full model name:
+        # two registrations sharing a basename (e.g. "owner-a/shared-model" and
+        # "owner-b/shared-model") used to collide on the same directory, so loading
+        # the second silently reused the first model's files. "/" is replaced with
+        # "--", the separator huggingface_hub uses, which also keeps the result a
+        # single path component. A legacy basename-only directory is only honoured
+        # offline (or for deprecated GCS copies, which have no URL to re-fetch
+        # from): while online the files are re-downloaded into the namespaced
+        # directory, so a stale legacy copy can never shadow another model.
+        cache_dir_name = model_name.replace("/", "--").replace("\\", "--")
         cache_tmp_dir = Path(cache_dir) / "tmp"
-        model_dir = Path(cache_dir) / fast_model_name
+        model_dir = Path(cache_dir) / cache_dir_name
+        legacy_dir = Path(cache_dir) / archive_dir_name
 
         # check if the model_dir and the model files are both present for macOS
         if model_dir.exists() and len(list(model_dir.glob("*"))) > 0:
+            return model_dir
+
+        if legacy_dir.exists() and len(list(legacy_dir.glob("*"))) > 0:
             if deprecated_tar_struct and not source_url:
                 # No built-in model is served from the bucket anymore, only copies of it remain.
                 # A model with a url of its own (a custom one) got its copy from there instead.
                 # stacklevel points at the caller of TextEmbedding(...) via download_model.
                 warnings.warn(
-                    f"Loading {model_name} from {model_dir}, a copy downloaded from Google Cloud "
+                    f"Loading {model_name} from {legacy_dir}, a copy downloaded from Google Cloud "
                     "Storage by an older fastembed version. Support for such copies is deprecated "
                     "and will be removed in a future release. To switch to Hugging Face, load the "
                     "model once while huggingface.co (or an `HF_ENDPOINT` mirror) is reachable, "
                     "without `local_files_only=True` or `HF_HUB_OFFLINE=1`, then delete "
-                    f"{model_dir}.",
+                    f"{legacy_dir}.",
                     FutureWarning,
                     stacklevel=5,
                 )
-            return model_dir
+                return legacy_dir
+            if local_files_only:
+                # Offline there is nothing to re-fetch from, so the legacy copy is the
+                # only usable one; online it is ignored and re-downloaded below.
+                return legacy_dir
 
         if local_files_only:
             logger.error(
@@ -551,9 +572,9 @@ class ModelManagement(Generic[T]):
 
         # The archive and everything extracted from it go in a directory of this attempt's own,
         # so removing it undoes the attempt without touching any other download of the model.
-        staging_dir = Path(tempfile.mkdtemp(dir=cache_tmp_dir, prefix=f"{fast_model_name}-"))
+        staging_dir = Path(tempfile.mkdtemp(dir=cache_tmp_dir, prefix=f"{archive_dir_name}-"))
         try:
-            model_tar_gz = staging_dir / f"{fast_model_name}.tar.gz"
+            model_tar_gz = staging_dir / f"{archive_dir_name}.tar.gz"
             cls.download_file_from_gcs(
                 source_url,
                 output_path=str(model_tar_gz),
@@ -561,10 +582,10 @@ class ModelManagement(Generic[T]):
 
             cls.decompress_to_cache(targz_path=str(model_tar_gz), cache_dir=str(staging_dir))
 
-            model_tmp_dir = staging_dir / fast_model_name
+            model_tmp_dir = staging_dir / archive_dir_name
             if not model_tmp_dir.is_dir() or model_tmp_dir.is_symlink():
                 raise ValueError(
-                    f"The archive from {source_url} has no {fast_model_name} directory"
+                    f"The archive from {source_url} has no {archive_dir_name} directory"
                 )
 
             # Replace a stale empty model_dir, which Windows will not rename onto. rmdir leaves
