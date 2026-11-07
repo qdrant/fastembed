@@ -509,16 +509,24 @@ class ModelManagement(Generic[T]):
         """Maps a full model name to a single, injective on-disk cache directory name.
 
         "/" is replaced with "--", the separator huggingface_hub uses, so the
-        common case keeps the familiar "owner--model" form. A literal "--" in
-        a name would otherwise be indistinguishable from a "/" separator
-        ("a/b--c" and "a--b/c" would both map to "a--b--c"), so literal "--"
-        is escaped first as "%2D%2D" (with "%" itself escaped as "%25" and
-        "\\" as "%5C"), which makes the encoding injective: distinct full
-        names always map to distinct directories.
+        common case keeps the familiar "owner--model" form underneath. The
+        encoding is injective: "%" is escaped as "%25" first, then "-" as
+        "%2D" and "\\" as "%5C", so no literal "-" survives to be confused
+        with a "/" separator -- escaping "-" alone also covers a literal
+        "--", and a "-" next to a "/" can no longer collide ("a-/b" and
+        "a/-b" used to both map to "a---b"). Distinct full names therefore
+        always map to distinct directories.
+
+        The result is prefixed with "namespaced--" so a new entry can never
+        share a directory with a legacy basename-only directory: without
+        the prefix, the key for "owner/model" would be "owner--model",
+        which is exactly the legacy directory of a model registered as
+        "other/owner--model", and an online load would silently reuse the
+        other model's weights.
         """
-        return (
+        return "namespaced--" + (
             model_name.replace("%", "%25")
-            .replace("--", "%2D%2D")
+            .replace("-", "%2D")
             .replace("\\", "%5C")
             .replace("/", "--")
         )
@@ -535,11 +543,12 @@ class ModelManagement(Generic[T]):
         """Returns the local directory holding a URL-backed model's files.
 
         The directory is keyed by the full model name (see
-        ``_cache_dir_name``); a legacy basename-only directory is honoured
-        only offline or for deprecated GCS copies, and is otherwise ignored
-        so a stale copy can never shadow another model. While online the
-        archive is downloaded into a staging directory and atomically
-        renamed into place.
+        ``_cache_dir_name``), in a separate "namespaced--" namespace that
+        can never coincide with a legacy basename-only directory; a legacy
+        directory is honoured only offline or for deprecated GCS copies,
+        and is otherwise ignored so a stale copy can never shadow another
+        model. While online the archive is downloaded into a staging
+        directory and atomically renamed into place.
         """
         # The archive's top-level directory is still the bare basename (with a "fast-"
         # prefix for the deprecated GCS layout); that name is only used to locate the

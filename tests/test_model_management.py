@@ -202,8 +202,8 @@ def test_url_models_with_same_basename_use_separate_cache_dirs(tmp_path: Path) -
             server.shutdown()
             thread.join()
 
-    assert (cache / "owner-a--shared-model" / "model.onnx").exists()
-    assert (cache / "owner-b--shared-model" / "model.onnx").exists()
+    assert (cache / "namespaced--owner%2Da--shared%2Dmodel" / "model.onnx").exists()
+    assert (cache / "namespaced--owner%2Db--shared%2Dmodel" / "model.onnx").exists()
     assert not (cache / "shared-model").exists()
 
 
@@ -239,8 +239,81 @@ def test_url_models_with_double_dash_names_use_separate_cache_dirs(tmp_path: Pat
             server.shutdown()
             thread.join()
 
-    assert (cache / "x--b%2D%2Dc" / "model.onnx").exists()
-    assert (cache / "x%2D%2Db--c" / "model.onnx").exists()
+    assert (cache / "namespaced--x--b%2D%2Dc" / "model.onnx").exists()
+    assert (cache / "namespaced--x%2D%2Db--c" / "model.onnx").exists()
+
+
+def test_url_models_with_dash_next_to_slash_use_separate_cache_dirs(tmp_path: Path) -> None:
+    root = tmp_path / "server"
+    root.mkdir()
+    _build_url_model_archive(root, "p", 1.0)
+    _build_url_model_archive(root, "q", -1.0)
+    cache = tmp_path / "shared"
+
+    with ThreadingHTTPServer(
+        ("127.0.0.1", 0), partial(SimpleHTTPRequestHandler, directory=root)
+    ) as server:
+        thread = Thread(target=server.serve_forever)
+        thread.start()
+        try:
+            for model, archive in (("a-/b/shared-model", "p"), ("a/-b/shared-model", "q")):
+                TextEmbedding.add_custom_model(
+                    model=model,
+                    pooling=PoolingType.DISABLED,
+                    normalization=False,
+                    sources=ModelSource(
+                        url=f"http://127.0.0.1:{server.server_port}/{archive}.tar.gz"
+                    ),
+                    dim=2,
+                    model_file="model.onnx",
+                )
+            # A "-" next to a "/" used to collide too: both names mapped to
+            # "a---b--shared-model", so the second load silently reused the
+            # first model's files.
+            assert _embed_first("a-/b/shared-model", cache) == [5.0, 5.0]
+            assert _embed_first("a/-b/shared-model", cache) == [5.0, -5.0]
+        finally:
+            server.shutdown()
+            thread.join()
+
+    assert (cache / "namespaced--a%2D--b--shared%2Dmodel" / "model.onnx").exists()
+    assert (cache / "namespaced--a--%2Db--shared%2Dmodel" / "model.onnx").exists()
+
+
+def test_url_model_ignores_legacy_dir_sharing_its_cache_key_when_online(tmp_path: Path) -> None:
+    root = tmp_path / "server"
+    root.mkdir()
+    _build_url_model_archive(root, "p", 1.0, archive_dir="model")
+    _build_url_model_archive(root, "q", -1.0, archive_dir="owner--model")
+    cache = tmp_path / "shared"
+    # A legacy basename-only copy of "other/owner--model": its directory is
+    # "owner--model", exactly the key the old encoding gave "owner/model",
+    # so an online load used to accept it as a cache hit and load the other
+    # model's weights.
+    shutil.copytree(root / "q" / "owner--model", cache / "owner--model")
+
+    with ThreadingHTTPServer(
+        ("127.0.0.1", 0), partial(SimpleHTTPRequestHandler, directory=root)
+    ) as server:
+        thread = Thread(target=server.serve_forever)
+        thread.start()
+        try:
+            TextEmbedding.add_custom_model(
+                model="owner/model",
+                pooling=PoolingType.DISABLED,
+                normalization=False,
+                sources=ModelSource(url=f"http://127.0.0.1:{server.server_port}/p.tar.gz"),
+                dim=2,
+                model_file="model.onnx",
+            )
+            assert _embed_first("owner/model", cache) == [5.0, 5.0]
+        finally:
+            server.shutdown()
+            thread.join()
+
+    assert (cache / "namespaced--owner--model" / "model.onnx").exists()
+    # The legacy directory is left untouched for its own model.
+    assert (cache / "owner--model" / "model.onnx").exists()
 
 
 def test_url_model_ignores_legacy_basename_cache_dir_when_online(tmp_path: Path) -> None:
@@ -264,7 +337,7 @@ def test_url_model_ignores_legacy_basename_cache_dir_when_online(tmp_path: Path)
             server.shutdown()
             thread.join()
 
-    assert (cache / "owner-b--shared-model" / "model.onnx").exists()
+    assert (cache / "namespaced--owner%2Db--shared%2Dmodel" / "model.onnx").exists()
 
 
 def test_url_model_uses_legacy_basename_cache_dir_when_offline(tmp_path: Path) -> None:
