@@ -127,3 +127,95 @@ def test_online_download_ignores_older_cached_snapshot(
     # the size check ran on the new file, and only on it (keys use the OS path separator)
     metadata = json.loads((repo_dir / ModelManagement.METADATA_FILE).read_text())
     assert list(metadata) == [str(Path("snapshots/new/tokenizer.json"))]
+
+
+@pytest.mark.parametrize("revision", ["release-v1", "a" * 40])
+def test_online_download_verifies_the_requested_revision(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, revision: str
+) -> None:
+    """A valid pinned snapshot must not be compared with the current main's file sizes."""
+    old_revision, main_revision = "a" * 40, "b" * 40
+    contents = {old_revision: b"old model", main_revision: b"new model with a different size"}
+    repo_dir = tmp_path / "models--qdrant--fake-onnx"
+    lookups: list[str | None] = []
+
+    def fake_model_info(repo_id: str, **kwargs: Any) -> SimpleNamespace:
+        requested = kwargs.get("revision")
+        lookups.append(requested)
+        return SimpleNamespace(sha=old_revision if requested == revision else main_revision)
+
+    def fake_repo_tree(repo_id: str, **kwargs: Any) -> list[RepoFile]:
+        commit = kwargs["revision"]
+        return [RepoFile(path="model.onnx", size=len(contents[commit]), oid=commit)]
+
+    def fake_snapshot_download(**kwargs: Any) -> str:
+        requested = kwargs.get("revision")
+        commit = old_revision if requested in (revision, old_revision) else main_revision
+        model_file = repo_dir / "snapshots" / commit / "model.onnx"
+        model_file.parent.mkdir(parents=True)
+        model_file.write_bytes(contents[commit])
+        return str(model_file.parent)
+
+    monkeypatch.setattr(model_management, "model_info", fake_model_info)
+    monkeypatch.setattr(model_management, "list_repo_tree", fake_repo_tree)
+    monkeypatch.setattr(model_management, "snapshot_download", fake_snapshot_download)
+
+    result = ModelManagement.download_files_from_huggingface(
+        "qdrant/fake-onnx",
+        cache_dir=str(tmp_path),
+        extra_patterns=["model.onnx"],
+        revision=revision,
+    )
+
+    assert result == str(repo_dir / "snapshots" / old_revision)
+    assert lookups == [revision]
+    metadata = json.loads((repo_dir / ModelManagement.METADATA_FILE).read_text())
+    assert metadata[str(Path("snapshots") / old_revision / "model.onnx")]["size"] == len(
+        contents[old_revision]
+    )
+
+
+@pytest.mark.parametrize("revision", [None, "stable"])
+def test_online_download_pins_the_revision_resolved_for_metadata(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, revision: str | None
+) -> None:
+    """A moving ref must not select different files after their metadata was fetched."""
+    resolved_revision, moved_revision = "a" * 40, "b" * 40
+    contents = {resolved_revision: b"old model", moved_revision: b"new model, new size"}
+    repo_dir = tmp_path / "models--qdrant--fake-onnx"
+    downloads: list[str | None] = []
+
+    monkeypatch.setattr(
+        model_management, "model_info", lambda *a, **kw: SimpleNamespace(sha=resolved_revision)
+    )
+    monkeypatch.setattr(
+        model_management,
+        "list_repo_tree",
+        lambda *a, **kw: [
+            RepoFile(
+                path="model.onnx", size=len(contents[resolved_revision]), oid=resolved_revision
+            )
+        ],
+    )
+
+    def fake_snapshot_download(**kwargs: Any) -> str:
+        requested = kwargs.get("revision")
+        downloads.append(requested)
+        # The branch has moved since model_info: only a commit SHA still selects the old file.
+        commit = resolved_revision if requested == resolved_revision else moved_revision
+        model_file = repo_dir / "snapshots" / commit / "model.onnx"
+        model_file.parent.mkdir(parents=True)
+        model_file.write_bytes(contents[commit])
+        return str(model_file.parent)
+
+    monkeypatch.setattr(model_management, "snapshot_download", fake_snapshot_download)
+
+    result = ModelManagement.download_files_from_huggingface(
+        "qdrant/fake-onnx",
+        cache_dir=str(tmp_path),
+        extra_patterns=["model.onnx"],
+        revision=revision,
+    )
+
+    assert result == str(repo_dir / "snapshots" / resolved_revision)
+    assert downloads == [resolved_revision]

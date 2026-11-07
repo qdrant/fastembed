@@ -382,7 +382,11 @@ class ModelManagement(Generic[T]):
         # the connection but never answers would block here for good, before download_model can
         # retry or fall back to another source. list_repo_tree and snapshot_download's own
         # metadata requests can't be given one, but a silent endpoint now fails here first.
-        repo_revision = model_info(hf_source_repo, timeout=constants.HF_HUB_ETAG_TIMEOUT).sha
+        repo_revision = model_info(
+            hf_source_repo,
+            revision=kwargs.get("revision"),
+            timeout=constants.HF_HUB_ETAG_TIMEOUT,
+        ).sha
         repo_tree = list(
             list_repo_tree(
                 hf_source_repo, revision=repo_revision, repo_type="model", recursive=True
@@ -418,12 +422,15 @@ class ModelManagement(Generic[T]):
         if verified_metadata:
             disable_progress_bars()
 
+        # Metadata and downloaded files must describe the same commit, even if a branch moves
+        # between these requests. Resolve a caller's revision above, then pin the snapshot.
+        download_kwargs = {**kwargs, "revision": repo_revision}
         result = snapshot_download(
             repo_id=hf_source_repo,
             allow_patterns=allow_patterns,
             cache_dir=cache_dir,
             local_files_only=local_files_only,
-            **kwargs,
+            **download_kwargs,
         )
 
         if (
