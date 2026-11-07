@@ -43,15 +43,18 @@ def restore_custom_models_fixture():
     CustomTextEmbedding.POSTPROCESSING_MAPPING = postprocessing_mapping
 
 
-def _build_url_model_archive(root: Path, name: str, factor: float) -> None:
+def _build_url_model_archive(
+    root: Path, name: str, factor: float, archive_dir: str = "shared-model"
+) -> None:
     """Builds a tiny two-dimensional ONNX model and packs it as ``<name>.tar.gz``.
 
-    The archive's top-level directory is always "shared-model", mirroring a
-    URL-backed custom model whose basename collides with another model's.
-    The ``factor`` distinguishes the two models: embedding "hello world"
-    (token ids 2 and 3, summing to 5) yields [5.0, 5.0 * factor].
+    The archive's top-level directory is ``archive_dir`` (default
+    "shared-model", mirroring a URL-backed custom model whose basename
+    collides with another model's). The ``factor`` distinguishes the two
+    models: embedding "hello world" (token ids 2 and 3, summing to 5)
+    yields [5.0, 5.0 * factor].
     """
-    folder = root / name / "shared-model"
+    folder = root / name / archive_dir
     folder.mkdir(parents=True)
     tokenizer = Tokenizer(
         WordLevel({"[UNK]": 0, "[PAD]": 1, "hello": 2, "world": 3}, unk_token="<redacted>")
@@ -82,7 +85,7 @@ def _build_url_model_archive(root: Path, name: str, factor: float) -> None:
     onnx.checker.check_model(model)
     onnx.save(model, str(folder / "model.onnx"))
     with tarfile.open(root / f"{name}.tar.gz", "w:gz") as out:
-        out.add(folder, arcname="shared-model")
+        out.add(folder, arcname=archive_dir)
 
 
 def _register_url_models(base_url: str) -> None:
@@ -202,6 +205,42 @@ def test_url_models_with_same_basename_use_separate_cache_dirs(tmp_path: Path) -
     assert (cache / "owner-a--shared-model" / "model.onnx").exists()
     assert (cache / "owner-b--shared-model" / "model.onnx").exists()
     assert not (cache / "shared-model").exists()
+
+
+def test_url_models_with_double_dash_names_use_separate_cache_dirs(tmp_path: Path) -> None:
+    root = tmp_path / "server"
+    root.mkdir()
+    _build_url_model_archive(root, "p", 1.0, archive_dir="b--c")
+    _build_url_model_archive(root, "q", -1.0, archive_dir="c")
+    cache = tmp_path / "shared"
+
+    with ThreadingHTTPServer(
+        ("127.0.0.1", 0), partial(SimpleHTTPRequestHandler, directory=root)
+    ) as server:
+        thread = Thread(target=server.serve_forever)
+        thread.start()
+        try:
+            for model, archive in (("x/b--c", "p"), ("x--b/c", "q")):
+                TextEmbedding.add_custom_model(
+                    model=model,
+                    pooling=PoolingType.DISABLED,
+                    normalization=False,
+                    sources=ModelSource(
+                        url=f"http://127.0.0.1:{server.server_port}/{archive}.tar.gz"
+                    ),
+                    dim=2,
+                    model_file="model.onnx",
+                )
+            # Under a plain "/" -> "--" encoding both names map to "x--b--c",
+            # so the second load would silently reuse the first model's files.
+            assert _embed_first("x/b--c", cache) == [5.0, 5.0]
+            assert _embed_first("x--b/c", cache) == [5.0, -5.0]
+        finally:
+            server.shutdown()
+            thread.join()
+
+    assert (cache / "x--b%2D%2Dc" / "model.onnx").exists()
+    assert (cache / "x%2D%2Db--c" / "model.onnx").exists()
 
 
 def test_url_model_ignores_legacy_basename_cache_dir_when_online(tmp_path: Path) -> None:

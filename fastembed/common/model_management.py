@@ -504,6 +504,25 @@ class ModelManagement(Generic[T]):
             # Devices, fifos and the like have no place in a model archive.
             raise ValueError(f"Unsupported tar member type: {member.name}")
 
+    @staticmethod
+    def _cache_dir_name(model_name: str) -> str:
+        """Maps a full model name to a single, injective on-disk cache directory name.
+
+        "/" is replaced with "--", the separator huggingface_hub uses, so the
+        common case keeps the familiar "owner--model" form. A literal "--" in
+        a name would otherwise be indistinguishable from a "/" separator
+        ("a/b--c" and "a--b/c" would both map to "a--b--c"), so literal "--"
+        is escaped first as "%2D%2D" (with "%" itself escaped as "%25" and
+        "\\" as "%5C"), which makes the encoding injective: distinct full
+        names always map to distinct directories.
+        """
+        return (
+            model_name.replace("%", "%25")
+            .replace("--", "%2D%2D")
+            .replace("\\", "%5C")
+            .replace("/", "--")
+        )
+
     @classmethod
     def retrieve_model_gcs(
         cls,
@@ -513,6 +532,15 @@ class ModelManagement(Generic[T]):
         deprecated_tar_struct: bool = False,
         local_files_only: bool = False,
     ) -> Path:
+        """Returns the local directory holding a URL-backed model's files.
+
+        The directory is keyed by the full model name (see
+        ``_cache_dir_name``); a legacy basename-only directory is honoured
+        only offline or for deprecated GCS copies, and is otherwise ignored
+        so a stale copy can never shadow another model. While online the
+        archive is downloaded into a staging directory and atomically
+        renamed into place.
+        """
         # The archive's top-level directory is still the bare basename (with a "fast-"
         # prefix for the deprecated GCS layout); that name is only used to locate the
         # extracted files inside the staging directory.
@@ -520,13 +548,12 @@ class ModelManagement(Generic[T]):
         # The on-disk cache directory, by contrast, is keyed by the full model name:
         # two registrations sharing a basename (e.g. "owner-a/shared-model" and
         # "owner-b/shared-model") used to collide on the same directory, so loading
-        # the second silently reused the first model's files. "/" is replaced with
-        # "--", the separator huggingface_hub uses, which also keeps the result a
-        # single path component. A legacy basename-only directory is only honoured
-        # offline (or for deprecated GCS copies, which have no URL to re-fetch
-        # from): while online the files are re-downloaded into the namespaced
-        # directory, so a stale legacy copy can never shadow another model.
-        cache_dir_name = model_name.replace("/", "--").replace("\\", "--")
+        # the second silently reused the first model's files. A legacy basename-only
+        # directory is only honoured offline (or for deprecated GCS copies, which
+        # have no URL to re-fetch from): while online the files are re-downloaded
+        # into the namespaced directory, so a stale legacy copy can never shadow
+        # another model.
+        cache_dir_name = cls._cache_dir_name(model_name)
         cache_tmp_dir = Path(cache_dir) / "tmp"
         model_dir = Path(cache_dir) / cache_dir_name
         legacy_dir = Path(cache_dir) / archive_dir_name
@@ -554,6 +581,14 @@ class ModelManagement(Generic[T]):
             if local_files_only:
                 # Offline there is nothing to re-fetch from, so the legacy copy is the
                 # only usable one; online it is ignored and re-downloaded below.
+                # The legacy directory is keyed by basename only, so it may belong
+                # to a different model registered under the same basename.
+                logger.warning(
+                    f"Loading {model_name} from legacy basename-only directory "
+                    f"{legacy_dir}; it may belong to another model with the same "
+                    "basename. Load the model once while online to cache it under "
+                    "its full name."
+                )
                 return legacy_dir
 
         if local_files_only:
