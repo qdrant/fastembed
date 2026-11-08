@@ -34,6 +34,7 @@ from fastembed.text.custom_text_embedding import CustomTextEmbedding
 
 @pytest.fixture(autouse=True)
 def restore_custom_models_fixture():
+    """Restores the custom-model registry after each test."""
     supported_models = CustomTextEmbedding.SUPPORTED_MODELS
     postprocessing_mapping = CustomTextEmbedding.POSTPROCESSING_MAPPING
     CustomTextEmbedding.SUPPORTED_MODELS = []
@@ -89,6 +90,7 @@ def _build_url_model_archive(
 
 
 def _register_url_models(base_url: str) -> None:
+    """Registers the two same-basename URL models served from base_url."""
     for owner in ("a", "b"):
         TextEmbedding.add_custom_model(
             model=f"owner-{owner}/shared-model",
@@ -101,6 +103,7 @@ def _register_url_models(base_url: str) -> None:
 
 
 def _embed_first(model_name: str, cache_dir: Path, **kwargs: Any) -> list[float]:
+    """Loads model_name from cache_dir and embeds one probe sentence."""
     model = TextEmbedding(model_name, cache_dir=str(cache_dir), threads=1, **kwargs)
     return next(model.embed(["hello world"])).tolist()
 
@@ -181,6 +184,7 @@ def test_offline_probe_tolerates_auxiliary_file_drift(
 
 
 def test_url_models_with_same_basename_use_separate_cache_dirs(tmp_path: Path) -> None:
+    """Two URL models sharing a basename get separate cache directories."""
     root = tmp_path / "server"
     root.mkdir()
     _build_url_model_archive(root, "a", 1.0)
@@ -208,6 +212,7 @@ def test_url_models_with_same_basename_use_separate_cache_dirs(tmp_path: Path) -
 
 
 def test_url_models_with_double_dash_names_use_separate_cache_dirs(tmp_path: Path) -> None:
+    """Names containing a literal "--" do not collide with the "/" separator."""
     root = tmp_path / "server"
     root.mkdir()
     _build_url_model_archive(root, "p", 1.0, archive_dir="b--c")
@@ -244,6 +249,7 @@ def test_url_models_with_double_dash_names_use_separate_cache_dirs(tmp_path: Pat
 
 
 def test_url_models_with_dash_next_to_slash_use_separate_cache_dirs(tmp_path: Path) -> None:
+    """A "-" next to a "/" does not collide with the same name mirrored."""
     root = tmp_path / "server"
     root.mkdir()
     _build_url_model_archive(root, "p", 1.0)
@@ -281,6 +287,7 @@ def test_url_models_with_dash_next_to_slash_use_separate_cache_dirs(tmp_path: Pa
 
 
 def test_url_model_ignores_legacy_dir_sharing_its_cache_key_when_online(tmp_path: Path) -> None:
+    """An online load ignores a legacy directory sharing the old cache key."""
     root = tmp_path / "server"
     root.mkdir()
     _build_url_model_archive(root, "p", 1.0, archive_dir="model")
@@ -317,6 +324,7 @@ def test_url_model_ignores_legacy_dir_sharing_its_cache_key_when_online(tmp_path
 
 
 def test_url_model_ignores_legacy_basename_cache_dir_when_online(tmp_path: Path) -> None:
+    """An online load ignores a legacy basename-only directory."""
     root = tmp_path / "server"
     root.mkdir()
     _build_url_model_archive(root, "a", 1.0)
@@ -343,6 +351,7 @@ def test_url_model_ignores_legacy_basename_cache_dir_when_online(tmp_path: Path)
 def test_url_model_rejects_legacy_dir_sharing_its_namespaced_cache_key_when_online(
     tmp_path: Path,
 ) -> None:
+    """An online load never returns a legacy squatter as a cache hit."""
     root = tmp_path / "server"
     root.mkdir()
     _build_url_model_archive(root, "p", 1.0, archive_dir="model")
@@ -389,6 +398,7 @@ def test_url_model_rejects_legacy_dir_sharing_its_namespaced_cache_key_when_onli
 
 
 def test_url_model_refuses_legacy_squatter_when_offline(tmp_path: Path) -> None:
+    """An offline load fails loudly rather than returning a squatter's weights."""
     root = tmp_path / "server"
     root.mkdir()
     _build_url_model_archive(root, "q", -1.0, archive_dir="namespaced--owner--model")
@@ -414,6 +424,7 @@ def test_url_model_refuses_legacy_squatter_when_offline(tmp_path: Path) -> None:
 def test_url_model_reuses_namespaced_entry_with_provenance_marker(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """A marker-bearing entry is reused without re-downloading."""
     root = tmp_path / "server"
     root.mkdir()
     _build_url_model_archive(root, "p", 1.0, archive_dir="model")
@@ -446,6 +457,7 @@ def test_url_model_reuses_namespaced_entry_with_provenance_marker(
     # The marker-bearing entry must be accepted as a cache hit: a second
     # load must not attempt a download at all.
     def _must_not_download(*args: Any, **kwargs: Any) -> str:
+        """Fails the test if a re-download is attempted."""
         raise AssertionError("must not re-download a marker-bearing cache entry")
 
     monkeypatch.setattr(ModelManagement, "download_file_from_gcs", _must_not_download)
@@ -453,6 +465,7 @@ def test_url_model_reuses_namespaced_entry_with_provenance_marker(
 
 
 def test_url_model_uses_legacy_basename_cache_dir_when_offline(tmp_path: Path) -> None:
+    """An offline load falls back to a legacy basename-only directory."""
     root = tmp_path / "server"
     root.mkdir()
     _build_url_model_archive(root, "a", 1.0)
@@ -471,3 +484,71 @@ def test_url_model_uses_legacy_basename_cache_dir_when_offline(tmp_path: Path) -
     )
 
     assert _embed_first("owner-a/shared-model", cache, local_files_only=True) == [5.0, 5.0]
+
+
+def test_url_model_restores_valid_entry_moved_aside_by_stale_check(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A concurrent install between the squatter check and the move-aside rename must not lose the valid entry."""
+    root = tmp_path / "server"
+    root.mkdir()
+    _build_url_model_archive(root, "p", 1.0, archive_dir="model")
+    _build_url_model_archive(root, "q", -1.0, archive_dir="namespaced--owner--model")
+    cache = tmp_path / "shared"
+    model_dir = cache / "namespaced--owner--model"
+    # A squatting legacy directory sits on this model's namespaced key.
+    shutil.copytree(root / "q" / "namespaced--owner--model", model_dir)
+
+    # Simulate a concurrent download of "owner/model" finishing between
+    # this load's squatter check and its move-aside rename: the other
+    # loader moves the squatter aside and installs a valid, marker-bearing
+    # entry at model_dir. The load under test must then recognise the
+    # moved-aside directory as that valid entry and put it back, instead
+    # of discarding it as a squatter.
+    orig_rename = Path.rename
+    fired = False
+
+    def _rename_with_concurrent_install(self: Path, target: Path) -> None:
+        nonlocal fired
+        if (
+            not fired
+            and self == model_dir
+            and target.name.startswith(".namespaced--owner--model.squatter-")
+        ):
+            fired = True
+            hold = tmp_path / "squatter-hold"
+            shutil.move(str(model_dir), str(hold))
+            shutil.copytree(root / "p" / "model", model_dir)
+            (model_dir / ModelManagement.CACHE_PROVENANCE_FILENAME).write_text(
+                "owner/model", encoding="utf-8"
+            )
+        return orig_rename(self, target)
+
+    monkeypatch.setattr(Path, "rename", _rename_with_concurrent_install)
+
+    with ThreadingHTTPServer(
+        ("127.0.0.1", 0), partial(SimpleHTTPRequestHandler, directory=root)
+    ) as server:
+        thread = Thread(target=server.serve_forever)
+        thread.start()
+        try:
+            TextEmbedding.add_custom_model(
+                model="owner/model",
+                pooling=PoolingType.DISABLED,
+                normalization=False,
+                sources=ModelSource(url=f"http://127.0.0.1:{server.server_port}/p.tar.gz"),
+                dim=2,
+                model_file="model.onnx",
+            )
+            assert _embed_first("owner/model", cache) == [5.0, 5.0]
+        finally:
+            server.shutdown()
+            thread.join()
+
+    assert fired, "the simulated concurrent install never ran"
+    # The valid entry installed by the concurrent download is back at
+    # model_dir; it was not left moved aside as a squatter.
+    assert (model_dir / ModelManagement.CACHE_PROVENANCE_FILENAME).read_text(
+        encoding="utf-8"
+    ) == "owner/model"
+    assert list(cache.glob(".namespaced--owner--model.squatter-*")) == []

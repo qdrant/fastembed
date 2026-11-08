@@ -727,6 +727,18 @@ class ModelManagement(Generic[T]):
                     f"moving it aside to {backup_dir}."
                 )
                 model_dir.rename(backup_dir)
+                if cls._read_cached_model_name(backup_dir) == model_name:
+                    # The marker check above is stale under concurrency: a
+                    # concurrent download of this same model may have
+                    # installed a valid entry after the check but before
+                    # this rename, so the directory just moved aside is
+                    # that valid entry, not a squatter. Put it back; the
+                    # rename below then keeps it via its OSError branch.
+                    # If a third download has since filled model_dir, the
+                    # restore fails and the rename below keeps that copy
+                    # instead, so the failure is suppressed here.
+                    with contextlib.suppress(OSError):
+                        backup_dir.rename(model_dir)
 
             try:
                 # Rename from the staging dir to the final name is atomic
