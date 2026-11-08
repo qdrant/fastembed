@@ -3,7 +3,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-from fastembed.common.utils import define_cache_dir, get_default_cache_dir
+from fastembed.common.utils import _is_writable_dir, define_cache_dir, get_default_cache_dir
 
 
 def test_define_cache_dir_explicit_path(tmp_path: Path) -> None:
@@ -110,6 +110,39 @@ def test_get_default_cache_dir_existing_non_writable_directory_fallback(tmp_path
     ):
         os.environ.pop("FASTEMBED_CACHE_PATH", None)
         os.environ.pop("XDG_CACHE_HOME", None)
+        fallback_expected = Path(tempfile.gettempdir()) / "fastembed_cache"
+        result = get_default_cache_dir()
+        assert result == fallback_expected
+
+
+def test_is_writable_dir_success_and_cleanup(tmp_path: Path) -> None:
+    test_dir = tmp_path / "writable_check"
+    test_dir.mkdir(parents=True, exist_ok=True)
+    assert _is_writable_dir(test_dir) is True
+    # Verify no probe files are left behind
+    leftover = list(test_dir.glob(".fastembed_write_test_*"))
+    assert leftover == []
+
+
+def test_is_writable_dir_permission_denied(tmp_path: Path) -> None:
+    test_dir = tmp_path / "denied_check"
+    test_dir.mkdir(parents=True, exist_ok=True)
+    with patch("pathlib.Path.touch", side_effect=PermissionError("Mocked denial")):
+        assert _is_writable_dir(test_dir) is False
+    leftover = list(test_dir.glob(".fastembed_write_test_*"))
+    assert leftover == []
+
+
+def test_get_default_cache_dir_fallback_mkdir_fails() -> None:
+    def fake_mkdir(*args: object, **kwargs: object) -> None:
+        raise PermissionError("All mkdir calls denied")
+
+    with (
+        patch.dict(os.environ, {}, clear=False),
+        patch("sys.platform", "linux"),
+        patch("pathlib.Path.mkdir", side_effect=fake_mkdir),
+    ):
+        os.environ.pop("FASTEMBED_CACHE_PATH", None)
         fallback_expected = Path(tempfile.gettempdir()) / "fastembed_cache"
         result = get_default_cache_dir()
         assert result == fallback_expected

@@ -3,6 +3,7 @@ import sys
 import re
 import tempfile
 import unicodedata
+import uuid
 from pathlib import Path
 from itertools import islice
 from typing import Callable, Iterable, TypeVar
@@ -109,14 +110,19 @@ def restore_order(indexed_outputs: Iterable[tuple[list[int], Iterable[T]]]) -> I
 def _is_writable_dir(path: Path) -> bool:
     """
     Check if a directory can be written to by creating and removing a temporary probe file.
+    Uses a UUID-suffixed filename to avoid collisions between concurrent processes or threads.
     """
-    probe_file = path / f".fastembed_write_test_{os.getpid()}"
+    probe_file = path / f".fastembed_write_test_{uuid.uuid4().hex}"
     try:
         probe_file.touch(exist_ok=False)
-        probe_file.unlink(missing_ok=True)
         return True
     except (OSError, PermissionError):
         return False
+    finally:
+        try:
+            probe_file.unlink(missing_ok=True)
+        except OSError:
+            pass
 
 
 def get_default_cache_dir() -> Path:
@@ -158,7 +164,10 @@ def get_default_cache_dir() -> Path:
         return candidate
     except (OSError, PermissionError):
         fallback = Path(tempfile.gettempdir()) / "fastembed_cache"
-        fallback.mkdir(parents=True, exist_ok=True)
+        try:
+            fallback.mkdir(parents=True, exist_ok=True)
+        except (OSError, PermissionError):
+            pass
         return fallback
 
 
