@@ -106,6 +106,19 @@ def restore_order(indexed_outputs: Iterable[tuple[list[int], Iterable[T]]]) -> I
             next_index += 1
 
 
+def _is_writable_dir(path: Path) -> bool:
+    """
+    Check if a directory can be written to by creating and removing a temporary probe file.
+    """
+    probe_file = path / f".fastembed_write_test_{os.getpid()}"
+    try:
+        probe_file.touch(exist_ok=False)
+        probe_file.unlink(missing_ok=True)
+        return True
+    except (OSError, PermissionError):
+        return False
+
+
 def get_default_cache_dir() -> Path:
     """
     Get the default cache directory for fastembed.
@@ -140,6 +153,8 @@ def get_default_cache_dir() -> Path:
                 candidate = Path.home() / ".cache" / "fastembed_cache"
 
         candidate.mkdir(parents=True, exist_ok=True)
+        if not _is_writable_dir(candidate):
+            raise PermissionError(f"Directory {candidate} exists but is not writable")
         return candidate
     except (OSError, PermissionError):
         fallback = Path(tempfile.gettempdir()) / "fastembed_cache"

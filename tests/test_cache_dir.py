@@ -95,3 +95,21 @@ def test_get_default_cache_dir_permission_error_fallback() -> None:
         result = get_default_cache_dir()
         assert result == fallback_expected
         assert call_count == 2
+
+
+def test_get_default_cache_dir_existing_non_writable_directory_fallback(tmp_path: Path) -> None:
+    fake_home = tmp_path / "home"
+    non_writable_cache = fake_home / ".cache" / "fastembed_cache"
+    non_writable_cache.mkdir(parents=True, exist_ok=True)
+
+    with (
+        patch("pathlib.Path.home", return_value=fake_home),
+        patch("sys.platform", "linux"),
+        patch.dict(os.environ, {}, clear=False),
+        patch("fastembed.common.utils._is_writable_dir", return_value=False),
+    ):
+        os.environ.pop("FASTEMBED_CACHE_PATH", None)
+        os.environ.pop("XDG_CACHE_HOME", None)
+        fallback_expected = Path(tempfile.gettempdir()) / "fastembed_cache"
+        result = get_default_cache_dir()
+        assert result == fallback_expected
