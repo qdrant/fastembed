@@ -36,6 +36,29 @@ embedding_model = TextEmbedding()
 embeddings: list[np.ndarray] = embedding_model.embed(documents)
 ```
 
+## Model Cache
+
+FastEmbed downloads model files the first time a model is initialized. By default, models are cached in a standard persistent user cache directory across operating systems:
+- **Windows:** `%LOCALAPPDATA%\fastembed_cache` (falling back to `~/.cache/fastembed_cache`)
+- **macOS:** `~/Library/Caches/fastembed_cache`
+- **Linux/Unix:** `$XDG_CACHE_HOME/fastembed_cache` (or `~/.cache/fastembed_cache`)
+*(Falls back to the system temporary directory if the persistent user cache is not writable).*
+
+### Custom Cache Location
+To specify a custom directory, pass `cache_dir`:
+```python
+from fastembed import TextEmbedding
+
+model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5", cache_dir="./my_cache")
+```
+
+You can also set the `FASTEMBED_CACHE_PATH` environment variable:
+```bash
+export FASTEMBED_CACHE_PATH=/path/to/cache
+```
+
+When running inside containers, mount your cache directory as a volume to persist models across container restarts.
+
 ## Usage with Qdrant
 
 Installation with Qdrant Client in Python:

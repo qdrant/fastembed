@@ -106,13 +106,53 @@ def restore_order(indexed_outputs: Iterable[tuple[list[int], Iterable[T]]]) -> I
             next_index += 1
 
 
+def get_default_cache_dir() -> Path:
+    """
+    Get the default cache directory for fastembed.
+
+    Priority:
+    1. FASTEMBED_CACHE_PATH environment variable if set.
+    2. Platform-specific persistent user cache directory:
+       - Windows: %LOCALAPPDATA%/fastembed_cache or ~/.cache/fastembed_cache
+       - macOS: ~/Library/Caches/fastembed_cache
+       - Linux/other: $XDG_CACHE_HOME/fastembed_cache or ~/.cache/fastembed_cache
+    3. Fallback to system temporary directory (tempfile.gettempdir()/fastembed_cache)
+       if the persistent directory cannot be created or written to.
+    """
+    env_path = os.getenv("FASTEMBED_CACHE_PATH")
+    if env_path:
+        return Path(env_path)
+
+    try:
+        if sys.platform == "win32":
+            local_appdata = os.getenv("LOCALAPPDATA")
+            if local_appdata:
+                candidate = Path(local_appdata) / "fastembed_cache"
+            else:
+                candidate = Path.home() / ".cache" / "fastembed_cache"
+        elif sys.platform == "darwin":
+            candidate = Path.home() / "Library" / "Caches" / "fastembed_cache"
+        else:
+            xdg_cache_home = os.getenv("XDG_CACHE_HOME")
+            if xdg_cache_home:
+                candidate = Path(xdg_cache_home) / "fastembed_cache"
+            else:
+                candidate = Path.home() / ".cache" / "fastembed_cache"
+
+        candidate.mkdir(parents=True, exist_ok=True)
+        return candidate
+    except (OSError, PermissionError):
+        fallback = Path(tempfile.gettempdir()) / "fastembed_cache"
+        fallback.mkdir(parents=True, exist_ok=True)
+        return fallback
+
+
 def define_cache_dir(cache_dir: str | None = None) -> Path:
     """
     Define the cache directory for fastembed
     """
     if cache_dir is None:
-        default_cache_dir = os.path.join(tempfile.gettempdir(), "fastembed_cache")
-        cache_path = Path(os.getenv("FASTEMBED_CACHE_PATH", default_cache_dir))
+        cache_path = get_default_cache_dir()
     else:
         cache_path = Path(cache_dir)
     cache_path.mkdir(parents=True, exist_ok=True)
