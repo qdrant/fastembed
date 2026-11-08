@@ -3,6 +3,9 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+from loguru import logger
+
 from fastembed.common.utils import _is_writable_dir, define_cache_dir, get_default_cache_dir
 
 
@@ -106,7 +109,10 @@ def test_get_default_cache_dir_existing_non_writable_directory_fallback(tmp_path
         patch("pathlib.Path.home", return_value=fake_home),
         patch("sys.platform", "linux"),
         patch.dict(os.environ, {}, clear=False),
-        patch("fastembed.common.utils._is_writable_dir", return_value=False),
+        patch(
+            "fastembed.common.utils._is_writable_dir",
+            side_effect=lambda p: str(non_writable_cache) not in str(p),
+        ),
     ):
         os.environ.pop("FASTEMBED_CACHE_PATH", None)
         os.environ.pop("XDG_CACHE_HOME", None)
@@ -143,6 +149,42 @@ def test_get_default_cache_dir_fallback_mkdir_fails() -> None:
         patch("pathlib.Path.mkdir", side_effect=fake_mkdir),
     ):
         os.environ.pop("FASTEMBED_CACHE_PATH", None)
+        with pytest.raises(PermissionError, match="neither persistent.*nor fallback"):
+            get_default_cache_dir()
+
+
+def test_define_cache_dir_fallback_failure_raises() -> None:
+    def fake_mkdir(*args: object, **kwargs: object) -> None:
+        raise PermissionError("All mkdir calls denied")
+
+    with (
+        patch.dict(os.environ, {}, clear=False),
+        patch("sys.platform", "linux"),
+        patch("pathlib.Path.mkdir", side_effect=fake_mkdir),
+    ):
+        os.environ.pop("FASTEMBED_CACHE_PATH", None)
+        with pytest.raises(PermissionError, match="neither persistent.*nor fallback"):
+            define_cache_dir(None)
+
+
+def test_get_default_cache_dir_logs_warning_on_fallback() -> None:
+    call_count = 0
+
+    def fake_mkdir(*args: object, **kwargs: object) -> None:
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            raise PermissionError("Persistent cache unwritable")
+
+    with (
+        patch.dict(os.environ, {}, clear=False),
+        patch("sys.platform", "linux"),
+        patch("pathlib.Path.mkdir", side_effect=fake_mkdir),
+        patch.object(logger, "warning") as mock_warn,
+    ):
+        os.environ.pop("FASTEMBED_CACHE_PATH", None)
         fallback_expected = Path(tempfile.gettempdir()) / "fastembed_cache"
         result = get_default_cache_dir()
         assert result == fallback_expected
+        assert mock_warn.called
+        assert "Falling back to temporary cache directory" in mock_warn.call_args[0][0]

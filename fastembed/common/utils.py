@@ -8,6 +8,8 @@ from pathlib import Path
 from itertools import islice
 from typing import Callable, Iterable, TypeVar
 
+from loguru import logger
+
 import numpy as np
 from numpy.typing import NDArray
 
@@ -162,13 +164,22 @@ def get_default_cache_dir() -> Path:
         if not _is_writable_dir(candidate):
             raise PermissionError(f"Directory {candidate} exists but is not writable")
         return candidate
-    except (OSError, PermissionError):
+    except (OSError, PermissionError) as exc:
         fallback = Path(tempfile.gettempdir()) / "fastembed_cache"
+        logger.warning(
+            f"Failed to initialize persistent cache directory '{candidate}': {exc}. "
+            f"Falling back to temporary cache directory at '{fallback}'."
+        )
         try:
             fallback.mkdir(parents=True, exist_ok=True)
-        except (OSError, PermissionError):
-            pass
-        return fallback
+            if not _is_writable_dir(fallback):
+                raise PermissionError(f"Fallback cache directory '{fallback}' is not writable.")
+            return fallback
+        except (OSError, PermissionError) as fallback_exc:
+            raise PermissionError(
+                f"Failed to create or write to default cache directory: neither persistent "
+                f"location ('{candidate}') nor fallback location ('{fallback}') is usable."
+            ) from fallback_exc
 
 
 def define_cache_dir(cache_dir: str | None = None) -> Path:

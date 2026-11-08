@@ -91,7 +91,9 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             model_name (str): The name of the model to use.
             cache_dir (str, optional): The path to the cache directory.
                                        Can be set using the `FASTEMBED_CACHE_PATH` env variable.
-                                       Defaults to `fastembed_cache` in the system's temp directory.
+                                       Defaults to a platform-specific persistent user cache directory.
+                                       Falls back to `fastembed_cache` in the system's temp directory
+                                       if the persistent directory is not writable.
             threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
             providers (Optional[Sequence[OnnxProvider]], optional): The providers to use for onnxruntime.
             k (float, optional): The k parameter in the BM25 formula. Defines the saturation of the term frequency.
