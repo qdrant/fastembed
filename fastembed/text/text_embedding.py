@@ -103,7 +103,9 @@ class TextEmbedding(TextEmbeddingBase):
             model_name (str): The name of the model to use.
             cache_dir (str, optional): The path to the cache directory.
                 Can be set using the `FASTEMBED_CACHE_PATH` env variable.
-                Defaults to `fastembed_cache` in the system's temp directory.
+                Defaults to a platform-specific persistent user cache directory.
+                Falls back to `fastembed_cache` in the system's temp directory
+                if the persistent directory is not writable.
             threads (int, optional): The number of threads single onnxruntime session can use.
             providers (Sequence[OnnxProvider], optional): The list of onnxruntime providers to use.
                 Mutually exclusive with the `cuda` and `device_ids` arguments.
