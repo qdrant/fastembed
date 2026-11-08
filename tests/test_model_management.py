@@ -340,6 +340,118 @@ def test_url_model_ignores_legacy_basename_cache_dir_when_online(tmp_path: Path)
     assert (cache / "namespaced--owner%2Db--shared%2Dmodel" / "model.onnx").exists()
 
 
+def test_url_model_rejects_legacy_dir_sharing_its_namespaced_cache_key_when_online(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "server"
+    root.mkdir()
+    _build_url_model_archive(root, "p", 1.0, archive_dir="model")
+    _build_url_model_archive(root, "q", -1.0, archive_dir="namespaced--owner--model")
+    cache = tmp_path / "shared"
+    # A legacy basename-only copy of "other/namespaced--owner--model": its
+    # directory is "namespaced--owner--model", exactly the namespaced key
+    # of "owner/model", so the prefix alone cannot tell them apart and an
+    # online load used to accept it as a cache hit and load the other
+    # model's weights.
+    shutil.copytree(root / "q" / "namespaced--owner--model", cache / "namespaced--owner--model")
+
+    with ThreadingHTTPServer(
+        ("127.0.0.1", 0), partial(SimpleHTTPRequestHandler, directory=root)
+    ) as server:
+        thread = Thread(target=server.serve_forever)
+        thread.start()
+        try:
+            TextEmbedding.add_custom_model(
+                model="owner/model",
+                pooling=PoolingType.DISABLED,
+                normalization=False,
+                sources=ModelSource(url=f"http://127.0.0.1:{server.server_port}/p.tar.gz"),
+                dim=2,
+                model_file="model.onnx",
+            )
+            # Previously returned [5.0, -5.0]: the squatting legacy directory
+            # was returned as a cache hit for "owner/model".
+            assert _embed_first("owner/model", cache) == [5.0, 5.0]
+        finally:
+            server.shutdown()
+            thread.join()
+
+    entry = cache / "namespaced--owner--model"
+    assert (entry / "model.onnx").exists()
+    assert (entry / ModelManagement.CACHE_PROVENANCE_FILENAME).read_text(
+        encoding="utf-8"
+    ) == "owner/model"
+    # The squatter is moved aside, not deleted: its files survive for
+    # manual recovery.
+    backups = list(cache.glob(".namespaced--owner--model.squatter-*"))
+    assert len(backups) == 1
+    assert (backups[0] / "model.onnx").exists()
+
+
+def test_url_model_refuses_legacy_squatter_when_offline(tmp_path: Path) -> None:
+    root = tmp_path / "server"
+    root.mkdir()
+    _build_url_model_archive(root, "q", -1.0, archive_dir="namespaced--owner--model")
+    cache = tmp_path / "shared"
+    # Only the squatting legacy directory exists and there is no server to
+    # fetch from: the load must fail loudly rather than silently return
+    # the other model's weights.
+    shutil.copytree(root / "q" / "namespaced--owner--model", cache / "namespaced--owner--model")
+
+    TextEmbedding.add_custom_model(
+        model="owner/model",
+        pooling=PoolingType.DISABLED,
+        normalization=False,
+        sources=ModelSource(url="http://127.0.0.1:1/p.tar.gz"),
+        dim=2,
+        model_file="model.onnx",
+    )
+
+    with pytest.raises(ValueError, match="Could not load model owner/model"):
+        _embed_first("owner/model", cache, local_files_only=True)
+
+
+def test_url_model_reuses_namespaced_entry_with_provenance_marker(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "server"
+    root.mkdir()
+    _build_url_model_archive(root, "p", 1.0, archive_dir="model")
+    cache = tmp_path / "shared"
+
+    with ThreadingHTTPServer(
+        ("127.0.0.1", 0), partial(SimpleHTTPRequestHandler, directory=root)
+    ) as server:
+        thread = Thread(target=server.serve_forever)
+        thread.start()
+        try:
+            TextEmbedding.add_custom_model(
+                model="owner/model",
+                pooling=PoolingType.DISABLED,
+                normalization=False,
+                sources=ModelSource(url=f"http://127.0.0.1:{server.server_port}/p.tar.gz"),
+                dim=2,
+                model_file="model.onnx",
+            )
+            assert _embed_first("owner/model", cache) == [5.0, 5.0]
+        finally:
+            server.shutdown()
+            thread.join()
+
+    entry = cache / "namespaced--owner--model"
+    assert (entry / ModelManagement.CACHE_PROVENANCE_FILENAME).read_text(
+        encoding="utf-8"
+    ) == "owner/model"
+
+    # The marker-bearing entry must be accepted as a cache hit: a second
+    # load must not attempt a download at all.
+    def _must_not_download(*args: Any, **kwargs: Any) -> str:
+        raise AssertionError("must not re-download a marker-bearing cache entry")
+
+    monkeypatch.setattr(ModelManagement, "download_file_from_gcs", _must_not_download)
+    assert _embed_first("owner/model", cache) == [5.0, 5.0]
+
+
 def test_url_model_uses_legacy_basename_cache_dir_when_offline(tmp_path: Path) -> None:
     root = tmp_path / "server"
     root.mkdir()

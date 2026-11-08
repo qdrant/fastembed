@@ -5,6 +5,7 @@ import json
 import shutil
 import tarfile
 import tempfile
+import uuid
 import warnings
 import contextlib
 from copy import deepcopy
@@ -63,6 +64,13 @@ class CorruptedCacheError(ValueError):
 
 class ModelManagement(Generic[T]):
     METADATA_FILE = "files_metadata.json"
+    # File written into every namespaced cache entry recording the full
+    # model name it holds. A legacy basename-only directory never has
+    # one, so a later load can tell a genuine entry apart from a legacy
+    # directory that happens to share the encoded name (e.g. the legacy
+    # directory of "other/namespaced--owner--model" is exactly the
+    # namespaced key of "owner/model").
+    CACHE_PROVENANCE_FILENAME = ".fastembed-model"
 
     @classmethod
     def list_supported_models(cls) -> list[dict[str, Any]]:
@@ -100,6 +108,11 @@ class ModelManagement(Generic[T]):
 
     @classmethod
     def _list_supported_models(cls) -> list[T]:
+        """Model descriptions this embedding class supports.
+
+        Subclasses return their registered models; ``_get_model_description``
+        matches a requested name against this list.
+        """
         raise NotImplementedError()
 
     @classmethod
@@ -226,6 +239,7 @@ class ModelManagement(Generic[T]):
         """
 
         def _repo_relative_path(relative_path: Path) -> str:
+            """Repo-relative path of a cached file, without the snapshot prefix."""
             # Cached files are stored under `snapshots/<revision>/<repo_path>`. Strip that
             # prefix so the remainder matches a repo file's path, which may itself be nested
             # (e.g. `onnx/model.onnx`).
@@ -237,6 +251,12 @@ class ModelManagement(Generic[T]):
         def _verify_files_from_metadata(
             model_dir: Path, stored_metadata: dict[str, Any], repo_files: list[RepoFile]
         ) -> bool:
+            """True when every file in the stored metadata is present and matches.
+
+            Online, size and blob id are checked against the repo listing;
+            offline, only the on-disk size is checked. Any mismatch or
+            unreadable entry returns False.
+            """
             try:
                 for rel_path, meta in stored_metadata.items():
                     file_path = model_dir / rel_path
@@ -265,6 +285,11 @@ class ModelManagement(Generic[T]):
         def _collect_file_metadata(
             model_dir: Path, repo_files: list[RepoFile]
         ) -> dict[str, dict[str, int | str]]:
+            """Size and blob id per cached file, keyed by repo-relative path.
+
+            Only files present in the repo listing are recorded, so local
+            extras (e.g. the metadata file itself) never enter the record.
+            """
             meta: dict[str, dict[str, int | str]] = {}
             file_info_map = {f.path: f for f in repo_files}
             for file_path in model_dir.rglob("*"):
@@ -279,6 +304,11 @@ class ModelManagement(Generic[T]):
             return meta
 
         def _save_file_metadata(model_dir: Path, meta: dict[str, dict[str, int | str]]) -> None:
+            """Persists collected file metadata next to the cached model files.
+
+            Best-effort: a failure to write is logged and the download still
+            succeeds, so a read-only cache never breaks a fresh download.
+            """
             try:
                 if not model_dir.exists():
                     model_dir.mkdir(parents=True, exist_ok=True)
@@ -504,6 +534,20 @@ class ModelManagement(Generic[T]):
             # Devices, fifos and the like have no place in a model archive.
             raise ValueError(f"Unsupported tar member type: {member.name}")
 
+    @classmethod
+    def _read_cached_model_name(cls, model_dir: Path) -> str | None:
+        """Full model name recorded in a cache entry's provenance marker, or None.
+
+        Returns None when the marker is missing (a legacy basename-only
+        directory, or an entry written before markers existed) or
+        unreadable, so callers treat the directory as unprovenanced.
+        """
+        try:
+            name = (model_dir / cls.CACHE_PROVENANCE_FILENAME).read_text(encoding="utf-8").strip()
+        except (OSError, UnicodeDecodeError):
+            return None
+        return name or None
+
     @staticmethod
     def _cache_dir_name(model_name: str) -> str:
         """Maps a full model name to a single, injective on-disk cache directory name.
@@ -523,6 +567,14 @@ class ModelManagement(Generic[T]):
         which is exactly the legacy directory of a model registered as
         "other/owner--model", and an online load would silently reuse the
         other model's weights.
+
+        The prefix alone is not sufficient: a legacy directory's basename
+        is arbitrary, so the legacy directory of
+        "other/namespaced--owner--model" still shares the key of
+        "owner/model". New entries therefore also carry a provenance
+        marker (see ``CACHE_PROVENANCE_FILENAME``), and the cache-hit
+        check in ``retrieve_model_gcs`` only accepts a directory whose
+        marker names the requested model.
         """
         return "namespaced--" + (
             model_name.replace("%", "%25")
@@ -548,7 +600,12 @@ class ModelManagement(Generic[T]):
         directory is honoured only offline or for deprecated GCS copies,
         and is otherwise ignored so a stale copy can never shadow another
         model. While online the archive is downloaded into a staging
-        directory and atomically renamed into place.
+        directory and atomically renamed into place. Every namespaced
+        entry carries a provenance marker naming the model it holds, and
+        the cache-hit check only accepts a directory whose marker matches:
+        a legacy directory can share the encoded name (e.g. the legacy
+        directory of "other/namespaced--owner--model" is the namespaced
+        key of "owner/model"), so the name alone cannot prove ownership.
         """
         # The archive's top-level directory is still the bare basename (with a "fast-"
         # prefix for the deprecated GCS layout); that name is only used to locate the
@@ -568,7 +625,18 @@ class ModelManagement(Generic[T]):
         legacy_dir = Path(cache_dir) / archive_dir_name
 
         # check if the model_dir and the model files are both present for macOS
-        if model_dir.exists() and len(list(model_dir.glob("*"))) > 0:
+        # The provenance marker must name this model: a directory with a
+        # foreign (or missing) marker squats on this model's namespaced
+        # name -- e.g. the legacy basename-only directory of
+        # "other/namespaced--owner--model" -- and must never be returned as
+        # a cache hit. It is moved aside below so the download can take the
+        # name; the legacy fallback below still applies to this model's own
+        # basename directory.
+        if (
+            model_dir.exists()
+            and len(list(model_dir.glob("*"))) > 0
+            and cls._read_cached_model_name(model_dir) == model_name
+        ):
             return model_dir
 
         if legacy_dir.exists() and len(list(legacy_dir.glob("*"))) > 0:
@@ -632,10 +700,33 @@ class ModelManagement(Generic[T]):
                     f"The archive from {source_url} has no {archive_dir_name} directory"
                 )
 
+            # Record which model this entry holds before the atomic rename,
+            # so the marker lands with the entry: a later load can tell it
+            # apart from a legacy directory sharing the encoded name.
+            (model_tmp_dir / cls.CACHE_PROVENANCE_FILENAME).write_text(
+                model_name, encoding="utf-8"
+            )
+
             # Replace a stale empty model_dir, which Windows will not rename onto. rmdir leaves
             # anything else alone, including one another download has just filled.
             with contextlib.suppress(OSError):
                 model_dir.rmdir()
+
+            if model_dir.exists() and cls._read_cached_model_name(model_dir) != model_name:
+                # A directory with a foreign (or missing) provenance marker
+                # squats on this model's namespaced name -- e.g. the legacy
+                # basename-only directory of
+                # "other/namespaced--owner--model". Move it aside instead of
+                # deleting it, so its files survive for manual recovery; it
+                # is never returned as this model's cache. (A marker that
+                # matches is another download of this same model finishing
+                # first -- leave it for the rename's race branch below.)
+                backup_dir = Path(cache_dir) / f".{cache_dir_name}.squatter-{uuid.uuid4().hex[:8]}"
+                logger.warning(
+                    f"Cache directory {model_dir} does not hold {model_name}; "
+                    f"moving it aside to {backup_dir}."
+                )
+                model_dir.rename(backup_dir)
 
             try:
                 # Rename from the staging dir to the final name is atomic
@@ -644,6 +735,11 @@ class ModelManagement(Generic[T]):
                 # Another download of the same model finished first, so keep its copy.
                 if not (model_dir.is_dir() and any(model_dir.iterdir())):
                     raise
+                if cls._read_cached_model_name(model_dir) != model_name:
+                    raise ValueError(
+                        f"Cache directory {model_dir} does not hold {model_name}; "
+                        "refusing to load it."
+                    )
         finally:
             shutil.rmtree(staging_dir, ignore_errors=True)
 
