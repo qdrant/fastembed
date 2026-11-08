@@ -64,6 +64,34 @@ def test_get_default_cache_dir_linux_xdg(tmp_path: Path) -> None:
         assert result.is_dir()
 
 
+def test_get_default_cache_dir_linux_xdg_relative(tmp_path: Path) -> None:
+    fake_home = tmp_path / "home"
+    with (
+        patch("pathlib.Path.home", return_value=fake_home),
+        patch.dict(os.environ, {"XDG_CACHE_HOME": "relative/cache/dir"}, clear=False),
+        patch("sys.platform", "linux"),
+    ):
+        os.environ.pop("FASTEMBED_CACHE_PATH", None)
+        result = get_default_cache_dir()
+        expected = fake_home / ".cache" / "fastembed_cache"
+        assert result == expected
+        assert result.is_dir()
+
+
+def test_get_default_cache_dir_linux_xdg_empty(tmp_path: Path) -> None:
+    fake_home = tmp_path / "home"
+    with (
+        patch("pathlib.Path.home", return_value=fake_home),
+        patch.dict(os.environ, {"XDG_CACHE_HOME": ""}, clear=False),
+        patch("sys.platform", "linux"),
+    ):
+        os.environ.pop("FASTEMBED_CACHE_PATH", None)
+        result = get_default_cache_dir()
+        expected = fake_home / ".cache" / "fastembed_cache"
+        assert result == expected
+        assert result.is_dir()
+
+
 def test_get_default_cache_dir_linux_fallback_home(tmp_path: Path) -> None:
     fake_home = tmp_path / "home"
     with (
@@ -73,6 +101,20 @@ def test_get_default_cache_dir_linux_fallback_home(tmp_path: Path) -> None:
     ):
         os.environ.pop("FASTEMBED_CACHE_PATH", None)
         os.environ.pop("XDG_CACHE_HOME", None)
+        result = get_default_cache_dir()
+        expected = fake_home / ".cache" / "fastembed_cache"
+        assert result == expected
+        assert result.is_dir()
+
+
+def test_get_default_cache_dir_windows_relative(tmp_path: Path) -> None:
+    fake_home = tmp_path / "home"
+    with (
+        patch("pathlib.Path.home", return_value=fake_home),
+        patch.dict(os.environ, {"LOCALAPPDATA": "relative/local/appdata"}, clear=False),
+        patch("sys.platform", "win32"),
+    ):
+        os.environ.pop("FASTEMBED_CACHE_PATH", None)
         result = get_default_cache_dir()
         expected = fake_home / ".cache" / "fastembed_cache"
         assert result == expected

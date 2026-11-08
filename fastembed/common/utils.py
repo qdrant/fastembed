@@ -147,7 +147,7 @@ def get_default_cache_dir() -> Path:
     try:
         if sys.platform == "win32":
             local_appdata = os.getenv("LOCALAPPDATA")
-            if local_appdata:
+            if local_appdata and Path(local_appdata).is_absolute():
                 candidate = Path(local_appdata) / "fastembed_cache"
             else:
                 candidate = Path.home() / ".cache" / "fastembed_cache"
@@ -155,7 +155,7 @@ def get_default_cache_dir() -> Path:
             candidate = Path.home() / "Library" / "Caches" / "fastembed_cache"
         else:
             xdg_cache_home = os.getenv("XDG_CACHE_HOME")
-            if xdg_cache_home:
+            if xdg_cache_home and Path(xdg_cache_home).is_absolute():
                 candidate = Path(xdg_cache_home) / "fastembed_cache"
             else:
                 candidate = Path.home() / ".cache" / "fastembed_cache"
