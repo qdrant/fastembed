@@ -8,6 +8,7 @@ import tempfile
 import uuid
 import warnings
 import contextlib
+from collections.abc import Iterator
 from copy import deepcopy
 from pathlib import Path, PureWindowsPath
 from typing import Any, TypeVar, Generic
@@ -29,6 +30,15 @@ from fastembed.common.model_description import BaseModelDescription
 T = TypeVar("T", bound=BaseModelDescription)
 
 _DOWNLOAD_CHUNK_SIZE = 256 * 1024
+
+# Install-lock behaviour for retrieve_model_gcs (see _model_install_lock):
+# how long one installer waits for another installer's lock, and how old
+# a lock directory must be to count as left behind by a crashed
+# installer. The install step is just renames, so it never holds the
+# lock anywhere near either bound in normal operation.
+_INSTALL_LOCK_TIMEOUT_S = 30.0
+_INSTALL_LOCK_STALE_S = 120.0
+_INSTALL_LOCK_POLL_S = 0.05
 
 
 def _hf_transport_errors() -> tuple[type[Exception], ...]:
@@ -549,6 +559,54 @@ class ModelManagement(Generic[T]):
         return name or None
 
     @staticmethod
+    @contextlib.contextmanager
+    def _model_install_lock(cache_dir: str, cache_dir_name: str) -> Iterator[None]:
+        """Serializes the install step of concurrent downloads of one model.
+
+        The lock is a directory: creating it is atomic on POSIX and
+        Windows, so exactly one installer holds it at a time. It is
+        held only across the install step (the squatter check, the
+        move-aside and the final rename); the download itself happens
+        outside it, so downloads still run in parallel. Holding it
+        makes the squatter check fresh: no other installer can land a
+        valid entry between the check and the rename, so a directory
+        that fails the check under the lock is a genuine squatter, and
+        a valid entry can never be moved aside while a loader that
+        already received its path is about to open model.onnx.
+
+        A lock directory older than ``_INSTALL_LOCK_STALE_S`` is
+        treated as left behind by a crashed installer and removed;
+        waiting longer than ``_INSTALL_LOCK_TIMEOUT_S`` raises
+        TimeoutError rather than installing without the lock.
+        """
+        lock_dir = Path(cache_dir) / f".{cache_dir_name}.install-lock"
+        deadline = time.monotonic() + _INSTALL_LOCK_TIMEOUT_S
+        while True:
+            try:
+                lock_dir.mkdir(parents=True)
+                break
+            except FileExistsError:
+                try:
+                    age = time.time() - lock_dir.stat().st_mtime
+                except OSError:
+                    age = 0.0
+                if age > _INSTALL_LOCK_STALE_S:
+                    with contextlib.suppress(OSError):
+                        lock_dir.rmdir()
+                if time.monotonic() > deadline:
+                    raise TimeoutError(
+                        f"Timed out after {_INSTALL_LOCK_TIMEOUT_S:g}s waiting for the "
+                        f"install lock {lock_dir}; another process may be installing "
+                        "this model."
+                    )
+                time.sleep(_INSTALL_LOCK_POLL_S)
+        try:
+            yield
+        finally:
+            with contextlib.suppress(OSError):
+                lock_dir.rmdir()
+
+    @staticmethod
     def _cache_dir_name(model_name: str) -> str:
         """Maps a full model name to a single, injective on-disk cache directory name.
 
@@ -606,6 +664,10 @@ class ModelManagement(Generic[T]):
         a legacy directory can share the encoded name (e.g. the legacy
         directory of "other/namespaced--owner--model" is the namespaced
         key of "owner/model"), so the name alone cannot prove ownership.
+        The install step itself is serialized per model (see
+        ``_model_install_lock``), so a concurrent download cannot land
+        a valid entry between the squatter check and the move-aside and
+        a loader holding that path never finds it moved aside.
         """
         # The archive's top-level directory is still the bare basename (with a "fast-"
         # prefix for the deprecated GCS layout); that name is only used to locate the
@@ -707,51 +769,66 @@ class ModelManagement(Generic[T]):
                 model_name, encoding="utf-8"
             )
 
-            # Replace a stale empty model_dir, which Windows will not rename onto. rmdir leaves
-            # anything else alone, including one another download has just filled.
-            with contextlib.suppress(OSError):
-                model_dir.rmdir()
+            # Serialize the install step with other downloads of this
+            # model: the squatter check below must stay fresh until the
+            # rename, or a concurrent installer can land a valid entry
+            # between the check and the move-aside and a loader that
+            # already received that path fails opening model.onnx while
+            # it is moved aside (see discussion r4508260320). The
+            # download above stays outside the lock, so downloads still
+            # run in parallel.
+            with cls._model_install_lock(cache_dir, cache_dir_name):
+                # Replace a stale empty model_dir, which Windows will not rename onto. rmdir leaves
+                # anything else alone, including one another download has just filled.
+                with contextlib.suppress(OSError):
+                    model_dir.rmdir()
 
-            if model_dir.exists() and cls._read_cached_model_name(model_dir) != model_name:
-                # A directory with a foreign (or missing) provenance marker
-                # squats on this model's namespaced name -- e.g. the legacy
-                # basename-only directory of
-                # "other/namespaced--owner--model". Move it aside instead of
-                # deleting it, so its files survive for manual recovery; it
-                # is never returned as this model's cache. (A marker that
-                # matches is another download of this same model finishing
-                # first -- leave it for the rename's race branch below.)
-                backup_dir = Path(cache_dir) / f".{cache_dir_name}.squatter-{uuid.uuid4().hex[:8]}"
-                logger.warning(
-                    f"Cache directory {model_dir} does not hold {model_name}; "
-                    f"moving it aside to {backup_dir}."
-                )
-                model_dir.rename(backup_dir)
-                if cls._read_cached_model_name(backup_dir) == model_name:
-                    # The marker check above is stale under concurrency: a
-                    # concurrent download of this same model may have
-                    # installed a valid entry after the check but before
-                    # this rename, so the directory just moved aside is
-                    # that valid entry, not a squatter. Put it back; the
-                    # rename below then keeps it via its OSError branch.
-                    # If a third download has since filled model_dir, the
-                    # restore fails and the rename below keeps that copy
-                    # instead, so the failure is suppressed here.
-                    with contextlib.suppress(OSError):
-                        backup_dir.rename(model_dir)
-
-            try:
-                # Rename from the staging dir to the final name is atomic
-                model_tmp_dir.rename(model_dir)
-            except OSError:
-                # Another download of the same model finished first, so keep its copy.
-                if not (model_dir.is_dir() and any(model_dir.iterdir())):
-                    raise
-                if cls._read_cached_model_name(model_dir) != model_name:
-                    raise ValueError(
-                        f"Cache directory {model_dir} does not hold {model_name}; "
-                        "refusing to load it."
+                if model_dir.exists() and cls._read_cached_model_name(model_dir) != model_name:
+                    # A directory with a foreign (or missing) provenance marker
+                    # squats on this model's namespaced name -- e.g. the legacy
+                    # basename-only directory of
+                    # "other/namespaced--owner--model". Move it aside instead of
+                    # deleting it, so its files survive for manual recovery; it
+                    # is never returned as this model's cache. (A marker that
+                    # matches is another download of this same model finishing
+                    # first -- leave it for the rename's race branch below.)
+                    backup_dir = (
+                        Path(cache_dir) / f".{cache_dir_name}.squatter-{uuid.uuid4().hex[:8]}"
                     )
+                    logger.warning(
+                        f"Cache directory {model_dir} does not hold {model_name}; "
+                        f"moving it aside to {backup_dir}."
+                    )
+                    model_dir.rename(backup_dir)
+                    if cls._read_cached_model_name(backup_dir) == model_name:
+                        # The marker check above is stale under concurrency: a
+                        # concurrent download of this same model may have
+                        # installed a valid entry after the check but before
+                        # this rename, so the directory just moved aside is
+                        # that valid entry, not a squatter. Put it back; the
+                        # rename below then keeps it via its OSError branch.
+                        # The install lock above makes this unreachable for
+                        # installers that take the lock; it stays as
+                        # defence-in-depth for one that bypassed it (e.g. an
+                        # older fastembed writing the same directory).
+                        # If a third download has since filled model_dir, the
+                        # restore fails and the rename below keeps that copy
+                        # instead, so the failure is suppressed here.
+                        with contextlib.suppress(OSError):
+                            backup_dir.rename(model_dir)
+
+                try:
+                    # Rename from the staging dir to the final name is atomic
+                    model_tmp_dir.rename(model_dir)
+                except OSError:
+                    # Another download of the same model finished first, so keep its copy.
+                    if not (model_dir.is_dir() and any(model_dir.iterdir())):
+                        raise
+                    if cls._read_cached_model_name(model_dir) != model_name:
+                        raise ValueError(
+                            f"Cache directory {model_dir} does not hold {model_name}; "
+                            "refusing to load it."
+                        )
         finally:
             shutil.rmtree(staging_dir, ignore_errors=True)
 

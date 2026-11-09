@@ -11,10 +11,11 @@ repo-relative path, not the bare filename.
 import json
 import shutil
 import tarfile
+import time
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from threading import Thread
+from threading import Event, Thread
 from typing import Any
 
 import onnx
@@ -552,3 +553,153 @@ def test_url_model_restores_valid_entry_moved_aside_by_stale_check(
         encoding="utf-8"
     ) == "owner/model"
     assert list(cache.glob(".namespaced--owner--model.squatter-*")) == []
+
+
+def test_model_install_lock_blocks_second_installer(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A second installer waits for the lock instead of installing alongside."""
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    monkeypatch.setattr(model_management, "_INSTALL_LOCK_TIMEOUT_S", 0.2)
+    outcomes: list[str] = []
+
+    def _try_lock() -> None:
+        try:
+            with ModelManagement._model_install_lock(str(cache), "namespaced--owner--model"):
+                outcomes.append("acquired")
+        except TimeoutError:
+            outcomes.append("timeout")
+
+    lock_dir = cache / ".namespaced--owner--model.install-lock"
+    with ModelManagement._model_install_lock(str(cache), "namespaced--owner--model"):
+        assert lock_dir.is_dir()
+        thread = Thread(target=_try_lock)
+        thread.start()
+        thread.join()
+        assert outcomes == ["timeout"]
+
+    thread = Thread(target=_try_lock)
+    thread.start()
+    thread.join()
+    assert outcomes == ["timeout", "acquired"]
+    assert not lock_dir.exists()
+
+
+def test_url_model_read_during_concurrent_install_never_loses_valid_entry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A loader that already received a valid entry's path never finds it moved aside.
+
+    CodeRabbit's re-review of 0267e49: the restore leaves model_dir absent
+    between the move-aside and the restore, so a loader that already
+    received that path fails opening model.onnx during the interval. The
+    install step is now serialized per model, so a second installer can
+    no longer land a valid entry between the squatter check and the
+    move-aside: the move only ever touches a genuine squatter, which no
+    loader could have received as this model's entry.
+    """
+    root = tmp_path / "server"
+    root.mkdir()
+    _build_url_model_archive(root, "p", 1.0, archive_dir="model")
+    _build_url_model_archive(root, "q", -1.0, archive_dir="namespaced--owner--model")
+    cache = tmp_path / "shared"
+    model_dir = cache / "namespaced--owner--model"
+    # A squatting legacy directory sits on this model's namespaced key.
+    shutil.copytree(root / "q" / "namespaced--owner--model", model_dir)
+
+    # The move-aside rename is the check-then-move gap: hold this load
+    # between its (stale) squatter check and the move, so a concurrent
+    # install of the same model lands first, and hold model_dir absent
+    # afterwards so a reader polling it would trip over the gap.
+    orig_rename = Path.rename
+    about_to_move = Event()
+
+    def _rename_with_delay(self: Path, target: Path) -> None:
+        if self == model_dir and target.name.startswith(".namespaced--owner--model.squatter-"):
+            about_to_move.set()
+            time.sleep(0.5)
+            result = orig_rename(self, target)
+            time.sleep(0.05)
+            return result
+        return orig_rename(self, target)
+
+    monkeypatch.setattr(Path, "rename", _rename_with_delay)
+
+    # A reader that already holds the valid entry's path: once it has
+    # read a marker-bearing model.onnx once, every later read must
+    # succeed too. (The squatter's model.onnx does not count: it has no
+    # provenance marker naming this model.)
+    stop = Event()
+    failures: list[str] = []
+    seen_valid = Event()
+
+    def _reader() -> None:
+        while not stop.is_set():
+            try:
+                marker = (
+                    (model_dir / ModelManagement.CACHE_PROVENANCE_FILENAME)
+                    .read_text(encoding="utf-8")
+                    .strip()
+                )
+                (model_dir / "model.onnx").read_bytes()
+            except OSError:
+                if seen_valid.is_set():
+                    failures.append("valid entry vanished while being read")
+            else:
+                if marker == "owner/model":
+                    seen_valid.set()
+            time.sleep(0.001)
+
+    reader = Thread(target=_reader)
+    reader.start()
+    try:
+        with ThreadingHTTPServer(
+            ("127.0.0.1", 0), partial(SimpleHTTPRequestHandler, directory=root)
+        ) as server:
+            thread = Thread(target=server.serve_forever)
+            thread.start()
+            try:
+                TextEmbedding.add_custom_model(
+                    model="owner/model",
+                    pooling=PoolingType.DISABLED,
+                    normalization=False,
+                    sources=ModelSource(url=f"http://127.0.0.1:{server.server_port}/p.tar.gz"),
+                    dim=2,
+                    model_file="model.onnx",
+                )
+
+                # The load under test runs in its own thread; once it is
+                # about to move the squatter aside, the concurrent install
+                # runs and lands a valid entry first.
+                installer_errors: list[str] = []
+
+                def _load_under_test() -> None:
+                    try:
+                        assert _embed_first("owner/model", cache) == [5.0, 5.0]
+                    except Exception as exc:  # noqa: BLE001 - surfaced below
+                        installer_errors.append(repr(exc))
+
+                load_thread = Thread(target=_load_under_test)
+                load_thread.start()
+                assert about_to_move.wait(timeout=10)
+                # The concurrent install: without the lock this lands
+                # between the check and the move; with the lock it waits
+                # for the load under test to finish installing, then
+                # keeps that entry.
+                assert _embed_first("owner/model", cache) == [5.0, 5.0]
+                load_thread.join(timeout=10)
+                assert not load_thread.is_alive()
+                assert installer_errors == []
+            finally:
+                server.shutdown()
+                thread.join()
+    finally:
+        stop.set()
+        reader.join()
+
+    assert seen_valid.is_set(), "the reader never saw a valid entry"
+    assert failures == []
+    assert (model_dir / ModelManagement.CACHE_PROVENANCE_FILENAME).read_text(
+        encoding="utf-8"
+    ) == "owner/model"
