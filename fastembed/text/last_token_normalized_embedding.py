@@ -37,6 +37,34 @@ supported_last_token_normalized_models: list[DenseModelDescription] = [
         sources=ModelSource(hf="Qdrant/Qwen3-Embedding-0.6B-onnx"),
         model_file="onnx/model_quantized.onnx",
     ),
+    DenseModelDescription(
+        model="papr-ai/papr-embed-code-1-0.6b",
+        dim=1024,
+        description=(
+            "Text embeddings for code retrieval, Unimodal (text), 8192 input tokens truncation, "
+            "Prefixes for queries/documents: `Instruct: {task_description}\\nQuery:{query}` "
+            "for queries, none for documents, 2026 year."
+        ),
+        license="apache-2.0",
+        size_in_GB=2.38,
+        sources=ModelSource(hf="papr-ai/papr-embed-code-1-0.6b"),
+        model_file="onnx/model.onnx",
+        additional_files=["onnx/model.onnx_data"],
+    ),
+    DenseModelDescription(
+        model="papr-ai/papr-embed-code-1-0.6b-Q",
+        dim=1024,
+        description=(
+            "Text embeddings for code retrieval, Unimodal (text), 8192 input tokens truncation, "
+            "Prefixes for queries/documents: `Instruct: {task_description}\\nQuery:{query}` "
+            "for queries, none for documents, int8 weights, requires onnxruntime>=1.23, "
+            "2026 year."
+        ),
+        license="apache-2.0",
+        size_in_GB=1.12,
+        sources=ModelSource(hf="papr-ai/papr-embed-code-1-0.6b"),
+        model_file="onnx/model_quantized.onnx",
+    ),
 ]
 
 
