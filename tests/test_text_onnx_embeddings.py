@@ -1,11 +1,14 @@
 import os
 import platform
 from contextlib import contextmanager
+from pathlib import Path
 
 import numpy as np
 import pytest
+from huggingface_hub import snapshot_download
 
 from fastembed.common.onnx_model import OnnxOutputContext
+from fastembed.common.preprocessor_utils import load_tokenizer
 from fastembed.text.custom_text_embedding import CustomTextEmbedding
 from fastembed.text.last_token_normalized_embedding import LastTokenNormalizedEmbedding
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
@@ -118,7 +121,8 @@ CANONICAL_VECTOR_VALUES = {
 }
 
 PAPR_CODE_INSTRUCT_PREFIX = (
-    "Instruct: Given a question about coding, retrieval code or passage that can solve user's question\nQuery:"
+    "Instruct: Given a question about coding, retrieval code or passage that can solve user's "
+    "question\nQuery:"
 )
 QWEN3_INSTRUCT_PREFIX = (
     "Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery:"
@@ -411,3 +415,22 @@ def test_mixed_length_batch_with_fixed_padding(model_cache, model_name: str, dim
 
         embeddings = np.stack(list(model.embed(["hello world", "retrieval " * 200])), axis=0)
         assert embeddings.shape == (2, dim)
+
+
+@pytest.mark.parametrize(
+    "model_name", ["papr-ai/papr-embed-code-1-0.6b", "papr-ai/papr-embed-code-1-0.6b-Q"]
+)
+def test_papr_embed_code_truncates_at_8192_tokens(tmp_path: Path, model_name: str) -> None:
+    # the model is trained and scored at 8192 tokens; FastEmbed takes its truncation limit from
+    # tokenizer_config.json, so only the tokenizer files are needed to check the boundary
+    model_desc = next(m for m in TextEmbedding._list_supported_models() if m.model == model_name)
+    model_dir = snapshot_download(
+        model_desc.sources.hf,
+        allow_patterns=["tokenizer.json", "tokenizer_config.json", "special_tokens_map.json"],
+        local_dir=tmp_path,
+    )
+    tokenizer, _ = load_tokenizer(Path(model_dir))
+    assert tokenizer.truncation["max_length"] == 8192
+
+    assert len(tokenizer.encode("def f(): pass\n" * 4000).ids) == 8192  # ~24k tokens untruncated
+    assert len(tokenizer.encode("def f(): pass\n" * 100).ids) < 8192  # shorter input is left whole
