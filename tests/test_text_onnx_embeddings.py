@@ -85,6 +85,12 @@ CANONICAL_VECTOR_VALUES = {
     "Qwen/Qwen3-Embedding-0.6B": np.array(
         [-0.01476084, 0.01723184, -0.01195498, -0.07275258, 0.00281229]
     ),
+    "papr-ai/papr-embed-code-1-0.6b": np.array(
+        [-0.02248255, 0.00631354, -0.01248240, -0.09027791, 0.01010075]
+    ),
+    "papr-ai/papr-embed-code-1-0.6b-Q": np.array(
+        [-0.02327485, 0.00676310, -0.01253125, -0.08863912, 0.01042701]
+    ),
     "Qwen/Qwen3-Embedding-0.6B-Q": np.array(
         [-0.01599521, 0.01676456, -0.01195119, -0.07132675, 0.00346729]
     ),
@@ -111,6 +117,10 @@ CANONICAL_VECTOR_VALUES = {
     ),
 }
 
+PAPR_CODE_INSTRUCT_PREFIX = (
+    "Instruct: Given a question about coding, retrieval code or passage that can solve user's "
+    "question\nQuery:"
+)
 QWEN3_INSTRUCT_PREFIX = (
     "Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery:"
 )
@@ -122,6 +132,8 @@ QUERY_PREFIXES = {
     "google/embeddinggemma-300m": "task: search result | query: ",
     "Qwen/Qwen3-Embedding-0.6B": QWEN3_INSTRUCT_PREFIX,
     "Qwen/Qwen3-Embedding-0.6B-Q": QWEN3_INSTRUCT_PREFIX,
+    "papr-ai/papr-embed-code-1-0.6b": PAPR_CODE_INSTRUCT_PREFIX,
+    "papr-ai/papr-embed-code-1-0.6b-Q": PAPR_CODE_INSTRUCT_PREFIX,
 }
 CANONICAL_QUERY_VECTOR_VALUES = {
     "google/embeddinggemma-300m": np.array(
@@ -132,6 +144,12 @@ CANONICAL_QUERY_VECTOR_VALUES = {
     ),
     "Qwen/Qwen3-Embedding-0.6B-Q": np.array(
         [-0.02221339, 0.01932909, -0.00361797, -0.03888897, -0.01362813]
+    ),
+    "papr-ai/papr-embed-code-1-0.6b": np.array(
+        [-0.03278806, -0.00443351, -0.01108761, -0.10624645, 0.00046925]
+    ),
+    "papr-ai/papr-embed-code-1-0.6b-Q": np.array(
+        [-0.03447591, -0.00379669, -0.01115182, -0.10493477, 0.00018882]
     ),
 }
 
