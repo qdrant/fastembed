@@ -72,6 +72,17 @@ def test_rerank(model_cache, model_name: str) -> None:
                 scores, scores2, atol=1e-5
             ), f"Model: {model_desc.model}, Scores: {scores}, Scores2: {scores2}"
 
+            # Test when pairs is passed as a tuple of pairs (issue #796)
+            scores_tuple = np.array(list(model.rerank_pairs(tuple(pairs))))
+            assert np.allclose(
+                scores, scores_tuple, atol=1e-5
+            ), f"Model: {model_desc.model}, Scores: {scores}, ScoresTuple: {scores_tuple}"
+
+            # Test when pairs is passed as a single pair tuple
+            single_score = list(model.rerank_pairs(pairs[0]))
+            assert len(single_score) == 1
+            assert np.isclose(single_score[0], scores[0], atol=1e-5)
+
             canonical_scores = CANONICAL_SCORE_VALUES[model_desc.model]
             canonical_variants = (
                 canonical_scores if isinstance(canonical_scores, tuple) else (canonical_scores,)

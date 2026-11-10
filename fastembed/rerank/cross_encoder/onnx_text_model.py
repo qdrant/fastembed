@@ -123,8 +123,11 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         is_small = False
 
         if isinstance(pairs, tuple):
-            pairs = [pairs]
-            is_small = True
+            if len(pairs) == 2 and isinstance(pairs[0], str) and isinstance(pairs[1], str):
+                pairs = [pairs]
+                is_small = True
+            else:
+                pairs = list(pairs)
 
         if isinstance(pairs, list):
             if len(pairs) < batch_size:
