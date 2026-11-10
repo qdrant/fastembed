@@ -41,7 +41,7 @@ supported_last_token_normalized_models: list[DenseModelDescription] = [
         model="papr-ai/papr-embed-code-1-0.6b",
         dim=1024,
         description=(
-            "Text embeddings for code retrieval, Unimodal (text), 8192 input tokens truncation, "
+            "Text embeddings, Unimodal (text), English and code, 8192 input tokens truncation, "
             "Prefixes for queries/documents: `Instruct: {task_description}\\nQuery:{query}` "
             "for queries, none for documents, 2026 year."
         ),
@@ -55,7 +55,7 @@ supported_last_token_normalized_models: list[DenseModelDescription] = [
         model="papr-ai/papr-embed-code-1-0.6b-Q",
         dim=1024,
         description=(
-            "Text embeddings for code retrieval, Unimodal (text), 8192 input tokens truncation, "
+            "Text embeddings, Unimodal (text), English and code, 8192 input tokens truncation, "
             "Prefixes for queries/documents: `Instruct: {task_description}\\nQuery:{query}` "
             "for queries, none for documents, int8 weights, requires onnxruntime>=1.23, "
             "2026 year."
