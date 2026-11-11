@@ -33,6 +33,9 @@ class DummyModel(OnnxTextModel[int]):
         self.calls = []
         self.lock = threading.Lock()
 
+    def _token_count(self, text, **kwargs):
+        return len(text)
+
     def _get_worker_class(self):
         raise NotImplementedError
 
@@ -200,3 +203,16 @@ def test_real_cpu_onnx_concurrent_embeddings_match_serial():
     actual = np.stack(list(model.embed(docs, batch_size=8, inference_workers=4)))
 
     np.testing.assert_allclose(actual, expected, rtol=1e-5, atol=1e-6)
+
+
+@pytest.mark.parametrize("inference_workers", [1, 3])
+def test_short_input_preserves_upstream_length_sorting(inference_workers):
+    model = DummyModel()
+    assert encode(model, ["1", "222", "33"], inference_workers, batch_size=8) == [1, 222, 33]
+    assert model.calls == [222]
+
+
+def test_serial_path_preserves_upstream_length_sorting():
+    model = DummyModel()
+    assert encode(model, ["1", "222", "33", "4444"], batch_size=2) == [1, 222, 33, 4444]
+    assert model.calls == [4444, 33]

@@ -177,19 +177,6 @@ supported_onnx_models: list[DenseModelDescription] = [
         model_file="onnx/text_model.onnx",
     ),
     DenseModelDescription(
-        model="Qdrant/constella-zero",
-        dim=1024,
-        description=(
-            "Text embeddings, Unimodal (text), English, 512 input tokens truncation, "
-            "Query-side lookup table with no transformer, embeds into the document space of "
-            "stella_en_400M_v5, Prefixes for queries/documents: not necessary, 2026 year."
-        ),
-        license="mit",
-        size_in_GB=0.03,
-        sources=ModelSource(hf="Qdrant/constella-zero"),
-        model_file="model.onnx",
-    ),
-    DenseModelDescription(
         model="Qdrant/stella-en-400M-v5-doc-onnx",
         dim=1024,
         description=(

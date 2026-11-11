@@ -78,6 +78,15 @@ class SparseTextEmbedding(SparseTextEmbeddingBase):
                 stacklevel=2,
             )
             model_name = "prithivida/Splade_PP_en_v1"
+        # up to 0.9.1, model.onnx had no attention_mask, so padding changed bm42 document weights
+        if model_name.lower() == "qdrant/bm42-all-minilm-l6-v2-attentions":
+            warnings.warn(
+                "The model 'Qdrant/bm42-all-minilm-l6-v2-attentions' now masks padding, so "
+                "document weights no longer depend on the other documents in a batch. Re-embed "
+                "documents embedded in batches with fastembed<=0.9.1 to keep scores consistent.",
+                UserWarning,
+                stacklevel=2,
+            )
 
         for EMBEDDING_MODEL_TYPE in self.EMBEDDINGS_REGISTRY:
             supported_models = EMBEDDING_MODEL_TYPE._list_supported_models()

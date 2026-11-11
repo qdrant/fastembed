@@ -26,7 +26,7 @@ supported_bm42_models: list[SparseModelDescription] = [
         license="apache-2.0",
         size_in_GB=0.09,
         sources=ModelSource(hf="Qdrant/all_miniLM_L6_v2_with_attentions"),
-        model_file="model.onnx",
+        model_file="model_attention_mask.onnx",
         additional_files=["stopwords.txt"],
         requires_idf=True,
     ),

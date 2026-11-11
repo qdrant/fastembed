@@ -119,6 +119,18 @@ def test_parallel_processing(model_cache, model_name: str) -> None:
             assert np.allclose(emb_1.values, emb_3.values)
 
 
+def test_bm42_weights_do_not_depend_on_batch(model_cache) -> None:
+    short_doc = "vector search engine"
+    long_doc = "Qdrant is a vector similarity search engine and vector database. " * 20
+    with model_cache("Qdrant/bm42-all-minilm-l6-v2-attentions") as model:
+        alone = list(model.embed([short_doc]))[0]
+        # padded to the long document's length within the batch
+        batched = list(model.embed([short_doc, long_doc]))[0]
+
+    assert np.array_equal(alone.indices, batched.indices)
+    assert np.allclose(alone.values, batched.values, atol=1e-6)
+
+
 @pytest.mark.parametrize("model_name", ["Qdrant/bm25"])
 def test_multilanguage(model_cache, model_name: str) -> None:
     docs = ["Mangez-vous vraiment des grenouilles?", "Je suis au lit"]

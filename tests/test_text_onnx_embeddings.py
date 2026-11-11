@@ -268,7 +268,7 @@ def test_quantized_model_reports_onnxruntime_requirement(monkeypatch) -> None:
     [
         cls
         for cls in TextEmbedding.EMBEDDINGS_REGISTRY
-        if cls not in (CustomTextEmbedding, StaticTextEmbedding)
+        if not issubclass(cls, (CustomTextEmbedding, StaticTextEmbedding))
     ],
     ids=lambda cls: cls.__name__,
 )

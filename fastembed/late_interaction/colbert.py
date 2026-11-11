@@ -9,7 +9,7 @@ from fastembed.common.preprocessor_utils import load_tokenizer
 from fastembed.common.types import NumpyArray, Device
 from fastembed.common import OnnxProvider
 from fastembed.common.onnx_model import OnnxOutputContext
-from fastembed.common.utils import define_cache_dir, iter_batch
+from fastembed.common.utils import define_cache_dir, iter_batch, normalize
 from fastembed.late_interaction.late_interaction_embedding_base import (
     LateInteractionTextEmbeddingBase,
 )
@@ -69,13 +69,8 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
                     if token_id in self.skip_list or token_id == self.pad_token_id:
                         output.attention_mask[i, j] = 0
 
-            output.model_output *= np.expand_dims(output.attention_mask, 2)
-            norm = np.linalg.norm(output.model_output, ord=2, axis=2, keepdims=True)
-            norm_clamped = np.maximum(norm, 1e-12)
-            output.model_output /= norm_clamped
-
             for embedding, attention_mask in zip(output.model_output, output.attention_mask):
-                yield embedding[attention_mask == 1]
+                yield normalize(embedding[attention_mask == 1])
 
     def _preprocess_onnx_input(
         self, onnx_input: dict[str, NumpyArray], is_doc: bool = True, **kwargs: Any
@@ -232,7 +227,8 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
         """Load the document and the query tokenizers, and apply colbert's own configuration.
 
         Both tokenizers are always (re)loaded from disk here, so the truncation length is
-        derived from the on-disk value and never decremented twice.
+        derived from the on-disk value and never decremented twice. Both preserve the
+        truncation direction resolved by `load_tokenizer`.
         """
         tokenizer, special_token_to_id = load_tokenizer(model_dir=model_dir)
         query_tokenizer, _ = load_tokenizer(model_dir=model_dir)
@@ -247,8 +243,9 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
         }
         # ensure not to overflow after adding document-marker
         max_length = tokenizer.truncation["max_length"] - self.RESERVED_MARKER_TOKENS
-        tokenizer.enable_truncation(max_length=max_length)
-        query_tokenizer.enable_truncation(max_length=max_length)
+        truncation_direction = tokenizer.truncation["direction"]
+        tokenizer.enable_truncation(max_length=max_length, direction=truncation_direction)
+        query_tokenizer.enable_truncation(max_length=max_length, direction=truncation_direction)
         query_tokenizer.enable_padding(
             pad_token=self.MASK_TOKEN,
             pad_id=mask_token_id,

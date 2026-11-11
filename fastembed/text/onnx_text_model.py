@@ -13,7 +13,7 @@ from tokenizers import Encoding, Tokenizer
 from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
 from fastembed.common.preprocessor_utils import load_tokenizer
 from fastembed.common.types import Device, NumpyArray, OnnxProvider
-from fastembed.common.utils import iter_batch
+from fastembed.common.utils import iter_batch, iter_length_sorted_batches, restore_order
 from fastembed.parallel_processor import ParallelWorkerPool
 
 
@@ -138,6 +138,8 @@ class OnnxTextModel(OnnxModel[T]):
         the worker count is outstanding, even for an infinite input iterator.
         This is opt-in and uses no extra model sessions or processes.
         """
+        # Keep streaming batches here: length sorting reads an additional window
+        # ahead, which would break the concurrent path's bounded-input guarantee.
         batches = iter(iter_batch(documents, batch_size))
         executor = ThreadPoolExecutor(max_workers=inference_workers)
         pending: deque[Future[OnnxOutputContext]] = deque()
@@ -211,10 +213,15 @@ class OnnxTextModel(OnnxModel[T]):
                     documents, batch_size, inference_workers, kwargs
                 )
             else:
-                for batch in iter_batch(documents, batch_size):
-                    yield from self._post_process_onnx_output(
-                        self.onnx_embed(batch, **kwargs), **kwargs
+                yield from restore_order(
+                    (
+                        indices,
+                        self._post_process_onnx_output(self.onnx_embed(batch, **kwargs), **kwargs),
                     )
+                    for indices, batch in iter_length_sorted_batches(
+                        documents, batch_size, self._token_count
+                    )
+                )
         else:
             if parallel == 0:
                 parallel = os.cpu_count()
@@ -240,8 +247,19 @@ class OnnxTextModel(OnnxModel[T]):
                 device_ids=device_ids,
                 start_method=start_method,
             )
-            for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
-                yield from self._post_process_onnx_output(batch, **kwargs)  # type: ignore
+            batch_indices: deque[list[int]] = deque()
+
+            def batches() -> Iterable[list[str]]:
+                for indices, batch in iter_length_sorted_batches(
+                    documents, batch_size, self._token_count
+                ):
+                    batch_indices.append(indices)
+                    yield batch
+
+            yield from restore_order(
+                (batch_indices.popleft(), self._post_process_onnx_output(output, **kwargs))
+                for output in pool.ordered_map(batches(), **params)
+            )
 
     def _token_count(self, texts: str | Iterable[str], batch_size: int = 1024, **_: Any) -> int:
         self._ensure_tokenizer()

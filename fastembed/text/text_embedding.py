@@ -14,7 +14,7 @@ from fastembed.text.onnx_embedding import OnnxTextEmbedding
 from fastembed.text.pooled_embedding import PooledEmbedding
 from fastembed.text.pooled_normalized_embedding import PooledNormalizedEmbedding
 from fastembed.text.siglip_embedding import SiglipOnnxTextEmbedding
-from fastembed.text.static_embedding import StaticTextEmbedding
+from fastembed.text.static_embedding import SqrtTfStaticEmbedding, StaticTextEmbedding
 from fastembed.text.text_embedding_base import TextEmbeddingBase
 
 
@@ -29,6 +29,7 @@ class TextEmbedding(TextEmbeddingBase):
         BuiltinSentenceEmbedding,
         LastTokenNormalizedEmbedding,
         StaticTextEmbedding,
+        SqrtTfStaticEmbedding,
         CustomTextEmbedding,
     ]
 

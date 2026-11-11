@@ -7,6 +7,7 @@ from fastembed.common import OnnxProvider
 from fastembed.late_interaction.colbert import Colbert
 from fastembed.late_interaction.jina_colbert import JinaColbert
 from fastembed.late_interaction.lateon import LateOn, MLateOn
+from fastembed.late_interaction.mxbai_edge_colbert import MxbaiEdgeColbert
 from fastembed.late_interaction.late_interaction_embedding_base import (
     LateInteractionTextEmbeddingBase,
 )
@@ -18,6 +19,7 @@ class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
         JinaColbert,
         LateOn,
         MLateOn,
+        MxbaiEdgeColbert,
     ]
 
     @classmethod

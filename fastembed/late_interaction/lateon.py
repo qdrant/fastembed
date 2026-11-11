@@ -6,6 +6,7 @@ import numpy as np
 from fastembed.common.model_description import DenseModelDescription, ModelSource
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.types import NumpyArray
+from fastembed.common.utils import normalize
 from fastembed.late_interaction.colbert import Colbert, ColbertEmbeddingWorker
 
 
@@ -79,9 +80,7 @@ class LateOn(Colbert):
 
         for embedding, keep_tokens in zip(output.model_output, keep):
             embedding = embedding[keep_tokens]
-            norm = np.linalg.norm(embedding, ord=2, axis=1, keepdims=True)
-            norm_clamped = np.maximum(norm, 1e-12)
-            yield embedding / norm_clamped
+            yield normalize(embedding)
 
 
 class MLateOn(LateOn):
