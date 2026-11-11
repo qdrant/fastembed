@@ -53,6 +53,7 @@ def last_token_pooling(input_array: NumpyArray, attention_mask: NDArray[np.int64
         return np.zeros((input_array.shape[0], input_array.shape[2]), dtype=input_array.dtype)
     last_token_indices = attention_mask.shape[1] - 1 - np.argmax(attention_mask[:, ::-1], axis=1)
     pooled = input_array[np.arange(input_array.shape[0]), last_token_indices]
+    # A custom tokenizer without an EOS token can produce a fully masked row.
     return np.where(attention_mask.any(axis=1, keepdims=True), pooled, 0)
 
 
