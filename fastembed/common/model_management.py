@@ -214,16 +214,22 @@ class ModelManagement(Generic[T]):
         local_files_only: bool = False,
         **kwargs: Any,
     ) -> str:
-        """
-        Downloads a model from HuggingFace Hub.
+        """Download selected model files from Hugging Face Hub.
+
+        Online metadata and files use the same resolved commit, even if a branch moves during
+        the download. Local-only calls resolve the requested revision from the cache instead.
+
         Args:
             hf_source_repo (str): Name of the model on HuggingFace Hub, e.g. "Qdrant/all-MiniLM-L6-v2-onnx".
-            cache_dir (Optional[str]): The path to the cache directory.
+            cache_dir (str): The path to the cache directory.
             extra_patterns (list[str]): extra patterns to allow in the snapshot download, typically
                 includes the required model files.
             local_files_only (bool, optional): Whether to only use local files. Defaults to False.
+            **kwargs: Additional snapshot_download options. `revision` selects a branch, tag, or
+                commit; online calls resolve it once and download that commit's files.
+
         Returns:
-            Path: The path to the model directory.
+            str: The path to the downloaded or cached model directory.
         """
 
         def _repo_relative_path(relative_path: Path) -> str:

@@ -140,15 +140,18 @@ def test_online_download_verifies_the_requested_revision(
     lookups: list[str | None] = []
 
     def fake_model_info(repo_id: str, **kwargs: Any) -> SimpleNamespace:
+        """Resolve the requested ref to its old commit; an unqualified lookup sees main."""
         requested = kwargs.get("revision")
         lookups.append(requested)
         return SimpleNamespace(sha=old_revision if requested == revision else main_revision)
 
     def fake_repo_tree(repo_id: str, **kwargs: Any) -> list[RepoFile]:
+        """Return metadata for the given commit from fixtures with different file sizes."""
         commit = kwargs["revision"]
         return [RepoFile(path="model.onnx", size=len(contents[commit]), oid=commit)]
 
     def fake_snapshot_download(**kwargs: Any) -> str:
+        """Write the selected snapshot so production verification checks real local bytes."""
         requested = kwargs.get("revision")
         commit = old_revision if requested in (revision, old_revision) else main_revision
         model_file = repo_dir / "snapshots" / commit / "model.onnx"
@@ -199,6 +202,7 @@ def test_online_download_pins_the_revision_resolved_for_metadata(
     )
 
     def fake_snapshot_download(**kwargs: Any) -> str:
+        """Simulate a ref moving after metadata lookup; only its resolved SHA keeps old bytes."""
         requested = kwargs.get("revision")
         downloads.append(requested)
         # The branch has moved since model_info: only a commit SHA still selects the old file.
