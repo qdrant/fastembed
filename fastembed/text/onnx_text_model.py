@@ -131,38 +131,43 @@ class OnnxTextModel(OnnxModel[T]):
         inference_workers: int,
         kwargs: dict[str, Any],
     ) -> Iterable[T]:
-        """Embed a bounded number of batches on a shared CPU ONNX session.
+        """Embed length-sorted windows on a shared CPU ONNX session.
 
-        ONNX Runtime permits concurrent Run calls. Futures are consumed in
-        submission order to keep the result sequence stable. At most twice
-        the worker count is outstanding, even for an infinite input iterator.
-        This is opt-in and uses no extra model sessions or processes.
+        Use the serial path's eight-batch windows to limit padding, then restore
+        document order. Finish each window before reading the next, bounding
+        input buffering even for infinite iterators. At most twice the worker
+        count is outstanding. No extra model sessions or processes are used.
         """
-        # Keep streaming batches here: length sorting reads an additional window
-        # ahead, which would break the concurrent path's bounded-input guarantee.
-        batches = iter(iter_batch(documents, batch_size))
         executor = ThreadPoolExecutor(max_workers=inference_workers)
-        pending: deque[Future[OnnxOutputContext]] = deque()
-        try:
+        pending: deque[tuple[list[int], Future[OnnxOutputContext]]] = deque()
+
+        def embed_window(window: list[str]) -> Iterable[tuple[list[int], Iterable[T]]]:
+            """Yield indexed batch outputs with bounded concurrent inference."""
+            batches = iter(iter_length_sorted_batches(window, batch_size, self._token_count))
             for _ in range(inference_workers * 2):
                 try:
-                    batch = next(batches)
+                    indices, batch = next(batches)
                 except StopIteration:
                     break
-                pending.append(executor.submit(self.onnx_embed, batch, **kwargs))
+                pending.append((indices, executor.submit(self.onnx_embed, batch, **kwargs)))
 
             while pending:
-                context = pending.popleft().result()
-                yield from self._post_process_onnx_output(context, **kwargs)
+                indices, future = pending.popleft()
+                context = future.result()
+                yield indices, self._post_process_onnx_output(context, **kwargs)
                 try:
-                    batch = next(batches)
+                    indices, batch = next(batches)
                 except StopIteration:
                     continue
-                pending.append(executor.submit(self.onnx_embed, batch, **kwargs))
+                pending.append((indices, executor.submit(self.onnx_embed, batch, **kwargs)))
+
+        try:
+            for window in iter_batch(documents, batch_size * 8):
+                # Reuse strict output-count validation and order restoration.
+                yield from restore_order(embed_window(window))
         finally:
-            # Do not run batches that have not started when consumers stop early.
-            # Tasks already running still finish before the executor is released.
-            for future in pending:
+            # Tasks already running finish; queued batches must not start.
+            for _, future in pending:
                 future.cancel()
             executor.shutdown(wait=True, cancel_futures=True)
 

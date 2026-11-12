@@ -31,6 +31,7 @@ class DummyModel(OnnxTextModel[int]):
         self.tokenizer = object()  # avoid loading any real model files
         self.fail_on = fail_on
         self.calls = []
+        self.batches = []
         self.lock = threading.Lock()
 
     def _token_count(self, text, **kwargs):
@@ -43,6 +44,7 @@ class DummyModel(OnnxTextModel[int]):
         numbers = [int(d) for d in documents]
         with self.lock:
             self.calls.append(numbers[0])
+            self.batches.append(tuple(documents))
         # Force small, deterministic skew. All work is bounded.
         time.sleep(0.001 * (numbers[0] % 3))
         if self.fail_on in numbers:
@@ -95,7 +97,7 @@ def test_generator_is_bounded_and_lazy():
         inference_workers=3,
     )
     assert next(output) == 0
-    assert state["consumed"] <= 12  # 2 * 3 outstanding batches of size 2
+    assert state["consumed"] == 16  # one eight-batch sorting window
     output.close()  # Must not hang or consume unbounded input
 
 
@@ -144,19 +146,11 @@ def test_early_close_cancels_queued_batches(monkeypatch):
 
     created = []
 
-    class RecordedFuture:
-        def __init__(self, result):
-            self.value = result
-            self.cancel_attempted = False
-
-        def result(self):
-            return self.value
-
-        def cancel(self):
-            self.cancel_attempted = True
-            return True
+    from concurrent.futures import Future
 
     class RecordedExecutor:
+        """Run only the first task; keep all remaining tasks genuinely pending."""
+
         def __init__(self, max_workers):
             self.max_workers = max_workers
             self.submissions = []
@@ -164,15 +158,28 @@ def test_early_close_cancels_queued_batches(monkeypatch):
             created.append(self)
 
         def submit(self, fn, *args, **kwargs):
-            future = RecordedFuture(fn(*args, **kwargs))
-            self.submissions.append(future)
+            future = Future()
+            self.submissions.append((future, fn, args, kwargs))
+            if len(self.submissions) == 1:
+                future.set_running_or_notify_cancel()
+                future.set_result(fn(*args, **kwargs))
             return future
 
         def shutdown(self, **kwargs):
             self.shutdown_kwargs = kwargs
+            if kwargs.get("cancel_futures"):
+                for future, _, _, _ in self.submissions:
+                    future.cancel()
+
+        def run_queued(self):
+            """Model a worker attempting to take every remaining queued task."""
+            for future, fn, args, kwargs in self.submissions[1:]:
+                if future.set_running_or_notify_cancel():
+                    future.set_result(fn(*args, **kwargs))
 
     monkeypatch.setattr(target, "ThreadPoolExecutor", RecordedExecutor)
     model = DummyModel()
+    monkeypatch.setattr(model, "_token_count", lambda text: 1)
     output = model._embed_documents(
         model_name="dummy",
         cache_dir=".",
@@ -185,13 +192,17 @@ def test_early_close_cancels_queued_batches(monkeypatch):
     assert len(created) == 1
     executor = created[0]
     assert executor.shutdown_kwargs == {"wait": True, "cancel_futures": True}
-    assert any(f.cancel_attempted for f in executor.submissions)
+    assert len(executor.submissions) == 4
+    assert executor.submissions[0][0].done()
+    assert all(f.cancelled() for f, _, _, _ in executor.submissions[1:])
+    executor.run_queued()
+    assert model.calls == [0]
 
 
 def test_real_cpu_onnx_concurrent_embeddings_match_serial():
     from fastembed import TextEmbedding
 
-    docs = [f"Example document {i} about embedding inference." for i in range(64)]
+    docs = [f"Example {i}: " + "embedding inference " * (1 + i % 17) for i in range(64)]
 
     model = TextEmbedding(
         model_name="BAAI/bge-small-en-v1.5",
@@ -216,3 +227,44 @@ def test_serial_path_preserves_upstream_length_sorting():
     model = DummyModel()
     assert encode(model, ["1", "222", "33", "4444"], batch_size=2) == [1, 222, 33, 4444]
     assert model.calls == [4444, 33]
+
+
+@pytest.mark.parametrize("inference_workers", [2, 3, 8])
+def test_concurrent_path_preserves_length_sorting_and_window_boundaries(inference_workers):
+    """Mixed lengths use serial batch composition without reading the next window."""
+    docs = ["1", "222", "33", "4444"] * 9
+    consumed = []
+
+    def source():
+        for doc in docs:
+            consumed.append(doc)
+            yield doc
+
+    serial = DummyModel()
+    expected = encode(serial, docs)
+    model = DummyModel()
+    output = model._embed_documents(
+        model_name="dummy",
+        cache_dir=".",
+        documents=source(),
+        batch_size=2,
+        inference_workers=inference_workers,
+    )
+    first_window = [next(output) for _ in range(16)]
+    assert len(consumed) == 16
+    assert first_window + list(output) == expected
+    assert sorted(model.batches) == sorted(serial.batches)
+
+
+@pytest.mark.parametrize("delta", [-1, 1])
+@pytest.mark.parametrize("inference_workers", [1, 3])
+def test_incorrect_batch_output_count_raises(delta, inference_workers):
+    """Both paths reject missing or extra embeddings instead of shifting results."""
+
+    class WrongCountModel(DummyModel):
+        def _post_process_onnx_output(self, output, **kwargs):
+            values = list(super()._post_process_onnx_output(output, **kwargs))
+            return iter(values[:-1] if delta < 0 else values + [999])
+
+    with pytest.raises(ValueError, match="zip"):
+        encode(WrongCountModel(), [str(i) for i in range(20)], inference_workers)
