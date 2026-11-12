@@ -1,16 +1,18 @@
 import os
 from collections import deque
+from collections.abc import Iterable, Sequence
+from concurrent.futures import Future, ThreadPoolExecutor
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Iterable, Sequence, Type
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
 from tokenizers import Encoding, Tokenizer
 
-from fastembed.common.types import NumpyArray, OnnxProvider, Device
 from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
 from fastembed.common.preprocessor_utils import load_tokenizer
+from fastembed.common.types import Device, NumpyArray, OnnxProvider
 from fastembed.common.utils import iter_batch, iter_length_sorted_batches, restore_order
 from fastembed.parallel_processor import ParallelWorkerPool
 
@@ -19,7 +21,7 @@ class OnnxTextModel(OnnxModel[T]):
     ONNX_OUTPUT_NAMES: list[str] | None = None
 
     @classmethod
-    def _get_worker_class(cls) -> Type["TextEmbeddingWorker[T]"]:
+    def _get_worker_class(cls) -> type["TextEmbeddingWorker[T]"]:
         raise NotImplementedError("Subclasses must implement this method")
 
     def _post_process_onnx_output(self, output: OnnxOutputContext, **kwargs: Any) -> Iterable[T]:
@@ -122,6 +124,53 @@ class OnnxTextModel(OnnxModel[T]):
     ) -> NumpyArray:
         return self.model.run(onnx_output_names, onnx_input)[0]  # type: ignore[union-attr]
 
+    def _embed_cpu_batches_concurrently(
+        self,
+        documents: Iterable[str],
+        batch_size: int,
+        inference_workers: int,
+        kwargs: dict[str, Any],
+    ) -> Iterable[T]:
+        """Embed length-sorted windows on a shared CPU ONNX session.
+
+        Use the serial path's eight-batch windows to limit padding, then restore
+        document order. Finish each window before reading the next, bounding
+        input buffering even for infinite iterators. At most twice the worker
+        count is outstanding. No extra model sessions or processes are used.
+        """
+        executor = ThreadPoolExecutor(max_workers=inference_workers)
+        pending: deque[tuple[list[int], Future[OnnxOutputContext]]] = deque()
+
+        def embed_window(window: list[str]) -> Iterable[tuple[list[int], Iterable[T]]]:
+            """Yield indexed batch outputs with bounded concurrent inference."""
+            batches = iter(iter_length_sorted_batches(window, batch_size, self._token_count))
+            for _ in range(inference_workers * 2):
+                try:
+                    indices, batch = next(batches)
+                except StopIteration:
+                    break
+                pending.append((indices, executor.submit(self.onnx_embed, batch, **kwargs)))
+
+            while pending:
+                indices, future = pending.popleft()
+                context = future.result()
+                yield indices, self._post_process_onnx_output(context, **kwargs)
+                try:
+                    indices, batch = next(batches)
+                except StopIteration:
+                    continue
+                pending.append((indices, executor.submit(self.onnx_embed, batch, **kwargs)))
+
+        try:
+            for window in iter_batch(documents, batch_size * 8):
+                # Reuse strict output-count validation and order restoration.
+                yield from restore_order(embed_window(window))
+        finally:
+            # Tasks already running finish; queued batches must not start.
+            for _, future in pending:
+                future.cancel()
+            executor.shutdown(wait=True, cancel_futures=True)
+
     def _embed_documents(
         self,
         model_name: str,
@@ -135,30 +184,49 @@ class OnnxTextModel(OnnxModel[T]):
         local_files_only: bool = False,
         specific_model_path: str | None = None,
         extra_session_options: dict[str, Any] | None = None,
+        inference_workers: int = 1,
         **kwargs: Any,
     ) -> Iterable[T]:
+        # Preserve the old single-session code path unless explicitly requested.
+        if (
+            isinstance(inference_workers, bool)
+            or not isinstance(inference_workers, int)
+            or inference_workers < 1
+        ):
+            raise ValueError("inference_workers must be a positive integer")
+        if inference_workers > 1 and parallel is not None:
+            raise ValueError("inference_workers cannot be combined with parallel")
         is_small = False
 
         if isinstance(documents, str):
             documents = [documents]
             is_small = True
 
-        if isinstance(documents, list):
-            if len(documents) < batch_size:
-                is_small = True
+        if isinstance(documents, list) and len(documents) < batch_size:
+            is_small = True
 
         if parallel is None or is_small:
             if not hasattr(self, "model") or self.model is None:
                 self.load_onnx_model()
-            yield from restore_order(
-                (
-                    indices,
-                    self._post_process_onnx_output(self.onnx_embed(batch, **kwargs), **kwargs),
+            if inference_workers > 1 and (
+                self.model is None or self.model.get_providers() != ["CPUExecutionProvider"]
+            ):
+                raise ValueError("inference_workers requires a CPU-only ONNX session")
+            if inference_workers > 1 and not is_small:
+                self._ensure_tokenizer()
+                yield from self._embed_cpu_batches_concurrently(
+                    documents, batch_size, inference_workers, kwargs
                 )
-                for indices, batch in iter_length_sorted_batches(
-                    documents, batch_size, self._token_count
+            else:
+                yield from restore_order(
+                    (
+                        indices,
+                        self._post_process_onnx_output(self.onnx_embed(batch, **kwargs), **kwargs),
+                    )
+                    for indices, batch in iter_length_sorted_batches(
+                        documents, batch_size, self._token_count
+                    )
                 )
-            )
         else:
             if parallel == 0:
                 parallel = os.cpu_count()
