@@ -119,7 +119,7 @@ class OnnxMultimodalModel(OnnxModel[T]):
             )
 
         onnx_input = self._preprocess_onnx_text_input(onnx_input, **kwargs)
-        model_output = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input, self.run_options)  # type: ignore[union-attr]
+        model_output = self._run_model_with_shrinkage(self.ONNX_OUTPUT_NAMES, onnx_input)
         return OnnxOutputContext(
             model_output=model_output[0],
             attention_mask=onnx_input.get("attention_mask", attention_mask),
@@ -195,7 +195,7 @@ class OnnxMultimodalModel(OnnxModel[T]):
             encoded = np.array(self.processor(image_files))
         onnx_input = {"pixel_values": encoded}
         onnx_input = self._preprocess_onnx_image_input(onnx_input, **kwargs)
-        model_output = self.model.run(None, onnx_input, self.run_options)  # type: ignore[union-attr]
+        model_output = self._run_model_with_shrinkage(None, onnx_input)
         embeddings = model_output[0].reshape(len(images), -1)
         return OnnxOutputContext(model_output=embeddings)
 

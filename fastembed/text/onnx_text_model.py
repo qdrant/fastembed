@@ -120,7 +120,7 @@ class OnnxTextModel(OnnxModel[T]):
     def _run_model(
         self, onnx_input: dict[str, Any], onnx_output_names: list[str] | None = None
     ) -> NumpyArray:
-        return self.model.run(onnx_output_names, onnx_input, self.run_options)[0]  # type: ignore[union-attr]
+        return self._run_model_with_shrinkage(onnx_output_names, onnx_input)[0]
 
     def _embed_documents(
         self,
