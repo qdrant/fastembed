@@ -58,6 +58,18 @@ supported_static_models: list[DenseModelDescription] = [
         sources=ModelSource(hf="minishlab/potion-multilingual-128M"),
         model_file="model.safetensors",
     ),
+    DenseModelDescription(
+        model="minishlab/blink-8M",
+        dim=256,
+        description=(
+            "Text embeddings, Unimodal (text), English, 512 input tokens truncation, "
+            "Prefixes for queries/documents: not necessary, 2025 year."
+        ),
+        license="mit",
+        size_in_GB=0.31,
+        sources=ModelSource(hf="minishlab/blink-8M"),
+        model_file="model.safetensors",
+    ),
 ]
 
 supported_sqrt_tf_models: list[DenseModelDescription] = [
