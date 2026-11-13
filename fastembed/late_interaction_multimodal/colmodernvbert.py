@@ -243,7 +243,7 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         onnx_input = self._preprocess_onnx_image_input(
             onnx_input, image_grid=metadata["image_grid"], **kwargs
         )
-        model_output = self.model.run(None, onnx_input, self.run_options)  # type: ignore[union-attr]
+        model_output = self._run_model_with_shrinkage(None, onnx_input)
 
         return OnnxOutputContext(
             model_output=model_output[0],

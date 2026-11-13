@@ -2,6 +2,7 @@ import importlib.util
 import os
 import json
 import platform
+import re
 import sys
 import warnings
 from dataclasses import dataclass
@@ -11,6 +12,7 @@ from typing import Any, Generic, Iterable, Sequence, Type, TypeVar
 
 import numpy as np
 import onnxruntime as ort
+from onnxruntime.capi.onnxruntime_pybind11_state import InvalidArgument
 
 from loguru import logger
 from numpy.typing import NDArray
@@ -260,6 +262,34 @@ class OnnxModel(Generic[T]):
             current_providers = self.model.get_providers()
             if "CUDAExecutionProvider" not in current_providers:
                 warnings.warn(cuda_fallback_message(current_providers), RuntimeWarning)
+
+    def _run_model_with_shrinkage(
+        self, output_names: list[str] | None, onnx_input: dict[str, Any]
+    ) -> list[Any]:
+        try:
+            return self.model.run(output_names, onnx_input, self.run_options)  # type: ignore[union-attr]
+        except InvalidArgument as e:
+            match = re.search(r"(?:shrink list|arena based allocator): (\w+:\d+)", str(e))
+            if match is None or self.run_options is None:
+                raise
+            try:
+                arenas = self.run_options.get_run_config_entry(
+                    "memory.enable_memory_arena_shrinkage"
+                ).split(";")
+            except RuntimeError:
+                raise e
+            device = match[1]
+            logger.warning(
+                f"onnxruntime has no memory arena for {device}, so its memory is not released "
+                "after each run."
+            )
+            remaining = [arena for arena in arenas if arena != device]
+            self.run_options = ort.RunOptions()
+            if remaining and len(remaining) < len(arenas):
+                self.run_options.add_run_config_entry(
+                    "memory.enable_memory_arena_shrinkage", ";".join(remaining)
+                )
+            return self._run_model_with_shrinkage(output_names, onnx_input)
 
     @classmethod
     def _select_exposed_session_options(cls, model_kwargs: dict[str, Any]) -> dict[str, Any]:

@@ -88,7 +88,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         tokenized_input = self.tokenize(pairs, **kwargs)
         inputs = self._build_onnx_input(tokenized_input)
         onnx_input = self._preprocess_onnx_input(inputs, **kwargs)
-        outputs = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input, self.run_options)  # type: ignore[union-attr]
+        outputs = self._run_model_with_shrinkage(self.ONNX_OUTPUT_NAMES, onnx_input)
         relevant_output = outputs[0]
         scores: NumpyArray = relevant_output[:, 0]
         return OnnxOutputContext(model_output=scores)
