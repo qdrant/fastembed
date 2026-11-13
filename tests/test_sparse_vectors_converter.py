@@ -8,6 +8,7 @@ from fastembed.sparse.utils.sparse_vectors_converter import SparseVectorConverte
 
 @pytest.mark.parametrize("unknown_first", [False, True])
 def test_clean_words_merges_counts_without_mutating_input(unknown_first: bool) -> None:
+    """Preserve merged counts and input data across both word orders."""
     converter = SparseVectorConverter(set(), SnowballStemmer("english"))
     known = WordEmbedding("cat", ["cat"], 1, 1, [1.0, 0.0])
     unknown = WordEmbedding("cat!", ["cat!"], 2, -1, [1.0])
