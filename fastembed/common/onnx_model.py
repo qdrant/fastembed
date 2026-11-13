@@ -1,4 +1,5 @@
 import re
+import threading
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
@@ -18,6 +19,8 @@ from fastembed.parallel_processor import Worker
 
 # Holds type of the embedding result
 T = TypeVar("T")
+
+_run_options_lock = threading.Lock()
 
 
 @dataclass
@@ -180,29 +183,33 @@ class OnnxModel(Generic[T]):
     def _run_model_with_shrinkage(
         self, output_names: list[str] | None, onnx_input: dict[str, Any]
     ) -> list[Any]:
+        run_options = self.run_options
         try:
-            return self.model.run(output_names, onnx_input, self.run_options)  # type: ignore[union-attr]
+            return self.model.run(output_names, onnx_input, run_options)  # type: ignore[union-attr]
         except InvalidArgument as e:
             match = re.search(r"(?:shrink list|arena based allocator): (\w+:\d+)", str(e))
-            if match is None or self.run_options is None:
+            if match is None or run_options is None:
                 raise
             try:
-                arenas = self.run_options.get_run_config_entry(
+                arenas = run_options.get_run_config_entry(
                     "memory.enable_memory_arena_shrinkage"
                 ).split(";")
             except RuntimeError:
                 raise e
-            device = match[1]
-            logger.warning(
-                f"onnxruntime has no memory arena for {device}, so its memory is not released "
-                "after each run."
-            )
-            remaining = [arena for arena in arenas if arena != device]
-            self.run_options = ort.RunOptions()
-            if remaining and len(remaining) < len(arenas):
-                self.run_options.add_run_config_entry(
-                    "memory.enable_memory_arena_shrinkage", ";".join(remaining)
-                )
+            with _run_options_lock:
+                if self.run_options is run_options:
+                    device = match[1]
+                    logger.warning(
+                        f"onnxruntime has no memory arena for {device}, so its memory is not "
+                        "released after each run."
+                    )
+                    remaining = [arena for arena in arenas if arena != device]
+                    new_run_options = ort.RunOptions()
+                    if remaining and len(remaining) < len(arenas):
+                        new_run_options.add_run_config_entry(
+                            "memory.enable_memory_arena_shrinkage", ";".join(remaining)
+                        )
+                    self.run_options = new_run_options
             return self._run_model_with_shrinkage(output_names, onnx_input)
 
     @classmethod
