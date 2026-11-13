@@ -283,6 +283,27 @@ def test_arena_shrinkage(enable_cpu_mem_arena: bool) -> None:
         delete_model_cache(model.model._model_dir)
 
 
+@pytest.mark.parametrize("external_allocator", [True, False])
+def test_arena_shrinkage_cuda(monkeypatch, external_allocator: bool) -> None:
+    import onnxruntime as ort
+
+    cuda_options = {"device_id": "0", "gpu_external_alloc": "0", "gpu_external_free": "0"}
+    if external_allocator:
+        cuda_options |= {"gpu_external_alloc": "1234", "gpu_external_free": "5678"}
+    monkeypatch.setattr(
+        ort.InferenceSession,
+        "get_provider_options",
+        lambda self: {"CUDAExecutionProvider": cuda_options, "CPUExecutionProvider": {}},
+    )
+    model = TextEmbedding("BAAI/bge-small-en-v1.5")
+    run_options = model.model.run_options
+    assert run_options is not None
+    expected = "cpu:0" if external_allocator else "cpu:0;gpu:0"
+    assert run_options.get_run_config_entry("memory.enable_memory_arena_shrinkage") == expected
+    if os.getenv("CI"):
+        delete_model_cache(model.model._model_dir)
+
+
 def test_quantized_model_reports_onnxruntime_requirement(monkeypatch) -> None:
     """Old onnxruntime only implements 4-bit MatMulNBits, the error should say so."""
     monkeypatch.setattr(

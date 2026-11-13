@@ -244,7 +244,11 @@ class OnnxModel(Generic[T]):
             raise
         arenas = ["cpu:0"] if so.enable_cpu_mem_arena else []
         cuda_options = self.model.get_provider_options().get("CUDAExecutionProvider")
-        if cuda_options is not None:
+        external_allocator = cuda_options is not None and all(
+            cuda_options.get(name, "0") != "0"
+            for name in ("gpu_external_alloc", "gpu_external_free")
+        )
+        if cuda_options is not None and not external_allocator:
             arenas.append(f"gpu:{cuda_options['device_id']}")
         self.run_options = ort.RunOptions()
         if arenas:
