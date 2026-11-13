@@ -98,6 +98,7 @@ class OnnxModel(Generic[T]):
     _model_dir: Path
     # the `max_batch_tokens` model option, see `_batch_token_budget`
     _max_batch_tokens: int | None = None
+    run_options: ort.RunOptions | None = None
 
     @classmethod
     def _get_worker_class(cls) -> Type["EmbeddingWorker[T]"]:
@@ -209,6 +210,7 @@ class OnnxModel(Generic[T]):
 
         so = ort.SessionOptions()
         so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+        so.enable_mem_pattern = False
 
         if threads is not None:
             so.intra_op_num_threads = threads
@@ -240,6 +242,15 @@ class OnnxModel(Generic[T]):
                     "again with HF_HUB_DISABLE_SHARED_BLOBS=1."
                 )
             raise
+        arenas = ["cpu:0"] if so.enable_cpu_mem_arena else []
+        cuda_options = self.model.get_provider_options().get("CUDAExecutionProvider")
+        if cuda_options is not None:
+            arenas.append(f"gpu:{cuda_options['device_id']}")
+        self.run_options = ort.RunOptions()
+        if arenas:
+            self.run_options.add_run_config_entry(
+                "memory.enable_memory_arena_shrinkage", ";".join(arenas)
+            )
         if "CUDAExecutionProvider" in requested_provider_names:
             assert self.model is not None
             current_providers = self.model.get_providers()

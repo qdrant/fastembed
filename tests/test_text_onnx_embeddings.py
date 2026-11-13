@@ -263,6 +263,26 @@ def test_external_data_model(model_cache) -> None:
     assert np.allclose(embedding[: canonical_vector.shape[0]], canonical_vector, atol=1e-3)
 
 
+@pytest.mark.parametrize("enable_cpu_mem_arena", [True, False])
+def test_arena_shrinkage(enable_cpu_mem_arena: bool) -> None:
+    model_name = "BAAI/bge-small-en-v1.5"
+    model = TextEmbedding(model_name, enable_cpu_mem_arena=enable_cpu_mem_arena)
+    assert model.model.model.get_session_options().enable_mem_pattern is False
+    run_options = model.model.run_options
+    assert run_options is not None
+    if enable_cpu_mem_arena:
+        assert run_options.get_run_config_entry("memory.enable_memory_arena_shrinkage") == "cpu:0"
+    else:
+        with pytest.raises(RuntimeError):
+            run_options.get_run_config_entry("memory.enable_memory_arena_shrinkage")
+
+    embedding = next(iter(model.embed(["hello world"])))
+    canonical_vector = CANONICAL_VECTOR_VALUES[model_name]
+    assert np.allclose(embedding[: canonical_vector.shape[0]], canonical_vector, atol=1e-3)
+    if os.getenv("CI"):
+        delete_model_cache(model.model._model_dir)
+
+
 def test_quantized_model_reports_onnxruntime_requirement(monkeypatch) -> None:
     """Old onnxruntime only implements 4-bit MatMulNBits, the error should say so."""
     monkeypatch.setattr(
