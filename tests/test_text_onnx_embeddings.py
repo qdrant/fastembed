@@ -301,6 +301,31 @@ def test_arena_shrinkage_without_arena() -> None:
         delete_model_cache(model.model._model_dir)
 
 
+def test_arena_shrinkage_without_arena_concurrent() -> None:
+    import onnxruntime as ort
+
+    model_name = "BAAI/bge-small-en-v1.5"
+    model = TextEmbedding(model_name, enable_cpu_mem_arena=False)
+    rejected = ort.RunOptions()
+    rejected.add_run_config_entry("memory.enable_memory_arena_shrinkage", "cpu:0")
+    model.model.run_options = rejected
+    session = model.model.model
+    session_run = session.run
+
+    def run(output_names, input_feed, run_options=None):  # type: ignore[no-untyped-def]
+        if run_options is rejected:
+            # another request finishes its fallback while this run is rejected
+            model.model.run_options = ort.RunOptions()
+        return session_run(output_names, input_feed, run_options)
+
+    session.run = run
+    embedding = next(iter(model.embed(["hello world"])))
+    canonical_vector = CANONICAL_VECTOR_VALUES[model_name]
+    assert np.allclose(embedding[: canonical_vector.shape[0]], canonical_vector, atol=1e-3)
+    if os.getenv("CI"):
+        delete_model_cache(model.model._model_dir)
+
+
 @pytest.mark.parametrize("external_allocator", [True, False])
 def test_arena_shrinkage_cuda(monkeypatch, external_allocator: bool) -> None:
     import onnxruntime as ort
