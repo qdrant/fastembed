@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% if page.nb_url %}
+    <a href="{{ page.nb_url }}" title="Download Notebook" class="md-content__button md-icon jp-DownloadNB">
+        {% include ".icons/material/download.svg" %}
+    </a>
+{% endif %}
+
+{{ super() }}
+
+{% endblock content %}
+
+{% block announce %}
+<div style="text-align: center">
+    If you're using FastEmbed from Qdrant, join the
+    <a rel="me" href="https://discord.gg/Qy6HCJK9Dc">
+        <span class="twemoji mastodon">
+            {% include ".icons/fontawesome/brands/discord.svg" %}
+        </span>
+        <strong>Qdrant Discord server</strong>
+    </a>
+    to get help and share your work! Or check out <a rel="me"
+        href="https://cloud.qdrant.io?utm_source=twitter&utm_medium=website&utm_campaign=fastembed">Qdrant Cloud</a> to
+    get started with vector search!
+</div>
+{% endblock %}
