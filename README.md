@@ -98,6 +98,15 @@ embeddings = list(model.embed(documents))
 # ]
 ```
 
+For MiniCOIL, use `max_sequence_length` to cap the tokens sent to the model when
+embedding long texts. The limit includes special tokens and must leave room for at least one
+text token. Values above the model's own tokenizer limit are capped at that limit.
+
+```python
+model = SparseTextEmbedding(model_name="Qdrant/minicoil-v1", max_sequence_length=512)
+embeddings = list(model.embed(documents))
+```
+
 <!--
 * BM42 - ([link](ToDo))
 
