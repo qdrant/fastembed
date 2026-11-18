@@ -1,3 +1,5 @@
+import re
+import threading
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
@@ -5,6 +7,7 @@ from typing import Any, Generic, Iterable, Sequence, Type, TypeVar
 
 import numpy as np
 import onnxruntime as ort
+from onnxruntime.capi.onnxruntime_pybind11_state import InvalidArgument
 
 from loguru import logger
 from numpy.typing import NDArray
@@ -16,6 +19,8 @@ from fastembed.parallel_processor import Worker
 
 # Holds type of the embedding result
 T = TypeVar("T")
+
+_run_options_lock = threading.Lock()
 
 
 @dataclass
@@ -30,6 +35,7 @@ class OnnxModel(Generic[T]):
     EXPOSED_SESSION_OPTIONS = ("enable_cpu_mem_arena",)
     # set by the concrete model classes in their __init__
     _model_dir: Path
+    run_options: ort.RunOptions | None = None
 
     @classmethod
     def _get_worker_class(cls) -> Type["EmbeddingWorker[T]"]:
@@ -118,6 +124,7 @@ class OnnxModel(Generic[T]):
 
         so = ort.SessionOptions()
         so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+        so.enable_mem_pattern = False
 
         if threads is not None:
             so.intra_op_num_threads = threads
@@ -149,6 +156,19 @@ class OnnxModel(Generic[T]):
                     "again with HF_HUB_DISABLE_SHARED_BLOBS=1."
                 )
             raise
+        arenas = ["cpu:0"] if so.enable_cpu_mem_arena else []
+        cuda_options = self.model.get_provider_options().get("CUDAExecutionProvider")
+        external_allocator = cuda_options is not None and all(
+            cuda_options.get(name, "0") != "0"
+            for name in ("gpu_external_alloc", "gpu_external_free")
+        )
+        if cuda_options is not None and not external_allocator:
+            arenas.append(f"gpu:{cuda_options['device_id']}")
+        self.run_options = ort.RunOptions()
+        if arenas:
+            self.run_options.add_run_config_entry(
+                "memory.enable_memory_arena_shrinkage", ";".join(arenas)
+            )
         if "CUDAExecutionProvider" in requested_provider_names:
             assert self.model is not None
             current_providers = self.model.get_providers()
@@ -159,6 +179,38 @@ class OnnxModel(Generic[T]):
                     "`pip install onnxruntime-gpu --extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/`",
                     RuntimeWarning,
                 )
+
+    def _run_model_with_shrinkage(
+        self, output_names: list[str] | None, onnx_input: dict[str, Any]
+    ) -> list[Any]:
+        run_options = self.run_options
+        try:
+            return self.model.run(output_names, onnx_input, run_options)  # type: ignore[union-attr]
+        except InvalidArgument as e:
+            match = re.search(r"(?:shrink list|arena based allocator): (\w+:\d+)", str(e))
+            if match is None or run_options is None:
+                raise
+            try:
+                arenas = run_options.get_run_config_entry(
+                    "memory.enable_memory_arena_shrinkage"
+                ).split(";")
+            except RuntimeError:
+                raise e
+            with _run_options_lock:
+                if self.run_options is run_options:
+                    device = match[1]
+                    logger.warning(
+                        f"onnxruntime has no memory arena for {device}, so its memory is not "
+                        "released after each run."
+                    )
+                    remaining = [arena for arena in arenas if arena != device]
+                    new_run_options = ort.RunOptions()
+                    if remaining and len(remaining) < len(arenas):
+                        new_run_options.add_run_config_entry(
+                            "memory.enable_memory_arena_shrinkage", ";".join(remaining)
+                        )
+                    self.run_options = new_run_options
+            return self._run_model_with_shrinkage(output_names, onnx_input)
 
     @classmethod
     def _select_exposed_session_options(cls, model_kwargs: dict[str, Any]) -> dict[str, Any]:
