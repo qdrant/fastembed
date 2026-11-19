@@ -198,7 +198,7 @@ class Bm25(SparseTextEmbeddingBase):
         if not stopwords_path.exists():
             return []
 
-        with open(stopwords_path, "r") as f:
+        with open(stopwords_path, "r", encoding="utf-8") as f:
             return f.read().splitlines()
 
     def _embed_documents(

@@ -8,7 +8,7 @@ from multiprocessing import Queue, get_context
 from multiprocessing.context import BaseContext
 from multiprocessing.process import BaseProcess
 from multiprocessing.sharedctypes import Synchronized as BaseValue
-from queue import Empty
+from queue import Empty, Full
 from typing import Any, Iterable, Type
 
 from fastembed.common.types import Device
@@ -103,8 +103,10 @@ class ParallelWorkerPool:
         self.num_workers = num_workers
         self.input_queue: Queue | None = None
         self.output_queue: Queue | None = None
-        self.ctx: BaseContext = get_context(start_method)
         self.processes: list[BaseProcess] = []
+        self.ctx: BaseContext = get_context(start_method)
+        if num_workers <= 0:
+            raise ValueError(f"num_workers must be greater than zero, got {num_workers}")
         self.queue_size = self.num_workers * max_internal_batch_size
         self.emergency_shutdown = False
         self.device_ids = device_ids
@@ -176,7 +178,7 @@ class ParallelWorkerPool:
                         out_item = None
                 else:
                     try:
-                        out_item = self.output_queue.get(timeout=processing_timeout)
+                        out_item = self._get_output()
                     except Empty as e:
                         self.join_or_terminate()
                         raise e
@@ -192,11 +194,11 @@ class ParallelWorkerPool:
                 pushed += 1
 
             for _ in range(self.num_workers):
-                self.input_queue.put(QueueSignals.stop)
+                self._put_stop_signal()
 
             while read < pushed:
                 self.check_worker_health()
-                out_item = self.output_queue.get(timeout=processing_timeout)
+                out_item = self._get_output()
                 if out_item == QueueSignals.error:
                     self.join_or_terminate()
                     raise RuntimeError("Thread unexpectedly terminated")
@@ -204,8 +206,6 @@ class ParallelWorkerPool:
                 read += 1
             completed = True
         finally:
-            assert self.input_queue is not None, "Input queue is None"
-            assert self.output_queue is not None, "Output queue is None"
             if completed:
                 self.join()
             else:
@@ -218,19 +218,52 @@ class ParallelWorkerPool:
                 # Nothing reads the input pipe anymore, so the feeder thread can be stuck
                 # writing to it, holding every item it hasn't sent. On POSIX, closing our
                 # read end fails that write with EPIPE; Windows also needs to cancel the send.
-                terminate_broken = getattr(self.input_queue, "_terminate_broken", None)
-                if terminate_broken is not None:
-                    terminate_broken()
-                else:
-                    self.input_queue._reader.close()  # type: ignore[attr-defined]
-            self.input_queue.close()
-            self.output_queue.close()
-            if self.emergency_shutdown:
-                self.input_queue.cancel_join_thread()
-                self.output_queue.cancel_join_thread()
-            else:
-                self.input_queue.join_thread()
-                self.output_queue.join_thread()
+                if self.input_queue is not None:
+                    terminate_broken = getattr(self.input_queue, "_terminate_broken", None)
+                    if terminate_broken is not None:
+                        terminate_broken()
+                    else:
+                        self.input_queue._reader.close()  # type: ignore[attr-defined]
+            # start() can fail before either queue has been allocated. Clean up only
+            # initialized queues, without masking the original startup exception.
+            for queue in (self.input_queue, self.output_queue):
+                if queue is not None:
+                    queue.close()
+                    if self.emergency_shutdown:
+                        queue.cancel_join_thread()
+                    else:
+                        queue.join_thread()
+
+    def _get_output(self) -> Any:
+        """Wait for output, checking worker health without resetting the overall timeout."""
+        assert self.output_queue is not None, "Output queue was not initialized"
+        deadline = time.monotonic() + processing_timeout
+        while True:
+            remaining = max(0.0, deadline - time.monotonic())
+            try:
+                return self.output_queue.get(timeout=min(1.0, remaining))
+            except Empty:
+                pass
+            # outside the except block, so a worker crash isn't reported as raised while handling Empty
+            self.check_worker_health()
+            if time.monotonic() >= deadline:
+                raise Empty
+
+    def _put_stop_signal(self) -> None:
+        """Send a stop signal, failing instead of blocking forever if no worker is left to make room."""
+        assert self.input_queue is not None, "Input queue was not initialized"
+        while True:
+            try:
+                self.input_queue.put(QueueSignals.stop, timeout=1.0)
+                return
+            except Full:
+                pass
+            self.check_worker_health()
+            # A worker that fails to start reports an error and exits with code 0, which the health
+            # check accepts. While the queue is full no worker can have taken a stop signal yet, so
+            # if none is alive, nothing will ever make room.
+            if not any(process.is_alive() for process in self.processes):
+                raise RuntimeError("Thread unexpectedly terminated")
 
     def check_worker_health(self) -> None:
         """

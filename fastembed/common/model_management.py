@@ -38,11 +38,11 @@ def _hf_transport_errors() -> tuple[type[Exception], ...]:
     which is built on requests, but a TransportError in 1.x (httpx) and 2.x (httpx2).
     """
     try:
-        # huggingface_hub>=1.30 re-exports whichever of httpx and httpx2 it's built on.
+        # huggingface_hub>=1.31 re-exports whichever of httpx and httpx2 it's built on.
         from huggingface_hub.utils import httpx
     except ImportError:
         try:
-            import httpx  # huggingface_hub 1.0 to 1.29
+            import httpx  # type: ignore[import-not-found,no-redef]  # huggingface_hub 1.0 to 1.30
         except ImportError:  # huggingface_hub 0.x
             return ()
     return (httpx.TransportError,)
@@ -482,7 +482,7 @@ class ModelManagement(Generic[T]):
                 if hasattr(tarfile, "data_filter"):
                     tar.extractall(path=cache_dir, filter="data")
                 else:
-                    # No PEP 706 filter before 3.10.12, so vet the members by hand.
+                    # No PEP 706 filter before 3.11.4, so vet the members by hand.
                     members = tar.getmembers()
                     for member in members:
                         cls._validate_tar_member(member)
