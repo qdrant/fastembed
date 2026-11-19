@@ -267,8 +267,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
         **kwargs: Any,
     ) -> Iterable[NumpyArray]:
         """
-        Encode a list of documents into list of embeddings.
-        We use mean pooling with attention so that the model can handle variable-length inputs.
+        Encode documents into token embeddings for late interaction.
 
         Args:
             documents: Iterator of documents or single document to embed
@@ -278,8 +277,9 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
                 If 0, use all available cores.
                 If None, don't use data-parallel processing, use default onnxruntime threading instead.
 
-        Returns:
-            List of embeddings, one per document
+        Yields:
+            NumpyArray: A matrix of shape (num_tokens, embedding_dim) for each input document.
+                The number of retained tokens can vary between documents.
         """
         yield from self._embed_documents(
             model_name=self.model_name,
