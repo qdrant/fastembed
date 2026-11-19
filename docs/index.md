@@ -1,6 +1,6 @@
 # ⚡️ What is FastEmbed?
 
-FastEmbed is a lightweight, fast, Python library built for embedding generation. We [support popular text models](https://qdrant.github.io/fastembed/examples/Supported_Models/). Please [open a Github issue](https://github.com/qdrant/fastembed/issues/new) if you want us to add a new model.
+FastEmbed is a lightweight, fast, Python library built for embedding generation. We [support popular text models](https://qdrant.github.io/fastembed/examples/Supported_Models/). Please [open a GitHub issue](https://github.com/qdrant/fastembed/issues/new) if you want us to add a new model.
 
 1. Light & Fast
     - Quantized model weights
@@ -30,7 +30,7 @@ documents: list[str] = [
     "passage: Hello, World!",
     "query: Hello, World!",
     "passage: This is an example passage.",
-    "fastembed is supported by and maintained by Qdrant."
+    "FastEmbed is supported by and maintained by Qdrant."
 ]
 embedding_model = TextEmbedding()
 embeddings: list[np.ndarray] = embedding_model.embed(documents)
@@ -53,10 +53,10 @@ from qdrant_client import QdrantClient
 client = QdrantClient(":memory:")  # Using an in-process Qdrant
 
 # Prepare your documents, metadata, and IDs
-docs = ["Qdrant has Langchain integrations", "Qdrant also has Llama Index integrations"]
+docs = ["Qdrant has LangChain integrations", "Qdrant also has LlamaIndex integrations"]
 metadata = [
-    {"source": "Langchain-docs"},
-    {"source": "Llama-index-docs"},
+    {"source": "LangChain-docs"},
+    {"source": "LlamaIndex-docs"},
 ]
 ids = [42, 2]
 
