@@ -1,12 +1,20 @@
 # This code is a modified copy of the `NLTKWordTokenizer` class from `NLTK` library.
 
 import re
+from functools import cache
+
+from fastembed.common.utils import word_chars
+
+
+@cache
+def _non_word_pattern() -> re.Pattern[str]:
+    return re.compile(f"[^{word_chars()}]")
 
 
 class SimpleTokenizer:
     @staticmethod
     def tokenize(text: str) -> list[str]:
-        text = re.sub(r"[^\w]", " ", text.lower())
+        text = _non_word_pattern().sub(" ", text.lower())
         text = re.sub(r"\s+", " ", text)
 
         return text.strip().split()

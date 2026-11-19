@@ -3,6 +3,7 @@ import sys
 import re
 import tempfile
 import unicodedata
+from functools import cache
 from pathlib import Path
 from itertools import islice
 from typing import Callable, Iterable, TypeVar
@@ -126,5 +127,27 @@ def get_all_punctuation() -> set[str]:
     )
 
 
+@cache
+def word_chars() -> str:
+    """Characters that belong inside a word, for use in a regex character class.
+
+    Python's `\\w` does not cover combining marks (Unicode categories Mn, Mc, Me), which are part of
+    words in Tamil, Hindi, Sinhala, Bengali, Thai, Arabic with diacritics and many other scripts.
+    Without them a word like "தமிழ்" falls apart into "தம" and "ழ". Zero-width non-joiner and joiner
+    are included because they sit inside Sinhala and Indic conjuncts.
+    """
+    marks = "".join(
+        chr(i)
+        for i in range(sys.maxunicode + 1)
+        if unicodedata.category(chr(i)) in ("Mn", "Mc", "Me")
+    )
+    return "\\w" + re.escape(marks) + "\u200c\u200d"
+
+
+@cache
+def _non_alphanumeric_pattern() -> re.Pattern[str]:
+    return re.compile(f"[^{word_chars()}\\s]")
+
+
 def remove_non_alphanumeric(text: str) -> str:
-    return re.sub(r"[^\w\s]", " ", text, flags=re.UNICODE)
+    return _non_alphanumeric_pattern().sub(" ", text)
