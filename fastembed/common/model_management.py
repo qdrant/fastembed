@@ -214,16 +214,22 @@ class ModelManagement(Generic[T]):
         local_files_only: bool = False,
         **kwargs: Any,
     ) -> str:
-        """
-        Downloads a model from HuggingFace Hub.
+        """Download selected model files from Hugging Face Hub.
+
+        Online metadata and files use the same resolved commit, even if a branch moves during
+        the download. Local-only calls resolve the requested revision from the cache instead.
+
         Args:
             hf_source_repo (str): Name of the model on HuggingFace Hub, e.g. "Qdrant/all-MiniLM-L6-v2-onnx".
-            cache_dir (Optional[str]): The path to the cache directory.
+            cache_dir (str): The path to the cache directory.
             extra_patterns (list[str]): extra patterns to allow in the snapshot download, typically
                 includes the required model files.
             local_files_only (bool, optional): Whether to only use local files. Defaults to False.
+            **kwargs: Additional snapshot_download options. `revision` selects a branch, tag, or
+                commit; online calls resolve it once and download that commit's files.
+
         Returns:
-            Path: The path to the model directory.
+            str: The path to the downloaded or cached model directory.
         """
 
         def _repo_relative_path(relative_path: Path) -> str:
@@ -382,7 +388,11 @@ class ModelManagement(Generic[T]):
         # the connection but never answers would block here for good, before download_model can
         # retry or fall back to another source. list_repo_tree and snapshot_download's own
         # metadata requests can't be given one, but a silent endpoint now fails here first.
-        repo_revision = model_info(hf_source_repo, timeout=constants.HF_HUB_ETAG_TIMEOUT).sha
+        repo_revision = model_info(
+            hf_source_repo,
+            revision=kwargs.get("revision"),
+            timeout=constants.HF_HUB_ETAG_TIMEOUT,
+        ).sha
         repo_tree = list(
             list_repo_tree(
                 hf_source_repo, revision=repo_revision, repo_type="model", recursive=True
@@ -418,12 +428,15 @@ class ModelManagement(Generic[T]):
         if verified_metadata:
             disable_progress_bars()
 
+        # Metadata and downloaded files must describe the same commit, even if a branch moves
+        # between these requests. Resolve a caller's revision above, then pin the snapshot.
+        download_kwargs = {**kwargs, "revision": repo_revision}
         result = snapshot_download(
             repo_id=hf_source_repo,
             allow_patterns=allow_patterns,
             cache_dir=cache_dir,
             local_files_only=local_files_only,
-            **kwargs,
+            **download_kwargs,
         )
 
         if (
