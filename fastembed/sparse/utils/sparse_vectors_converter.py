@@ -155,8 +155,7 @@ class SparseVectorConverter:
 
         """
 
-        indices: list[int] = []
-        values: list[float] = []
+        vector: dict[int, float] = {}
 
         # Example:
         # vocab_size = 10000
@@ -190,17 +189,15 @@ class SparseVectorConverter:
                 normalized_embedding = self.normalize_vector(embedding_values)
 
                 for val_id, value in enumerate(normalized_embedding):
-                    indices.append(
-                        word_id * embedding_size + val_id
-                    )  # since miniCOIL IDs start with 1
-                    values.append(value * tf)
+                    vector[word_id * embedding_size + val_id] = value * tf
             else:
-                indices.append(self.unkn_word_token_id(embedding.word, unknown_words_shift))
-                values.append(tf)
+                token_id = self.unkn_word_token_id(embedding.word, unknown_words_shift)
+                # Different OOV words can hash to the same sparse coordinate.
+                vector[token_id] = vector.get(token_id, 0.0) + tf
 
         return SparseEmbedding(
-            indices=np.array(indices, dtype=np.int32),
-            values=np.array(values, dtype=np.float32),
+            indices=np.array(list(vector), dtype=np.int32),
+            values=np.array(list(vector.values()), dtype=np.float32),
         )
 
     def embedding_to_vector_query(
@@ -213,8 +210,7 @@ class SparseVectorConverter:
         Same as `embedding_to_vector`, but no TF
         """
 
-        indices: list[int] = []
-        values: list[float] = []
+        vector: dict[int, float] = {}
 
         # ID at which the scope of OOV words starts
         unknown_words_shift = ((vocab_size * embedding_size) // GAP + 2) * GAP
@@ -230,15 +226,13 @@ class SparseVectorConverter:
                 normalized_embedding = self.normalize_vector(embedding_values)
 
                 for val_id, value in enumerate(normalized_embedding):
-                    indices.append(
-                        word_id * embedding_size + val_id
-                    )  # since miniCOIL IDs start with 1
-                    values.append(value * tf)
+                    vector[word_id * embedding_size + val_id] = value * tf
             else:
-                indices.append(self.unkn_word_token_id(embedding.word, unknown_words_shift))
-                values.append(tf)
+                token_id = self.unkn_word_token_id(embedding.word, unknown_words_shift)
+                # Different OOV words can hash to the same sparse coordinate.
+                vector[token_id] = vector.get(token_id, 0.0) + tf
 
         return SparseEmbedding(
-            indices=np.array(indices, dtype=np.int32),
-            values=np.array(values, dtype=np.float32),
+            indices=np.array(list(vector), dtype=np.int32),
+            values=np.array(list(vector.values()), dtype=np.float32),
         )
