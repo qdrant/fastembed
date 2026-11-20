@@ -31,6 +31,8 @@ class OnnxModel(Generic[T]):
     EXPOSED_SESSION_OPTIONS = ("enable_cpu_mem_arena",)
     # set by the concrete model classes in their __init__
     _model_dir: Path
+    # the `max_batch_tokens` model option, see `_batch_token_budget`
+    _max_batch_tokens: int | None = None
 
     @classmethod
     def _get_worker_class(cls) -> Type["EmbeddingWorker[T]"]:
@@ -77,9 +79,14 @@ class OnnxModel(Generic[T]):
         providers: Sequence[OnnxProvider] | None = None,
         cuda: bool | Device = Device.AUTO,
     ) -> int | None:
-        """Padded tokens per batch for sessions on the CPU only, None to keep batches of
-        `batch_size` on accelerators, which run large batches faster. A loaded model reports
-        its providers, the workers' are resolved like `_load_onnx_model` resolves them."""
+        """Padded tokens per batch, None to keep batches of `batch_size`.
+
+        The `max_batch_tokens` model option applies to every provider, 0 turns the budget off.
+        Without it, sessions on the CPU only get `MAX_BATCH_TOKENS` and accelerators keep
+        batches of `batch_size`, as they run large batches faster. A loaded model reports its
+        providers, the workers' are resolved like `_load_onnx_model` resolves them."""
+        if self._max_batch_tokens is not None:
+            return self._max_batch_tokens or None
         if getattr(self, "model", None) is not None:
             names = self.model.get_providers()  # type: ignore[union-attr]
         elif providers is not None:
@@ -192,6 +199,22 @@ class OnnxModel(Generic[T]):
             dict[str, Any]: a dict with filtered exposed session options.
         """
         return {k: v for k, v in model_kwargs.items() if k in cls.EXPOSED_SESSION_OPTIONS}
+
+    @staticmethod
+    def _select_max_batch_tokens(model_kwargs: dict[str, Any]) -> int | None:
+        """The `max_batch_tokens` model option, None when it isn't set.
+
+        Raises:
+            ValueError: If it is set to anything but an int >= 0.
+        """
+        max_batch_tokens = model_kwargs.get("max_batch_tokens")
+        if max_batch_tokens is not None and (
+            isinstance(max_batch_tokens, bool)
+            or not isinstance(max_batch_tokens, int)
+            or max_batch_tokens < 0
+        ):
+            raise ValueError(f"max_batch_tokens must be an int >= 0, got {max_batch_tokens!r}")
+        return max_batch_tokens
 
     @classmethod
     def add_extra_session_options(
