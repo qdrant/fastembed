@@ -244,6 +244,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):
         self.providers = providers
         self.lazy_load = lazy_load
         self._extra_session_options = self._select_exposed_session_options(kwargs)
+        self._max_batch_tokens = self._select_max_batch_tokens(kwargs)
         # List of device ids, that can be used for data parallel processing in workers
         self.device_ids = device_ids
         self.cuda = cuda
