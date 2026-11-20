@@ -1,7 +1,6 @@
 import logging
 import os
 import time
-from collections import defaultdict
 from copy import deepcopy
 from enum import Enum
 from multiprocessing import Queue, get_context
@@ -148,17 +147,16 @@ class ParallelWorkerPool:
             self.processes.append(process)
 
     def ordered_map(self, stream: Iterable[Any], *args: Any, **kwargs: Any) -> Iterable[Any]:
-        buffer: defaultdict[int, Any] = defaultdict(Any)  # type: ignore
-        next_expected = 0
-
-        for idx, item in self.semi_ordered_map(stream, *args, **kwargs):
-            buffer[idx] = item
-            while next_expected in buffer:
-                yield buffer.pop(next_expected)
-                next_expected += 1
+        for _, item in self._map(stream, True, *args, **kwargs):
+            yield item
 
     def semi_ordered_map(
         self, stream: Iterable[Any], *args: Any, **kwargs: Any
+    ) -> Iterable[tuple[int, Any]]:
+        yield from self._map(stream, False, *args, **kwargs)
+
+    def _map(
+        self, stream: Iterable[Any], ordered: bool, /, *args: Any, **kwargs: Any
     ) -> Iterable[tuple[int, Any]]:
         completed = False
         try:
@@ -169,26 +167,37 @@ class ParallelWorkerPool:
 
             pushed = 0
             read = 0
+            buffer: dict[int, Any] = {}
+
+            def emit_output(out_item: Any) -> Iterable[tuple[int, Any]]:
+                nonlocal read
+                if out_item == QueueSignals.error:
+                    raise RuntimeError("Thread unexpectedly terminated")
+                if ordered:
+                    index, item = out_item
+                    buffer[index] = item
+                    while read in buffer:
+                        result = (read, buffer.pop(read))
+                        read += 1
+                        yield result
+                else:
+                    read += 1
+                    yield out_item
+
             for idx, item in enumerate(stream):
                 self.check_worker_health()
-                if pushed - read < self.queue_size:
-                    try:
-                        out_item = self.output_queue.get_nowait()
-                    except Empty:
-                        out_item = None
-                else:
-                    try:
-                        out_item = self._get_output()
-                    except Empty as e:
-                        self.join_or_terminate()
-                        raise e
+                # Count only emitted results as read. A ready but out-of-order batch
+                # still occupies the window, so a slow prefix cannot grow the buffer
+                # to the size of the corpus. Keep draining until that prefix arrives.
+                while pushed - read >= self.queue_size:
+                    yield from emit_output(self._get_output())
 
+                try:
+                    out_item = self.output_queue.get_nowait()
+                except Empty:
+                    out_item = None
                 if out_item is not None:
-                    if out_item == QueueSignals.error:
-                        self.join_or_terminate()
-                        raise RuntimeError("Thread unexpectedly terminated")
-                    yield out_item
-                    read += 1
+                    yield from emit_output(out_item)
 
                 self.input_queue.put((idx, item))
                 pushed += 1
@@ -198,12 +207,7 @@ class ParallelWorkerPool:
 
             while read < pushed:
                 self.check_worker_health()
-                out_item = self._get_output()
-                if out_item == QueueSignals.error:
-                    self.join_or_terminate()
-                    raise RuntimeError("Thread unexpectedly terminated")
-                yield out_item
-                read += 1
+                yield from emit_output(self._get_output())
             completed = True
         finally:
             if completed:
