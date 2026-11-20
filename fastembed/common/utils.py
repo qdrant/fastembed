@@ -3,9 +3,12 @@ import sys
 import re
 import tempfile
 import unicodedata
+import uuid
 from pathlib import Path
 from itertools import islice
 from typing import Callable, Iterable, TypeVar
+
+from loguru import logger
 
 import numpy as np
 from numpy.typing import NDArray
@@ -106,13 +109,85 @@ def restore_order(indexed_outputs: Iterable[tuple[list[int], Iterable[T]]]) -> I
             next_index += 1
 
 
+def _is_writable_dir(path: Path) -> bool:
+    """
+    Check if a directory can be written to by creating and removing a temporary probe file.
+    Uses a UUID-suffixed filename to avoid collisions between concurrent processes or threads.
+    """
+    probe_file = path / f".fastembed_write_test_{uuid.uuid4().hex}"
+    try:
+        probe_file.touch(exist_ok=False)
+        return True
+    except (OSError, PermissionError):
+        return False
+    finally:
+        try:
+            probe_file.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+
+def get_default_cache_dir() -> Path:
+    """
+    Get the default cache directory for fastembed.
+
+    Priority:
+    1. FASTEMBED_CACHE_PATH environment variable if set.
+    2. Platform-specific persistent user cache directory:
+       - Windows: %LOCALAPPDATA%/fastembed_cache or ~/.cache/fastembed_cache
+       - macOS: ~/Library/Caches/fastembed_cache
+       - Linux/other: $XDG_CACHE_HOME/fastembed_cache or ~/.cache/fastembed_cache
+    3. Fallback to system temporary directory (tempfile.gettempdir()/fastembed_cache)
+       if the persistent directory cannot be created or written to.
+    """
+    env_path = os.getenv("FASTEMBED_CACHE_PATH")
+    if env_path:
+        return Path(env_path)
+
+    try:
+        if sys.platform == "win32":
+            local_appdata = os.getenv("LOCALAPPDATA")
+            if local_appdata and Path(local_appdata).is_absolute():
+                candidate = Path(local_appdata) / "fastembed_cache"
+            else:
+                candidate = Path.home() / ".cache" / "fastembed_cache"
+        elif sys.platform == "darwin":
+            candidate = Path.home() / "Library" / "Caches" / "fastembed_cache"
+        else:
+            xdg_cache_home = os.getenv("XDG_CACHE_HOME")
+            if xdg_cache_home and Path(xdg_cache_home).is_absolute():
+                candidate = Path(xdg_cache_home) / "fastembed_cache"
+            else:
+                candidate = Path.home() / ".cache" / "fastembed_cache"
+
+        candidate.mkdir(parents=True, exist_ok=True)
+        if not _is_writable_dir(candidate):
+            raise PermissionError(f"Directory {candidate} exists but is not writable")
+        return candidate
+    except (OSError, PermissionError) as exc:
+        fallback = Path(tempfile.gettempdir()) / "fastembed_cache"
+        logger.warning(
+            f"Failed to initialize persistent cache directory '{candidate}': {exc}. "
+            f"Falling back to temporary cache directory at '{fallback}'."
+        )
+        try:
+            fallback.mkdir(parents=True, exist_ok=True)
+            if not _is_writable_dir(fallback):
+                raise PermissionError(f"Fallback cache directory '{fallback}' is not writable.")
+            return fallback
+        except (OSError, PermissionError) as fallback_exc:
+            raise PermissionError(
+                f"Failed to create or write to default cache directory: neither persistent "
+                f"location ('{candidate}') nor fallback location ('{fallback}') is usable."
+            ) from fallback_exc
+
+
 def define_cache_dir(cache_dir: str | None = None) -> Path:
     """
     Define the cache directory for fastembed
     """
     if cache_dir is None:
-        default_cache_dir = os.path.join(tempfile.gettempdir(), "fastembed_cache")
-        cache_path = Path(os.getenv("FASTEMBED_CACHE_PATH", default_cache_dir))
+        cache_path = get_default_cache_dir()
     else:
         cache_path = Path(cache_dir)
     cache_path.mkdir(parents=True, exist_ok=True)
