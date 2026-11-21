@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Iterable, Sequence, Type
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 
 from fastembed.image.transform.operators import Compose
 from fastembed.common.types import NumpyArray, Device
@@ -83,7 +83,7 @@ class OnnxImageModel(OnnxModel[T]):
         with contextlib.ExitStack() as stack:
             assert self.processor is not None, "Processor is not initialized"
             image_files = [
-                stack.enter_context(self.processor.open_image(image))
+                ImageOps.exif_transpose(stack.enter_context(self.processor.open_image(image)))
                 if not isinstance(image, Image.Image)
                 else image
                 for image in images

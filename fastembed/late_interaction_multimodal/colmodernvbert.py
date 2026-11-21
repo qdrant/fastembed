@@ -5,7 +5,7 @@ import json
 import numpy as np
 import onnxruntime as ort
 from tokenizers import Encoding
-from PIL import Image
+from PIL import Image, ImageOps
 
 from fastembed.common import ImageInput
 from fastembed.common.model_description import DenseModelDescription, ModelSource
@@ -229,7 +229,7 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         with contextlib.ExitStack() as stack:
             assert self.processor is not None, "Processor is not initialized"
             image_files = [
-                stack.enter_context(self.processor.open_image(image))
+                ImageOps.exif_transpose(stack.enter_context(self.processor.open_image(image)))
                 if not isinstance(image, Image.Image)
                 else image
                 for image in images
