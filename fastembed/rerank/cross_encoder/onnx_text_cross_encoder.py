@@ -79,6 +79,31 @@ supported_onnx_models: list[BaseModelDescription] = [
         sources=ModelSource(hf="jinaai/jina-reranker-v2-base-multilingual"),
         model_file="onnx/model.onnx",
     ),
+    BaseModelDescription(
+        model="syntriq/lupe-multilingual-reranker-small",
+        description="Multilingual reranker for 36 languages, 141M parameters, 8K context length.",
+        license="apache-2.0",
+        size_in_GB=0.56,
+        sources=ModelSource(hf="syntriq/lupe-multilingual-reranker-small"),
+        model_file="onnx/model.onnx",
+    ),
+    BaseModelDescription(
+        model="syntriq/lupe-multilingual-reranker-base",
+        description="Multilingual reranker for 36 languages, 308M parameters, 8K context length.",
+        license="apache-2.0",
+        size_in_GB=1.23,
+        sources=ModelSource(hf="syntriq/lupe-multilingual-reranker-base"),
+        model_file="onnx/model.onnx",
+    ),
+    BaseModelDescription(
+        model="syntriq/lupe-multilingual-reranker-large",
+        description="Multilingual reranker for 36 languages, fine-tuned from bge-reranker-v2-m3.",
+        license="apache-2.0",
+        size_in_GB=2.27,
+        sources=ModelSource(hf="syntriq/lupe-multilingual-reranker-large"),
+        model_file="onnx/model.onnx",
+        additional_files=["onnx/model.onnx_data"],
+    ),
 ]
 
 

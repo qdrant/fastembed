@@ -20,6 +20,9 @@ CANONICAL_SCORE_VALUES = {
     "jinaai/jina-reranker-v1-tiny-en": np.array([2.5911, 0.1122]),
     "jinaai/jina-reranker-v1-turbo-en": np.array([1.8295, -2.8908]),
     "jinaai/jina-reranker-v2-base-multilingual": np.array([1.6533, -1.6455]),
+    "syntriq/lupe-multilingual-reranker-small": np.array([6.928032, -5.38603]),
+    "syntriq/lupe-multilingual-reranker-base": np.array([6.526691, -6.96417]),
+    "syntriq/lupe-multilingual-reranker-large": np.array([7.556798, -6.858602]),
 }
 
 
