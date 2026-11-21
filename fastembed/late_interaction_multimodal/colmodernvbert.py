@@ -11,7 +11,7 @@ from fastembed.common import ImageInput
 from fastembed.common.model_description import DenseModelDescription, ModelSource
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.types import NumpyArray, OnnxProvider
-from fastembed.common.utils import define_cache_dir, iter_batch
+from fastembed.common.utils import define_cache_dir, iter_batch, open_image
 from fastembed.late_interaction_multimodal.late_interaction_multimodal_embedding_base import (
     LateInteractionMultimodalEmbeddingBase,
 )
@@ -228,9 +228,7 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
     def onnx_embed_image(self, images: list[ImageInput], **kwargs: Any) -> OnnxOutputContext:
         with contextlib.ExitStack() as stack:
             image_files = [
-                stack.enter_context(Image.open(image))
-                if not isinstance(image, Image.Image)
-                else image
+                open_image(stack, image) if not isinstance(image, Image.Image) else image
                 for image in images
             ]
             assert self.processor is not None, "Processor is not initialized"
