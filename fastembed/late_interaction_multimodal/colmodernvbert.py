@@ -5,7 +5,7 @@ import json
 import numpy as np
 import onnxruntime as ort
 from tokenizers import Encoding
-from PIL import Image
+from PIL import Image, ImageOps
 
 from fastembed.common import ImageInput
 from fastembed.common.model_description import DenseModelDescription, ModelSource
@@ -228,7 +228,7 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
     def onnx_embed_image(self, images: list[ImageInput], **kwargs: Any) -> OnnxOutputContext:
         with contextlib.ExitStack() as stack:
             image_files = [
-                stack.enter_context(Image.open(image))
+                ImageOps.exif_transpose(stack.enter_context(Image.open(image)))
                 if not isinstance(image, Image.Image)
                 else image
                 for image in images
