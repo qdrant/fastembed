@@ -1,3 +1,4 @@
+import contextlib
 import os
 import sys
 import re
@@ -9,6 +10,7 @@ from typing import Callable, Iterable, TypeVar
 
 import numpy as np
 from numpy.typing import NDArray
+from PIL import Image, ImageOps
 
 from fastembed.common.types import NumpyArray
 
@@ -104,6 +106,13 @@ def restore_order(indexed_outputs: Iterable[tuple[list[int], Iterable[T]]]) -> I
         while next_index in pending:
             yield pending.pop(next_index)
             next_index += 1
+
+
+def open_image(stack: contextlib.ExitStack, path: str | Path) -> Image.Image:
+    image = stack.enter_context(Image.open(path))
+    # phone cameras store photos rotated, with an EXIF tag saying how to display them
+    ImageOps.exif_transpose(image, in_place=True)
+    return image
 
 
 def define_cache_dir(cache_dir: str | None = None) -> Path:

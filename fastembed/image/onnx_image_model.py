@@ -5,14 +5,14 @@ from pathlib import Path
 from typing import Any, Iterable, Sequence, Type
 
 import numpy as np
-from PIL import Image, ImageOps
+from PIL import Image
 
 from fastembed.image.transform.operators import Compose
 from fastembed.common.types import NumpyArray, Device
 from fastembed.common import ImageInput, OnnxProvider
 from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
 from fastembed.common.preprocessor_utils import load_preprocessor
-from fastembed.common.utils import iter_batch
+from fastembed.common.utils import iter_batch, open_image
 from fastembed.parallel_processor import ParallelWorkerPool
 
 # Holds type of the embedding result
@@ -82,9 +82,7 @@ class OnnxImageModel(OnnxModel[T]):
     def onnx_embed(self, images: list[ImageInput], **kwargs: Any) -> OnnxOutputContext:
         with contextlib.ExitStack() as stack:
             image_files = [
-                ImageOps.exif_transpose(stack.enter_context(Image.open(image)))
-                if not isinstance(image, Image.Image)
-                else image
+                open_image(stack, image) if not isinstance(image, Image.Image) else image
                 for image in images
             ]
             assert self.processor is not None, "Processor is not initialized"
