@@ -1,12 +1,6 @@
 import importlib.metadata
-import os
 
-# onnxruntime records usage telemetry (process, model load, session and device events, with a
-# persistent device id) and queues it for upload to Microsoft. Importing onnxruntime already
-# queues events, so the opt-out has to be in the environment before its first import.
-# ORT_DISABLE_TELEMETRY=0 set by the user keeps onnxruntime's default.
-os.environ.setdefault("ORT_DISABLE_TELEMETRY", "1")
-
+import fastembed._telemetry  # noqa: F401  (must run before onnxruntime is imported)
 from fastembed.image import ImageEmbedding
 from fastembed.late_interaction import LateInteractionTextEmbedding
 from fastembed.late_interaction_multimodal import LateInteractionMultimodalEmbedding

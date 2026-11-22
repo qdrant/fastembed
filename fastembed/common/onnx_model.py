@@ -15,8 +15,7 @@ from fastembed.common.onnx_external_data import ONNX_SNAPSHOTS_DIR, link_externa
 from fastembed.common.types import OnnxProvider, NumpyArray, Device
 from fastembed.parallel_processor import Worker
 
-# For when onnxruntime was imported before fastembed set ORT_DISABLE_TELEMETRY: sessions
-# created from here on record no telemetry.
+# onnxruntime imported before fastembed: stop telemetry for the sessions created here.
 if os.environ.get("ORT_DISABLE_TELEMETRY", "1").lower() not in ("0", "false") and hasattr(
     ort, "disable_telemetry_events"
 ):
