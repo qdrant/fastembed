@@ -1,5 +1,6 @@
 import importlib.metadata
 
+from fastembed import _telemetry as _telemetry  # first: opts out before onnxruntime loads
 from fastembed.image import ImageEmbedding
 from fastembed.late_interaction import LateInteractionTextEmbedding
 from fastembed.late_interaction_multimodal import LateInteractionMultimodalEmbedding

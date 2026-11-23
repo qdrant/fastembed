@@ -1,3 +1,4 @@
+import os
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
@@ -13,6 +14,12 @@ from tokenizers import Tokenizer
 from fastembed.common.onnx_external_data import ONNX_SNAPSHOTS_DIR, link_external_data
 from fastembed.common.types import OnnxProvider, NumpyArray, Device
 from fastembed.parallel_processor import Worker
+
+# onnxruntime imported before fastembed: stop telemetry for the sessions created here.
+if os.environ.get("ORT_DISABLE_TELEMETRY", "1").lower() not in ("0", "false") and hasattr(
+    ort, "disable_telemetry_events"
+):
+    ort.disable_telemetry_events()
 
 # Holds type of the embedding result
 T = TypeVar("T")
