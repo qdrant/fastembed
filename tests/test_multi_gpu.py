@@ -97,9 +97,9 @@ def test_gpu_cuda_device_ids(device_ids: list[int] | None) -> None:
     )
     list(embedding_model.embed(docs))
     options = embedding_model.model.model.get_provider_options()
-    assert options["CUDAExecutionProvider"]["device_id"] == str(
-        device_id
-    ), f"Text embedding: {options}"
+    assert options["CUDAExecutionProvider"]["device_id"] == str(device_id), (
+        f"Text embedding: {options}"
+    )
 
     embedding_model = SparseTextEmbedding(
         "prithvida/Splade_PP_en_v1",
@@ -109,9 +109,9 @@ def test_gpu_cuda_device_ids(device_ids: list[int] | None) -> None:
     )
     list(embedding_model.embed(docs))
     options = embedding_model.model.model.get_provider_options()
-    assert options["CUDAExecutionProvider"]["device_id"] == str(
-        device_id
-    ), f"Sparse text embedding: {options}"
+    assert options["CUDAExecutionProvider"]["device_id"] == str(device_id), (
+        f"Sparse text embedding: {options}"
+    )
 
     embedding_model = SparseTextEmbedding(
         "Qdrant/bm42-all-minilm-l6-v2-attentions",
@@ -131,9 +131,9 @@ def test_gpu_cuda_device_ids(device_ids: list[int] | None) -> None:
     )
     list(embedding_model.embed(docs))
     options = embedding_model.model.model.get_provider_options()
-    assert options["CUDAExecutionProvider"]["device_id"] == str(
-        device_id
-    ), f"Late interaction text embedding: {options}"
+    assert options["CUDAExecutionProvider"]["device_id"] == str(device_id), (
+        f"Late interaction text embedding: {options}"
+    )
 
     embedding_model = ImageEmbedding(
         model_name="Qdrant/clip-ViT-B-32-vision",
@@ -147,9 +147,9 @@ def test_gpu_cuda_device_ids(device_ids: list[int] | None) -> None:
     ]
     list(embedding_model.embed(images))
     options = embedding_model.model.model.get_provider_options()
-    assert options["CUDAExecutionProvider"]["device_id"] == str(
-        device_id
-    ), f"Image embedding: {options}"
+    assert options["CUDAExecutionProvider"]["device_id"] == str(device_id), (
+        f"Image embedding: {options}"
+    )
 
     if device_ids is None or len(device_ids) == 1:
         model = TextCrossEncoder(
@@ -162,9 +162,9 @@ def test_gpu_cuda_device_ids(device_ids: list[int] | None) -> None:
         documents = ["Paris is the capital of France.", "Berlin is the capital of Germany."]
         list(model.rerank(query, documents))
         options = embedding_model.model.model.get_provider_options()
-        assert options["CUDAExecutionProvider"]["device_id"] == str(
-            device_id
-        ), f"Text cross encoder: {options}"
+        assert options["CUDAExecutionProvider"]["device_id"] == str(device_id), (
+            f"Text cross encoder: {options}"
+        )
 
 
 @pytest.mark.skip(reason="Requires a multi-gpu server")

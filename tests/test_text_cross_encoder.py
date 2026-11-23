@@ -68,9 +68,9 @@ def test_rerank(model_cache, model_name: str) -> None:
 
             pairs = [(query, doc) for doc in documents]
             scores2 = np.array(list(model.rerank_pairs(pairs)))
-            assert np.allclose(
-                scores, scores2, atol=1e-5
-            ), f"Model: {model_desc.model}, Scores: {scores}, Scores2: {scores2}"
+            assert np.allclose(scores, scores2, atol=1e-5), (
+                f"Model: {model_desc.model}, Scores: {scores}, Scores2: {scores2}"
+            )
 
             canonical_scores = CANONICAL_SCORE_VALUES[model_desc.model]
             canonical_variants = (
@@ -96,23 +96,23 @@ def test_batch_rerank(model_cache, model_name: str) -> None:
 
         pairs = [(query, doc) for doc in documents]
         scores2 = np.array(list(model.rerank_pairs(pairs)))
-        assert np.allclose(
-            scores, scores2, atol=1e-5
-        ), f"Model: {model_name}, Scores: {scores}, Scores2: {scores2}"
+        assert np.allclose(scores, scores2, atol=1e-5), (
+            f"Model: {model_name}, Scores: {scores}, Scores2: {scores2}"
+        )
 
         # a single document is a batch of its own, so its score doesn't depend on the sorting
         single_scores = [next(iter(model.rerank(query, [doc]))) for doc in unique_documents]
         expected_scores = np.tile(single_scores, 50)
 
         assert scores.shape == expected_scores.shape, f"Unexpected shape for model {model_name}"
-        assert np.allclose(
-            scores, expected_scores, atol=1e-3
-        ), f"Model: {model_name}, Scores: {scores}, Expected: {expected_scores}"
+        assert np.allclose(scores, expected_scores, atol=1e-3), (
+            f"Model: {model_name}, Scores: {scores}, Expected: {expected_scores}"
+        )
 
         canonical_scores = CANONICAL_SCORE_VALUES[model_name]
-        assert np.allclose(
-            scores[: len(canonical_scores)], canonical_scores, atol=1e-3
-        ), f"Model: {model_name}, Scores: {scores}, Expected: {canonical_scores}"
+        assert np.allclose(scores[: len(canonical_scores)], canonical_scores, atol=1e-3), (
+            f"Model: {model_name}, Scores: {scores}, Expected: {canonical_scores}"
+        )
 
 
 @pytest.mark.parametrize("model_name", ["Xenova/ms-marco-MiniLM-L-6-v2"])
@@ -146,23 +146,25 @@ def test_rerank_pairs_parallel(model_cache, model_name: str) -> None:
         pairs = [(query, doc) for doc in documents]
         scores_parallel = np.array(list(model.rerank_pairs(pairs, parallel=2, batch_size=10)))
         scores_sequential = np.array(list(model.rerank_pairs(pairs, batch_size=10)))
-        assert np.allclose(
-            scores_parallel, scores_sequential, atol=1e-5
-        ), f"Model: {model_name}, Scores (Parallel): {scores_parallel}, Scores (Sequential): {scores_sequential}"
+        assert np.allclose(scores_parallel, scores_sequential, atol=1e-5), (
+            f"Model: {model_name}, Scores (Parallel): {scores_parallel}, Scores (Sequential): {scores_sequential}"
+        )
 
         # a single pair is a batch of its own, so its score doesn't depend on the sorting
         single_scores = [
             next(iter(model.rerank_pairs([(query, doc)]))) for doc in unique_documents
         ]
         expected_scores = np.tile(single_scores, 10)
-        assert np.allclose(
-            scores_parallel, expected_scores, atol=1e-3
-        ), f"Model: {model_name}, Scores: {scores_parallel}, Expected: {expected_scores}"
+        assert np.allclose(scores_parallel, expected_scores, atol=1e-3), (
+            f"Model: {model_name}, Scores: {scores_parallel}, Expected: {expected_scores}"
+        )
 
         canonical_scores = CANONICAL_SCORE_VALUES[model_name]
         assert np.allclose(
             scores_parallel[: len(canonical_scores)], canonical_scores, atol=1e-3
-        ), f"Model: {model_name}, Scores (Parallel): {scores_parallel}, Expected: {canonical_scores}"
+        ), (
+            f"Model: {model_name}, Scores (Parallel): {scores_parallel}, Expected: {canonical_scores}"
+        )
 
 
 @pytest.mark.parametrize("model_name", ["Xenova/ms-marco-MiniLM-L-6-v2"])

@@ -288,9 +288,9 @@ class OnnxModel(Generic[T]):
             None
         """
         for option in extra_options:
-            assert (
-                option in cls.EXPOSED_SESSION_OPTIONS
-            ), f"{option} is unknown or not exposed (exposed options: {cls.EXPOSED_SESSION_OPTIONS})"
+            assert option in cls.EXPOSED_SESSION_OPTIONS, (
+                f"{option} is unknown or not exposed (exposed options: {cls.EXPOSED_SESSION_OPTIONS})"
+            )
         if "enable_cpu_mem_arena" in extra_options:
             session_options.enable_cpu_mem_arena = extra_options["enable_cpu_mem_arena"]
 

@@ -292,9 +292,9 @@ class Muvera:
             AssertionError: If input vectors don't have expected dimensionality
             ValueError: If the input multivector is empty
         """
-        assert (
-            vectors.shape[1] == self.dim
-        ), f"Expected vectors of shape (n, {self.dim}), got {vectors.shape}"
+        assert vectors.shape[1] == self.dim, (
+            f"Expected vectors of shape (n, {self.dim}), got {vectors.shape}"
+        )
 
         if len(vectors) == 0:
             raise ValueError("Cannot encode an empty multivector")
