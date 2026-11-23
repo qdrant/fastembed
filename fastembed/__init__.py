@@ -1,6 +1,10 @@
 import importlib.metadata
+import os
 
-from fastembed import _telemetry as _telemetry  # first: opts out before onnxruntime loads
+# onnxruntime queues telemetry for Microsoft from its first import on; opt out before it.
+# A user's own ORT_DISABLE_TELEMETRY (e.g. 0) is kept.
+os.environ.setdefault("ORT_DISABLE_TELEMETRY", "1")
+
 from fastembed.image import ImageEmbedding
 from fastembed.late_interaction import LateInteractionTextEmbedding
 from fastembed.late_interaction_multimodal import LateInteractionMultimodalEmbedding
