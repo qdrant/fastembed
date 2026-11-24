@@ -2,7 +2,6 @@ import importlib.util
 import os
 import json
 import platform
-import re
 import sys
 import warnings
 from dataclasses import dataclass
@@ -33,12 +32,6 @@ if os.environ.get("ORT_DISABLE_TELEMETRY", "1").lower() not in ("0", "false") an
 T = TypeVar("T")
 
 _SHRINKAGE_KEY = "memory.enable_memory_arena_shrinkage"
-# onnxruntime ends this error with the rejected entry, for example "...memory arena shrink list: cpu:0".
-_SHRINK_LIST_REJECTED = re.compile(
-    r"(?:Did not find an arena based allocator registered for device-id\s+combination in the "
-    r"memory arena shrink list|The registered allocator for device-id\s+combination is not an "
-    r"arena based allocator): (\w+:\d+)$"
-)
 
 
 @cache
@@ -253,9 +246,10 @@ class OnnxModel(Generic[T]):
                     "again with HF_HUB_DISABLE_SHARED_BLOBS=1."
                 )
             raise
-        self.run_options = ort.RunOptions()
+        self.run_options = None
         arenas = self._arenas_to_shrink(so)
         if arenas:
+            self.run_options = ort.RunOptions()
             self.run_options.add_run_config_entry(_SHRINKAGE_KEY, ";".join(arenas))
         if "CUDAExecutionProvider" in requested_provider_names:
             assert self.model is not None
@@ -274,27 +268,32 @@ class OnnxModel(Generic[T]):
             cuda_options.get(name, "0") != "0"
             for name in ("gpu_external_alloc", "gpu_external_free")
         )
-        if not external_allocator:
+        # Shrinkage could free memory that a captured CUDA graph uses again in later runs.
+        cuda_graph = cuda_options.get("enable_cuda_graph", "0") != "0"
+        if not external_allocator and not cuda_graph:
             arenas.append(f"gpu:{cuda_options['device_id']}")
         return arenas
 
     def _run_model_with_shrinkage(
         self, output_names: list[str] | None, onnx_input: dict[str, Any]
     ) -> list[Any]:
+        run_options = self.run_options
         try:
-            return self.model.run(output_names, onnx_input, self.run_options)  # type: ignore[union-attr]
+            return self.model.run(output_names, onnx_input, run_options)  # type: ignore[union-attr]
         except InvalidArgument as e:
-            rejected = _SHRINK_LIST_REJECTED.search(str(e))
-            if rejected is None:
+            if run_options is None:
                 raise
+            # Builds without an arena reject the shrink list, and then the run works without it.
+            try:
+                outputs = self.model.run(output_names, onnx_input)  # type: ignore[union-attr]
+            except Exception:
+                raise e
             logger.warning(
-                f"onnxruntime has no memory arena for {rejected[1]}, so fastembed does not "
-                "release arena memory after each run."
+                "onnxruntime failed a run with the memory arena shrink list and completed it "
+                "without the list, so fastembed does not release arena memory after each run."
             )
-            # onnxruntime checks the list before it runs the model, so the retry repeats no work.
-            no_shrinkage = ort.RunOptions()
-            self.run_options = no_shrinkage
-            return self.model.run(output_names, onnx_input, no_shrinkage)  # type: ignore[union-attr]
+            self.run_options = None
+            return outputs
 
     @classmethod
     def _select_exposed_session_options(cls, model_kwargs: dict[str, Any]) -> dict[str, Any]:
