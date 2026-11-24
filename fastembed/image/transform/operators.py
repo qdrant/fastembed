@@ -137,6 +137,7 @@ class ResizeForVisionEncoder(Transform):
         self.resample = resample
 
     def __call__(self, images: list[NumpyArray]) -> list[NumpyArray]:
+        """Resize CHW images to positive multiples of the vision encoder tile size."""
         result = []
         for image in images:
             # Assume (C, H, W) format
@@ -152,7 +153,8 @@ class ResizeForVisionEncoder(Transform):
             else:
                 # Calculate new height as multiple of max_size
                 new_height = math.ceil(height / self.max_size) * self.max_size
-                new_width = int(new_height * aspect_ratio)
+                # Use integer arithmetic so a one-pixel width cannot round to zero.
+                new_width = new_height * width // height
                 new_width = math.ceil(new_width / self.max_size) * self.max_size
 
             # Resize using the ndarray resize function
