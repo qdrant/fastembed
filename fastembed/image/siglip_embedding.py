@@ -1,4 +1,4 @@
-from typing import Any, Type
+from typing import Any
 
 from fastembed.common.model_description import DenseModelDescription, ModelSource
 from fastembed.image.onnx_embedding import OnnxImageEmbedding, OnnxImageEmbeddingWorker
@@ -26,7 +26,7 @@ class SiglipOnnxImageEmbedding(OnnxImageEmbedding):
     ONNX_OUTPUT_NAMES = ["pooler_output"]
 
     @classmethod
-    def _get_worker_class(cls) -> Type["OnnxImageEmbeddingWorker"]:
+    def _get_worker_class(cls) -> type["OnnxImageEmbeddingWorker"]:
         return SiglipImageEmbeddingWorker
 
     @classmethod

@@ -1,17 +1,18 @@
 import contextlib
 import os
+from collections.abc import Iterable, Sequence
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Iterable, Sequence, Type
+from typing import Any
 
 import numpy as np
 from PIL import Image
 from tokenizers import Encoding, Tokenizer
 
-from fastembed.common import OnnxProvider, ImageInput
+from fastembed.common import ImageInput, OnnxProvider
 from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
-from fastembed.common.preprocessor_utils import load_tokenizer, load_preprocessor
-from fastembed.common.types import NumpyArray, Device
+from fastembed.common.preprocessor_utils import load_preprocessor, load_tokenizer
+from fastembed.common.types import Device, NumpyArray
 from fastembed.common.utils import iter_batch
 from fastembed.image.transform.operators import Compose
 from fastembed.parallel_processor import ParallelWorkerPool
@@ -43,11 +44,11 @@ class OnnxMultimodalModel(OnnxModel[T]):
         return onnx_input
 
     @classmethod
-    def _get_text_worker_class(cls) -> Type["TextEmbeddingWorker[T]"]:
+    def _get_text_worker_class(cls) -> type["TextEmbeddingWorker[T]"]:
         raise NotImplementedError("Subclasses must implement this method")
 
     @classmethod
-    def _get_image_worker_class(cls) -> Type["ImageEmbeddingWorker[T]"]:
+    def _get_image_worker_class(cls) -> type["ImageEmbeddingWorker[T]"]:
         raise NotImplementedError("Subclasses must implement this method")
 
     def _post_process_onnx_image_output(self, output: OnnxOutputContext) -> Iterable[T]:

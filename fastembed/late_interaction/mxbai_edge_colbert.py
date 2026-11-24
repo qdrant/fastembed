@@ -1,11 +1,11 @@
-from typing import Any, Iterable, Type
+from collections.abc import Iterable
+from typing import Any
 
 from tokenizers import Encoding
 
 from fastembed.common.model_description import DenseModelDescription, ModelSource
 from fastembed.late_interaction.colbert import ColbertEmbeddingWorker
 from fastembed.late_interaction.lateon import LateOn
-
 
 supported_mxbai_edge_colbert_models: list[DenseModelDescription] = [
     DenseModelDescription(
@@ -26,7 +26,7 @@ class MxbaiEdgeColbert(LateOn):
     """Shares LateOn's tokenizer, markers and the lack of query expansion, but lowercases text"""
 
     @classmethod
-    def _get_worker_class(cls) -> Type[ColbertEmbeddingWorker]:
+    def _get_worker_class(cls) -> type[ColbertEmbeddingWorker]:
         return MxbaiEdgeColbertEmbeddingWorker
 
     @classmethod

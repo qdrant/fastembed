@@ -18,10 +18,10 @@ except importlib.metadata.PackageNotFoundError as _:
 
 __version__ = version
 __all__ = [
-    "TextEmbedding",
-    "SparseTextEmbedding",
-    "SparseEmbedding",
     "ImageEmbedding",
-    "LateInteractionTextEmbedding",
     "LateInteractionMultimodalEmbedding",
+    "LateInteractionTextEmbedding",
+    "SparseEmbedding",
+    "SparseTextEmbedding",
+    "TextEmbedding",
 ]

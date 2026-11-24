@@ -1,9 +1,9 @@
-from typing import Iterable, Any
+from collections.abc import Iterable
+from typing import Any
 
 from fastembed.common.model_description import DenseModelDescription
-from fastembed.common.types import NumpyArray
 from fastembed.common.model_management import ModelManagement
-from fastembed.common.types import ImageInput
+from fastembed.common.types import ImageInput, NumpyArray
 
 
 class ImageEmbeddingBase(ModelManagement[DenseModelDescription]):

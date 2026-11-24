@@ -1,4 +1,5 @@
-from typing import Any, Iterable, Sequence, Type
+from collections.abc import Iterable, Sequence
+from typing import Any
 
 from fastembed.common.model_description import DenseModelDescription, ModelSource
 from fastembed.common.onnx_model import OnnxOutputContext
@@ -307,7 +308,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):
         )
 
     @classmethod
-    def _get_worker_class(cls) -> Type["TextEmbeddingWorker[NumpyArray]"]:
+    def _get_worker_class(cls) -> type["TextEmbeddingWorker[NumpyArray]"]:
         return OnnxTextEmbeddingWorker
 
     def _preprocess_onnx_input(

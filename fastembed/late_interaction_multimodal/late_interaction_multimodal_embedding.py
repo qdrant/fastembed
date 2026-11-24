@@ -1,20 +1,20 @@
 import warnings
-from typing import Any, Iterable, Sequence, Type
+from collections.abc import Iterable, Sequence
 from dataclasses import asdict
+from typing import Any
 
-from fastembed.common import OnnxProvider, ImageInput
-from fastembed.common.types import NumpyArray, Device
-from fastembed.late_interaction_multimodal.colpali import ColPali
+from fastembed.common import ImageInput, OnnxProvider
+from fastembed.common.model_description import DenseModelDescription
+from fastembed.common.types import Device, NumpyArray
 from fastembed.late_interaction_multimodal.colmodernvbert import ColModernVBERT
-
+from fastembed.late_interaction_multimodal.colpali import ColPali
 from fastembed.late_interaction_multimodal.late_interaction_multimodal_embedding_base import (
     LateInteractionMultimodalEmbeddingBase,
 )
-from fastembed.common.model_description import DenseModelDescription
 
 
 class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase):
-    EMBEDDINGS_REGISTRY: list[Type[LateInteractionMultimodalEmbeddingBase]] = [
+    EMBEDDINGS_REGISTRY: list[type[LateInteractionMultimodalEmbeddingBase]] = [
         ColPali,
         ColModernVBERT,
     ]

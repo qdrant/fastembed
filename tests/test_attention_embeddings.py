@@ -7,7 +7,6 @@ import pytest
 from fastembed import SparseTextEmbedding
 from tests.utils import delete_model_cache
 
-
 _MODELS_TO_CACHE = ("Qdrant/bm42-all-minilm-l6-v2-attentions", "Qdrant/bm25")
 MODELS_TO_CACHE = tuple([x.lower() for x in _MODELS_TO_CACHE])
 

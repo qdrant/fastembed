@@ -1,5 +1,5 @@
-from typing import Any
 import math
+from typing import Any
 
 from PIL import Image, ImageOps
 
@@ -9,12 +9,12 @@ from fastembed.image.transform.functional import (
     convert_to_rgb,
     crop_ndarray,
     normalize,
+    pad2square,
     pil2ndarray,
     rescale,
     resize,
     resize_longest_edge,
     resize_ndarray,
-    pad2square,
 )
 
 
@@ -483,11 +483,11 @@ class Compose:
                 else:
                     raise ValueError(f"Invalid crop size: {crop_size_raw}")
                 transforms.append(CenterCrop(size=crop_size))
-        elif mode == "ConvNextFeatureExtractor":
-            pass
-        elif mode == "JinaCLIPImageProcessor":
-            pass
-        elif mode == "Idefics3ImageProcessor":
+        elif (
+            mode == "ConvNextFeatureExtractor"
+            or mode == "JinaCLIPImageProcessor"
+            or mode == "Idefics3ImageProcessor"
+        ):
             pass
         else:
             raise ValueError(f"Preprocessor {mode} is not supported")
@@ -534,9 +534,7 @@ class Compose:
     @staticmethod
     def _get_pad2square(transforms: list[Transform], config: dict[str, Any]) -> None:
         mode = config.get("image_processor_type", "CLIPImageProcessor")
-        if mode == "CLIPImageProcessor":
-            pass
-        elif mode == "ConvNextFeatureExtractor":
+        if mode == "CLIPImageProcessor" or mode == "ConvNextFeatureExtractor":
             pass
         elif mode == "JinaCLIPImageProcessor":
             transforms.append(

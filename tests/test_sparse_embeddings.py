@@ -1,13 +1,12 @@
 import os
 from contextlib import contextmanager
 
-import pytest
 import numpy as np
+import pytest
 
 from fastembed.sparse.bm25 import Bm25
 from fastembed.sparse.sparse_text_embedding import SparseTextEmbedding
 from tests.utils import delete_model_cache, is_manual_run, should_test_model
-
 
 CANONICAL_COLUMN_VALUES = {
     "prithivida/Splade_PP_en_v1": {

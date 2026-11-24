@@ -1,18 +1,18 @@
-import os
-import time
+import contextlib
 import gzip
 import json
+import os
 import shutil
 import tarfile
 import tempfile
+import time
 import warnings
-import contextlib
 from copy import deepcopy
 from pathlib import Path, PureWindowsPath
-from typing import Any, TypeVar, Generic
+from typing import Any, Generic, TypeVar
 
 import requests
-from huggingface_hub import constants, snapshot_download, model_info, list_repo_tree
+from huggingface_hub import constants, list_repo_tree, model_info, snapshot_download
 from huggingface_hub.file_download import repo_folder_name
 from huggingface_hub.hf_api import RepoFile
 from huggingface_hub.utils import (
@@ -23,6 +23,7 @@ from huggingface_hub.utils import (
 )
 from loguru import logger
 from tqdm import tqdm
+
 from fastembed.common.model_description import BaseModelDescription
 from fastembed.common.onnx_external_data import link_external_data
 
@@ -157,17 +158,19 @@ class ModelManagement(Generic[T]):
 
         show_progress = bool(total_size_in_bytes and show_progress)
 
-        with tqdm(
-            total=total_size_in_bytes,
-            unit="iB",
-            unit_scale=True,
-            disable=not show_progress,
-        ) as progress_bar:
-            with open(output_path, "wb") as file:
-                for chunk in response.iter_content(chunk_size=_DOWNLOAD_CHUNK_SIZE):
-                    if chunk:  # Filter out keep-alive new chunks
-                        progress_bar.update(len(chunk))
-                        file.write(chunk)
+        with (
+            tqdm(
+                total=total_size_in_bytes,
+                unit="iB",
+                unit_scale=True,
+                disable=not show_progress,
+            ) as progress_bar,
+            open(output_path, "wb") as file,
+        ):
+            for chunk in response.iter_content(chunk_size=_DOWNLOAD_CHUNK_SIZE):
+                if chunk:  # Filter out keep-alive new chunks
+                    progress_bar.update(len(chunk))
+                    file.write(chunk)
         return output_path
 
     @classmethod
@@ -260,7 +263,7 @@ class ModelManagement(Generic[T]):
                             return False
                 return True
             except (OSError, KeyError) as e:
-                logger.error(f"Error verifying files: {str(e)}")
+                logger.error(f"Error verifying files: {e!s}")
                 return False
 
         def _collect_file_metadata(
@@ -288,7 +291,7 @@ class ModelManagement(Generic[T]):
                     model_dir.mkdir(parents=True, exist_ok=True)
                 (model_dir / cls.METADATA_FILE).write_text(json.dumps(meta))
             except (OSError, ValueError) as e:
-                logger.warning(f"Error saving metadata: {str(e)}")
+                logger.warning(f"Error saving metadata: {e!s}")
 
         allow_patterns = [
             "config.json",

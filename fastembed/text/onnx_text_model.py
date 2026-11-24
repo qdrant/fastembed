@@ -1,16 +1,17 @@
 import os
 from collections import deque
+from collections.abc import Iterable, Sequence
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Iterable, Sequence, Type
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
 from tokenizers import Encoding, Tokenizer
 
-from fastembed.common.types import NumpyArray, OnnxProvider, Device
 from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
 from fastembed.common.preprocessor_utils import load_tokenizer
+from fastembed.common.types import Device, NumpyArray, OnnxProvider
 from fastembed.common.utils import iter_batch, iter_length_sorted_batches, restore_order
 from fastembed.parallel_processor import ParallelWorkerPool
 
@@ -19,7 +20,7 @@ class OnnxTextModel(OnnxModel[T]):
     ONNX_OUTPUT_NAMES: list[str] | None = None
 
     @classmethod
-    def _get_worker_class(cls) -> Type["TextEmbeddingWorker[T]"]:
+    def _get_worker_class(cls) -> type["TextEmbeddingWorker[T]"]:
         raise NotImplementedError("Subclasses must implement this method")
 
     def _post_process_onnx_output(self, output: OnnxOutputContext, **kwargs: Any) -> Iterable[T]:

@@ -1,6 +1,6 @@
-from fastembed import TextEmbedding, LateInteractionTextEmbedding, SparseTextEmbedding
-from fastembed.sparse.bm25 import Bm25
+from fastembed import LateInteractionTextEmbedding, SparseTextEmbedding, TextEmbedding
 from fastembed.rerank.cross_encoder import TextCrossEncoder
+from fastembed.sparse.bm25 import Bm25
 
 
 class CustomStemmer:

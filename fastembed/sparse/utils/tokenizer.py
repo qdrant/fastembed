@@ -19,16 +19,16 @@ class WordTokenizer:
 
     # Starting quotes.
     STARTING_QUOTES = [
-        (re.compile("([«“‘„]|[`]+)", re.U), r" \1 "),
+        (re.compile("([«“‘„]|[`]+)", re.UNICODE), r" \1 "),
         (re.compile(r"^\""), r"``"),
         (re.compile(r"(``)"), r" \1 "),
         (re.compile(r"([ \(\[{<])(\"|\'{2})"), r"\1 `` "),
-        (re.compile(r"(?i)(\')(?!re|ve|ll|m|t|s|d|n)(\w)\b", re.U), r"\1 \2"),
+        (re.compile(r"(?i)(\')(?!re|ve|ll|m|t|s|d|n)(\w)\b", re.UNICODE), r"\1 \2"),
     ]
 
     # Ending quotes.
     ENDING_QUOTES = [
-        (re.compile("([»”’])", re.U), r" \1 "),
+        (re.compile("([»”’])", re.UNICODE), r" \1 "),
         (re.compile(r"''"), " '' "),
         (re.compile(r'"'), " '' "),
         (re.compile(r"([^' ])('[sS]|'[mM]|'[dD]|') "), r"\1 \2 "),
@@ -37,11 +37,11 @@ class WordTokenizer:
 
     # Punctuation.
     PUNCTUATION = [
-        (re.compile(r'([^\.])(\.)([\]\)}>"\'' "»”’ " r"]*)\s*$", re.U), r"\1 \2 \3 "),
+        (re.compile(r'([^\.])(\.)([\]\)}>"\'' "»”’ " r"]*)\s*$", re.UNICODE), r"\1 \2 \3 "),
         (re.compile(r"([:,])([^\d])"), r" \1 \2"),
         (re.compile(r"([:,])$"), r" \1 "),
         (
-            re.compile(r"\.{2,}", re.U),
+            re.compile(r"\.{2,}", re.UNICODE),
             r" \g<0> ",
         ),
         (re.compile(r"[;@#$%&]"), r" \g<0> "),
@@ -52,7 +52,7 @@ class WordTokenizer:
         (re.compile(r"[?!]"), r" \g<0> "),
         (re.compile(r"([^'])' "), r"\1 ' "),
         (
-            re.compile(r"[*]", re.U),
+            re.compile(r"[*]", re.UNICODE),
             r" \g<0> ",
         ),
     ]

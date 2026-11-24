@@ -1,12 +1,12 @@
-from typing import Any, Iterable, Type
+from collections.abc import Iterable
+from typing import Any
 
-
-from fastembed.common.types import NumpyArray
+from fastembed.common.model_description import DenseModelDescription, ModelSource
 from fastembed.common.onnx_model import OnnxOutputContext
+from fastembed.common.types import NumpyArray
 from fastembed.common.utils import normalize
 from fastembed.image.onnx_embedding import OnnxImageEmbedding
 from fastembed.image.onnx_image_model import ImageEmbeddingWorker
-from fastembed.common.model_description import DenseModelDescription, ModelSource
 
 supported_normalized_models: list[DenseModelDescription] = [
     DenseModelDescription(
@@ -42,7 +42,7 @@ class NormalizedEmbedding(OnnxImageEmbedding):
         return supported_normalized_models
 
     @classmethod
-    def _get_worker_class(cls) -> Type["ImageEmbeddingWorker[NumpyArray]"]:
+    def _get_worker_class(cls) -> type["ImageEmbeddingWorker[NumpyArray]"]:
         return NormalizedEmbeddingWorker
 
     def _post_process_onnx_output(

@@ -1,24 +1,25 @@
 import warnings
-from typing import Any, Iterable, Sequence, Type
+from collections.abc import Iterable, Sequence
 from dataclasses import asdict
+from typing import Any
 
-from fastembed.common.types import NumpyArray, OnnxProvider, Device
+from fastembed.common.model_description import DenseModelDescription, ModelSource, PoolingType
+from fastembed.common.types import Device, NumpyArray, OnnxProvider
+from fastembed.text.builtin_sentence_embedding import BuiltinSentenceEmbedding
 from fastembed.text.clip_embedding import CLIPOnnxEmbedding
 from fastembed.text.custom_text_embedding import CustomTextEmbedding
-from fastembed.text.pooled_normalized_embedding import PooledNormalizedEmbedding
-from fastembed.text.pooled_embedding import PooledEmbedding
-from fastembed.text.multitask_embedding import JinaEmbeddingV3
-from fastembed.text.builtin_sentence_embedding import BuiltinSentenceEmbedding
 from fastembed.text.last_token_normalized_embedding import LastTokenNormalizedEmbedding
+from fastembed.text.multitask_embedding import JinaEmbeddingV3
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
+from fastembed.text.pooled_embedding import PooledEmbedding
+from fastembed.text.pooled_normalized_embedding import PooledNormalizedEmbedding
 from fastembed.text.siglip_embedding import SiglipOnnxTextEmbedding
 from fastembed.text.static_embedding import SqrtTfStaticEmbedding, StaticTextEmbedding
 from fastembed.text.text_embedding_base import TextEmbeddingBase
-from fastembed.common.model_description import DenseModelDescription, ModelSource, PoolingType
 
 
 class TextEmbedding(TextEmbeddingBase):
-    EMBEDDINGS_REGISTRY: list[Type[TextEmbeddingBase]] = [
+    EMBEDDINGS_REGISTRY: list[type[TextEmbeddingBase]] = [
         OnnxTextEmbedding,
         CLIPOnnxEmbedding,
         SiglipOnnxTextEmbedding,

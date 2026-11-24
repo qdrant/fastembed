@@ -1,4 +1,5 @@
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 from fastembed.common.model_description import BaseModelDescription
 from fastembed.common.model_management import ModelManagement

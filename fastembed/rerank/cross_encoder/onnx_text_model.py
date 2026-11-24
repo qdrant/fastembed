@@ -1,8 +1,9 @@
 import os
 from collections import deque
+from collections.abc import Iterable, Sequence
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Iterable, Sequence, Type
+from typing import Any
 
 import numpy as np
 from tokenizers import Encoding
@@ -13,8 +14,8 @@ from fastembed.common.onnx_model import (
     OnnxOutputContext,
     OnnxProvider,
 )
-from fastembed.common.types import NumpyArray, Device
 from fastembed.common.preprocessor_utils import load_tokenizer
+from fastembed.common.types import Device, NumpyArray
 from fastembed.common.utils import iter_batch, iter_length_sorted_batches, restore_order
 from fastembed.parallel_processor import ParallelWorkerPool
 
@@ -23,7 +24,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
     ONNX_OUTPUT_NAMES: list[str] | None = None
 
     @classmethod
-    def _get_worker_class(cls) -> Type["TextRerankerWorker"]:
+    def _get_worker_class(cls) -> type["TextRerankerWorker"]:
         raise NotImplementedError("Subclasses must implement this method")
 
     def _load_onnx_model(

@@ -2,9 +2,9 @@ import os
 import platform
 from contextlib import contextmanager
 
+import numpy as np
 import pytest
 from PIL import Image
-import numpy as np
 
 from fastembed import LateInteractionMultimodalEmbedding
 from tests.config import TEST_MISC_DIR
@@ -65,7 +65,7 @@ queries = ["hello world", "flag embedding"]
 images = [
     TEST_MISC_DIR / "image.jpeg",
     str(TEST_MISC_DIR / "image.jpeg"),
-    Image.open((TEST_MISC_DIR / "image.jpeg")),
+    Image.open(TEST_MISC_DIR / "image.jpeg"),
 ]
 
 _MODELS_TO_CACHE = ("Qdrant/colmodernvbert",)

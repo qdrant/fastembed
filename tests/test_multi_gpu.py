@@ -1,10 +1,10 @@
 import pytest
 
 from fastembed import (
-    TextEmbedding,
-    SparseTextEmbedding,
-    LateInteractionTextEmbedding,
     ImageEmbedding,
+    LateInteractionTextEmbedding,
+    SparseTextEmbedding,
+    TextEmbedding,
 )
 from fastembed.rerank.cross_encoder import TextCrossEncoder
 from tests.config import TEST_MISC_DIR

@@ -1,11 +1,12 @@
 import os
-import sys
 import re
+import sys
 import tempfile
 import unicodedata
-from pathlib import Path
+from collections.abc import Callable, Iterable
 from itertools import islice
-from typing import Callable, Iterable, TypeVar
+from pathlib import Path
+from typing import TypeVar
 
 import numpy as np
 from numpy.typing import NDArray

@@ -1,16 +1,19 @@
 import os
 from collections import defaultdict
+from collections.abc import Iterable
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Iterable, Protocol, Type
+from typing import Any, Protocol
 
 import mmh3
 import numpy as np
 from py_rust_stemmers import SnowballStemmer
+
+from fastembed.common.model_description import ModelSource, SparseModelDescription
 from fastembed.common.utils import (
     define_cache_dir,
-    iter_batch,
     get_all_punctuation,
+    iter_batch,
     remove_non_alphanumeric,
 )
 from fastembed.parallel_processor import ParallelWorkerPool, Worker
@@ -19,7 +22,6 @@ from fastembed.sparse.sparse_embedding_base import (
     SparseTextEmbeddingBase,
 )
 from fastembed.sparse.utils.tokenizer import SimpleTokenizer
-from fastembed.common.model_description import SparseModelDescription, ModelSource
 
 
 class Stemmer(Protocol):
@@ -381,7 +383,7 @@ class Bm25(SparseTextEmbeddingBase):
             yield SparseEmbedding(indices=token_ids, values=values)
 
     @classmethod
-    def _get_worker_class(cls) -> Type["Bm25Worker"]:
+    def _get_worker_class(cls) -> type["Bm25Worker"]:
         return Bm25Worker
 
 

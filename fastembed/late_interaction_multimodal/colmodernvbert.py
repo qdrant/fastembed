@@ -1,11 +1,12 @@
 import contextlib
-from typing import Any, Iterable, Type, Optional, Sequence
 import json
+from collections.abc import Iterable, Sequence
+from typing import Any
 
 import numpy as np
 import onnxruntime as ort
-from tokenizers import Encoding
 from PIL import Image
+from tokenizers import Encoding
 
 from fastembed.common import ImageInput
 from fastembed.common.model_description import DenseModelDescription, ModelSource
@@ -16,9 +17,9 @@ from fastembed.late_interaction_multimodal.late_interaction_multimodal_embedding
     LateInteractionMultimodalEmbeddingBase,
 )
 from fastembed.late_interaction_multimodal.onnx_multimodal_model import (
+    ImageEmbeddingWorker,
     OnnxMultimodalModel,
     TextEmbeddingWorker,
-    ImageEmbeddingWorker,
 )
 
 supported_colmodernvbert_models: list[DenseModelDescription] = [
@@ -51,14 +52,14 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
     def __init__(
         self,
         model_name: str,
-        cache_dir: Optional[str] = None,
-        threads: Optional[int] = None,
-        providers: Optional[Sequence[OnnxProvider]] = None,
+        cache_dir: str | None = None,
+        threads: int | None = None,
+        providers: Sequence[OnnxProvider] | None = None,
         cuda: bool = False,
-        device_ids: Optional[list[int]] = None,
+        device_ids: list[int] | None = None,
         lazy_load: bool = False,
-        device_id: Optional[int] = None,
-        specific_model_path: Optional[str] = None,
+        device_id: int | None = None,
+        specific_model_path: str | None = None,
         **kwargs: Any,
     ):
         """
@@ -91,7 +92,7 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         self.cuda = cuda
 
         # This device_id will be used if we need to load model in current process
-        self.device_id: Optional[int] = None
+        self.device_id: int | None = None
         if device_id is not None:
             self.device_id = device_id
         elif self.device_ids is not None:
@@ -109,9 +110,9 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         )
         self.mask_token_id = None
         self.pad_token_id = None
-        self.image_seq_len: Optional[int] = None
-        self.max_image_size: Optional[int] = None
-        self.image_size: Optional[int] = None
+        self.image_seq_len: int | None = None
+        self.max_image_size: int | None = None
+        self.image_size: int | None = None
 
         if not self.lazy_load:
             self.load_onnx_model()
@@ -439,7 +440,7 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         self,
         documents: str | Iterable[str],
         batch_size: int = 256,
-        parallel: Optional[int] = None,
+        parallel: int | None = None,
         **kwargs: Any,
     ) -> Iterable[NumpyArray]:
         """
@@ -475,7 +476,7 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         self,
         images: ImageInput | Iterable[ImageInput],
         batch_size: int = 2,
-        parallel: Optional[int] = None,
+        parallel: int | None = None,
         **kwargs: Any,
     ) -> Iterable[NumpyArray]:
         """
@@ -509,11 +510,11 @@ class ColModernVBERT(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel
         )
 
     @classmethod
-    def _get_text_worker_class(cls) -> Type[TextEmbeddingWorker[NumpyArray]]:
+    def _get_text_worker_class(cls) -> type[TextEmbeddingWorker[NumpyArray]]:
         return ColModernVBERTTextEmbeddingWorker
 
     @classmethod
-    def _get_image_worker_class(cls) -> Type[ImageEmbeddingWorker[NumpyArray]]:
+    def _get_image_worker_class(cls) -> type[ImageEmbeddingWorker[NumpyArray]]:
         return ColModernVBERTImageEmbeddingWorker
 
 

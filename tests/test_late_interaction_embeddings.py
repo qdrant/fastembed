@@ -2,8 +2,8 @@ import json
 import os
 from contextlib import contextmanager
 
-import pytest
 import numpy as np
+import pytest
 from tokenizers import Tokenizer, models
 
 from fastembed.late_interaction.late_interaction_text_embedding import (

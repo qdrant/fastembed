@@ -1,9 +1,10 @@
-from typing import Any, Iterable, Type
+from collections.abc import Iterable
+from typing import Any
 
-from fastembed.common.types import NumpyArray
-from fastembed.common.onnx_model import OnnxOutputContext
-from fastembed.text.onnx_embedding import OnnxTextEmbedding, OnnxTextEmbeddingWorker
 from fastembed.common.model_description import DenseModelDescription, ModelSource
+from fastembed.common.onnx_model import OnnxOutputContext
+from fastembed.common.types import NumpyArray
+from fastembed.text.onnx_embedding import OnnxTextEmbedding, OnnxTextEmbeddingWorker
 
 supported_clip_models: list[DenseModelDescription] = [
     DenseModelDescription(
@@ -23,7 +24,7 @@ supported_clip_models: list[DenseModelDescription] = [
 
 class CLIPOnnxEmbedding(OnnxTextEmbedding):
     @classmethod
-    def _get_worker_class(cls) -> Type[OnnxTextEmbeddingWorker]:
+    def _get_worker_class(cls) -> type[OnnxTextEmbeddingWorker]:
         return CLIPEmbeddingWorker
 
     @classmethod

@@ -1,8 +1,10 @@
-from typing import Any, Iterable, Sequence, Type
+from collections.abc import Iterable, Sequence
+from typing import Any
 
 from loguru import logger
 
 from fastembed.common import OnnxProvider
+from fastembed.common.model_description import BaseModelDescription, ModelSource
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.types import Device
 from fastembed.common.utils import define_cache_dir
@@ -11,7 +13,6 @@ from fastembed.rerank.cross_encoder.onnx_text_model import (
     TextRerankerWorker,
 )
 from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
-from fastembed.common.model_description import BaseModelDescription, ModelSource
 
 supported_onnx_models: list[BaseModelDescription] = [
     BaseModelDescription(
@@ -220,7 +221,7 @@ class OnnxTextCrossEncoder(TextCrossEncoderBase, OnnxCrossEncoderModel):
         )
 
     @classmethod
-    def _get_worker_class(cls) -> Type[TextRerankerWorker]:
+    def _get_worker_class(cls) -> type[TextRerankerWorker]:
         return TextCrossEncoderWorker
 
     def _post_process_onnx_output(

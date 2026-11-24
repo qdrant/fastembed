@@ -2,6 +2,7 @@ import logging
 import os
 import time
 from collections import defaultdict
+from collections.abc import Iterable
 from copy import deepcopy
 from enum import Enum
 from multiprocessing import Queue, get_context
@@ -9,7 +10,7 @@ from multiprocessing.context import BaseContext
 from multiprocessing.process import BaseProcess
 from multiprocessing.sharedctypes import Synchronized as BaseValue
 from queue import Empty, Full
-from typing import Any, Iterable, Type
+from typing import Any
 
 from fastembed.common.types import Device
 
@@ -35,7 +36,7 @@ class Worker:
 
 
 def _worker(
-    worker_class: Type[Worker],
+    worker_class: type[Worker],
     input_queue: Queue,
     output_queue: Queue,
     num_active_workers: BaseValue,
@@ -94,7 +95,7 @@ class ParallelWorkerPool:
     def __init__(
         self,
         num_workers: int,
-        worker: Type[Worker],
+        worker: type[Worker],
         start_method: str | None = None,
         device_ids: list[int] | None = None,
         cuda: bool | Device = Device.AUTO,
@@ -125,7 +126,7 @@ class ParallelWorkerPool:
         assert isinstance(ctx_value, BaseValue)
         self.num_active_workers = ctx_value
 
-        for worker_id in range(0, self.num_workers):
+        for worker_id in range(self.num_workers):
             worker_kwargs = deepcopy(kwargs)
             worker_kwargs["cuda"] = self.cuda
             if self.device_ids:

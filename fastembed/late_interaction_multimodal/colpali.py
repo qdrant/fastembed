@@ -1,21 +1,22 @@
-from typing import Any, Iterable, Sequence, Type
+from collections.abc import Iterable, Sequence
+from typing import Any
 
 import numpy as np
 from tokenizers import Encoding
 
-from fastembed.common import OnnxProvider, ImageInput
+from fastembed.common import ImageInput, OnnxProvider
+from fastembed.common.model_description import DenseModelDescription, ModelSource
 from fastembed.common.onnx_model import OnnxOutputContext
-from fastembed.common.types import NumpyArray, Device
+from fastembed.common.types import Device, NumpyArray
 from fastembed.common.utils import define_cache_dir, iter_batch
 from fastembed.late_interaction_multimodal.late_interaction_multimodal_embedding_base import (
     LateInteractionMultimodalEmbeddingBase,
 )
 from fastembed.late_interaction_multimodal.onnx_multimodal_model import (
+    ImageEmbeddingWorker,
     OnnxMultimodalModel,
     TextEmbeddingWorker,
-    ImageEmbeddingWorker,
 )
-from fastembed.common.model_description import DenseModelDescription, ModelSource
 
 supported_colpali_models: list[DenseModelDescription] = [
     DenseModelDescription(
@@ -299,11 +300,11 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
         )
 
     @classmethod
-    def _get_text_worker_class(cls) -> Type[TextEmbeddingWorker[NumpyArray]]:
+    def _get_text_worker_class(cls) -> type[TextEmbeddingWorker[NumpyArray]]:
         return ColPaliTextEmbeddingWorker
 
     @classmethod
-    def _get_image_worker_class(cls) -> Type[ImageEmbeddingWorker[NumpyArray]]:
+    def _get_image_worker_class(cls) -> type[ImageEmbeddingWorker[NumpyArray]]:
         return ColPaliImageEmbeddingWorker
 
 

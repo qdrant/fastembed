@@ -1,20 +1,21 @@
-from typing import Any, Iterable, Sequence, Type
+from collections.abc import Iterable, Sequence
 from dataclasses import asdict
+from typing import Any
 
-from fastembed.common.model_description import DenseModelDescription
-from fastembed.common.types import NumpyArray, Device
 from fastembed.common import OnnxProvider
+from fastembed.common.model_description import DenseModelDescription
+from fastembed.common.types import Device, NumpyArray
 from fastembed.late_interaction.colbert import Colbert
 from fastembed.late_interaction.jina_colbert import JinaColbert
-from fastembed.late_interaction.lateon import LateOn, MLateOn
-from fastembed.late_interaction.mxbai_edge_colbert import MxbaiEdgeColbert
 from fastembed.late_interaction.late_interaction_embedding_base import (
     LateInteractionTextEmbeddingBase,
 )
+from fastembed.late_interaction.lateon import LateOn, MLateOn
+from fastembed.late_interaction.mxbai_edge_colbert import MxbaiEdgeColbert
 
 
 class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
-    EMBEDDINGS_REGISTRY: list[Type[LateInteractionTextEmbeddingBase]] = [
+    EMBEDDINGS_REGISTRY: list[type[LateInteractionTextEmbeddingBase]] = [
         Colbert,
         JinaColbert,
         LateOn,

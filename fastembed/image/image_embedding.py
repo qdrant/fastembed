@@ -1,17 +1,18 @@
-from typing import Any, Iterable, Sequence, Type
+from collections.abc import Iterable, Sequence
 from dataclasses import asdict
+from typing import Any
 
-from fastembed.common.types import NumpyArray, Device
 from fastembed.common import ImageInput, OnnxProvider
-from fastembed.image.image_embedding_base import ImageEmbeddingBase
-from fastembed.image.onnx_embedding import OnnxImageEmbedding
-from fastembed.image.normalized_embedding import NormalizedEmbedding
-from fastembed.image.siglip_embedding import SiglipOnnxImageEmbedding
 from fastembed.common.model_description import DenseModelDescription
+from fastembed.common.types import Device, NumpyArray
+from fastembed.image.image_embedding_base import ImageEmbeddingBase
+from fastembed.image.normalized_embedding import NormalizedEmbedding
+from fastembed.image.onnx_embedding import OnnxImageEmbedding
+from fastembed.image.siglip_embedding import SiglipOnnxImageEmbedding
 
 
 class ImageEmbedding(ImageEmbeddingBase):
-    EMBEDDINGS_REGISTRY: list[Type[ImageEmbeddingBase]] = [
+    EMBEDDINGS_REGISTRY: list[type[ImageEmbeddingBase]] = [
         OnnxImageEmbedding,
         NormalizedEmbedding,
         SiglipOnnxImageEmbedding,

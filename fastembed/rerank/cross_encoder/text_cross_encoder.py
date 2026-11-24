@@ -1,20 +1,20 @@
-from typing import Any, Iterable, Sequence, Type
+from collections.abc import Iterable, Sequence
 from dataclasses import asdict
+from typing import Any
 
 from fastembed.common import OnnxProvider
-from fastembed.common.types import Device
-from fastembed.rerank.cross_encoder.onnx_text_cross_encoder import OnnxTextCrossEncoder
-from fastembed.rerank.cross_encoder.custom_text_cross_encoder import CustomTextCrossEncoder
-
-from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
 from fastembed.common.model_description import (
-    ModelSource,
     BaseModelDescription,
+    ModelSource,
 )
+from fastembed.common.types import Device
+from fastembed.rerank.cross_encoder.custom_text_cross_encoder import CustomTextCrossEncoder
+from fastembed.rerank.cross_encoder.onnx_text_cross_encoder import OnnxTextCrossEncoder
+from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEncoderBase
 
 
 class TextCrossEncoder(TextCrossEncoderBase):
-    CROSS_ENCODER_REGISTRY: list[Type[TextCrossEncoderBase]] = [
+    CROSS_ENCODER_REGISTRY: list[type[TextCrossEncoderBase]] = [
         OnnxTextCrossEncoder,
         CustomTextCrossEncoder,
     ]

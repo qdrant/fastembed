@@ -1,5 +1,6 @@
 import json
-from typing import Any, Iterable, Sequence, Type
+from collections.abc import Iterable, Sequence
+from typing import Any
 
 import numpy as np
 
@@ -227,7 +228,7 @@ class IfSplade(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
             yield SparseEmbedding.from_dict(embedding)
 
     @classmethod
-    def _get_worker_class(cls) -> Type[TextEmbeddingWorker[SparseEmbedding]]:
+    def _get_worker_class(cls) -> type[TextEmbeddingWorker[SparseEmbedding]]:
         return IfSpladeEmbeddingWorker
 
 
