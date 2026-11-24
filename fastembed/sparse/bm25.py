@@ -250,8 +250,7 @@ class Bm25(SparseTextEmbeddingBase):
                 start_method=start_method,
             )
             for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
-                for record in batch:
-                    yield record  # type: ignore
+                yield from batch  # type: ignore
 
     def embed(
         self,
