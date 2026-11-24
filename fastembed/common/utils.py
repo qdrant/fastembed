@@ -75,8 +75,10 @@ def iter_batch(iterable: Iterable[T], size: int) -> Iterable[list[T]]:
 
 # padded tokens per batch, see `iter_length_sorted_batches`
 MAX_BATCH_TOKENS = 2048
-# past this length the attention matrices (texts x length x length) outgrow the other activations
+# texts longer than this get a budget scaled by the model's attention heads
 ATTENTION_LENGTH = 512
+# the most attention heads of any supported model, the head count the budget is set for
+ATTENTION_HEADS = 16
 
 
 def iter_length_sorted_batches(
@@ -85,19 +87,23 @@ def iter_length_sorted_batches(
     token_count: Callable[[T], int],
     window_batches: int = 8,
     max_batch_tokens: int | None = None,
+    attention_heads: int | None = None,
 ) -> Iterable[tuple[list[int], list[T]]]:
     """Batch texts of similar length together, sorting within windows of `window_batches` batches.
 
     A larger window saves more padding, but reads more texts ahead and delays the first output.
     Length is the token count after truncation, so truncated texts tie and keep their order.
 
-    `max_batch_tokens` (e.g. `MAX_BATCH_TOKENS`) caps a batch of long texts below `batch_size`
-    texts: up to `ATTENTION_LENGTH` tokens a batch holds at most that many padded tokens, beyond
-    it the budget shrinks with the length, so the attention matrices stay as large as at
-    `ATTENTION_LENGTH`. A single text always makes a batch.
+    `max_batch_tokens` (e.g. `MAX_BATCH_TOKENS`) caps a batch below `batch_size` texts: it holds
+    at most that many padded tokens (texts x the longest text). Past `ATTENTION_LENGTH` tokens the
+    budget is multiplied by `ATTENTION_HEADS` / `attention_heads`: a model with fewer heads has
+    less attention per text (heads x length x length scores), so it batches more texts for the
+    same attention work, which onnxruntime's CPU attention, split over texts x heads, needs to keep
+    its threads busy. A single text always makes a batch.
     """
     if batch_size < 1:
         raise ValueError(f"batch_size must be >= 1, got {batch_size}")
+    heads = attention_heads or ATTENTION_HEADS
     offset = 0
     for window in iter_batch(texts, batch_size * window_batches):
         lengths = [token_count(text) for text in window]
@@ -107,7 +113,9 @@ def iter_length_sorted_batches(
             size = batch_size
             if max_batch_tokens is not None:
                 longest = max(lengths[order[start]], 1)
-                budget = max_batch_tokens * ATTENTION_LENGTH // max(longest, ATTENTION_LENGTH)
+                budget = max_batch_tokens
+                if longest > ATTENTION_LENGTH:
+                    budget = max_batch_tokens * ATTENTION_HEADS // heads
                 size = max(1, min(size, budget // longest))
             indices = order[start : start + size]
             yield [offset + i for i in indices], [window[i] for i in indices]

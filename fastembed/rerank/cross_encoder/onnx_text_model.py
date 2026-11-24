@@ -105,6 +105,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
                 batch_size,
                 lambda doc: self._token_count([(query, doc)]),
                 max_batch_tokens=self._batch_token_budget(),
+                attention_heads=self._attention_heads,
             )
         )
 
@@ -143,6 +144,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
                     batch_size,
                     lambda pair: self._token_count([pair]),
                     max_batch_tokens=self._batch_token_budget(),
+                    attention_heads=self._attention_heads,
                 )
             )
         else:
@@ -180,6 +182,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
                     batch_size,
                     lambda pair: self._token_count([pair]),
                     max_batch_tokens=max_batch_tokens,
+                    attention_heads=self._attention_heads,
                 ):
                     batch_indices.append(indices)
                     yield batch
