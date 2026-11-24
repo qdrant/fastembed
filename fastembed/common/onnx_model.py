@@ -101,7 +101,7 @@ class OnnxModel(Generic[T]):
         with open(config_path, encoding="utf-8") as config_file:
             config = json.load(config_file)
         heads = config.get("num_attention_heads", config.get("n_head"))
-        return heads if isinstance(heads, int) and heads > 0 else None
+        return heads if type(heads) is int and heads > 0 else None
 
     def _load_onnx_model(
         self,
