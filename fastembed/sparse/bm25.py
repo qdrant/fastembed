@@ -32,6 +32,12 @@ class Stemmer(Protocol):
     def stem_word(self, word: str) -> str: ...
 
 
+class Tokenizer(Protocol):
+    """Tokenizer pluggable into BM25 document, query and token-count paths."""
+
+    def tokenize(self, text: str) -> list[str]: ...
+
+
 supported_languages = [
     "arabic",
     "danish",
@@ -110,6 +116,11 @@ class Bm25(SparseTextEmbeddingBase):
         stopwords (set[str], optional): Inline stopwords to use instead of the stopwords file
             shipped with the model for the chosen language. Words are lowercased and matched
             before stemming. None uses the default stopwords; an empty set disables filtering.
+        tokenizer (Tokenizer, optional): Custom tokenizer with a tokenize method returning
+            a list of non-empty, non-whitespace tokens. Receives text after punctuation removal,
+            before stopword and stemming filters. Used for documents, queries and token counting. For parallel
+            embedding it must be deepcopyable and pickleable, with its class defined in an
+            importable module. Defaults to SimpleTokenizer.
     Raises:
         ValueError: If a default stemmer is unavailable for the language, or stemmer is supplied with
             disable_stemmer=True.
@@ -128,6 +139,7 @@ class Bm25(SparseTextEmbeddingBase):
         specific_model_path: str | None = None,
         stemmer: Stemmer | None = None,
         stopwords: set[str] | None = None,
+        tokenizer: Tokenizer | None = None,
         **kwargs: Any,
     ):
         super().__init__(model_name, cache_dir, **kwargs)
@@ -139,6 +151,7 @@ class Bm25(SparseTextEmbeddingBase):
         self.language = language
 
         self._custom_stemmer = stemmer
+        self._custom_tokenizer = tokenizer
         self._custom_stopwords = (
             {word.lower() for word in stopwords} if stopwords is not None else None
         )
@@ -178,7 +191,7 @@ class Bm25(SparseTextEmbeddingBase):
         else:
             self.stemmer = SnowballStemmer(language)
 
-        self.tokenizer = SimpleTokenizer
+        self.tokenizer: Tokenizer = tokenizer if tokenizer is not None else SimpleTokenizer
 
     @classmethod
     def _list_supported_models(cls) -> list[SparseModelDescription]:
@@ -240,6 +253,7 @@ class Bm25(SparseTextEmbeddingBase):
                 "disable_stemmer": self.disable_stemmer,
                 "stemmer": self._custom_stemmer,
                 "stopwords": self._custom_stopwords,
+                "tokenizer": self._custom_tokenizer,
                 "local_files_only": local_files_only,
                 "specific_model_path": specific_model_path,
             }
