@@ -67,7 +67,7 @@ class HF:
 
 
 hf = HF(model_id="BAAI/bge-small-en")
-hf.embed(documents).shape
+hf.embed(documents).shape  # noqa: B018
 
 # %% [markdown]
 # ## Setting up ⚡️FastEmbed
