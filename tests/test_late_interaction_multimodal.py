@@ -92,7 +92,7 @@ def model_cache():
     yield get_model
 
     if is_ci:
-        for _, model in cache.items():
+        for model in cache.values():
             delete_model_cache(model.model._model_dir)
     cache.clear()
 
