@@ -283,7 +283,8 @@ class OnnxModel(Generic[T]):
         except InvalidArgument:
             if run_options is None:
                 raise
-            # Builds without an arena reject the shrink list, so try the run once more without it.
+            # Builds with jemalloc, mimalloc, AddressSanitizer, or 32 bits have no CPU arena and
+            # reject the shrink list, and Python can't detect them, so retry without the list.
             outputs = self.model.run(output_names, onnx_input)  # type: ignore[union-attr]
             logger.warning(
                 "onnxruntime failed a run with the memory arena shrink list and completed it "
