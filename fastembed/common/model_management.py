@@ -683,7 +683,7 @@ class ModelManagement(Generic[T]):
                     return cls._link_onnx_external_data(model, resolved_path)
             except CorruptedCacheError:
                 force_download = True
-            except Exception:
+            except Exception:  # noqa: BLE001, S110
                 pass
             finally:
                 enable_progress_bars()
@@ -727,7 +727,7 @@ class ModelManagement(Generic[T]):
                         deprecated_tar_struct=model.sources.deprecated_tar_struct,
                         local_files_only=local_files_only,
                     )
-                except Exception:
+                except Exception:  # noqa: BLE001
                     if not local_files_only:
                         logger.error(f"Could not download model from url: {url_source}")
             elif model.sources.deprecated_tar_struct:
