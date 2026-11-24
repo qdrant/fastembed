@@ -9,7 +9,13 @@ from numpy.typing import NDArray
 from tokenizers import Encoding, Tokenizer
 
 from fastembed.common.types import NumpyArray, OnnxProvider, Device
-from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
+from fastembed.common.onnx_model import (
+    EmbeddingWorker,
+    OnnxModel,
+    OnnxOutputContext,
+    T,
+    max_batch_tokens,
+)
 from fastembed.common.preprocessor_utils import load_tokenizer
 from fastembed.common.utils import iter_batch, iter_length_sorted_batches, restore_order
 from fastembed.parallel_processor import ParallelWorkerPool
@@ -138,6 +144,7 @@ class OnnxTextModel(OnnxModel[T]):
         **kwargs: Any,
     ) -> Iterable[T]:
         is_small = False
+        batch_tokens = max_batch_tokens(providers, cuda)
 
         if isinstance(documents, str):
             documents = [documents]
@@ -156,7 +163,7 @@ class OnnxTextModel(OnnxModel[T]):
                     self._post_process_onnx_output(self.onnx_embed(batch, **kwargs), **kwargs),
                 )
                 for indices, batch in iter_length_sorted_batches(
-                    documents, batch_size, self._token_count
+                    documents, batch_size, self._token_count, max_batch_tokens=batch_tokens
                 )
             )
         else:
@@ -188,7 +195,7 @@ class OnnxTextModel(OnnxModel[T]):
 
             def batches() -> Iterable[list[str]]:
                 for indices, batch in iter_length_sorted_batches(
-                    documents, batch_size, self._token_count
+                    documents, batch_size, self._token_count, max_batch_tokens=batch_tokens
                 ):
                     batch_indices.append(indices)
                     yield batch

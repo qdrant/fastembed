@@ -412,3 +412,16 @@ def test_mixed_length_batch_with_fixed_padding(model_cache, model_name: str, dim
 
         embeddings = np.stack(list(model.embed(["hello world", "retrieval " * 200])), axis=0)
         assert embeddings.shape == (2, dim)
+
+
+def test_max_batch_tokens_keeps_embeddings(model_cache, monkeypatch) -> None:
+    import fastembed.text.onnx_text_model as onnx_text_model
+
+    docs = ["hello world " * n for n in [1, 60, 3, 120, 10, 30]] * 4
+    with model_cache("BAAI/bge-small-en-v1.5") as model:
+        monkeypatch.setattr(onnx_text_model, "max_batch_tokens", lambda *_: None)
+        expected = np.stack(list(model.embed(docs, batch_size=8)))
+        monkeypatch.setattr(onnx_text_model, "max_batch_tokens", lambda *_: 64)
+        embeddings = np.stack(list(model.embed(docs, batch_size=8)))
+
+    assert np.allclose(embeddings, expected, atol=1e-3)

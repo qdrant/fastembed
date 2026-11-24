@@ -12,6 +12,7 @@ from fastembed.common.onnx_model import (
     OnnxModel,
     OnnxOutputContext,
     OnnxProvider,
+    max_batch_tokens,
 )
 from fastembed.common.types import NumpyArray, Device
 from fastembed.common.preprocessor_utils import load_tokenizer
@@ -101,7 +102,12 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         yield from restore_order(
             (indices, self._post_process_onnx_output(self.onnx_embed(query, batch, **kwargs)))
             for indices, batch in iter_length_sorted_batches(
-                documents, batch_size, lambda doc: self._token_count([(query, doc)])
+                documents,
+                batch_size,
+                lambda doc: self._token_count([(query, doc)]),
+                max_batch_tokens=max_batch_tokens(
+                    getattr(self, "providers", None), getattr(self, "cuda", Device.AUTO)
+                ),
             )
         )
 
@@ -121,6 +127,7 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         **kwargs: Any,
     ) -> Iterable[float]:
         is_small = False
+        batch_tokens = max_batch_tokens(providers, cuda)
 
         if isinstance(pairs, tuple):
             pairs = [pairs]
@@ -136,7 +143,10 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
             yield from restore_order(
                 (indices, self._post_process_onnx_output(self.onnx_embed_pairs(batch, **kwargs)))
                 for indices, batch in iter_length_sorted_batches(
-                    pairs, batch_size, lambda pair: self._token_count([pair])
+                    pairs,
+                    batch_size,
+                    lambda pair: self._token_count([pair]),
+                    max_batch_tokens=batch_tokens,
                 )
             )
         else:
@@ -168,7 +178,10 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
 
             def batches() -> Iterable[list[tuple[str, str]]]:
                 for indices, batch in iter_length_sorted_batches(
-                    pairs, batch_size, lambda pair: self._token_count([pair])
+                    pairs,
+                    batch_size,
+                    lambda pair: self._token_count([pair]),
+                    max_batch_tokens=batch_tokens,
                 ):
                     batch_indices.append(indices)
                     yield batch

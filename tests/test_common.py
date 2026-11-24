@@ -8,7 +8,13 @@ from fastembed import (
     LateInteractionMultimodalEmbedding,
     LateInteractionTextEmbedding,
 )
-from fastembed.common.utils import iter_batch, last_token_pooling, mean_pooling, normalize
+from fastembed.common.utils import (
+    iter_batch,
+    iter_length_sorted_batches,
+    last_token_pooling,
+    mean_pooling,
+    normalize,
+)
 
 
 def test_text_list_supported_models():
@@ -97,3 +103,59 @@ def test_iter_batch_rejects_non_positive_size():
 
     with pytest.raises(ValueError, match="batch_size must be >= 1, got -1"):
         iter_batch([1, 2, 3], -1)
+
+
+def test_iter_length_sorted_batches_without_budget():
+    texts = ["a" * n for n in [3, 9, 1, 7, 5]]
+    batches = list(iter_length_sorted_batches(texts, 2, len))
+    assert [indices for indices, _ in batches] == [[1, 3], [4, 0], [2]]
+    assert all(batch == [texts[i] for i in indices] for indices, batch in batches)
+
+
+def test_iter_length_sorted_batches_with_budget():
+    rng = np.random.default_rng(0)
+    texts = ["a" * int(n) for n in rng.integers(1, 100, size=500)]
+    batches = list(iter_length_sorted_batches(texts, 64, len, max_batch_tokens=256))
+
+    assert sorted(i for indices, _ in batches for i in indices) == list(range(len(texts)))
+    for indices, batch in batches:
+        assert batch == [texts[i] for i in indices]
+        assert len(batch) <= 64
+        assert len(batch) * max(map(len, batch)) <= 256
+
+
+def test_iter_length_sorted_batches_budget_below_longest_text():
+    texts = ["a" * 50, "a" * 10, "a" * 10]
+    batches = list(iter_length_sorted_batches(texts, 8, len, max_batch_tokens=20))
+    assert [indices for indices, _ in batches] == [[0], [1, 2]]
+
+
+def test_max_batch_tokens(monkeypatch: pytest.MonkeyPatch) -> None:
+    from fastembed.common import onnx_model
+    from fastembed.common.types import Device
+
+    budget = onnx_model.CPU_MAX_BATCH_TOKENS
+    monkeypatch.setattr(
+        onnx_model.ort, "get_available_providers", lambda: ["CPUExecutionProvider"]
+    )
+    assert onnx_model.max_batch_tokens(None, Device.AUTO) == budget
+    assert onnx_model.max_batch_tokens(None, False) == budget
+    assert onnx_model.max_batch_tokens(None, Device.CPU) == budget
+    assert onnx_model.max_batch_tokens(["CPUExecutionProvider"], Device.AUTO) == budget
+    assert onnx_model.max_batch_tokens([("CPUExecutionProvider", {})], Device.AUTO) == budget
+    assert onnx_model.max_batch_tokens(None, Device.CUDA) is None
+    assert onnx_model.max_batch_tokens(None, True) is None
+    assert (
+        onnx_model.max_batch_tokens(
+            ["CoreMLExecutionProvider", "CPUExecutionProvider"], Device.AUTO
+        )
+        is None
+    )
+
+    monkeypatch.setattr(
+        onnx_model.ort,
+        "get_available_providers",
+        lambda: ["CUDAExecutionProvider", "CPUExecutionProvider"],
+    )
+    assert onnx_model.max_batch_tokens(None, Device.AUTO) is None
+    assert onnx_model.max_batch_tokens(None, Device.CPU) == budget

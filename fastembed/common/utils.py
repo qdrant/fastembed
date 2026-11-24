@@ -78,11 +78,16 @@ def iter_length_sorted_batches(
     batch_size: int,
     token_count: Callable[[T], int],
     window_batches: int = 8,
+    max_batch_tokens: int | None = None,
 ) -> Iterable[tuple[list[int], list[T]]]:
     """Batch texts of similar length together, sorting within windows of `window_batches` batches.
 
     A larger window saves more padding, but reads more texts ahead and delays the first output.
     Length is the token count after truncation, so truncated texts tie and keep their order.
+
+    With `max_batch_tokens`, a batch also stops once its rows times its longest text would exceed
+    the budget. Texts are padded to the longest one in their batch, so in a batch of mixed lengths
+    most of the compute goes into padding; smaller batches of short texts avoid it.
     """
     if batch_size < 1:
         raise ValueError(f"batch_size must be >= 1, got {batch_size}")
@@ -90,9 +95,15 @@ def iter_length_sorted_batches(
     for window in iter_batch(texts, batch_size * window_batches):
         lengths = [token_count(text) for text in window]
         order = sorted(range(len(window)), key=lambda i: lengths[i], reverse=True)
-        for start in range(0, len(order), batch_size):
-            indices = order[start : start + batch_size]
+        start = 0
+        while start < len(order):
+            rows = batch_size
+            if max_batch_tokens is not None:
+                # the first text is the longest of the batch, as the order is descending
+                rows = max(1, min(batch_size, max_batch_tokens // max(1, lengths[order[start]])))
+            indices = order[start : start + rows]
             yield [offset + i for i in indices], [window[i] for i in indices]
+            start += rows
         offset += len(window)
 
 

@@ -25,6 +25,28 @@ if os.environ.get("ORT_DISABLE_TELEMETRY", "1").lower() not in ("0", "false") an
 T = TypeVar("T")
 
 
+# Texts are padded to the longest one in their batch, so a large batch of mixed lengths spends much
+# of its compute on padding, and on an 8 GB Apple M2 bge-base batches of 256 even went into swap.
+# Capping a batch at this many padded tokens embedded 2000 mixed-length documents 1.3x (bge-small)
+# and 4.3x (bge-base) faster on that CPU, with the same embeddings.
+CPU_MAX_BATCH_TOKENS = 2048
+
+
+def max_batch_tokens(providers: Sequence[OnnxProvider] | None, cuda: bool | Device) -> int | None:
+    """Token budget per inference batch for a session built with these arguments, if any.
+
+    Only set for the CPU provider alone, as accelerators can prefer larger batches.
+    """
+    if providers is not None:
+        names = [provider if isinstance(provider, str) else provider[0] for provider in providers]
+        return CPU_MAX_BATCH_TOKENS if names == ["CPUExecutionProvider"] else None
+    if cuda is True or cuda == Device.CUDA:
+        return None
+    if cuda == Device.AUTO and "CUDAExecutionProvider" in ort.get_available_providers():
+        return None
+    return CPU_MAX_BATCH_TOKENS
+
+
 @dataclass
 class OnnxOutputContext:
     model_output: NumpyArray
