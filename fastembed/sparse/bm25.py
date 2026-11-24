@@ -1,5 +1,6 @@
 import os
 from collections import Counter
+from functools import lru_cache
 from multiprocessing import get_all_start_methods
 from pathlib import Path
 from typing import Any, Iterable, Protocol, Type
@@ -72,7 +73,7 @@ supported_bm25_models: list[SparseModelDescription] = [
 ]
 
 
-# entries per cache of a Bm25 instance, a few MB; a full cache starts over
+# entries per cache of a Bm25 instance, the least recently used go first
 TOKEN_CACHE_SIZE = 1 << 16
 
 
@@ -183,9 +184,9 @@ class Bm25(SparseTextEmbeddingBase):
             self.stemmer = SnowballStemmer(language)
 
         self.tokenizer = SimpleTokenizer
-        # words repeat across documents: cache what each token stems to and each stem's id
-        self._stem_cache: dict[str, str] = {}
-        self._token_id_cache: dict[str, int] = {}
+        # words repeat across documents: remember what each token stems to and each stem's id
+        self._cached_stem = lru_cache(maxsize=TOKEN_CACHE_SIZE)(self._stem_token)
+        self._cached_token_id = lru_cache(maxsize=TOKEN_CACHE_SIZE)(self.compute_token_id)
 
     @classmethod
     def _list_supported_models(cls) -> list[SparseModelDescription]:
@@ -292,18 +293,7 @@ class Bm25(SparseTextEmbeddingBase):
         )
 
     def _stem(self, tokens: list[str]) -> list[str]:
-        cache = self._stem_cache
-        stemmed_tokens: list[str] = []
-        for token in tokens:
-            stemmed_token = cache.get(token)
-            if stemmed_token is None:
-                stemmed_token = self._stem_token(token)
-                if len(cache) >= TOKEN_CACHE_SIZE:
-                    cache.clear()
-                cache[token] = stemmed_token
-            if stemmed_token:
-                stemmed_tokens.append(stemmed_token)
-        return stemmed_tokens
+        return [stemmed for token in tokens if (stemmed := self._cached_stem(token))]
 
     def _stem_token(self, token: str) -> str:
         """The stemmed token, or "" for a token that doesn't count."""
@@ -319,15 +309,6 @@ class Bm25(SparseTextEmbeddingBase):
             return ""
 
         return self.stemmer.stem_word(lower_token) if self.stemmer is not None else lower_token
-
-    def _cached_token_id(self, token: str) -> int:
-        token_id = self._token_id_cache.get(token)
-        if token_id is None:
-            token_id = self.compute_token_id(token)
-            if len(self._token_id_cache) >= TOKEN_CACHE_SIZE:
-                self._token_id_cache.clear()
-            self._token_id_cache[token] = token_id
-        return token_id
 
     def raw_embed(
         self,
