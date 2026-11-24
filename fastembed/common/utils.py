@@ -149,9 +149,7 @@ def define_cache_dir(cache_dir: str | None = None) -> Path:
 
 
 def get_all_punctuation() -> set[str]:
-    return set(
-        chr(i) for i in range(sys.maxunicode) if unicodedata.category(chr(i)).startswith("P")
-    )
+    return {chr(i) for i in range(sys.maxunicode) if unicodedata.category(chr(i)).startswith("P")}
 
 
 def remove_non_alphanumeric(text: str) -> str:

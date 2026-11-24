@@ -375,7 +375,7 @@ class Bm25(SparseTextEmbeddingBase):
             tokens = self.tokenizer.tokenize(text)
             stemmed_tokens = self._stem(tokens)
             token_ids = np.array(
-                list(set(self.compute_token_id(token) for token in stemmed_tokens)),
+                list({self.compute_token_id(token) for token in stemmed_tokens}),
                 dtype=np.int64,
             )
             values = np.ones_like(token_ids)
