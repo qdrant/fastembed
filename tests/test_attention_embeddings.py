@@ -122,9 +122,9 @@ def test_bm42_weights_do_not_depend_on_batch(model_cache) -> None:
     short_doc = "vector search engine"
     long_doc = "Qdrant is a vector similarity search engine and vector database. " * 20
     with model_cache("Qdrant/bm42-all-minilm-l6-v2-attentions") as model:
-        alone = list(model.embed([short_doc]))[0]
+        (alone,) = model.embed([short_doc])
         # padded to the long document's length within the batch
-        batched = list(model.embed([short_doc, long_doc]))[0]
+        batched, _ = model.embed([short_doc, long_doc])
 
     assert np.array_equal(alone.indices, batched.indices)
     assert np.allclose(alone.values, batched.values, atol=1e-6)
