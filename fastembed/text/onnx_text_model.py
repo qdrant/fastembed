@@ -189,7 +189,7 @@ class OnnxTextModel(OnnxModel[T]):
             )
             batch_indices: deque[list[int]] = deque()
 
-            max_batch_tokens = self._batch_token_budget(providers, cuda)
+            max_batch_tokens = self._batch_token_budget()
 
             def batches() -> Iterable[list[str]]:
                 for indices, batch in iter_length_sorted_batches(
