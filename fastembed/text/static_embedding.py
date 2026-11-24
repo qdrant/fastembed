@@ -66,7 +66,7 @@ supported_static_models: list[DenseModelDescription] = [
             "Prefixes for queries/documents: not necessary, 2025 year."
         ),
         license="mit",
-        size_in_GB=0.31,
+        size_in_GB=0.031,
         sources=ModelSource(hf="minishlab/blink-8M"),
         model_file="model.safetensors",
     ),
