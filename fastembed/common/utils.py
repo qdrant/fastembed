@@ -73,8 +73,8 @@ def iter_batch(iterable: Iterable[T], size: int) -> Iterable[list[T]]:
     return batches()
 
 
-# padded tokens per batch on CPU, see `iter_length_sorted_batches`
-MAX_BATCH_TOKENS = 4096
+# padded tokens per batch, see `iter_length_sorted_batches`
+MAX_BATCH_TOKENS = 2048
 # past this length the attention matrices (texts x length x length) outgrow the other activations
 ATTENTION_LENGTH = 512
 

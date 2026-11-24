@@ -81,30 +81,14 @@ class OnnxModel(Generic[T]):
         """
         return onnx_input
 
-    def _batch_token_budget(
-        self,
-        providers: Sequence[OnnxProvider] | None = None,
-        cuda: bool | Device = Device.AUTO,
-    ) -> int | None:
+    def _batch_token_budget(self) -> int | None:
         """Padded tokens per batch, None to keep batches of `batch_size`.
 
-        The `max_batch_tokens` model option applies to every provider, 0 turns the budget off.
-        Without it, sessions on the CPU only get `MAX_BATCH_TOKENS` and accelerators keep
-        batches of `batch_size`, as they run large batches faster. A loaded model reports its
-        providers, the workers' are resolved like `_load_onnx_model` resolves them."""
+        `MAX_BATCH_TOKENS` on every provider unless the `max_batch_tokens` model option sets
+        another number, 0 turns the budget off."""
         if self._max_batch_tokens is not None:
             return self._max_batch_tokens or None
-        if getattr(self, "model", None) is not None:
-            names = self.model.get_providers()  # type: ignore[union-attr]
-        elif providers is not None:
-            names = [p if isinstance(p, str) else p[0] for p in providers]
-        elif cuda is True or cuda == Device.CUDA or (
-            cuda == Device.AUTO and "CUDAExecutionProvider" in ort.get_available_providers()
-        ):
-            names = ["CUDAExecutionProvider"]
-        else:
-            names = ["CPUExecutionProvider"]
-        return MAX_BATCH_TOKENS if names == ["CPUExecutionProvider"] else None
+        return MAX_BATCH_TOKENS
 
     def _load_onnx_model(
         self,
