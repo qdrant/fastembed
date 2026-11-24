@@ -1,6 +1,6 @@
 from collections.abc import Iterable, Sequence
 from dataclasses import asdict
-from typing import Any
+from typing import Any, ClassVar
 
 from fastembed.common import OnnxProvider
 from fastembed.common.model_description import DenseModelDescription
@@ -15,7 +15,7 @@ from fastembed.late_interaction.mxbai_edge_colbert import MxbaiEdgeColbert
 
 
 class LateInteractionTextEmbedding(LateInteractionTextEmbeddingBase):
-    EMBEDDINGS_REGISTRY: list[type[LateInteractionTextEmbeddingBase]] = [
+    EMBEDDINGS_REGISTRY: ClassVar[list[type[LateInteractionTextEmbeddingBase]]] = [
         Colbert,
         JinaColbert,
         LateOn,

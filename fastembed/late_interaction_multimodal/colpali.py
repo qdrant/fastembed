@@ -1,5 +1,5 @@
 from collections.abc import Iterable, Sequence
-from typing import Any
+from typing import Any, ClassVar
 
 import numpy as np
 from tokenizers import Encoding
@@ -36,7 +36,7 @@ class ColPali(LateInteractionMultimodalEmbeddingBase, OnnxMultimodalModel[NumpyA
     QUERY_PREFIX = "Query: "
     BOS_TOKEN = "<s>"
     PAD_TOKEN = "<pad>"
-    QUERY_MARKER_TOKEN_ID = [2, 5098]
+    QUERY_MARKER_TOKEN_ID: ClassVar[list[int]] = [2, 5098]
     IMAGE_PLACEHOLDER_SIZE = (3, 448, 448)
     EMPTY_TEXT_PLACEHOLDER = np.array(
         [257152] * 1024 + [2, 50721, 573, 2416, 235265, 108]

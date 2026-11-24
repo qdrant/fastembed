@@ -1,7 +1,7 @@
 import warnings
 from collections.abc import Iterable, Sequence
 from dataclasses import asdict
-from typing import Any
+from typing import Any, ClassVar
 
 from fastembed.common import OnnxProvider
 from fastembed.common.model_description import SparseModelDescription
@@ -18,7 +18,7 @@ from fastembed.sparse.splade_pp import SpladePP
 
 
 class SparseTextEmbedding(SparseTextEmbeddingBase):
-    EMBEDDINGS_REGISTRY: list[type[SparseTextEmbeddingBase]] = [
+    EMBEDDINGS_REGISTRY: ClassVar[list[type[SparseTextEmbeddingBase]]] = [
         SpladePP,
         Bm42,
         Bm25,

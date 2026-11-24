@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, ClassVar
 
 from fastembed.common import OnnxProvider
 from fastembed.common.model_description import BaseModelDescription
@@ -9,7 +9,7 @@ from fastembed.rerank.cross_encoder.onnx_text_model import TextRerankerWorker
 
 
 class CustomTextCrossEncoder(OnnxTextCrossEncoder):
-    SUPPORTED_MODELS: list[BaseModelDescription] = []
+    SUPPORTED_MODELS: ClassVar[list[BaseModelDescription]] = []
 
     def __init__(
         self,

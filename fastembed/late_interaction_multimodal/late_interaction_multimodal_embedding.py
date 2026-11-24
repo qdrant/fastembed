@@ -1,7 +1,7 @@
 import warnings
 from collections.abc import Iterable, Sequence
 from dataclasses import asdict
-from typing import Any
+from typing import Any, ClassVar
 
 from fastembed.common import ImageInput, OnnxProvider
 from fastembed.common.model_description import DenseModelDescription
@@ -14,7 +14,7 @@ from fastembed.late_interaction_multimodal.late_interaction_multimodal_embedding
 
 
 class LateInteractionMultimodalEmbedding(LateInteractionMultimodalEmbeddingBase):
-    EMBEDDINGS_REGISTRY: list[type[LateInteractionMultimodalEmbeddingBase]] = [
+    EMBEDDINGS_REGISTRY: ClassVar[list[type[LateInteractionMultimodalEmbeddingBase]]] = [
         ColPali,
         ColModernVBERT,
     ]

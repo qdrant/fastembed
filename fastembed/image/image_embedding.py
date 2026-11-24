@@ -1,6 +1,6 @@
 from collections.abc import Iterable, Sequence
 from dataclasses import asdict
-from typing import Any
+from typing import Any, ClassVar
 
 from fastembed.common import ImageInput, OnnxProvider
 from fastembed.common.model_description import DenseModelDescription
@@ -12,7 +12,7 @@ from fastembed.image.siglip_embedding import SiglipOnnxImageEmbedding
 
 
 class ImageEmbedding(ImageEmbeddingBase):
-    EMBEDDINGS_REGISTRY: list[type[ImageEmbeddingBase]] = [
+    EMBEDDINGS_REGISTRY: ClassVar[list[type[ImageEmbeddingBase]]] = [
         OnnxImageEmbedding,
         NormalizedEmbedding,
         SiglipOnnxImageEmbedding,

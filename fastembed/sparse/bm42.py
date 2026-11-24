@@ -62,7 +62,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
     WARNING: This model is expected to be used with `modifier="idf"` in the sparse vector index of Qdrant.
     """
 
-    ONNX_OUTPUT_NAMES = ["attention_6"]
+    ONNX_OUTPUT_NAMES = ["attention_6"]  # noqa: RUF012
 
     def __init__(
         self,

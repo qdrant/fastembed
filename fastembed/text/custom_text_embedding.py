@@ -1,6 +1,6 @@
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, ClassVar
 
 import numpy as np
 from numpy.typing import NDArray
@@ -25,8 +25,8 @@ class PostprocessingConfig:
 
 
 class CustomTextEmbedding(OnnxTextEmbedding):
-    SUPPORTED_MODELS: list[DenseModelDescription] = []
-    POSTPROCESSING_MAPPING: dict[str, PostprocessingConfig] = {}
+    SUPPORTED_MODELS: ClassVar[list[DenseModelDescription]] = []
+    POSTPROCESSING_MAPPING: ClassVar[dict[str, PostprocessingConfig]] = {}
 
     def __init__(
         self,

@@ -1,6 +1,6 @@
 from collections.abc import Iterable, Sequence
 from dataclasses import asdict
-from typing import Any
+from typing import Any, ClassVar
 
 from fastembed.common import OnnxProvider
 from fastembed.common.model_description import (
@@ -14,7 +14,7 @@ from fastembed.rerank.cross_encoder.text_cross_encoder_base import TextCrossEnco
 
 
 class TextCrossEncoder(TextCrossEncoderBase):
-    CROSS_ENCODER_REGISTRY: list[type[TextCrossEncoderBase]] = [
+    CROSS_ENCODER_REGISTRY: ClassVar[list[type[TextCrossEncoderBase]]] = [
         OnnxTextCrossEncoder,
         CustomTextCrossEncoder,
     ]

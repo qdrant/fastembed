@@ -1,6 +1,7 @@
 # This code is a modified copy of the `NLTKWordTokenizer` class from `NLTK` library.
 
 import re
+from typing import ClassVar
 
 
 class SimpleTokenizer:
@@ -18,7 +19,7 @@ class WordTokenizer:
     """
 
     # Starting quotes.
-    STARTING_QUOTES = [
+    STARTING_QUOTES: ClassVar[list[tuple[re.Pattern[str], str]]] = [
         (re.compile("([«“‘„]|[`]+)", re.UNICODE), r" \1 "),
         (re.compile(r"^\""), r"``"),
         (re.compile(r"(``)"), r" \1 "),
@@ -27,7 +28,7 @@ class WordTokenizer:
     ]
 
     # Ending quotes.
-    ENDING_QUOTES = [
+    ENDING_QUOTES: ClassVar[list[tuple[re.Pattern[str], str]]] = [
         (re.compile("([»”’])", re.UNICODE), r" \1 "),
         (re.compile(r"''"), " '' "),
         (re.compile(r'"'), " '' "),
@@ -36,7 +37,7 @@ class WordTokenizer:
     ]
 
     # Punctuation.
-    PUNCTUATION = [
+    PUNCTUATION: ClassVar[list[tuple[re.Pattern[str], str]]] = [
         (re.compile(r'([^\.])(\.)([\]\)}>"\'' "»”’ " r"]*)\s*$", re.UNICODE), r"\1 \2 \3 "),
         (re.compile(r"([:,])([^\d])"), r" \1 \2"),
         (re.compile(r"([:,])$"), r" \1 "),
@@ -62,7 +63,7 @@ class WordTokenizer:
     DOUBLE_DASHES = (re.compile(r"--"), r" -- ")
 
     # List of contractions adapted from Robert MacIntyre's tokenizer.
-    CONTRACTIONS2 = [
+    CONTRACTIONS2: ClassVar[list[re.Pattern[str]]] = [
         re.compile(pattern)
         for pattern in (
             r"(?i)\b(can)(?#X)(not)\b",
@@ -75,7 +76,7 @@ class WordTokenizer:
             r"(?i)\b(wan)(?#X)(na)(?=\s)",
         )
     ]
-    CONTRACTIONS3 = [
+    CONTRACTIONS3: ClassVar[list[re.Pattern[str]]] = [
         re.compile(pattern) for pattern in (r"(?i) ('t)(?#X)(is)\b", r"(?i) ('t)(?#X)(was)\b")
     ]
 

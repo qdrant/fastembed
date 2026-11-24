@@ -1,7 +1,7 @@
 import warnings
 from collections.abc import Iterable, Sequence
 from dataclasses import asdict
-from typing import Any
+from typing import Any, ClassVar
 
 from fastembed.common.model_description import DenseModelDescription, ModelSource, PoolingType
 from fastembed.common.types import Device, NumpyArray, OnnxProvider
@@ -19,7 +19,7 @@ from fastembed.text.text_embedding_base import TextEmbeddingBase
 
 
 class TextEmbedding(TextEmbeddingBase):
-    EMBEDDINGS_REGISTRY: list[type[TextEmbeddingBase]] = [
+    EMBEDDINGS_REGISTRY: ClassVar[list[type[TextEmbeddingBase]]] = [
         OnnxTextEmbedding,
         CLIPOnnxEmbedding,
         SiglipOnnxTextEmbedding,

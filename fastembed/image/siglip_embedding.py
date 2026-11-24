@@ -23,7 +23,7 @@ class SiglipOnnxImageEmbedding(OnnxImageEmbedding):
     `pooler_output`; only the latter is the image embedding, so it must be selected explicitly.
     """
 
-    ONNX_OUTPUT_NAMES = ["pooler_output"]
+    ONNX_OUTPUT_NAMES = ["pooler_output"]  # noqa: RUF012
 
     @classmethod
     def _get_worker_class(cls) -> type["OnnxImageEmbeddingWorker"]:
