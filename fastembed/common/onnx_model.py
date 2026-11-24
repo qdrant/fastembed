@@ -1,8 +1,11 @@
+import importlib.util
 import os
 import json
+import platform
+import sys
 import warnings
 from dataclasses import dataclass
-from functools import cached_property
+from functools import cache, cached_property
 from pathlib import Path
 from typing import Any, Generic, Iterable, Sequence, Type, TypeVar
 
@@ -26,6 +29,59 @@ if os.environ.get("ORT_DISABLE_TELEMETRY", "1").lower() not in ("0", "false") an
 
 # Holds type of the embedding result
 T = TypeVar("T")
+
+
+@cache
+def preload_pip_cuda_libraries() -> None:
+    """Load the CUDA and cuDNN libraries of the `nvidia-*` pip packages before CUDA sessions.
+
+    onnxruntime uses them only after `onnxruntime.preload_dlls()`; otherwise it looks for the
+    system's libraries. The call is skipped where it would only print: without the packages, or
+    when torch has already loaded the libraries.
+    """
+    if (
+        not hasattr(ort, "preload_dlls")
+        or importlib.util.find_spec("nvidia") is None
+        or torch_loaded_cuda_libraries()
+    ):
+        return
+    ort.preload_dlls()
+
+
+def ort_cuda_version() -> str | None:
+    """The CUDA version onnxruntime is built for, such as "12.2"; None for builds without CUDA."""
+    try:
+        from onnxruntime.capi import build_and_package_info
+    except ImportError:
+        return None
+    return getattr(build_and_package_info, "cuda_version", None)
+
+
+def torch_loaded_cuda_libraries() -> bool:
+    """Whether an imported torch built for the same major CUDA version loaded the libraries.
+
+    On Windows, `onnxruntime.preload_dlls()` then only prints that it skips them.
+    """
+    torch = sys.modules.get("torch")
+    if platform.system() != "Windows" or torch is None:
+        return False
+    torch_cuda = getattr(getattr(torch, "version", None), "cuda", None)
+    ort_cuda = ort_cuda_version()
+    if not torch_cuda or not ort_cuda:
+        return False
+    return torch_cuda.split(".")[0] == ort_cuda.split(".")[0]
+
+
+def cuda_fallback_message(current_providers: list[str]) -> str:
+    """Why a CUDA session fell back to other providers, and how to install matching libraries."""
+    cuda_version = ort_cuda_version()
+    cuda = f"CUDA {cuda_version.split('.')[0]}" if cuda_version else "a matching CUDA version"
+    return (
+        f"Attempt to set CUDAExecutionProvider failed. Current providers: {current_providers}. "
+        f"onnxruntime-gpu {ort.__version__} needs {cuda} and cuDNN 9. To install both from pip: "
+        '`pip install -U "onnxruntime-gpu[cuda,cudnn]"` (CUDA 13, NVIDIA driver 580 or newer), '
+        'or `pip install "onnxruntime-gpu[cuda,cudnn]>=1.21,<1.27"` (CUDA 12).'
+    )
 
 
 @dataclass
@@ -148,6 +204,9 @@ class OnnxModel(Generic[T]):
                     f"Provider {provider_name} is not available. Available providers: {available_providers}"
                 )
 
+        if "CUDAExecutionProvider" in requested_provider_names:
+            preload_pip_cuda_libraries()
+
         so = ort.SessionOptions()
         so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
 
@@ -185,12 +244,7 @@ class OnnxModel(Generic[T]):
             assert self.model is not None
             current_providers = self.model.get_providers()
             if "CUDAExecutionProvider" not in current_providers:
-                warnings.warn(
-                    f"Attempt to set CUDAExecutionProvider failed. Current providers: {current_providers}."
-                    "If you are using CUDA 12.x, install onnxruntime-gpu via "
-                    "`pip install onnxruntime-gpu --extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/`",
-                    RuntimeWarning,
-                )
+                warnings.warn(cuda_fallback_message(current_providers), RuntimeWarning)
 
     @classmethod
     def _select_exposed_session_options(cls, model_kwargs: dict[str, Any]) -> dict[str, Any]:
