@@ -320,8 +320,9 @@ def test_arena_shrinkage_without_arena() -> None:
         delete_model_cache(model.model._model_dir)
 
 
-def test_arena_shrinkage_keeps_model_errors() -> None:
-    from onnxruntime.capi.onnxruntime_pybind11_state import InvalidArgument
+@pytest.mark.parametrize("second_error", ["InvalidArgument", "RuntimeException"])
+def test_arena_shrinkage_keeps_model_errors(second_error: str) -> None:
+    from onnxruntime.capi import onnxruntime_pybind11_state as ort_state
 
     model = TextEmbedding("BAAI/bge-small-en-v1.5", providers=["CPUExecutionProvider"])
     run_options = model.model.run_options
@@ -330,11 +331,14 @@ def test_arena_shrinkage_keeps_model_errors() -> None:
 
     def run(output_names, input_feed, run_options=None):  # type: ignore[no-untyped-def]
         calls.append(run_options)
-        raise InvalidArgument(f"model error {len(calls)}")
+        if len(calls) == 1:
+            raise ort_state.InvalidArgument("first error")
+        raise getattr(ort_state, second_error)("second error")
 
     model.model.model.run = run
-    with pytest.raises(InvalidArgument, match="model error 1"):
+    with pytest.raises(getattr(ort_state, second_error), match="second error") as raised:
         next(iter(model.embed(["hello world"])))
+    assert str(raised.value.__context__) == "first error"
     assert calls == [run_options, None]
     assert model.model.run_options is run_options
     if os.getenv("CI"):

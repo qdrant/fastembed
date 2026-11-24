@@ -280,14 +280,11 @@ class OnnxModel(Generic[T]):
         run_options = self.run_options
         try:
             return self.model.run(output_names, onnx_input, run_options)  # type: ignore[union-attr]
-        except InvalidArgument as e:
+        except InvalidArgument:
             if run_options is None:
                 raise
-            # Builds without an arena reject the shrink list, and then the run works without it.
-            try:
-                outputs = self.model.run(output_names, onnx_input)  # type: ignore[union-attr]
-            except Exception:
-                raise e
+            # Builds without an arena reject the shrink list, so try the run once more without it.
+            outputs = self.model.run(output_names, onnx_input)  # type: ignore[union-attr]
             logger.warning(
                 "onnxruntime failed a run with the memory arena shrink list and completed it "
                 "without the list, so fastembed does not release arena memory after each run."
