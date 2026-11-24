@@ -52,7 +52,7 @@ def _worker(
     if kwargs is None:
         kwargs = {}
 
-    logging.info(
+    logging.info(  # noqa: LOG015
         f"Reader worker: {worker_id} PID: {os.getpid()} Device: {kwargs.get('device_id', 'CPU')}"
     )
     try:
@@ -69,7 +69,7 @@ def _worker(
         for processed_item in worker.process(input_queue_iterable()):
             output_queue.put(processed_item)
     except Exception as e:  # pylint: disable=broad-except
-        logging.exception(e)
+        logging.exception(e)  # noqa: LOG015, TRY401
         output_queue.put(QueueSignals.error)
     finally:
         # It's important that we close and join the queue here before
@@ -88,7 +88,7 @@ def _worker(
         with num_active_workers.get_lock():
             num_active_workers.value -= 1
 
-        logging.info(f"Reader worker {worker_id} finished")
+        logging.info(f"Reader worker {worker_id} finished")  # noqa: LOG015
 
 
 class ParallelWorkerPool:
