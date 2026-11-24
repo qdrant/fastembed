@@ -1,6 +1,8 @@
 import os
+import json
 import warnings
 from dataclasses import dataclass
+from functools import cached_property
 from pathlib import Path
 from typing import Any, Generic, Iterable, Sequence, Type, TypeVar
 
@@ -13,6 +15,7 @@ from tokenizers import Tokenizer
 
 from fastembed.common.onnx_external_data import ONNX_SNAPSHOTS_DIR, link_external_data
 from fastembed.common.types import OnnxProvider, NumpyArray, Device
+from fastembed.common.utils import MAX_BATCH_TOKENS
 from fastembed.parallel_processor import Worker
 
 # onnxruntime imported before fastembed: stop telemetry for the sessions created here.
@@ -37,6 +40,8 @@ class OnnxModel(Generic[T]):
     EXPOSED_SESSION_OPTIONS = ("enable_cpu_mem_arena",)
     # set by the concrete model classes in their __init__
     _model_dir: Path
+    # the `max_batch_tokens` model option, see `_batch_token_budget`
+    _max_batch_tokens: int | None = None
 
     @classmethod
     def _get_worker_class(cls) -> Type["EmbeddingWorker[T]"]:
@@ -77,6 +82,26 @@ class OnnxModel(Generic[T]):
         Preprocess the onnx input.
         """
         return onnx_input
+
+    def _batch_token_budget(self) -> int | None:
+        """Padded tokens per batch, None to keep batches of `batch_size`.
+
+        `MAX_BATCH_TOKENS` on every provider unless the `max_batch_tokens` model option sets
+        another number, 0 turns the budget off."""
+        if self._max_batch_tokens is not None:
+            return self._max_batch_tokens or None
+        return MAX_BATCH_TOKENS
+
+    @cached_property
+    def _attention_heads(self) -> int | None:
+        """Attention heads per layer from config.json, None when the model doesn't say."""
+        config_path = getattr(self, "_model_dir", Path()) / "config.json"
+        if not config_path.is_file():
+            return None
+        with open(config_path, encoding="utf-8") as config_file:
+            config = json.load(config_file)
+        heads = config.get("num_attention_heads", config.get("n_head"))
+        return heads if type(heads) is int and heads > 0 else None
 
     def _load_onnx_model(
         self,
@@ -178,6 +203,22 @@ class OnnxModel(Generic[T]):
             dict[str, Any]: a dict with filtered exposed session options.
         """
         return {k: v for k, v in model_kwargs.items() if k in cls.EXPOSED_SESSION_OPTIONS}
+
+    @staticmethod
+    def _select_max_batch_tokens(model_kwargs: dict[str, Any]) -> int | None:
+        """The `max_batch_tokens` model option, None when it isn't set.
+
+        Raises:
+            ValueError: If it is set to anything but an int >= 0.
+        """
+        max_batch_tokens = model_kwargs.get("max_batch_tokens")
+        if max_batch_tokens is not None and (
+            isinstance(max_batch_tokens, bool)
+            or not isinstance(max_batch_tokens, int)
+            or max_batch_tokens < 0
+        ):
+            raise ValueError(f"max_batch_tokens must be an int >= 0, got {max_batch_tokens!r}")
+        return max_batch_tokens
 
     @classmethod
     def add_extra_session_options(

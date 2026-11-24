@@ -120,6 +120,9 @@ class TextEmbedding(TextEmbeddingBase):
                     instead of downloading the model.
                 enable_cpu_mem_arena (bool): For onnx models, whether onnxruntime uses its CPU
                     memory arena. Defaults to onnxruntime's own default.
+                max_batch_tokens (int): For onnx models, the most padded tokens in a batch of
+                    long texts; a batch still holds at most `batch_size` texts. Defaults to
+                    2048, 0 turns the limit off.
                 mmap (bool): For static models (minishlab potion), whether to memory-map the
                     embedding matrix instead of reading it into memory. Defaults to False.
         """
