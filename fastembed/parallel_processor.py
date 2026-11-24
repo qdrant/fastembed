@@ -180,9 +180,9 @@ class ParallelWorkerPool:
                 else:
                     try:
                         out_item = self._get_output()
-                    except Empty as e:
+                    except Empty:
                         self.join_or_terminate()
-                        raise e
+                        raise
 
                 if out_item is not None:
                     if out_item == QueueSignals.error:
