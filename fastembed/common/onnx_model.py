@@ -1,8 +1,11 @@
+import contextlib
+import importlib.util
+import io
 import os
 import json
 import warnings
 from dataclasses import dataclass
-from functools import cached_property
+from functools import cache, cached_property
 from pathlib import Path
 from typing import Any, Generic, Iterable, Sequence, Type, TypeVar
 
@@ -26,6 +29,52 @@ if os.environ.get("ORT_DISABLE_TELEMETRY", "1").lower() not in ("0", "false") an
 
 # Holds type of the embedding result
 T = TypeVar("T")
+
+
+@cache
+def preload_pip_cuda_libraries() -> None:
+    """Load the CUDA and cuDNN libraries of the `nvidia-*` pip packages before CUDA sessions.
+
+    `onnxruntime-gpu[cuda,cudnn]` installs them, but onnxruntime only uses them after
+    `onnxruntime.preload_dlls()`; otherwise it loads the system's libraries, which may be missing
+    or built for another CUDA version. Without the packages there is nothing to preload: the call
+    would load the system's libraries, which the session loads anyway, and print an error for
+    each missing one. Its messages go to the debug log.
+    """
+    if not hasattr(ort, "preload_dlls") or importlib.util.find_spec("nvidia") is None:
+        return
+    output = io.StringIO()
+    with contextlib.redirect_stdout(output):
+        ort.preload_dlls()
+    if message := output.getvalue().strip():
+        logger.debug(f"onnxruntime.preload_dlls(): {message}")
+
+
+def cuda_fallback_message(current_providers: list[str]) -> str:
+    """Why a CUDA session fell back to other providers, and how to install matching libraries.
+
+    onnxruntime-gpu on PyPI is built for CUDA 12 up to 1.26 and for CUDA 13 from 1.27 (NVIDIA
+    driver 580 or newer); both need cuDNN 9. The `cuda` and `cudnn` extras install both from pip,
+    and `preload_pip_cuda_libraries` loads them.
+    """
+    try:
+        from onnxruntime.capi import build_and_package_info
+
+        cuda_version = getattr(build_and_package_info, "cuda_version", None)
+    except ImportError:
+        cuda_version = None
+    needs = (
+        f", built for CUDA {cuda_version}, needs that CUDA version"
+        if cuda_version
+        else " needs a matching CUDA version"
+    )
+    return (
+        f"Attempt to set CUDAExecutionProvider failed. Current providers: {current_providers}. "
+        f"onnxruntime-gpu {ort.__version__}{needs} and cuDNN 9. "
+        "To install both from pip: "
+        '`pip install -U "onnxruntime-gpu[cuda,cudnn]"` (CUDA 13, NVIDIA driver 580 or newer), '
+        'or `pip install "onnxruntime-gpu[cuda,cudnn]<1.27"` (CUDA 12).'
+    )
 
 
 @dataclass
@@ -148,6 +197,9 @@ class OnnxModel(Generic[T]):
                     f"Provider {provider_name} is not available. Available providers: {available_providers}"
                 )
 
+        if "CUDAExecutionProvider" in requested_provider_names:
+            preload_pip_cuda_libraries()
+
         so = ort.SessionOptions()
         so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
 
@@ -185,12 +237,7 @@ class OnnxModel(Generic[T]):
             assert self.model is not None
             current_providers = self.model.get_providers()
             if "CUDAExecutionProvider" not in current_providers:
-                warnings.warn(
-                    f"Attempt to set CUDAExecutionProvider failed. Current providers: {current_providers}."
-                    "If you are using CUDA 12.x, install onnxruntime-gpu via "
-                    "`pip install onnxruntime-gpu --extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/`",
-                    RuntimeWarning,
-                )
+                warnings.warn(cuda_fallback_message(current_providers), RuntimeWarning)
 
     @classmethod
     def _select_exposed_session_options(cls, model_kwargs: dict[str, Any]) -> dict[str, Any]:
