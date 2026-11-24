@@ -351,9 +351,8 @@ class StaticTextEmbedding(TextEmbeddingBase):
             documents = [documents]
             is_small = True
 
-        if isinstance(documents, list):
-            if len(documents) < batch_size:
-                is_small = True
+        if isinstance(documents, list) and len(documents) < batch_size:
+            is_small = True
 
         if parallel is None or is_small:
             for batch in iter_batch(documents, batch_size):

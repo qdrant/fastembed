@@ -131,9 +131,8 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
             pairs = [pairs]
             is_small = True
 
-        if isinstance(pairs, list):
-            if len(pairs) < batch_size:
-                is_small = True
+        if isinstance(pairs, list) and len(pairs) < batch_size:
+            is_small = True
 
         if parallel is None or is_small:
             if not hasattr(self, "model") or self.model is None:
