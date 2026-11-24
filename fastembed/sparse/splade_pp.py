@@ -31,10 +31,46 @@ supported_splade_models: list[SparseModelDescription] = [
         sources=ModelSource(hf="Qdrant/Splade_PP_en_v1"),
         model_file="model.onnx",
     ),
+    SparseModelDescription(
+        model="prithivida/Splade_PP_en_v2",
+        vocab_size=30522,
+        description="Independent Implementation of SPLADE++ v2 Model for English.",
+        license="apache-2.0",
+        size_in_GB=0.532,
+        sources=ModelSource(hf="prithivida/Splade_PP_en_v2"),
+        model_file="onnx/model.onnx",
+    ),
 ]
 
 
 class SpladePP(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
+    def onnx_embed(self, documents: list[str], **kwargs: Any) -> OnnxOutputContext:
+        """Adapt the input names used by the model author's v2 ONNX export."""
+        input_names = {node.name for node in self.model.get_inputs()}  # type: ignore[union-attr]
+        if "input_mask" not in input_names:
+            return super().onnx_embed(documents, **kwargs)
+
+        encoded = self.tokenize(documents, **kwargs)
+        input_ids = np.array([encoding.ids for encoding in encoded], dtype=np.int64)
+        attention_mask = np.array(
+            [encoding.attention_mask for encoding in encoded], dtype=np.int64
+        )
+        model_output = self._run_model(
+            onnx_input={
+                "input_ids": input_ids,
+                "input_mask": attention_mask,
+                "segment_ids": np.array(
+                    [encoding.type_ids for encoding in encoded], dtype=np.int64
+                ),
+            },
+            onnx_output_names=self.ONNX_OUTPUT_NAMES,
+        )
+        return OnnxOutputContext(
+            model_output=model_output,
+            attention_mask=attention_mask,
+            input_ids=input_ids,
+        )
+
     def _post_process_onnx_output(
         self, output: OnnxOutputContext, **kwargs: Any
     ) -> Iterable[SparseEmbedding]:
