@@ -301,27 +301,23 @@ def test_arena_shrinkage_without_arena() -> None:
         delete_model_cache(model.model._model_dir)
 
 
-def test_arena_shrinkage_without_arena_concurrent() -> None:
-    import onnxruntime as ort
+def test_arena_shrinkage_keeps_model_errors() -> None:
+    from onnxruntime.capi.onnxruntime_pybind11_state import InvalidArgument
 
-    model_name = "BAAI/bge-small-en-v1.5"
-    model = TextEmbedding(model_name, enable_cpu_mem_arena=False)
-    rejected = ort.RunOptions()
-    rejected.add_run_config_entry("memory.enable_memory_arena_shrinkage", "cpu:0")
-    model.model.run_options = rejected
+    model = TextEmbedding("BAAI/bge-small-en-v1.5")
+    run_options = model.model.run_options
     session = model.model.model
-    session_run = session.run
+    calls = []
 
     def run(output_names, input_feed, run_options=None):  # type: ignore[no-untyped-def]
-        if run_options is rejected:
-            # another request finishes its fallback while this run is rejected
-            model.model.run_options = ort.RunOptions()
-        return session_run(output_names, input_feed, run_options)
+        calls.append(run_options)
+        raise InvalidArgument("Invalid output name: memory arena shrink list: cpu:0")
 
     session.run = run
-    embedding = next(iter(model.embed(["hello world"])))
-    canonical_vector = CANONICAL_VECTOR_VALUES[model_name]
-    assert np.allclose(embedding[: canonical_vector.shape[0]], canonical_vector, atol=1e-3)
+    with pytest.raises(InvalidArgument):
+        next(iter(model.embed(["hello world"])))
+    assert len(calls) == 1
+    assert model.model.run_options is run_options
     if os.getenv("CI"):
         delete_model_cache(model.model._model_dir)
 
