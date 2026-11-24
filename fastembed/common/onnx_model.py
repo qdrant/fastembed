@@ -1,8 +1,8 @@
-import contextlib
 import importlib.util
-import io
 import os
 import json
+import platform
+import sys
 import warnings
 from dataclasses import dataclass
 from functools import cache, cached_property
@@ -35,45 +35,52 @@ T = TypeVar("T")
 def preload_pip_cuda_libraries() -> None:
     """Load the CUDA and cuDNN libraries of the `nvidia-*` pip packages before CUDA sessions.
 
-    `onnxruntime-gpu[cuda,cudnn]` installs them, but onnxruntime only uses them after
-    `onnxruntime.preload_dlls()`; otherwise it loads the system's libraries, which may be missing
-    or built for another CUDA version. Without the packages there is nothing to preload: the call
-    would load the system's libraries, which the session loads anyway, and print an error for
-    each missing one. Its messages go to the debug log.
+    onnxruntime uses them only after `onnxruntime.preload_dlls()`; otherwise it looks for the
+    system's libraries. The call is skipped where it would only print: without the packages, or
+    when torch has already loaded the libraries.
     """
-    if not hasattr(ort, "preload_dlls") or importlib.util.find_spec("nvidia") is None:
+    if (
+        not hasattr(ort, "preload_dlls")
+        or importlib.util.find_spec("nvidia") is None
+        or torch_loaded_cuda_libraries()
+    ):
         return
-    output = io.StringIO()
-    with contextlib.redirect_stdout(output):
-        ort.preload_dlls()
-    if message := output.getvalue().strip():
-        logger.debug(f"onnxruntime.preload_dlls(): {message}")
+    ort.preload_dlls()
+
+
+def ort_cuda_version() -> str | None:
+    """The CUDA version onnxruntime is built for, such as "12.2"; None for builds without CUDA."""
+    try:
+        from onnxruntime.capi import build_and_package_info
+    except ImportError:
+        return None
+    return getattr(build_and_package_info, "cuda_version", None)
+
+
+def torch_loaded_cuda_libraries() -> bool:
+    """Whether an imported torch built for the same major CUDA version loaded the libraries.
+
+    On Windows, `onnxruntime.preload_dlls()` then only prints that it skips them.
+    """
+    torch = sys.modules.get("torch")
+    if platform.system() != "Windows" or torch is None:
+        return False
+    torch_cuda = getattr(getattr(torch, "version", None), "cuda", None)
+    ort_cuda = ort_cuda_version()
+    if not torch_cuda or not ort_cuda:
+        return False
+    return torch_cuda.split(".")[0] == ort_cuda.split(".")[0]
 
 
 def cuda_fallback_message(current_providers: list[str]) -> str:
-    """Why a CUDA session fell back to other providers, and how to install matching libraries.
-
-    onnxruntime-gpu on PyPI is built for CUDA 12 up to 1.26 and for CUDA 13 from 1.27 (NVIDIA
-    driver 580 or newer); both need cuDNN 9. The `cuda` and `cudnn` extras install both from pip,
-    and `preload_pip_cuda_libraries` loads them.
-    """
-    try:
-        from onnxruntime.capi import build_and_package_info
-
-        cuda_version = getattr(build_and_package_info, "cuda_version", None)
-    except ImportError:
-        cuda_version = None
-    needs = (
-        f", built for CUDA {cuda_version}, needs that CUDA version"
-        if cuda_version
-        else " needs a matching CUDA version"
-    )
+    """Why a CUDA session fell back to other providers, and how to install matching libraries."""
+    cuda_version = ort_cuda_version()
+    cuda = f"CUDA {cuda_version.split('.')[0]}" if cuda_version else "a matching CUDA version"
     return (
         f"Attempt to set CUDAExecutionProvider failed. Current providers: {current_providers}. "
-        f"onnxruntime-gpu {ort.__version__}{needs} and cuDNN 9. "
-        "To install both from pip: "
+        f"onnxruntime-gpu {ort.__version__} needs {cuda} and cuDNN 9. To install both from pip: "
         '`pip install -U "onnxruntime-gpu[cuda,cudnn]"` (CUDA 13, NVIDIA driver 580 or newer), '
-        'or `pip install "onnxruntime-gpu[cuda,cudnn]<1.27"` (CUDA 12).'
+        'or `pip install "onnxruntime-gpu[cuda,cudnn]>=1.21,<1.27"` (CUDA 12).'
     )
 
 
