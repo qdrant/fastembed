@@ -10,7 +10,7 @@ from fastembed.late_interaction_multimodal.late_interaction_multimodal_embedding
 
 MultiVectorModel = LateInteractionTextEmbeddingBase | LateInteractionMultimodalEmbeddingBase
 MAX_HAMMING_DISTANCE = 65  # 64 bits + 1
-POPCOUNT_LUT = np.array([bin(x).count("1") for x in range(256)], dtype=np.uint8)
+POPCOUNT_LUT = np.array([x.bit_count() for x in range(256)], dtype=np.uint8)
 
 
 def hamming_distance_matrix(ids: np.ndarray) -> np.ndarray:
