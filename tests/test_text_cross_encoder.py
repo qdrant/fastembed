@@ -193,3 +193,12 @@ def test_session_options(model_cache, model_name) -> None:
         model = TextCrossEncoder(model_name=model_name, enable_cpu_mem_arena=False)
         session_options = model.model.model.get_session_options()
         assert session_options.enable_cpu_mem_arena is False
+
+
+@pytest.mark.parametrize("model_name", ["syntriq/lupe-multilingual-reranker-small"])
+def test_long_pair_is_not_truncated_at_384(model_cache, model_name: str) -> None:
+    if os.getenv("CI") and not is_manual_run():
+        pytest.skip("downloads a 0.56 GB model")
+    with model_cache(model_name) as model:
+        document = "Paris is the capital of France. " * 100
+        assert model.token_count([("What is the capital of France?", document)]) > 384
