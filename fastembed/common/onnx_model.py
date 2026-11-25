@@ -246,11 +246,7 @@ class OnnxModel(Generic[T]):
                     "again with HF_HUB_DISABLE_SHARED_BLOBS=1."
                 )
             raise
-        self.run_options = None
-        arenas = self._arenas_to_shrink(so)
-        if arenas:
-            self.run_options = ort.RunOptions()
-            self.run_options.add_run_config_entry(_SHRINKAGE_KEY, ";".join(arenas))
+        self.run_options = self._shrink_run_options(self._arenas_to_shrink(so))
         if "CUDAExecutionProvider" in requested_provider_names:
             assert self.model is not None
             current_providers = self.model.get_providers()
@@ -274,6 +270,14 @@ class OnnxModel(Generic[T]):
             arenas.append(f"gpu:{cuda_options['device_id']}")
         return arenas
 
+    @staticmethod
+    def _shrink_run_options(arenas: list[str]) -> ort.RunOptions | None:
+        if not arenas:
+            return None
+        run_options = ort.RunOptions()
+        run_options.add_run_config_entry(_SHRINKAGE_KEY, ";".join(arenas))
+        return run_options
+
     def _run_model_with_shrinkage(
         self, output_names: list[str] | None, onnx_input: dict[str, Any]
     ) -> list[Any]:
@@ -284,13 +288,27 @@ class OnnxModel(Generic[T]):
             if run_options is None:
                 raise
             # Builds with jemalloc, mimalloc, AddressSanitizer, or 32 bits have no CPU arena and
-            # reject the shrink list, and Python can't detect them, so retry without the list.
-            outputs = self.model.run(output_names, onnx_input)  # type: ignore[union-attr]
+            # reject "cpu:0", and Python can't detect them, so retry without "cpu:0". The GPU
+            # entries come from fastembed's own checks; if onnxruntime rejects them as well,
+            # retry without the list.
+            arenas = run_options.get_run_config_entry(_SHRINKAGE_KEY).split(";")
+            accepted = [arena for arena in arenas if arena != "cpu:0"]
+            if accepted == arenas:
+                accepted = []
+            fallback = self._shrink_run_options(accepted)
+            try:
+                outputs = self.model.run(output_names, onnx_input, fallback)  # type: ignore[union-attr]
+            except InvalidArgument:
+                if fallback is None:
+                    raise
+                accepted, fallback = [], None
+                outputs = self.model.run(output_names, onnx_input)  # type: ignore[union-attr]
             logger.warning(
-                "onnxruntime failed a run with the memory arena shrink list and completed it "
-                "without the list, so fastembed does not release arena memory after each run."
+                f"onnxruntime rejected the memory arena shrink list {';'.join(arenas)}, so "
+                "fastembed releases arena memory after each run only for "
+                f"{';'.join(accepted) or 'no arena'}."
             )
-            self.run_options = None
+            self.run_options = fallback
             return outputs
 
     @classmethod
