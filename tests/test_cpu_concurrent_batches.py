@@ -268,3 +268,21 @@ def test_incorrect_batch_output_count_raises(delta, inference_workers):
 
     with pytest.raises(ValueError, match="zip"):
         encode(WrongCountModel(), [str(i) for i in range(20)], inference_workers)
+
+
+@pytest.mark.parametrize("max_batch_tokens", [9, 0])
+def test_concurrent_preserves_upstream_padded_token_budget(max_batch_tokens):
+    docs = [str(i).zfill(width) for i, width in enumerate([3, 7, 2, 6, 3, 5, 4, 4])]
+    serial, concurrent = DummyModel(), DummyModel()
+    for model in (serial, concurrent):
+        model._max_batch_tokens = max_batch_tokens
+
+    assert encode(serial, docs, batch_size=4) == list(range(len(docs)))
+    assert encode(concurrent, docs, inference_workers=3, batch_size=4) == list(range(len(docs)))
+    assert sorted(concurrent.batches) == sorted(serial.batches)
+    if max_batch_tokens:
+        assert all(
+            len(batch) * max(map(len, batch)) <= max_batch_tokens for batch in concurrent.batches
+        )
+    else:
+        assert [len(batch) for batch in concurrent.batches] == [4, 4]

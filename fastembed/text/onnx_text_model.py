@@ -140,10 +140,19 @@ class OnnxTextModel(OnnxModel[T]):
         """
         executor = ThreadPoolExecutor(max_workers=inference_workers)
         pending: deque[tuple[list[int], Future[OnnxOutputContext]]] = deque()
+        max_batch_tokens = self._batch_token_budget()
 
         def embed_window(window: list[str]) -> Iterable[tuple[list[int], Iterable[T]]]:
             """Yield indexed batch outputs with bounded concurrent inference."""
-            batches = iter(iter_length_sorted_batches(window, batch_size, self._token_count))
+            batches = iter(
+                iter_length_sorted_batches(
+                    window,
+                    batch_size,
+                    self._token_count,
+                    max_batch_tokens=max_batch_tokens,
+                    attention_heads=self._attention_heads,
+                )
+            )
             for _ in range(inference_workers * 2):
                 try:
                     indices, batch = next(batches)
@@ -224,7 +233,11 @@ class OnnxTextModel(OnnxModel[T]):
                         self._post_process_onnx_output(self.onnx_embed(batch, **kwargs), **kwargs),
                     )
                     for indices, batch in iter_length_sorted_batches(
-                        documents, batch_size, self._token_count
+                        documents,
+                        batch_size,
+                        self._token_count,
+                        max_batch_tokens=self._batch_token_budget(),
+                        attention_heads=self._attention_heads,
                     )
                 )
         else:
@@ -254,9 +267,15 @@ class OnnxTextModel(OnnxModel[T]):
             )
             batch_indices: deque[list[int]] = deque()
 
+            max_batch_tokens = self._batch_token_budget()
+
             def batches() -> Iterable[list[str]]:
                 for indices, batch in iter_length_sorted_batches(
-                    documents, batch_size, self._token_count
+                    documents,
+                    batch_size,
+                    self._token_count,
+                    max_batch_tokens=max_batch_tokens,
+                    attention_heads=self._attention_heads,
                 ):
                     batch_indices.append(indices)
                     yield batch

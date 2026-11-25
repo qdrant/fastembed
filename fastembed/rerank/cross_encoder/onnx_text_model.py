@@ -101,7 +101,11 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         yield from restore_order(
             (indices, self._post_process_onnx_output(self.onnx_embed(query, batch, **kwargs)))
             for indices, batch in iter_length_sorted_batches(
-                documents, batch_size, lambda doc: self._token_count([(query, doc)])
+                documents,
+                batch_size,
+                lambda doc: self._token_count([(query, doc)]),
+                max_batch_tokens=self._batch_token_budget(),
+                attention_heads=self._attention_heads,
             )
         )
 
@@ -136,7 +140,11 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
             yield from restore_order(
                 (indices, self._post_process_onnx_output(self.onnx_embed_pairs(batch, **kwargs)))
                 for indices, batch in iter_length_sorted_batches(
-                    pairs, batch_size, lambda pair: self._token_count([pair])
+                    pairs,
+                    batch_size,
+                    lambda pair: self._token_count([pair]),
+                    max_batch_tokens=self._batch_token_budget(),
+                    attention_heads=self._attention_heads,
                 )
             )
         else:
@@ -166,9 +174,15 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
             )
             batch_indices: deque[list[int]] = deque()
 
+            max_batch_tokens = self._batch_token_budget()
+
             def batches() -> Iterable[list[tuple[str, str]]]:
                 for indices, batch in iter_length_sorted_batches(
-                    pairs, batch_size, lambda pair: self._token_count([pair])
+                    pairs,
+                    batch_size,
+                    lambda pair: self._token_count([pair]),
+                    max_batch_tokens=max_batch_tokens,
+                    attention_heads=self._attention_heads,
                 ):
                     batch_indices.append(indices)
                     yield batch

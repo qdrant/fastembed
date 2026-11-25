@@ -1,5 +1,11 @@
+import importlib.util
+import os
+import json
+import platform
+import sys
 import warnings
 from dataclasses import dataclass
+from functools import cache, cached_property
 from pathlib import Path
 from typing import Any, Generic, Iterable, Sequence, Type, TypeVar
 
@@ -12,10 +18,70 @@ from tokenizers import Tokenizer
 
 from fastembed.common.onnx_external_data import ONNX_SNAPSHOTS_DIR, link_external_data
 from fastembed.common.types import OnnxProvider, NumpyArray, Device
+from fastembed.common.utils import MAX_BATCH_TOKENS
 from fastembed.parallel_processor import Worker
+
+# onnxruntime imported before fastembed: stop telemetry for the sessions created here.
+if os.environ.get("ORT_DISABLE_TELEMETRY", "1").lower() not in ("0", "false") and hasattr(
+    ort, "disable_telemetry_events"
+):
+    ort.disable_telemetry_events()
 
 # Holds type of the embedding result
 T = TypeVar("T")
+
+
+@cache
+def preload_pip_cuda_libraries() -> None:
+    """Load the CUDA and cuDNN libraries of the `nvidia-*` pip packages before CUDA sessions.
+
+    onnxruntime uses them only after `onnxruntime.preload_dlls()`; otherwise it looks for the
+    system's libraries. The call is skipped where it would only print: without the packages, or
+    when torch has already loaded the libraries.
+    """
+    if (
+        not hasattr(ort, "preload_dlls")
+        or importlib.util.find_spec("nvidia") is None
+        or torch_loaded_cuda_libraries()
+    ):
+        return
+    ort.preload_dlls()
+
+
+def ort_cuda_version() -> str | None:
+    """The CUDA version onnxruntime is built for, such as "12.2"; None for builds without CUDA."""
+    try:
+        from onnxruntime.capi import build_and_package_info
+    except ImportError:
+        return None
+    return getattr(build_and_package_info, "cuda_version", None)
+
+
+def torch_loaded_cuda_libraries() -> bool:
+    """Whether an imported torch built for the same major CUDA version loaded the libraries.
+
+    On Windows, `onnxruntime.preload_dlls()` then only prints that it skips them.
+    """
+    torch = sys.modules.get("torch")
+    if platform.system() != "Windows" or torch is None:
+        return False
+    torch_cuda = getattr(getattr(torch, "version", None), "cuda", None)
+    ort_cuda = ort_cuda_version()
+    if not torch_cuda or not ort_cuda:
+        return False
+    return torch_cuda.split(".")[0] == ort_cuda.split(".")[0]
+
+
+def cuda_fallback_message(current_providers: list[str]) -> str:
+    """Why a CUDA session fell back to other providers, and how to install matching libraries."""
+    cuda_version = ort_cuda_version()
+    cuda = f"CUDA {cuda_version.split('.')[0]}" if cuda_version else "a matching CUDA version"
+    return (
+        f"Attempt to set CUDAExecutionProvider failed. Current providers: {current_providers}. "
+        f"onnxruntime-gpu {ort.__version__} needs {cuda} and cuDNN 9. To install both from pip: "
+        '`pip install -U "onnxruntime-gpu[cuda,cudnn]"` (CUDA 13, NVIDIA driver 580 or newer), '
+        'or `pip install "onnxruntime-gpu[cuda,cudnn]>=1.21,<1.27"` (CUDA 12).'
+    )
 
 
 @dataclass
@@ -30,6 +96,8 @@ class OnnxModel(Generic[T]):
     EXPOSED_SESSION_OPTIONS = ("enable_cpu_mem_arena",)
     # set by the concrete model classes in their __init__
     _model_dir: Path
+    # the `max_batch_tokens` model option, see `_batch_token_budget`
+    _max_batch_tokens: int | None = None
 
     @classmethod
     def _get_worker_class(cls) -> Type["EmbeddingWorker[T]"]:
@@ -70,6 +138,26 @@ class OnnxModel(Generic[T]):
         Preprocess the onnx input.
         """
         return onnx_input
+
+    def _batch_token_budget(self) -> int | None:
+        """Padded tokens per batch, None to keep batches of `batch_size`.
+
+        `MAX_BATCH_TOKENS` on every provider unless the `max_batch_tokens` model option sets
+        another number, 0 turns the budget off."""
+        if self._max_batch_tokens is not None:
+            return self._max_batch_tokens or None
+        return MAX_BATCH_TOKENS
+
+    @cached_property
+    def _attention_heads(self) -> int | None:
+        """Attention heads per layer from config.json, None when the model doesn't say."""
+        config_path = getattr(self, "_model_dir", Path()) / "config.json"
+        if not config_path.is_file():
+            return None
+        with open(config_path, encoding="utf-8") as config_file:
+            config = json.load(config_file)
+        heads = config.get("num_attention_heads", config.get("n_head"))
+        return heads if type(heads) is int and heads > 0 else None
 
     def _load_onnx_model(
         self,
@@ -116,6 +204,9 @@ class OnnxModel(Generic[T]):
                     f"Provider {provider_name} is not available. Available providers: {available_providers}"
                 )
 
+        if "CUDAExecutionProvider" in requested_provider_names:
+            preload_pip_cuda_libraries()
+
         so = ort.SessionOptions()
         so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
 
@@ -153,12 +244,7 @@ class OnnxModel(Generic[T]):
             assert self.model is not None
             current_providers = self.model.get_providers()
             if "CUDAExecutionProvider" not in current_providers:
-                warnings.warn(
-                    f"Attempt to set CUDAExecutionProvider failed. Current providers: {current_providers}."
-                    "If you are using CUDA 12.x, install onnxruntime-gpu via "
-                    "`pip install onnxruntime-gpu --extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/`",
-                    RuntimeWarning,
-                )
+                warnings.warn(cuda_fallback_message(current_providers), RuntimeWarning)
 
     @classmethod
     def _select_exposed_session_options(cls, model_kwargs: dict[str, Any]) -> dict[str, Any]:
@@ -171,6 +257,22 @@ class OnnxModel(Generic[T]):
             dict[str, Any]: a dict with filtered exposed session options.
         """
         return {k: v for k, v in model_kwargs.items() if k in cls.EXPOSED_SESSION_OPTIONS}
+
+    @staticmethod
+    def _select_max_batch_tokens(model_kwargs: dict[str, Any]) -> int | None:
+        """The `max_batch_tokens` model option, None when it isn't set.
+
+        Raises:
+            ValueError: If it is set to anything but an int >= 0.
+        """
+        max_batch_tokens = model_kwargs.get("max_batch_tokens")
+        if max_batch_tokens is not None and (
+            isinstance(max_batch_tokens, bool)
+            or not isinstance(max_batch_tokens, int)
+            or max_batch_tokens < 0
+        ):
+            raise ValueError(f"max_batch_tokens must be an int >= 0, got {max_batch_tokens!r}")
+        return max_batch_tokens
 
     @classmethod
     def add_extra_session_options(

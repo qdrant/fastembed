@@ -27,7 +27,7 @@ dependencies = [
     "requests>=2.31,<3",
     "tokenizers>=0.20,<1.0",
     "huggingface-hub>=0.20,<3.0",
-    "loguru>=0.7.2,<0.8",
+    "loguru>=0.7.2,<0.9",
     "pillow>=10.3.0,<14.0 ; python_version >= '3.11' and python_version < '3.13'",
     "pillow>=11.0.0,<14.0 ; python_version == '3.13'",
     "pillow>=12.0.0,<14.0 ; python_version >= '3.14'",
