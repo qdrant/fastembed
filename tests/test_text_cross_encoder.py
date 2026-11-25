@@ -195,10 +195,13 @@ def test_session_options(model_cache, model_name) -> None:
         assert session_options.enable_cpu_mem_arena is False
 
 
-@pytest.mark.parametrize("model_name", ["syntriq/lupe-multilingual-reranker-small"])
+@pytest.mark.parametrize(
+    "model_name",
+    ["syntriq/lupe-multilingual-reranker-small", "syntriq/lupe-multilingual-reranker-base"],
+)
 def test_long_pair_is_not_truncated_at_384(model_cache, model_name: str) -> None:
     if os.getenv("CI") and not is_manual_run():
-        pytest.skip("downloads a 0.56 GB model")
+        pytest.skip("downloads a large model")
     with model_cache(model_name) as model:
         document = "Paris is the capital of France. " * 100
         assert model.token_count([("What is the capital of France?", document)]) > 384
