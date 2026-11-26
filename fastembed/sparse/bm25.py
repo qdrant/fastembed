@@ -1,5 +1,6 @@
 import os
 from collections import defaultdict
+from math import isfinite
 from multiprocessing import get_all_start_methods
 from pathlib import Path
 from typing import Any, Iterable, Protocol, Type
@@ -95,7 +96,8 @@ class Bm25(SparseTextEmbeddingBase):
             I.e. defines how fast the moment when additional terms stop to increase the score. Defaults to 1.2.
         b (float, optional): The b parameter in the BM25 formula. Defines the importance of the document length.
             Defaults to 0.75.
-        avg_len (float, optional): The average length of the documents in the corpus. Defaults to 256.0.
+        avg_len (float, optional): The average length of the documents in the corpus.
+            Must be finite and greater than 0. Defaults to 256.0.
         language (str): Selects the default Snowball stemmer and bundled stopwords.
             Unsupported languages require a custom stemmer or disable_stemmer=True,
             and have no bundled stopwords.
@@ -111,8 +113,8 @@ class Bm25(SparseTextEmbeddingBase):
             shipped with the model for the chosen language. Words are lowercased and matched
             before stemming. None uses the default stopwords; an empty set disables filtering.
     Raises:
-        ValueError: If a default stemmer is unavailable for the language, or stemmer is supplied with
-            disable_stemmer=True.
+        ValueError: If avg_len is non-positive or non-finite, a default stemmer is unavailable
+            for the language, or stemmer is supplied with disable_stemmer=True.
     """
 
     def __init__(
@@ -130,7 +132,11 @@ class Bm25(SparseTextEmbeddingBase):
         stopwords: set[str] | None = None,
         **kwargs: Any,
     ):
+        """Initialize BM25, rejecting invalid avg_len before loading model files."""
         super().__init__(model_name, cache_dir, **kwargs)
+
+        if not isfinite(avg_len) or avg_len <= 0:
+            raise ValueError("avg_len must be finite and greater than 0")
 
         if disable_stemmer and stemmer is not None:
             raise ValueError("stemmer cannot be supplied with disable_stemmer=True")
