@@ -13,6 +13,7 @@ from fastembed.common.utils import define_cache_dir, iter_batch, normalize
 from fastembed.late_interaction.late_interaction_embedding_base import (
     LateInteractionTextEmbeddingBase,
 )
+from fastembed.late_interaction.token_pooling import pool_tokens_hierarchical
 from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
 from fastembed.common.model_description import DenseModelDescription, ModelSource
 
@@ -47,6 +48,17 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
     # expansion off: the query is then padded to the longest one in its batch, as a document is
     MIN_QUERY_LENGTH: int | None = 31
     MASK_TOKEN = "[MASK]"
+    # As suggested by https://www.answer.ai/posts/colbert-pooling.html, token pooling leaves
+    # [CLS] (already a pooled representation) and the document marker [D] untouched.
+    # Override per model class if the layout of the kept tokens differs.
+    POOLING_PROTECTED_TOKENS = 2
+
+    def _pool_if_requested(self, embedding: NumpyArray, is_doc: bool, **kwargs: Any) -> NumpyArray:
+        """Pool a document's token embeddings if `pool_factor` > 1 is passed. Queries are never pooled."""
+        pool_factor: int = kwargs.get("pool_factor", 1)
+        if not is_doc or pool_factor <= 1:
+            return embedding
+        return pool_tokens_hierarchical(embedding, pool_factor, self.POOLING_PROTECTED_TOKENS)
 
     def _post_process_onnx_output(
         self, output: OnnxOutputContext, is_doc: bool = True, **kwargs: Any
@@ -70,7 +82,8 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
                         output.attention_mask[i, j] = 0
 
             for embedding, attention_mask in zip(output.model_output, output.attention_mask):
-                yield normalize(embedding[attention_mask == 1])
+                normalized = normalize(embedding[attention_mask == 1])
+                yield self._pool_if_requested(normalized, is_doc, **kwargs)
 
     def _preprocess_onnx_input(
         self, onnx_input: dict[str, NumpyArray], is_doc: bool = True, **kwargs: Any

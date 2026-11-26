@@ -452,3 +452,40 @@ def test_colbert_keeps_truncation_direction(tmp_path) -> None:
 
     assert model.tokenizer.truncation["direction"] == "left"
     assert model.query_tokenizer.truncation["direction"] == "left"
+
+
+@pytest.mark.parametrize("model_name", ["answerdotai/answerai-colbert-small-v1"])
+def test_pool_factor(model_cache, model_name: str) -> None:
+    text = (
+        "Late interaction models keep one vector per token, so an index grows with the length "
+        "of every document. Pooling similar token vectors together shrinks that index."
+    )
+    with model_cache(model_name) as model:
+        (plain,) = list(model.passage_embed([text]))
+        (pooled,) = list(model.passage_embed([text], pool_factor=2))
+        protected = model.model.POOLING_PROTECTED_TOKENS
+
+        assert pooled.shape[1] == plain.shape[1]
+        assert pooled.shape[0] < plain.shape[0]
+        assert pooled.shape[0] <= plain.shape[0] // 2 + protected
+        np.testing.assert_allclose(pooled[:protected], plain[:protected])
+
+        # queries are never pooled
+        (query,) = list(model.query_embed("what is token pooling?"))
+        (query_with_factor,) = list(model.query_embed("what is token pooling?", pool_factor=2))
+        np.testing.assert_array_equal(query, query_with_factor)
+
+
+@pytest.mark.parametrize("model_name", ["answerdotai/answerai-colbert-small-v1"])
+def test_pool_factor_parallel(model_cache, model_name: str) -> None:
+    texts = [
+        f"Document number {i}, with enough words to be pooled into fewer vectors."
+        for i in range(4)
+    ]
+    with model_cache(model_name) as model:
+        single = list(model.embed(texts, pool_factor=2))
+        parallel = list(model.embed(texts, pool_factor=2, parallel=2))
+        assert len(single) == len(parallel) == len(texts)
+        for expected, actual in zip(single, parallel):
+            assert expected.shape == actual.shape
+            np.testing.assert_allclose(actual, expected, atol=1e-4)

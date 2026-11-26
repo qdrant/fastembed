@@ -80,7 +80,8 @@ class LateOn(Colbert):
 
         for embedding, keep_tokens in zip(output.model_output, keep):
             embedding = embedding[keep_tokens]
-            yield normalize(embedding)
+            normalized = normalize(embedding)
+            yield self._pool_if_requested(normalized, is_doc, **kwargs)
 
 
 class MLateOn(LateOn):
