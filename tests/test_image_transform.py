@@ -1,9 +1,11 @@
+import json
 from pathlib import Path
 
 import numpy as np
 import pytest
 from PIL import Image
 
+from fastembed.common.preprocessor_utils import load_preprocessor
 from fastembed.image.transform.functional import normalize, resize
 from fastembed.image.transform.operators import (
     CenterCrop,
@@ -13,6 +15,25 @@ from fastembed.image.transform.operators import (
     ResizeLongestEdge,
     Transform,
 )
+
+
+def test_clip_legacy_integer_resize_matches_shortest_edge(tmp_path: Path) -> None:
+    pixels = np.arange(12 * 8 * 3, dtype=np.uint8).reshape(8, 12, 3)
+    image = Image.fromarray(pixels)
+    config = {
+        "feature_extractor_type": "CLIPFeatureExtractor",
+        "do_resize": True,
+        "do_rescale": False,
+    }
+    config_path = tmp_path / "preprocessor_config.json"
+    config_path.write_text(json.dumps({**config, "size": {"shortest_edge": 4}}), encoding="utf-8")
+    expected = np.asarray(load_preprocessor(tmp_path)([image])[0])
+
+    config_path.write_text(json.dumps({**config, "size": 4}), encoding="utf-8")
+    actual = np.asarray(load_preprocessor(tmp_path)([image])[0])
+
+    assert actual.shape == (3, 4, 6)
+    np.testing.assert_array_equal(actual, expected)
 
 
 def test_center_crop_odd_padding_keeps_batch_shape_and_pixels() -> None:

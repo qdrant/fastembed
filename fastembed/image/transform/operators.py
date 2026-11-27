@@ -390,6 +390,12 @@ class Compose:
         if mode in ("CLIPImageProcessor", "SiglipImageProcessor"):
             if config.get("do_resize", False):
                 size = config["size"]
+                if (
+                    mode == "CLIPImageProcessor"
+                    and isinstance(size, int)
+                    and not isinstance(size, bool)
+                ):
+                    size = {"shortest_edge": size}
                 if "shortest_edge" in size:
                     size = size["shortest_edge"]
                 elif "height" in size and "width" in size:
