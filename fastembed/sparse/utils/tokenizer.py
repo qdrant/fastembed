@@ -1,15 +1,46 @@
 # This code is a modified copy of the `NLTKWordTokenizer` class from `NLTK` library.
 
 import re
+from functools import cache
+
+from fastembed.common.utils import word_chars
+
+
+@cache
+def _non_word_pattern() -> re.Pattern[str]:
+    return re.compile(f"[^{word_chars()}]")
+
+
+@cache
+def _has_word_char() -> re.Pattern[str]:
+    return re.compile(r"\w")
+
+
+def _lower(text: str) -> str:
+    """Lowercase `text` without keeping marks that lowercasing itself adds.
+
+    A few characters expand when lowercased ("İ" becomes "i" + U+0307). The previous tokenizer split
+    on such a mark, so to keep token ids stable for text that has no combining marks of its own, a
+    mark produced by lowercasing is turned into a separator. Marks present in the input are kept.
+    """
+    lowered = text.lower()
+    if len(lowered) == len(text):
+        return lowered
+    return "".join(
+        lower if len(lower) == 1 else re.sub(r"[^\w]", " ", lower)
+        for lower in (char.lower() for char in text)
+    )
 
 
 class SimpleTokenizer:
     @staticmethod
     def tokenize(text: str) -> list[str]:
-        text = re.sub(r"[^\w]", " ", text.lower())
+        text = _non_word_pattern().sub(" ", _lower(text))
         text = re.sub(r"\s+", " ", text)
 
-        return text.strip().split()
+        # a token made only of marks or joiners (e.g. a lone U+FE0F left over from an emoji) carries no
+        # meaning on its own and would make unrelated inputs share a token
+        return [token for token in text.strip().split() if _has_word_char().search(token)]
 
 
 class WordTokenizer:

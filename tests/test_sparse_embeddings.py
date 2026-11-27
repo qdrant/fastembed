@@ -6,6 +6,7 @@ import numpy as np
 
 from fastembed.sparse.bm25 import Bm25
 from fastembed.sparse.sparse_text_embedding import SparseTextEmbedding
+from fastembed.sparse.utils.tokenizer import SimpleTokenizer
 from tests.utils import delete_model_cache, is_manual_run, should_test_model
 
 
@@ -288,6 +289,38 @@ def test_stem_case_insensitive_stopwords(model_cache) -> None:
         assert result == expected, f"Expected {expected}, but got {result}"
         bm25_instance.stopwords = original_stopwords
         bm25_instance.punctuation = original_punctuation
+
+
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("Hello, World! It's 2024.", ["hello", "world", "it", "s", "2024"]),
+        ("தமிழ் மொழி அழகானது", ["தமிழ்", "மொழி", "அழகானது"]),
+        ("हिन्दी भाषा सुन्दर है", ["हिन्दी", "भाषा", "सुन्दर", "है"]),
+        ("ශ්\u200dරී ලංකාව", ["ශ්\u200dරී", "ලංකාව"]),
+        ("كَتَبَ الطالب", ["كَتَبَ", "الطالب"]),
+        ("cafe\u0301 naïve", ["cafe\u0301", "naïve"]),
+        # a mark with no word to attach to is dropped, so different emoji don't share a token
+        ("sun \u2600\ufe0f", ["sun"]),
+        ("rain \u2614\ufe0f", ["rain"]),
+        ("\u0301 \u200d", []),
+        # a mark that only appears because of lowercasing splits the word, as before
+        ("İstanbul", ["i", "stanbul"]),
+    ],
+)
+def test_simple_tokenizer_keeps_combining_marks(text: str, expected: list[str]) -> None:
+    assert SimpleTokenizer.tokenize(text) == expected
+
+
+def test_bm25_tamil_query_matches_only_the_right_document() -> None:
+    model = Bm25("Qdrant/bm25", language="tamil")
+    # "தமிழ்" (Tamil) shares the letters "தம" and "ழ" with "தம்" (own) and "மழை" (rain); split on its
+    # vowel signs, it used to match the second document as well
+    tamil, rain = list(model.embed(["தமிழ் மொழி", "தம் ஊரில் மழை"]))
+    query = next(model.query_embed("தமிழ்"))
+    assert query.indices.size > 0
+    assert set(query.indices) <= set(tamil.indices)
+    assert not set(query.indices) & set(rain.indices)
 
 
 @pytest.mark.parametrize("disable_stemmer", [True, False])
