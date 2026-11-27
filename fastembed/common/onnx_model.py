@@ -11,6 +11,7 @@ from typing import Any, Generic, Iterable, Sequence, Type, TypeVar
 
 import numpy as np
 import onnxruntime as ort
+from onnxruntime.capi.onnxruntime_pybind11_state import InvalidArgument
 
 from loguru import logger
 from numpy.typing import NDArray
@@ -29,6 +30,8 @@ if os.environ.get("ORT_DISABLE_TELEMETRY", "1").lower() not in ("0", "false") an
 
 # Holds type of the embedding result
 T = TypeVar("T")
+
+_SHRINKAGE_KEY = "memory.enable_memory_arena_shrinkage"
 
 
 @cache
@@ -98,6 +101,7 @@ class OnnxModel(Generic[T]):
     _model_dir: Path
     # the `max_batch_tokens` model option, see `_batch_token_budget`
     _max_batch_tokens: int | None = None
+    run_options: ort.RunOptions | None = None
 
     @classmethod
     def _get_worker_class(cls) -> Type["EmbeddingWorker[T]"]:
@@ -209,6 +213,8 @@ class OnnxModel(Generic[T]):
 
         so = ort.SessionOptions()
         so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+        # onnxruntime can reuse the memory pattern of a larger input shape, and then shrinkage can fail to release that memory.
+        so.enable_mem_pattern = False
 
         if threads is not None:
             so.intra_op_num_threads = threads
@@ -240,11 +246,70 @@ class OnnxModel(Generic[T]):
                     "again with HF_HUB_DISABLE_SHARED_BLOBS=1."
                 )
             raise
+        self.run_options = self._shrink_run_options(self._arenas_to_shrink(so))
         if "CUDAExecutionProvider" in requested_provider_names:
             assert self.model is not None
             current_providers = self.model.get_providers()
             if "CUDAExecutionProvider" not in current_providers:
                 warnings.warn(cuda_fallback_message(current_providers), RuntimeWarning)
+
+    def _arenas_to_shrink(self, so: ort.SessionOptions) -> list[str]:
+        # onnxruntime rejects "cpu:0" in the list when the CPU arena is off.
+        arenas = ["cpu:0"] if so.enable_cpu_mem_arena else []
+        cuda_options = self.model.get_provider_options().get("CUDAExecutionProvider")  # type: ignore[union-attr]
+        if cuda_options is None:
+            return arenas
+        # An external CUDA allocator replaces the CUDA arena, so there is nothing to shrink.
+        external_allocator = all(
+            cuda_options.get(name, "0") != "0"
+            for name in ("gpu_external_alloc", "gpu_external_free")
+        )
+        # Shrinkage could free memory that a captured CUDA graph uses again in later runs.
+        cuda_graph = cuda_options.get("enable_cuda_graph", "0") != "0"
+        if not external_allocator and not cuda_graph:
+            arenas.append(f"gpu:{cuda_options['device_id']}")
+        return arenas
+
+    @staticmethod
+    def _shrink_run_options(arenas: list[str]) -> ort.RunOptions | None:
+        if not arenas:
+            return None
+        run_options = ort.RunOptions()
+        run_options.add_run_config_entry(_SHRINKAGE_KEY, ";".join(arenas))
+        return run_options
+
+    def _run_model_with_shrinkage(
+        self, output_names: list[str] | None, onnx_input: dict[str, Any]
+    ) -> list[Any]:
+        run_options = self.run_options
+        try:
+            return self.model.run(output_names, onnx_input, run_options)  # type: ignore[union-attr]
+        except InvalidArgument:
+            if run_options is None:
+                raise
+            # Builds with jemalloc, mimalloc, AddressSanitizer, or 32 bits have no CPU arena and
+            # reject "cpu:0", and Python can't detect them, so retry without "cpu:0". The GPU
+            # entries come from fastembed's own checks; if onnxruntime rejects them as well,
+            # retry without the list.
+            arenas = run_options.get_run_config_entry(_SHRINKAGE_KEY).split(";")
+            accepted = [arena for arena in arenas if arena != "cpu:0"]
+            if accepted == arenas:
+                accepted = []
+            fallback = self._shrink_run_options(accepted)
+            try:
+                outputs = self.model.run(output_names, onnx_input, fallback)  # type: ignore[union-attr]
+            except InvalidArgument:
+                if fallback is None:
+                    raise
+                accepted, fallback = [], None
+                outputs = self.model.run(output_names, onnx_input)  # type: ignore[union-attr]
+            logger.warning(
+                f"onnxruntime rejected the memory arena shrink list {';'.join(arenas)}, so "
+                "fastembed releases arena memory after each run only for "
+                f"{';'.join(accepted) or 'no arena'}."
+            )
+            self.run_options = fallback
+            return outputs
 
     @classmethod
     def _select_exposed_session_options(cls, model_kwargs: dict[str, Any]) -> dict[str, Any]:

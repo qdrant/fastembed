@@ -263,6 +263,211 @@ def test_external_data_model(model_cache) -> None:
     assert np.allclose(embedding[: canonical_vector.shape[0]], canonical_vector, atol=1e-3)
 
 
+def _record_run_options(model: TextEmbedding) -> list:
+    session = model.model.model
+    session_run = session.run
+    calls = []
+
+    def run(output_names, input_feed, run_options=None):  # type: ignore[no-untyped-def]
+        calls.append(run_options)
+        return session_run(output_names, input_feed, run_options)
+
+    session.run = run
+    return calls
+
+
+@pytest.mark.parametrize("enable_cpu_mem_arena", [True, False])
+def test_arena_shrinkage(enable_cpu_mem_arena: bool) -> None:
+    model_name = "BAAI/bge-small-en-v1.5"
+    model = TextEmbedding(
+        model_name, providers=["CPUExecutionProvider"], enable_cpu_mem_arena=enable_cpu_mem_arena
+    )
+    assert model.model.model.get_session_options().enable_mem_pattern is False
+    run_options = model.model.run_options
+    if enable_cpu_mem_arena:
+        assert run_options is not None
+        assert run_options.get_run_config_entry("memory.enable_memory_arena_shrinkage") == "cpu:0"
+    else:
+        assert run_options is None
+    calls = _record_run_options(model)
+
+    embedding = next(iter(model.embed(["hello world"])))
+    canonical_vector = CANONICAL_VECTOR_VALUES[model_name]
+    assert np.allclose(embedding[: canonical_vector.shape[0]], canonical_vector, atol=1e-3)
+    assert calls == [run_options]
+    if os.getenv("CI"):
+        delete_model_cache(model.model._model_dir)
+
+
+def test_arena_shrinkage_without_arena() -> None:
+    import onnxruntime as ort
+
+    model_name = "BAAI/bge-small-en-v1.5"
+    model = TextEmbedding(
+        model_name, providers=["CPUExecutionProvider"], enable_cpu_mem_arena=False
+    )
+    rejected = ort.RunOptions()
+    rejected.add_run_config_entry("memory.enable_memory_arena_shrinkage", "cpu:0")
+    model.model.run_options = rejected
+    calls = _record_run_options(model)
+
+    embedding = next(iter(model.embed(["hello world"])))
+    canonical_vector = CANONICAL_VECTOR_VALUES[model_name]
+    assert np.allclose(embedding[: canonical_vector.shape[0]], canonical_vector, atol=1e-3)
+    assert calls == [rejected, None]
+    assert model.model.run_options is None
+    if os.getenv("CI"):
+        delete_model_cache(model.model._model_dir)
+
+
+@pytest.mark.parametrize("second_error", ["InvalidArgument", "RuntimeException"])
+def test_arena_shrinkage_keeps_model_errors(second_error: str) -> None:
+    from onnxruntime.capi import onnxruntime_pybind11_state as ort_state
+
+    model = TextEmbedding("BAAI/bge-small-en-v1.5", providers=["CPUExecutionProvider"])
+    run_options = model.model.run_options
+    assert run_options is not None
+    calls = []
+
+    def run(output_names, input_feed, run_options=None):  # type: ignore[no-untyped-def]
+        calls.append(run_options)
+        if len(calls) == 1:
+            raise ort_state.InvalidArgument("first error")
+        raise getattr(ort_state, second_error)("second error")
+
+    model.model.model.run = run
+    with pytest.raises(getattr(ort_state, second_error), match="second error") as raised:
+        next(iter(model.embed(["hello world"])))
+    assert str(raised.value.__context__) == "first error"
+    assert calls == [run_options, None]
+    assert model.model.run_options is run_options
+    if os.getenv("CI"):
+        delete_model_cache(model.model._model_dir)
+
+
+@pytest.mark.parametrize(
+    "enable_cpu_mem_arena, rejected, expected_calls",
+    [
+        (True, {"cpu:0;gpu:1"}, ["cpu:0;gpu:1", "gpu:1", "gpu:1"]),
+        (True, {"cpu:0;gpu:1", "gpu:1"}, ["cpu:0;gpu:1", "gpu:1", None, None]),
+        (False, {"gpu:1"}, ["gpu:1", None, None]),
+    ],
+)
+def test_arena_shrinkage_cuda_without_cpu_arena(
+    monkeypatch,
+    enable_cpu_mem_arena: bool,
+    rejected: set[str],
+    expected_calls: list[str | None],
+) -> None:
+    import onnxruntime as ort
+    from onnxruntime.capi import onnxruntime_pybind11_state as ort_state
+
+    monkeypatch.setattr(
+        ort.InferenceSession,
+        "get_provider_options",
+        lambda self: {"CUDAExecutionProvider": {"device_id": "1"}, "CPUExecutionProvider": {}},
+    )
+    model = TextEmbedding(
+        "BAAI/bge-small-en-v1.5",
+        providers=["CPUExecutionProvider"],
+        enable_cpu_mem_arena=enable_cpu_mem_arena,
+    )
+    session_run = model.model.model.run
+    calls = []
+
+    def run(output_names, input_feed, run_options=None):  # type: ignore[no-untyped-def]
+        entry = (
+            run_options.get_run_config_entry("memory.enable_memory_arena_shrinkage")
+            if run_options is not None
+            else None
+        )
+        calls.append(entry)
+        if entry in rejected:
+            raise ort_state.InvalidArgument(f"rejected {entry}")
+        return session_run(output_names, input_feed)
+
+    model.model.model.run = run
+    canonical_vector = CANONICAL_VECTOR_VALUES["BAAI/bge-small-en-v1.5"]
+    for _ in range(2):
+        embedding = next(iter(model.embed(["hello world"])))
+        assert np.allclose(embedding[: canonical_vector.shape[0]], canonical_vector, atol=1e-3)
+    assert calls == expected_calls
+    if os.getenv("CI"):
+        delete_model_cache(model.model._model_dir)
+
+
+@pytest.mark.parametrize(
+    "errors, expected_calls",
+    [
+        (["InvalidArgument", "RuntimeException"], ["cpu:0;gpu:1", "gpu:1"]),
+        (
+            ["InvalidArgument", "InvalidArgument", "RuntimeException"],
+            ["cpu:0;gpu:1", "gpu:1", None],
+        ),
+    ],
+)
+def test_arena_shrinkage_cuda_keeps_model_errors(
+    monkeypatch, errors: list[str], expected_calls: list[str | None]
+) -> None:
+    import onnxruntime as ort
+    from onnxruntime.capi import onnxruntime_pybind11_state as ort_state
+
+    monkeypatch.setattr(
+        ort.InferenceSession,
+        "get_provider_options",
+        lambda self: {"CUDAExecutionProvider": {"device_id": "1"}, "CPUExecutionProvider": {}},
+    )
+    model = TextEmbedding("BAAI/bge-small-en-v1.5", providers=["CPUExecutionProvider"])
+    run_options = model.model.run_options
+    calls = []
+
+    def run(output_names, input_feed, run_options=None):  # type: ignore[no-untyped-def]
+        calls.append(
+            run_options.get_run_config_entry("memory.enable_memory_arena_shrinkage")
+            if run_options is not None
+            else None
+        )
+        raise getattr(ort_state, errors[len(calls) - 1])(f"error {len(calls)}")
+
+    model.model.model.run = run
+    with pytest.raises(ort_state.RuntimeException, match=f"error {len(errors)}"):
+        next(iter(model.embed(["hello world"])))
+    assert calls == expected_calls
+    assert model.model.run_options is run_options
+    if os.getenv("CI"):
+        delete_model_cache(model.model._model_dir)
+
+
+@pytest.mark.parametrize(
+    "extra_options, expected",
+    [
+        ({}, "cpu:0;gpu:1"),
+        ({"gpu_external_alloc": "1234", "gpu_external_free": "5678"}, "cpu:0"),
+        ({"enable_cuda_graph": "1"}, "cpu:0"),
+    ],
+)
+def test_arena_shrinkage_cuda(monkeypatch, extra_options: dict[str, str], expected: str) -> None:
+    import onnxruntime as ort
+
+    cuda_options = {
+        "device_id": "1",
+        "gpu_external_alloc": "0",
+        "gpu_external_free": "0",
+        "enable_cuda_graph": "0",
+    } | extra_options
+    monkeypatch.setattr(
+        ort.InferenceSession,
+        "get_provider_options",
+        lambda self: {"CUDAExecutionProvider": cuda_options, "CPUExecutionProvider": {}},
+    )
+    model = TextEmbedding("BAAI/bge-small-en-v1.5", providers=["CPUExecutionProvider"])
+    run_options = model.model.run_options
+    assert run_options is not None
+    assert run_options.get_run_config_entry("memory.enable_memory_arena_shrinkage") == expected
+    if os.getenv("CI"):
+        delete_model_cache(model.model._model_dir)
+
+
 def test_quantized_model_reports_onnxruntime_requirement(monkeypatch) -> None:
     """Old onnxruntime only implements 4-bit MatMulNBits, the error should say so."""
     monkeypatch.setattr(
