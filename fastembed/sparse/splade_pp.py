@@ -22,15 +22,6 @@ supported_splade_models: list[SparseModelDescription] = [
         sources=ModelSource(hf="Qdrant/Splade_PP_en_v1"),
         model_file="model.onnx",
     ),
-    SparseModelDescription(
-        model="prithvida/Splade_PP_en_v1",
-        vocab_size=30522,
-        description="Independent Implementation of SPLADE++ Model for English.",
-        license="apache-2.0",
-        size_in_GB=0.532,
-        sources=ModelSource(hf="Qdrant/Splade_PP_en_v1"),
-        model_file="model.onnx",
-    ),
 ]
 
 
