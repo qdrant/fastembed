@@ -12,6 +12,7 @@ from fastembed.common.model_description import (
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.utils import normalize, mean_pooling, last_token_pooling
 from fastembed.text.custom_text_embedding import CustomTextEmbedding, PostprocessingConfig
+from fastembed.text.onnx_embedding import OnnxTextEmbedding
 from fastembed.rerank.cross_encoder.custom_text_cross_encoder import CustomTextCrossEncoder
 from fastembed.rerank.cross_encoder import TextCrossEncoder
 from fastembed.text.text_embedding import TextEmbedding
@@ -282,6 +283,33 @@ def test_custom_text_model_lookup_is_case_insensitive():
     assert isinstance(model.model, CustomTextEmbedding)
     assert model.model._pooling == PoolingType.MEAN
     assert model.model._normalization is True
+
+
+@pytest.mark.parametrize("custom", [True, False], ids=["custom", "built-in"])
+def test_cls_pooling_ignores_left_padding(custom, tmp_path):
+    if custom:
+        model_name = "local/cls"
+        TextEmbedding.add_custom_model(
+            model_name,
+            pooling=PoolingType.CLS,
+            normalization=True,
+            sources=ModelSource(hf=model_name),
+            dim=2,
+        )
+        model = CustomTextEmbedding(model_name, lazy_load=True, specific_model_path=str(tmp_path))
+    else:
+        model = OnnxTextEmbedding(
+            "BAAI/bge-small-en-v1.5", lazy_load=True, specific_model_path=str(tmp_path)
+        )
+
+    output = OnnxOutputContext(
+        model_output=np.array(
+            [[[1.0, 0.0], [3.0, 4.0]], [[3.0, 4.0], [1.0, 0.0]]], dtype=np.float32
+        ),
+        attention_mask=np.array([[0, 1], [1, 0]], dtype=np.int64),
+    )
+    embeddings = np.stack(list(model._post_process_onnx_output(output)))
+    np.testing.assert_allclose(embeddings, [[0.6, 0.8], [0.6, 0.8]])
 
 
 def test_custom_cross_encoder_lookup_is_case_insensitive():

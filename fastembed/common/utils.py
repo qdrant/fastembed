@@ -43,6 +43,17 @@ def mean_pooling(input_array: NumpyArray, attention_mask: NDArray[np.int64]) -> 
     return pooled_embeddings
 
 
+def first_token_pooling(
+    input_array: NumpyArray, attention_mask: NDArray[np.int64] | None
+) -> NumpyArray:
+    """Take the first non-padding token's embedding in each sequence."""
+    if attention_mask is None or np.all(attention_mask[:, 0]):
+        return input_array[:, 0]
+
+    first_token_indices = np.argmax(attention_mask, axis=1)
+    return input_array[np.arange(input_array.shape[0]), first_token_indices]
+
+
 def last_token_pooling(input_array: NumpyArray, attention_mask: NDArray[np.int64]) -> NumpyArray:
     """Take the embedding of the last non-padding token of each sequence.
 

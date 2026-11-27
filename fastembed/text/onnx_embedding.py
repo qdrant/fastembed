@@ -3,7 +3,7 @@ from typing import Any, Iterable, Sequence, Type
 from fastembed.common.model_description import DenseModelDescription, ModelSource
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.types import Device, NumpyArray, OnnxProvider
-from fastembed.common.utils import define_cache_dir, normalize
+from fastembed.common.utils import define_cache_dir, first_token_pooling, normalize
 from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
 from fastembed.text.text_embedding_base import TextEmbeddingBase
 
@@ -324,7 +324,7 @@ class OnnxTextEmbedding(TextEmbeddingBase, OnnxTextModel[NumpyArray]):
         embeddings = output.model_output
 
         if embeddings.ndim == 3:  # (batch_size, seq_len, embedding_dim)
-            processed_embeddings = embeddings[:, 0]
+            processed_embeddings = first_token_pooling(embeddings, output.attention_mask)
         elif embeddings.ndim == 2:  # (batch_size, embedding_dim)
             processed_embeddings = embeddings
         else:
