@@ -105,6 +105,39 @@ def test_normalize_rejects_input_without_a_channel_axis() -> None:
         normalize(np.zeros((4, 6), dtype=np.float32), mean=0.5, std=0.25)
 
 
+@pytest.mark.parametrize("shape", [(3, 2, 2), (2, 3, 2, 2)])
+@pytest.mark.parametrize("std", [0.0, [0.5, -0.0, 0.5], [0.5, 1e-50, 0.5]])
+def test_normalize_rejects_zero_standard_deviation(
+    shape: tuple[int, ...], std: float | list[float]
+) -> None:
+    image = np.ones(shape, dtype=np.float32)
+    with np.errstate(divide="raise", invalid="raise"):
+        with pytest.raises(ValueError, match="std.*zero"):
+            normalize(image, mean=0.5, std=std)
+
+
+def test_processor_rejects_zero_standard_deviation() -> None:
+    processor = Compose.from_config(
+        {
+            "do_resize": False,
+            "do_center_crop": False,
+            "do_normalize": True,
+            "image_mean": [0.5, 0.5, 0.5],
+            "image_std": [0.5, 0.0, 0.5],
+        }
+    )
+    with np.errstate(divide="raise", invalid="raise"):
+        with pytest.raises(ValueError, match="std.*zero"):
+            processor([Image.new("RGB", (2, 2), color="white")])
+
+
+def test_normalize_preserves_small_nonzero_standard_deviation() -> None:
+    image = np.ones((3, 2, 2), dtype=np.float32)
+    result = normalize(image, mean=0.0, std=1e-10)
+    np.testing.assert_allclose(result, np.full_like(image, 1e10))
+    np.testing.assert_array_equal(image, np.ones_like(image))
+
+
 @pytest.mark.parametrize(
     ("mean", "std", "expected"),
     [

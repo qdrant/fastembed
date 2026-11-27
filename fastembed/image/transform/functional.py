@@ -96,6 +96,8 @@ def normalize(
         )
 
     std_arr = np.array(std_list, dtype=np.float32).reshape(-1, 1, 1)
+    if np.any(std_arr == 0):
+        raise ValueError("std must not contain zero after conversion to float32")
 
     image_upd = (image - mean_arr) / std_arr
     return image_upd
