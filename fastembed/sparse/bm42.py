@@ -116,7 +116,7 @@ class Bm42(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         self.device_id: int | None = None
         if device_id is not None:
             self.device_id = device_id
-        elif self.device_ids is not None:
+        elif self.device_ids:
             self.device_id = self.device_ids[0]
 
         self.model_description = self._get_model_description(model_name)
