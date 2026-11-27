@@ -1,5 +1,6 @@
 import os
 from contextlib import contextmanager
+from pathlib import Path
 
 import pytest
 import numpy as np
@@ -317,6 +318,36 @@ class _PolishStemmer:
             if word.endswith(suffix):
                 return word[: -len(suffix)]
         return word
+
+
+class _FalseyDocuments:
+    def __init__(self, documents: list[str]):
+        self._documents = iter(documents)
+
+    def __iter__(self) -> "_FalseyDocuments":
+        return self
+
+    def __next__(self) -> str:
+        return next(self._documents)
+
+    def __bool__(self) -> bool:
+        return False
+
+
+def test_bm25_embeds_falsey_document_iterator(tmp_path: Path) -> None:
+    model = SparseTextEmbedding(
+        "Qdrant/bm25",
+        cache_dir=str(tmp_path),
+        specific_model_path=str(tmp_path),
+        local_files_only=True,
+        disable_stemmer=True,
+    )
+    documents = ["apples", "pears pears", "plums"]
+    expected = [item.as_dict() for item in model.embed(documents, batch_size=2)]
+    assert len(expected) == len(documents)
+
+    actual = [item.as_dict() for item in model.embed(_FalseyDocuments(documents), batch_size=2)]
+    assert actual == expected
 
 
 def test_custom_stemmer_applies_to_documents_and_queries() -> None:

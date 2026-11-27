@@ -64,7 +64,7 @@ def iter_batch(iterable: Iterable[T], size: int) -> Iterable[list[T]]:
 
     def batches() -> Iterable[list[T]]:
         source_iter = iter(iterable)
-        while source_iter:
+        while True:
             b = list(islice(source_iter, size))
             if len(b) == 0:
                 break
