@@ -1,13 +1,19 @@
+import importlib
+import pkgutil
+
 import numpy as np
 import pytest
 
+import fastembed
 from fastembed import (
     TextEmbedding,
     SparseTextEmbedding,
     ImageEmbedding,
     LateInteractionMultimodalEmbedding,
     LateInteractionTextEmbedding,
+    list_supported_models,
 )
+from fastembed.common.model_management import ModelManagement
 from fastembed.common.utils import iter_batch, last_token_pooling, mean_pooling, normalize
 
 
@@ -32,6 +38,25 @@ def test_text_list_supported_models():
         assert "model_file" in description and description["model_file"]
         assert "sources" in description and description["sources"]
         assert "hf" in description["sources"] or "url" in description["sources"]
+
+
+def test_list_supported_models_covers_every_model_class():
+    for module in pkgutil.walk_packages(fastembed.__path__, "fastembed."):
+        importlib.import_module(module.name)
+
+    def subclasses(cls):
+        for subclass in cls.__subclasses__():
+            yield subclass
+            yield from subclasses(subclass)
+
+    model_classes = {
+        cls.__name__
+        for cls in subclasses(ModelManagement)
+        if any(name.endswith("_REGISTRY") for name in vars(cls))
+    }
+    all_models = list_supported_models()
+    assert set(all_models) == model_classes
+    assert all(all_models.values())
 
 
 def test_last_token_pooling():
