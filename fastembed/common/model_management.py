@@ -52,6 +52,45 @@ def _hf_transport_errors() -> tuple[type[Exception], ...]:
 _HF_DOWNLOAD_ERRORS = (OSError, RepositoryNotFoundError, ValueError) + _hf_transport_errors()
 
 
+def _cache_requested_revision(
+    snapshot_dir: Path, snapshot: str, revision: str, commit: str
+) -> None:
+    """Keep named offline lookups usable after downloading an immutable Hub snapshot."""
+    if revision == commit:
+        return
+    # Refs may contain slashes, but must remain inside this repository's cache.
+    parts = revision.split("/")
+    if (
+        any(part in {"", ".", ".."} for part in parts)
+        or "\\" in revision
+        or PureWindowsPath(revision).drive
+    ):
+        return
+    temporary: Path | None = None
+    try:
+        root = snapshot_dir.expanduser().resolve()
+        if Path(snapshot).resolve() != root / "snapshots" / commit:
+            return
+        refs = root / "refs"
+        ref_path = refs.joinpath(*parts)
+        if not ref_path.resolve().is_relative_to(refs):
+            return
+        if ref_path.is_file() and ref_path.read_text() == commit:
+            return
+        ref_path.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile(mode="w", dir=ref_path.parent, delete=False) as stream:
+            temporary = Path(stream.name)
+            stream.write(commit)
+        os.replace(temporary, ref_path)
+    except (OSError, RuntimeError) as error:
+        # Like the Hub's cache bookkeeping, this must not fail a completed download.
+        logger.warning(f"Could not cache revision {revision!r}: {error}")
+    finally:
+        if temporary is not None:
+            with contextlib.suppress(OSError):
+                temporary.unlink()
+
+
 class CorruptedCacheError(ValueError):
     """A cached model file is present but does not match the size recorded for it.
 
@@ -460,6 +499,14 @@ class ModelManagement(Generic[T]):
             # the cache. Saving it would make later downloads skip this check.
             if metadata:
                 _save_file_metadata(snapshot_dir, metadata)
+
+        if kwargs.get("local_dir") is None:
+            _cache_requested_revision(
+                snapshot_dir,
+                result,
+                kwargs.get("revision") or constants.DEFAULT_REVISION,
+                repo_revision,
+            )
 
         return result
 
