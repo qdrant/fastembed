@@ -1,4 +1,5 @@
 import os
+import stat
 import time
 import gzip
 import json
@@ -50,6 +51,45 @@ def _hf_transport_errors() -> tuple[type[Exception], ...]:
 
 # Errors from an HF download that download_model handles by falling back to url and retrying.
 _HF_DOWNLOAD_ERRORS = (OSError, RepositoryNotFoundError, ValueError) + _hf_transport_errors()
+
+
+def _cache_requested_revision(
+    snapshot_dir: Path, snapshot: str, revision: str, commit: str
+) -> None:
+    """Keep named offline lookups usable after downloading an immutable Hub snapshot."""
+    if revision == commit:
+        return
+    # Refs may contain slashes, but must remain inside this repository's cache.
+    parts = revision.split("/")
+    if (
+        any(part in {"", ".", ".."} for part in parts)
+        or "\\" in revision
+        or PureWindowsPath(revision).drive
+    ):
+        return
+    try:
+        root = snapshot_dir.expanduser().resolve()
+        if Path(snapshot).resolve() != root / "snapshots" / commit:
+            return
+        refs = root / "refs"
+        ref_path = refs.joinpath(*parts)
+        if not ref_path.resolve().is_relative_to(refs):
+            return
+        if ref_path.is_file() and ref_path.read_text() == commit:
+            return
+        mode = stat.S_IMODE(ref_path.stat().st_mode) if ref_path.exists() else None
+        ref_path.parent.mkdir(parents=True, exist_ok=True)
+        # A private directory protects the staged hash, while ordinary file creation
+        # respects the umask instead of installing NamedTemporaryFile's owner-only mode.
+        with tempfile.TemporaryDirectory(dir=ref_path.parent) as temporary_dir:
+            temporary = Path(temporary_dir) / "ref"
+            temporary.write_text(commit)
+            if mode is not None:
+                temporary.chmod(mode)
+            os.replace(temporary, ref_path)
+    except (OSError, RuntimeError) as error:
+        # Like the Hub's cache bookkeeping, this must not fail a completed download.
+        logger.warning(f"Could not cache revision {revision!r}: {error}")
 
 
 class CorruptedCacheError(ValueError):
@@ -214,16 +254,22 @@ class ModelManagement(Generic[T]):
         local_files_only: bool = False,
         **kwargs: Any,
     ) -> str:
-        """
-        Downloads a model from HuggingFace Hub.
+        """Download selected model files from Hugging Face Hub.
+
+        Online metadata and files use the same resolved commit, even if a branch moves during
+        the download. Local-only calls resolve the requested revision from the cache instead.
+
         Args:
             hf_source_repo (str): Name of the model on HuggingFace Hub, e.g. "Qdrant/all-MiniLM-L6-v2-onnx".
-            cache_dir (Optional[str]): The path to the cache directory.
+            cache_dir (str): The path to the cache directory.
             extra_patterns (list[str]): extra patterns to allow in the snapshot download, typically
                 includes the required model files.
             local_files_only (bool, optional): Whether to only use local files. Defaults to False.
+            **kwargs: Additional snapshot_download options. `revision` selects a branch, tag, or
+                commit; online calls resolve it once and download that commit's files.
+
         Returns:
-            Path: The path to the model directory.
+            str: The path to the downloaded or cached model directory.
         """
 
         def _repo_relative_path(relative_path: Path) -> str:
@@ -382,7 +428,11 @@ class ModelManagement(Generic[T]):
         # the connection but never answers would block here for good, before download_model can
         # retry or fall back to another source. list_repo_tree and snapshot_download's own
         # metadata requests can't be given one, but a silent endpoint now fails here first.
-        repo_revision = model_info(hf_source_repo, timeout=constants.HF_HUB_ETAG_TIMEOUT).sha
+        repo_revision = model_info(
+            hf_source_repo,
+            revision=kwargs.get("revision"),
+            timeout=constants.HF_HUB_ETAG_TIMEOUT,
+        ).sha
         repo_tree = list(
             list_repo_tree(
                 hf_source_repo, revision=repo_revision, repo_type="model", recursive=True
@@ -418,12 +468,15 @@ class ModelManagement(Generic[T]):
         if verified_metadata:
             disable_progress_bars()
 
+        # Metadata and downloaded files must describe the same commit, even if a branch moves
+        # between these requests. Resolve a caller's revision above, then pin the snapshot.
+        download_kwargs = {**kwargs, "revision": repo_revision}
         result = snapshot_download(
             repo_id=hf_source_repo,
             allow_patterns=allow_patterns,
             cache_dir=cache_dir,
             local_files_only=local_files_only,
-            **kwargs,
+            **download_kwargs,
         )
 
         if (
@@ -447,6 +500,14 @@ class ModelManagement(Generic[T]):
             # the cache. Saving it would make later downloads skip this check.
             if metadata:
                 _save_file_metadata(snapshot_dir, metadata)
+
+        if kwargs.get("local_dir") is None:
+            _cache_requested_revision(
+                snapshot_dir,
+                result,
+                kwargs.get("revision") or constants.DEFAULT_REVISION,
+                repo_revision,
+            )
 
         return result
 
