@@ -22,11 +22,19 @@ for i in range(1, N_TOKENS + 1):
 LONG_TEXT = " ".join(f"tok{i}" for i in range(1, N_TOKENS + 1))
 
 
-def _write_tokenizer(model_dir: Path, *, direction: str | None) -> None:
+def _write_tokenizer(
+    model_dir: Path,
+    *,
+    direction: str | None,
+    configured_max_length: int = MAX_LENGTH,
+    pad_to_length: int | None = None,
+) -> None:
     tok = Tokenizer(models.WordLevel(vocab=VOCAB, unk_token="[UNK]"))
     tok.pre_tokenizer = pre_tokenizers.Whitespace()
     if direction is not None:
-        tok.enable_truncation(max_length=MAX_LENGTH, direction=direction)
+        tok.enable_truncation(max_length=configured_max_length, direction=direction)
+    if pad_to_length is not None:
+        tok.enable_padding(length=pad_to_length, pad_id=0, pad_token="[UNK]")
     tok.save(str(model_dir / "tokenizer.json"))
 
 
@@ -64,10 +72,17 @@ def test_no_truncation_defaults_to_right(tmp_path: Path) -> None:
     assert tok.truncation["direction"] == "right"
 
 
-def test_no_padding_is_applied(tmp_path: Path) -> None:
-    _write_tokenizer(tmp_path, direction="left")
+def test_static_limits_preserve_direction_but_override_padding_and_length(tmp_path: Path) -> None:
+    _write_tokenizer(tmp_path, direction="left", configured_max_length=8, pad_to_length=8)
+    saved = Tokenizer.from_file(str(tmp_path / "tokenizer.json"))
+    assert saved.encode("tok1").attention_mask == [1, 0, 0, 0, 0, 0, 0, 0]
+
     tok, _ = load_static_tokenizer(tmp_path)
     assert tok.padding is None
+    assert tok.encode("tok1").tokens == ["tok1"]
+    tokens = tok.encode(LONG_TEXT).tokens
+    assert len(tokens) == MAX_LENGTH
+    assert tokens == LONG_TEXT.split()[-MAX_LENGTH:]
 
 
 def test_save_reload_roundtrip_preserves_left(tmp_path: Path) -> None:
