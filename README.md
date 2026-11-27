@@ -216,7 +216,7 @@ It requires installation of the `fastembed-gpu` package.
 pip install fastembed-gpu
 ```
 
-Check our [example](https://qdrant.github.io/fastembed/examples/FastEmbed_GPU/) for detailed instructions, CUDA 12.x support and troubleshooting of the common issues.
+Check our [example](https://qdrant.github.io/fastembed/examples/FastEmbed_GPU/) for detailed instructions: CUDA 12 and 13, installing CUDA and cuDNN from pip, and troubleshooting of the common issues.
 
 ```python
 from fastembed import TextEmbedding

@@ -1,9 +1,18 @@
+from pathlib import Path
+
 import numpy as np
 import pytest
 from PIL import Image
 
 from fastembed.image.transform.functional import normalize, resize
-from fastembed.image.transform.operators import Compose
+from fastembed.image.transform.operators import (
+    CenterCrop,
+    Compose,
+    ConvertToRGB,
+    Resize,
+    ResizeLongestEdge,
+    Transform,
+)
 
 
 def test_center_crop_odd_padding_keeps_batch_shape_and_pixels() -> None:
@@ -109,3 +118,22 @@ def test_normalize_channel_count_mismatch_raises(
     image = np.zeros((3, 4, 4), dtype=np.float32)
     with pytest.raises(ValueError, match=expected):
         normalize(image, mean=mean, std=std)
+
+
+@pytest.mark.parametrize(
+    ("first", "expected"),
+    [
+        (Resize(size=224), (800, 600)),  # 1/2 scale keeps 2x the shortest edge
+        (Resize(size=(224, 224)), (800, 600)),
+        (ResizeLongestEdge(size=256), (800, 600)),
+        (Resize(size=448), (1600, 1200)),  # 1/2 scale would go below 2x
+        (CenterCrop(size=(224, 224)), (1600, 1200)),  # no resize to go by
+    ],
+)
+def test_open_image_decodes_large_jpegs_at_a_reduced_scale(
+    tmp_path: Path, first: Transform, expected: tuple[int, int]
+) -> None:
+    path = tmp_path / "photo.jpeg"
+    Image.new("RGB", (1600, 1200)).save(path)
+    with Compose([ConvertToRGB(), first]).open_image(path) as image:
+        assert image.size == expected

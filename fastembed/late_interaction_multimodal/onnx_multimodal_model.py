@@ -185,13 +185,13 @@ class OnnxMultimodalModel(OnnxModel[T]):
 
     def onnx_embed_image(self, images: list[ImageInput], **kwargs: Any) -> OnnxOutputContext:
         with contextlib.ExitStack() as stack:
+            assert self.processor is not None, "Processor is not initialized"
             image_files = [
-                stack.enter_context(Image.open(image))
+                stack.enter_context(self.processor.open_image(image))
                 if not isinstance(image, Image.Image)
                 else image
                 for image in images
             ]
-            assert self.processor is not None, "Processor is not initialized"
             encoded = np.array(self.processor(image_files))
         onnx_input = {"pixel_values": encoded}
         onnx_input = self._preprocess_onnx_image_input(onnx_input, **kwargs)

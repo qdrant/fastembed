@@ -1,7 +1,7 @@
 from typing import Any
 import math
 
-from PIL import Image
+from PIL import Image, ImageOps
 
 from fastembed.common.types import NumpyArray
 from fastembed.image.transform.functional import (
@@ -278,8 +278,46 @@ class SquareResize(Transform):
 
 
 class Compose:
+    # decode at least this many times the first resize's target, so that resize still
+    # downsamples and antialiases as it does from the full image
+    DRAFT_MARGIN = 2
+
     def __init__(self, transforms: list[Transform]):
         self.transforms = transforms
+
+    def open_image(self, path: Any) -> Image.Image:
+        """Open an image file; a JPEG is decoded at a lower resolution when the first resize
+        would shrink it more than `DRAFT_MARGIN` times anyway, which skips most of the work of
+        decoding a large photo."""
+        image = Image.open(path)
+        size = self._draft_size(image.size)
+        if size is not None:
+            image.draft(image.mode, size)  # a no-op for formats other than JPEG
+        # phone cameras store photos rotated, with an EXIF tag saying how to display them;
+        # this loads the pixels, so it must come after draft
+        ImageOps.exif_transpose(image, in_place=True)
+        return image
+
+    def _draft_size(self, size: tuple[int, int]) -> tuple[int, int] | None:
+        """The smallest (width, height) the first resize can start from, None if it can't
+        start from a smaller image."""
+        transforms = [t for t in self.transforms if not isinstance(t, ConvertToRGB)]
+        first = transforms[0] if transforms else None
+        width, height = size
+        if isinstance(first, Resize) and isinstance(first.size, tuple):
+            target_height, target_width = first.size
+            needed = (target_width * self.DRAFT_MARGIN, target_height * self.DRAFT_MARGIN)
+        elif isinstance(first, Resize) and isinstance(first.size, int):
+            scale = first.size * self.DRAFT_MARGIN / min(width, height)
+            needed = (math.ceil(width * scale), math.ceil(height * scale))
+        elif isinstance(first, ResizeLongestEdge):
+            scale = first.size * self.DRAFT_MARGIN / max(width, height)
+            needed = (math.ceil(width * scale), math.ceil(height * scale))
+        else:
+            return None
+        if needed[0] >= width or needed[1] >= height:
+            return None
+        return needed
 
     def __call__(
         self,
