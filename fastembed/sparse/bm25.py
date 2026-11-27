@@ -1,16 +1,19 @@
 import os
 from collections import defaultdict
+from collections.abc import Iterable
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Iterable, Protocol, Type
+from typing import Any, Protocol
 
 import mmh3
 import numpy as np
 from py_rust_stemmers import SnowballStemmer
+
+from fastembed.common.model_description import ModelSource, SparseModelDescription
 from fastembed.common.utils import (
     define_cache_dir,
-    iter_batch,
     get_all_punctuation,
+    iter_batch,
     remove_non_alphanumeric,
 )
 from fastembed.parallel_processor import ParallelWorkerPool, Worker
@@ -19,7 +22,6 @@ from fastembed.sparse.sparse_embedding_base import (
     SparseTextEmbeddingBase,
 )
 from fastembed.sparse.utils.tokenizer import SimpleTokenizer
-from fastembed.common.model_description import SparseModelDescription, ModelSource
 
 
 class Stemmer(Protocol):
@@ -217,9 +219,8 @@ class Bm25(SparseTextEmbeddingBase):
             documents = [documents]
             is_small = True
 
-        if isinstance(documents, list):
-            if len(documents) < batch_size:
-                is_small = True
+        if isinstance(documents, list) and len(documents) < batch_size:
+            is_small = True
 
         if parallel is None or is_small:
             for batch in iter_batch(documents, batch_size):
@@ -249,8 +250,7 @@ class Bm25(SparseTextEmbeddingBase):
                 start_method=start_method,
             )
             for batch in pool.ordered_map(iter_batch(documents, batch_size), **params):
-                for record in batch:
-                    yield record  # type: ignore
+                yield from batch  # type: ignore
 
     def embed(
         self,
@@ -374,14 +374,14 @@ class Bm25(SparseTextEmbeddingBase):
             tokens = self.tokenizer.tokenize(text)
             stemmed_tokens = self._stem(tokens)
             token_ids = np.array(
-                list(set(self.compute_token_id(token) for token in stemmed_tokens)),
+                list({self.compute_token_id(token) for token in stemmed_tokens}),
                 dtype=np.int64,
             )
             values = np.ones_like(token_ids)
             yield SparseEmbedding(indices=token_ids, values=values)
 
     @classmethod
-    def _get_worker_class(cls) -> Type["Bm25Worker"]:
+    def _get_worker_class(cls) -> type["Bm25Worker"]:
         return Bm25Worker
 
 

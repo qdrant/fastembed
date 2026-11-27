@@ -1,10 +1,10 @@
 from collections import defaultdict
-from typing import Iterable
+from collections.abc import Iterable
 
-from py_rust_stemmers import SnowballStemmer
 import numpy as np
-from tokenizers import Tokenizer
 from numpy.typing import NDArray
+from py_rust_stemmers import SnowballStemmer
+from tokenizers import Tokenizer
 
 from fastembed.common.types import NumpyArray
 
@@ -65,8 +65,7 @@ class VocabResolver:
 
     def save_vocab(self, path: str) -> None:
         with open(path, "w") as f:
-            for word in self.words:
-                f.write(word + "\n")
+            f.writelines(word + "\n" for word in self.words)
 
     def save_json_vocab(self, path: str) -> None:
         import json

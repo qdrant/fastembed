@@ -2,11 +2,11 @@ import numpy as np
 import pytest
 
 from fastembed import (
-    TextEmbedding,
-    SparseTextEmbedding,
     ImageEmbedding,
     LateInteractionMultimodalEmbedding,
     LateInteractionTextEmbedding,
+    SparseTextEmbedding,
+    TextEmbedding,
 )
 from fastembed.common.utils import iter_batch, last_token_pooling, mean_pooling, normalize
 
@@ -24,13 +24,13 @@ def test_text_list_supported_models():
         description = supported_models[0]
         assert isinstance(description, dict)
 
-        assert "model" in description and description["model"]
+        assert description.get("model")
         if model_type != SparseTextEmbedding:
-            assert "dim" in description and description["dim"]
-        assert "license" in description and description["license"]
-        assert "size_in_GB" in description and description["size_in_GB"]
-        assert "model_file" in description and description["model_file"]
-        assert "sources" in description and description["sources"]
+            assert description.get("dim")
+        assert description.get("license")
+        assert description.get("size_in_GB")
+        assert description.get("model_file")
+        assert description.get("sources")
         assert "hf" in description["sources"] or "url" in description["sources"]
 
 

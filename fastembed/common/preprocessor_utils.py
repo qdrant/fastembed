@@ -1,7 +1,8 @@
 import json
 import sys
-from typing import Any, Iterator
+from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 from tokenizers import AddedToken, Tokenizer
 

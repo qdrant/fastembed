@@ -1,5 +1,5 @@
-from typing import Iterable, Any
-
+from collections.abc import Iterable
+from typing import Any
 
 from fastembed.common import ImageInput
 from fastembed.common.model_description import DenseModelDescription

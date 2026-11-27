@@ -2,8 +2,8 @@ import json
 import os
 from contextlib import contextmanager
 
-import pytest
 import numpy as np
+import pytest
 from tokenizers import Tokenizer, models
 
 from fastembed.late_interaction.late_interaction_text_embedding import (
@@ -231,7 +231,7 @@ def model_cache():
     yield get_model
 
     if is_ci:
-        for name, model in cache.items():
+        for model in cache.values():
             delete_model_cache(model.model._model_dir)
     cache.clear()
 
@@ -248,7 +248,7 @@ def test_batch_embedding(model_cache, model_name: str):
         expected_result = CANONICAL_COLUMN_VALUES[model_name]
 
         for value in result:
-            token_num, abridged_dim = expected_result.shape
+            _token_num, abridged_dim = expected_result.shape
             assert np.allclose(value[:, :abridged_dim], expected_result, atol=2e-3)
 
 
@@ -280,7 +280,7 @@ def test_single_embedding(model_cache, model_name: str):
             assert len(whole_result) == 1
             result = whole_result[0]
             expected_result = CANONICAL_COLUMN_VALUES[model_desc.model]
-            token_num, abridged_dim = expected_result.shape
+            _token_num, abridged_dim = expected_result.shape
             assert np.allclose(result[:, :abridged_dim], expected_result, atol=2e-3)
 
 
@@ -300,7 +300,7 @@ def test_single_embedding_query(model_cache, model_name: str):
             assert len(whole_result) == 1
             result = whole_result[0]
             expected_result = CANONICAL_QUERY_VALUES[model_desc.model]
-            token_num, abridged_dim = expected_result.shape
+            _token_num, abridged_dim = expected_result.shape
             assert np.allclose(result[:, :abridged_dim], expected_result, atol=2e-3)
 
 

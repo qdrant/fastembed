@@ -1,18 +1,19 @@
 import contextlib
 import os
+from collections.abc import Iterable, Sequence
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Iterable, Sequence, Type
+from typing import Any
 
 import numpy as np
 from PIL import Image
 
-from fastembed.image.transform.operators import Compose
-from fastembed.common.types import NumpyArray, Device
 from fastembed.common import ImageInput, OnnxProvider
 from fastembed.common.onnx_model import EmbeddingWorker, OnnxModel, OnnxOutputContext, T
 from fastembed.common.preprocessor_utils import load_preprocessor
+from fastembed.common.types import Device, NumpyArray
 from fastembed.common.utils import iter_batch
+from fastembed.image.transform.operators import Compose
 from fastembed.parallel_processor import ParallelWorkerPool
 
 # Holds type of the embedding result
@@ -22,7 +23,7 @@ class OnnxImageModel(OnnxModel[T]):
     ONNX_OUTPUT_NAMES: list[str] | None = None
 
     @classmethod
-    def _get_worker_class(cls) -> Type["ImageEmbeddingWorker[T]"]:
+    def _get_worker_class(cls) -> type["ImageEmbeddingWorker[T]"]:
         raise NotImplementedError("Subclasses must implement this method")
 
     def _post_process_onnx_output(self, output: OnnxOutputContext, **kwargs: Any) -> Iterable[T]:

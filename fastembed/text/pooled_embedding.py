@@ -1,13 +1,14 @@
-from typing import Any, Iterable, Type
+from collections.abc import Iterable
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
 
-from fastembed.common.types import NumpyArray
+from fastembed.common.model_description import DenseModelDescription, ModelSource
 from fastembed.common.onnx_model import OnnxOutputContext
+from fastembed.common.types import NumpyArray
 from fastembed.common.utils import mean_pooling
 from fastembed.text.onnx_embedding import OnnxTextEmbedding, OnnxTextEmbeddingWorker
-from fastembed.common.model_description import DenseModelDescription, ModelSource
 
 supported_pooled_models: list[DenseModelDescription] = [
     DenseModelDescription(
@@ -91,7 +92,7 @@ supported_pooled_models: list[DenseModelDescription] = [
 
 class PooledEmbedding(OnnxTextEmbedding):
     @classmethod
-    def _get_worker_class(cls) -> Type[OnnxTextEmbeddingWorker]:
+    def _get_worker_class(cls) -> type[OnnxTextEmbeddingWorker]:
         return PooledEmbeddingWorker
 
     @classmethod

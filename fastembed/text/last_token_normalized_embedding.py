@@ -1,12 +1,13 @@
-from typing import Any, Iterable, Type
+from collections.abc import Iterable
+from typing import Any
 
 import onnxruntime as ort
 
-from fastembed.common.types import NumpyArray
+from fastembed.common.model_description import DenseModelDescription, ModelSource
 from fastembed.common.onnx_model import OnnxOutputContext
+from fastembed.common.types import NumpyArray
 from fastembed.common.utils import last_token_pooling, normalize
 from fastembed.text.onnx_embedding import OnnxTextEmbedding, OnnxTextEmbeddingWorker
-from fastembed.common.model_description import DenseModelDescription, ModelSource
 
 supported_last_token_normalized_models: list[DenseModelDescription] = [
     DenseModelDescription(
@@ -72,7 +73,7 @@ class LastTokenNormalizedEmbedding(OnnxTextEmbedding):
     """Decoder-based embedding models, which pool the last non-padding token and normalize it"""
 
     @classmethod
-    def _get_worker_class(cls) -> Type[OnnxTextEmbeddingWorker]:
+    def _get_worker_class(cls) -> type[OnnxTextEmbeddingWorker]:
         return LastTokenNormalizedEmbeddingWorker
 
     def load_onnx_model(self) -> None:

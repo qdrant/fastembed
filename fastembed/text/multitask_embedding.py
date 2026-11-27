@@ -1,13 +1,14 @@
+from collections.abc import Iterable
 from enum import Enum
-from typing import Any, Type, Iterable
+from typing import Any
 
 import numpy as np
 
+from fastembed.common.model_description import DenseModelDescription, ModelSource
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.types import NumpyArray
-from fastembed.text.pooled_normalized_embedding import PooledNormalizedEmbedding
 from fastembed.text.onnx_embedding import OnnxTextEmbeddingWorker
-from fastembed.common.model_description import DenseModelDescription, ModelSource
+from fastembed.text.pooled_normalized_embedding import PooledNormalizedEmbedding
 
 supported_multitask_models: list[DenseModelDescription] = [
     DenseModelDescription(
@@ -50,7 +51,7 @@ class JinaEmbeddingV3(PooledNormalizedEmbedding):
         self.default_task_id: Task | int = task_id if task_id is not None else self.PASSAGE_TASK
 
     @classmethod
-    def _get_worker_class(cls) -> Type[OnnxTextEmbeddingWorker]:
+    def _get_worker_class(cls) -> type[OnnxTextEmbeddingWorker]:
         return JinaEmbeddingV3Worker
 
     @classmethod

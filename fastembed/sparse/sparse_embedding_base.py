@@ -1,12 +1,13 @@
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable, Any
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
 
 from fastembed.common.model_description import SparseModelDescription
-from fastembed.common.types import NumpyArray
 from fastembed.common.model_management import ModelManagement
+from fastembed.common.types import NumpyArray
 
 
 @dataclass

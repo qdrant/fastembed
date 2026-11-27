@@ -1,19 +1,20 @@
 import itertools
 import os
+
 import numpy as np
 import pytest
 
 from fastembed.common.model_description import (
-    PoolingType,
-    ModelSource,
-    DenseModelDescription,
     BaseModelDescription,
+    DenseModelDescription,
+    ModelSource,
+    PoolingType,
 )
 from fastembed.common.onnx_model import OnnxOutputContext
-from fastembed.common.utils import normalize, mean_pooling, last_token_pooling
-from fastembed.text.custom_text_embedding import CustomTextEmbedding, PostprocessingConfig
-from fastembed.rerank.cross_encoder.custom_text_cross_encoder import CustomTextCrossEncoder
+from fastembed.common.utils import last_token_pooling, mean_pooling, normalize
 from fastembed.rerank.cross_encoder import TextCrossEncoder
+from fastembed.rerank.cross_encoder.custom_text_cross_encoder import CustomTextCrossEncoder
+from fastembed.text.custom_text_embedding import CustomTextEmbedding, PostprocessingConfig
 from fastembed.text.text_embedding import TextEmbedding
 from tests.utils import delete_model_cache
 

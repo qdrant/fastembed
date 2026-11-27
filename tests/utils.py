@@ -1,10 +1,10 @@
 import os
 import shutil
 import traceback
-
+from collections.abc import Callable
 from pathlib import Path
 from types import TracebackType
-from typing import Callable, Any, Type
+from typing import Any
 
 from fastembed.common.model_description import BaseModelDescription
 
@@ -23,7 +23,7 @@ def delete_model_cache(model_dir: str | Path) -> None:
     def on_error(
         func: Callable[..., Any],
         path: str,
-        exc_info: tuple[Type[BaseException], BaseException, TracebackType],
+        exc_info: tuple[type[BaseException], BaseException, TracebackType],
     ) -> None:
         print("Failed to remove: ", path)
         print("Exception: ", exc_info)

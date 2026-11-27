@@ -2,13 +2,11 @@ import itertools
 import json
 import os
 import shutil
-
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 import pytest
-
 from tokenizers import Tokenizer
 
 from fastembed.common.preprocessor_utils import load_tokenizer

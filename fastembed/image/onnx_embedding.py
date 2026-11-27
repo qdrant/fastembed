@@ -1,14 +1,13 @@
-from typing import Any, Iterable, Sequence, Type
+from collections.abc import Iterable, Sequence
+from typing import Any
 
-
-from fastembed.common.types import NumpyArray, Device
 from fastembed.common import ImageInput, OnnxProvider
+from fastembed.common.model_description import DenseModelDescription, ModelSource
 from fastembed.common.onnx_model import OnnxOutputContext
+from fastembed.common.types import Device, NumpyArray
 from fastembed.common.utils import define_cache_dir, normalize
 from fastembed.image.image_embedding_base import ImageEmbeddingBase
 from fastembed.image.onnx_image_model import ImageEmbeddingWorker, OnnxImageModel
-
-from fastembed.common.model_description import DenseModelDescription, ModelSource
 
 supported_onnx_models: list[DenseModelDescription] = [
     DenseModelDescription(
@@ -189,7 +188,7 @@ class OnnxImageEmbedding(ImageEmbeddingBase, OnnxImageModel[NumpyArray]):
         )
 
     @classmethod
-    def _get_worker_class(cls) -> Type["ImageEmbeddingWorker[NumpyArray]"]:
+    def _get_worker_class(cls) -> type["ImageEmbeddingWorker[NumpyArray]"]:
         return OnnxImageEmbeddingWorker
 
     def _preprocess_onnx_input(

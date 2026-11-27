@@ -1,5 +1,6 @@
+from collections.abc import Iterable
 from dataclasses import asdict
-from typing import Iterable, Any, Type
+from typing import Any
 
 from fastembed.common.model_description import DenseModelDescription, ModelSource
 from fastembed.common.onnx_model import OnnxOutputContext
@@ -9,7 +10,6 @@ from fastembed.late_interaction.late_interaction_embedding_base import (
 )
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
 from fastembed.text.onnx_text_model import TextEmbeddingWorker
-
 
 supported_token_embeddings_models = [
     DenseModelDescription(
@@ -45,7 +45,7 @@ class TokenEmbeddingsModel(OnnxTextEmbedding, LateInteractionTextEmbeddingBase):
         return [asdict(model) for model in cls._list_supported_models()]
 
     @classmethod
-    def _get_worker_class(cls) -> Type[TextEmbeddingWorker[NumpyArray]]:
+    def _get_worker_class(cls) -> type[TextEmbeddingWorker[NumpyArray]]:
         return TokensEmbeddingWorker
 
     def _post_process_onnx_output(

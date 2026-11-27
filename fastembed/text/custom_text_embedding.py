@@ -1,17 +1,18 @@
-from typing import Sequence, Any, Iterable, Type
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from typing import Any, ClassVar
 
 import numpy as np
 from numpy.typing import NDArray
 
 from fastembed.common import OnnxProvider
 from fastembed.common.model_description import (
-    PoolingType,
     DenseModelDescription,
+    PoolingType,
 )
 from fastembed.common.onnx_model import OnnxOutputContext
-from fastembed.common.types import NumpyArray, Device
-from fastembed.common.utils import normalize, mean_pooling, last_token_pooling
+from fastembed.common.types import Device, NumpyArray
+from fastembed.common.utils import last_token_pooling, mean_pooling, normalize
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
 from fastembed.text.onnx_text_model import TextEmbeddingWorker
 
@@ -24,8 +25,8 @@ class PostprocessingConfig:
 
 
 class CustomTextEmbedding(OnnxTextEmbedding):
-    SUPPORTED_MODELS: list[DenseModelDescription] = []
-    POSTPROCESSING_MAPPING: dict[str, PostprocessingConfig] = {}
+    SUPPORTED_MODELS: ClassVar[list[DenseModelDescription]] = []
+    POSTPROCESSING_MAPPING: ClassVar[dict[str, PostprocessingConfig]] = {}
 
     def __init__(
         self,
@@ -74,7 +75,7 @@ class CustomTextEmbedding(OnnxTextEmbedding):
         return cls.SUPPORTED_MODELS
 
     @classmethod
-    def _get_worker_class(cls) -> Type["TextEmbeddingWorker[NumpyArray]"]:
+    def _get_worker_class(cls) -> type["TextEmbeddingWorker[NumpyArray]"]:
         return CustomTextEmbeddingWorker
 
     def _get_worker_init_kwargs(self) -> dict[str, Any]:

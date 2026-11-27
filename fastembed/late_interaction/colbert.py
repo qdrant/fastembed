@@ -1,20 +1,21 @@
 import string
+from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import Any, Iterable, Sequence, Type
+from typing import Any
 
 import numpy as np
 from tokenizers import Encoding, Tokenizer
 
-from fastembed.common.preprocessor_utils import load_tokenizer
-from fastembed.common.types import NumpyArray, Device
 from fastembed.common import OnnxProvider
+from fastembed.common.model_description import DenseModelDescription, ModelSource
 from fastembed.common.onnx_model import OnnxOutputContext
+from fastembed.common.preprocessor_utils import load_tokenizer
+from fastembed.common.types import Device, NumpyArray
 from fastembed.common.utils import define_cache_dir, iter_batch, normalize
 from fastembed.late_interaction.late_interaction_embedding_base import (
     LateInteractionTextEmbeddingBase,
 )
 from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
-from fastembed.common.model_description import DenseModelDescription, ModelSource
 
 supported_colbert_models: list[DenseModelDescription] = [
     DenseModelDescription(
@@ -310,7 +311,7 @@ class Colbert(LateInteractionTextEmbeddingBase, OnnxTextModel[NumpyArray]):
             )
 
     @classmethod
-    def _get_worker_class(cls) -> Type[TextEmbeddingWorker[NumpyArray]]:
+    def _get_worker_class(cls) -> type[TextEmbeddingWorker[NumpyArray]]:
         return ColbertEmbeddingWorker
 
 

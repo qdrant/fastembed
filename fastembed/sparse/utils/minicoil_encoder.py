@@ -5,6 +5,7 @@ This model is not trainable, and should only be used for inference.
 """
 
 import numpy as np
+
 from fastembed.common.types import NumpyArray
 
 

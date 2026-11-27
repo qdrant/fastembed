@@ -8,10 +8,9 @@ from fastembed.late_interaction_multimodal.late_interaction_multimodal_embedding
     LateInteractionMultimodalEmbeddingBase,
 )
 
-
 MultiVectorModel = LateInteractionTextEmbeddingBase | LateInteractionMultimodalEmbeddingBase
 MAX_HAMMING_DISTANCE = 65  # 64 bits + 1
-POPCOUNT_LUT = np.array([bin(x).count("1") for x in range(256)], dtype=np.uint8)
+POPCOUNT_LUT = np.array([x.bit_count() for x in range(256)], dtype=np.uint8)
 
 
 def hamming_distance_matrix(ids: np.ndarray) -> np.ndarray:
@@ -292,9 +291,9 @@ class Muvera:
             AssertionError: If input vectors don't have expected dimensionality
             ValueError: If the input multivector is empty
         """
-        assert (
-            vectors.shape[1] == self.dim
-        ), f"Expected vectors of shape (n, {self.dim}), got {vectors.shape}"
+        assert vectors.shape[1] == self.dim, (
+            f"Expected vectors of shape (n, {self.dim}), got {vectors.shape}"
+        )
 
         if len(vectors) == 0:
             raise ValueError("Cannot encode an empty multivector")

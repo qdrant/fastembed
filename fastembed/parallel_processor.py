@@ -2,6 +2,7 @@ import logging
 import os
 import time
 from collections import defaultdict
+from collections.abc import Iterable
 from copy import deepcopy
 from enum import Enum
 from multiprocessing import Queue, get_context
@@ -9,7 +10,7 @@ from multiprocessing.context import BaseContext
 from multiprocessing.process import BaseProcess
 from multiprocessing.sharedctypes import Synchronized as BaseValue
 from queue import Empty, Full
-from typing import Any, Iterable, Type
+from typing import Any
 
 from fastembed.common.types import Device
 
@@ -35,7 +36,7 @@ class Worker:
 
 
 def _worker(
-    worker_class: Type[Worker],
+    worker_class: type[Worker],
     input_queue: Queue,
     output_queue: Queue,
     num_active_workers: BaseValue,
@@ -51,7 +52,7 @@ def _worker(
     if kwargs is None:
         kwargs = {}
 
-    logging.info(
+    logging.info(  # noqa: LOG015
         f"Reader worker: {worker_id} PID: {os.getpid()} Device: {kwargs.get('device_id', 'CPU')}"
     )
     try:
@@ -68,7 +69,7 @@ def _worker(
         for processed_item in worker.process(input_queue_iterable()):
             output_queue.put(processed_item)
     except Exception as e:  # pylint: disable=broad-except
-        logging.exception(e)
+        logging.exception(e)  # noqa: LOG015, TRY401
         output_queue.put(QueueSignals.error)
     finally:
         # It's important that we close and join the queue here before
@@ -87,14 +88,14 @@ def _worker(
         with num_active_workers.get_lock():
             num_active_workers.value -= 1
 
-        logging.info(f"Reader worker {worker_id} finished")
+        logging.info(f"Reader worker {worker_id} finished")  # noqa: LOG015
 
 
 class ParallelWorkerPool:
     def __init__(
         self,
         num_workers: int,
-        worker: Type[Worker],
+        worker: type[Worker],
         start_method: str | None = None,
         device_ids: list[int] | None = None,
         cuda: bool | Device = Device.AUTO,
@@ -125,7 +126,7 @@ class ParallelWorkerPool:
         assert isinstance(ctx_value, BaseValue)
         self.num_active_workers = ctx_value
 
-        for worker_id in range(0, self.num_workers):
+        for worker_id in range(self.num_workers):
             worker_kwargs = deepcopy(kwargs)
             worker_kwargs["cuda"] = self.cuda
             if self.device_ids:
@@ -179,9 +180,9 @@ class ParallelWorkerPool:
                 else:
                     try:
                         out_item = self._get_output()
-                    except Empty as e:
+                    except Empty:
                         self.join_or_terminate()
-                        raise e
+                        raise
 
                 if out_item is not None:
                     if out_item == QueueSignals.error:

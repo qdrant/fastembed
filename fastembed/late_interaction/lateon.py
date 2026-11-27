@@ -1,5 +1,6 @@
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Iterable, Type
+from typing import Any
 
 import numpy as np
 
@@ -8,7 +9,6 @@ from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.types import NumpyArray
 from fastembed.common.utils import normalize
 from fastembed.late_interaction.colbert import Colbert, ColbertEmbeddingWorker
-
 
 supported_lateon_models: list[DenseModelDescription] = [
     DenseModelDescription(
@@ -50,7 +50,7 @@ class LateOn(Colbert):
     RESERVED_MARKER_TOKENS = 0
 
     @classmethod
-    def _get_worker_class(cls) -> Type[ColbertEmbeddingWorker]:
+    def _get_worker_class(cls) -> type[ColbertEmbeddingWorker]:
         return LateOnEmbeddingWorker
 
     @classmethod
@@ -89,7 +89,7 @@ class MLateOn(LateOn):
     MASK_TOKEN = "<mask>"
 
     @classmethod
-    def _get_worker_class(cls) -> Type[ColbertEmbeddingWorker]:
+    def _get_worker_class(cls) -> type[ColbertEmbeddingWorker]:
         return MLateOnEmbeddingWorker
 
     @classmethod

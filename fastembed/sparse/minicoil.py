@@ -1,15 +1,15 @@
+from collections.abc import Iterable, Sequence
 from pathlib import Path
-
-from typing import Any, Sequence, Iterable, Type
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
 from py_rust_stemmers import SnowballStemmer
 from tokenizers import Tokenizer
 
-from fastembed.common.model_description import SparseModelDescription, ModelSource
-from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common import OnnxProvider
+from fastembed.common.model_description import ModelSource, SparseModelDescription
+from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.types import Device
 from fastembed.common.utils import define_cache_dir
 from fastembed.sparse.sparse_embedding_base import (
@@ -20,7 +20,6 @@ from fastembed.sparse.utils.minicoil_encoder import Encoder
 from fastembed.sparse.utils.sparse_vectors_converter import SparseVectorConverter, WordEmbedding
 from fastembed.sparse.utils.vocab_resolver import VocabResolver, VocabTokenizer
 from fastembed.text.onnx_text_model import OnnxTextModel, TextEmbeddingWorker
-
 
 MINICOIL_MODEL_FILE = "minicoil.triplet.model.npy"
 MINICOIL_VOCAB_FILE = "minicoil.triplet.model.vocab"
@@ -379,7 +378,7 @@ class MiniCOIL(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
                 )
 
     @classmethod
-    def _get_worker_class(cls) -> Type["MiniCoilTextEmbeddingWorker"]:
+    def _get_worker_class(cls) -> type["MiniCoilTextEmbeddingWorker"]:
         return MiniCoilTextEmbeddingWorker
 
 

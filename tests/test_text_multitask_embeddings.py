@@ -7,7 +7,6 @@ from fastembed import TextEmbedding
 from fastembed.text.multitask_embedding import JinaEmbeddingV3, Task
 from tests.utils import delete_model_cache, is_manual_run
 
-
 CANONICAL_VECTOR_VALUES = {
     "jinaai/jina-embeddings-v3": [
         {

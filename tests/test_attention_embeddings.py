@@ -7,7 +7,6 @@ import pytest
 from fastembed import SparseTextEmbedding
 from tests.utils import delete_model_cache
 
-
 _MODELS_TO_CACHE = ("Qdrant/bm42-all-minilm-l6-v2-attentions", "Qdrant/bm25")
 MODELS_TO_CACHE = tuple([x.lower() for x in _MODELS_TO_CACHE])
 
@@ -33,7 +32,7 @@ def model_cache():
     yield get_model
 
     if is_ci:
-        for name, model in cache.items():
+        for model in cache.values():
             delete_model_cache(model.model._model_dir)
     cache.clear()
 
@@ -60,8 +59,10 @@ def test_attention_embeddings(model_cache, model_name: str) -> None:
             "All animals are equal, but some animals are more equal than others.",
             "It was a pleasure to burn.",
             "The sky above the port was the color of television, tuned to a dead channel.",
-            "In the beginning, the universe was created."
-            " This has made a lot of people very angry and been widely regarded as a bad move.",
+            (
+                "In the beginning, the universe was created."
+                " This has made a lot of people very angry and been widely regarded as a bad move."
+            ),
             "It's a truth universally acknowledged that a zombie in possession of brains must be in want of more brains.",
             "War is peace. Freedom is slavery. Ignorance is strength.",
             "We're not in Infinity; we're in the suburbs.",
@@ -123,9 +124,9 @@ def test_bm42_weights_do_not_depend_on_batch(model_cache) -> None:
     short_doc = "vector search engine"
     long_doc = "Qdrant is a vector similarity search engine and vector database. " * 20
     with model_cache("Qdrant/bm42-all-minilm-l6-v2-attentions") as model:
-        alone = list(model.embed([short_doc]))[0]
+        (alone,) = model.embed([short_doc])
         # padded to the long document's length within the batch
-        batched = list(model.embed([short_doc, long_doc]))[0]
+        batched, _ = model.embed([short_doc, long_doc])
 
     assert np.array_equal(alone.indices, batched.indices)
     assert np.allclose(alone.values, batched.values, atol=1e-6)

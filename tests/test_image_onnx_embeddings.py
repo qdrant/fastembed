@@ -68,7 +68,7 @@ def model_cache():
     yield get_model
 
     if is_ci:
-        for name, model in cache.items():
+        for model in cache.values():
             delete_model_cache(model.model._model_dir)
     cache.clear()
 
@@ -94,7 +94,7 @@ def test_embedding(model_cache, model_name: str) -> None:
             images = [
                 TEST_MISC_DIR / "image.jpeg",
                 str(TEST_MISC_DIR / "small_image.jpeg"),
-                Image.open((TEST_MISC_DIR / "small_image.jpeg")),
+                Image.open(TEST_MISC_DIR / "small_image.jpeg"),
                 Image.open(BytesIO((TEST_MISC_DIR / "logo.png").read_bytes())),
             ]
             embeddings = list(model.embed(images))

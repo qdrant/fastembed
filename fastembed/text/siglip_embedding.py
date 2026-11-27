@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Type
+from typing import Any
 
 from fastembed.common.model_description import DenseModelDescription, ModelSource
 from fastembed.text.onnx_embedding import OnnxTextEmbedding, OnnxTextEmbeddingWorker
@@ -32,10 +32,10 @@ class SiglipOnnxTextEmbedding(OnnxTextEmbedding):
     latter is the text embedding, so it must be selected explicitly.
     """
 
-    ONNX_OUTPUT_NAMES = ["pooler_output"]
+    ONNX_OUTPUT_NAMES = ["pooler_output"]  # noqa: RUF012
 
     @classmethod
-    def _get_worker_class(cls) -> Type[OnnxTextEmbeddingWorker]:
+    def _get_worker_class(cls) -> type[OnnxTextEmbeddingWorker]:
         return SiglipTextEmbeddingWorker
 
     @classmethod

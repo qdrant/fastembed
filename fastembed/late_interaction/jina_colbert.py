@@ -1,8 +1,8 @@
-from typing import Any, Type
+from typing import Any
 
+from fastembed.common.model_description import DenseModelDescription, ModelSource
 from fastembed.common.types import NumpyArray
 from fastembed.late_interaction.colbert import Colbert, ColbertEmbeddingWorker
-from fastembed.common.model_description import DenseModelDescription, ModelSource
 
 supported_jina_colbert_models: list[DenseModelDescription] = [
     DenseModelDescription(
@@ -25,7 +25,7 @@ class JinaColbert(Colbert):
     MASK_TOKEN = "<mask>"
 
     @classmethod
-    def _get_worker_class(cls) -> Type[ColbertEmbeddingWorker]:
+    def _get_worker_class(cls) -> type[ColbertEmbeddingWorker]:
         return JinaColbertEmbeddingWorker
 
     @classmethod

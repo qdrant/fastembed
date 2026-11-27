@@ -2,9 +2,10 @@ import itertools
 import json
 import os
 import warnings
+from collections.abc import Iterable
 from multiprocessing import get_all_start_methods
 from pathlib import Path
-from typing import Any, Iterable, Type
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
@@ -350,9 +351,8 @@ class StaticTextEmbedding(TextEmbeddingBase):
             documents = [documents]
             is_small = True
 
-        if isinstance(documents, list):
-            if len(documents) < batch_size:
-                is_small = True
+        if isinstance(documents, list) and len(documents) < batch_size:
+            is_small = True
 
         if parallel is None or is_small:
             for batch in iter_batch(documents, batch_size):
@@ -378,7 +378,7 @@ class StaticTextEmbedding(TextEmbeddingBase):
                 yield from batch
 
     @classmethod
-    def _get_worker_class(cls) -> Type["StaticTextEmbeddingWorker"]:
+    def _get_worker_class(cls) -> type["StaticTextEmbeddingWorker"]:
         return StaticTextEmbeddingWorker
 
     def token_count(
@@ -428,7 +428,7 @@ class SqrtTfStaticEmbedding(StaticTextEmbedding):
         return supported_sqrt_tf_models
 
     @classmethod
-    def _get_worker_class(cls) -> Type[StaticTextEmbeddingWorker]:
+    def _get_worker_class(cls) -> type[StaticTextEmbeddingWorker]:
         return SqrtTfStaticEmbeddingWorker
 
 
