@@ -305,21 +305,21 @@ class Muvera:
         # num of space partitions in SimHash
         num_partitions = 2**self.k_sim
         cluster_center_ids = np.arange(num_partitions)
+        coordinates = np.arange(self.dim)
+        weights = vectors.ravel().astype(np.float64, copy=False)
 
         for projection_index, simhash in enumerate(self.simhash_projections):
-            # Initialize cluster centers and count vectors assigned to each cluster
-            cluster_centers = np.zeros((num_partitions, self.dim))
-            cluster_center_id_to_vectors: dict[int, list[int]] = {
-                cluster_center_id: [] for cluster_center_id in cluster_center_ids
-            }
             cluster_vector_counts = None
             empty_mask = None
 
-            # Assign each vector to its cluster and accumulate cluster centers
+            # Treat each (cluster, coordinate) pair as a bin in the flattened centers.
             vector_cluster_ids = simhash.get_cluster_ids(vectors)
-            for cluster_id, (vec_idx, vec) in zip(vector_cluster_ids, enumerate(vectors)):
-                cluster_centers[cluster_id] += vec
-                cluster_center_id_to_vectors[cluster_id].append(vec_idx)
+            offsets = vector_cluster_ids[:, None] * self.dim
+            cluster_centers = np.bincount(
+                (offsets + coordinates).ravel(),
+                weights=weights,
+                minlength=num_partitions * self.dim,
+            ).reshape(num_partitions, self.dim)
 
             if normalize_by_count or fill_empty_clusters:
                 cluster_vector_counts = np.bincount(vector_cluster_ids, minlength=num_partitions)
@@ -336,17 +336,10 @@ class Muvera:
                 assert empty_mask is not None
                 # Compare empty clusters only with occupied clusters. Both ID arrays
                 # are sorted, preserving the original argmin tie-breaking order.
-                occupied_ids = cluster_center_ids[~empty_mask]
+                occupied_ids, first_indices = np.unique(vector_cluster_ids, return_index=True)
                 empty_ids = cluster_center_ids[empty_mask]
                 hamming = self._cluster_id_popcounts[empty_ids[:, None] ^ occupied_ids[None, :]]
-                nearest_non_empty = occupied_ids[np.argmin(hamming, axis=1)]
-                fill_vectors = np.array(
-                    [
-                        vectors[cluster_center_id_to_vectors[cluster_id][0]]
-                        for cluster_id in nearest_non_empty
-                    ]
-                ).reshape(-1, self.dim)
-                cluster_centers[empty_mask] = fill_vectors
+                cluster_centers[empty_mask] = vectors[first_indices[np.argmin(hamming, axis=1)]]
 
             # Apply random projection for dimensionality reduction if needed
             if self.dim_proj < self.dim:

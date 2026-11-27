@@ -75,3 +75,16 @@ def test_muvera_fills_match_full_matrix_reference(k_sim):
     result = muvera.process_document(vectors).reshape(n, 1)
     for empty_id, nearest in zip(np.flatnonzero(empty), expected_source_ids):
         assert result[empty_id, 0] == vectors[np.flatnonzero(ids == nearest)[0], 0]
+
+
+def test_muvera_accumulates_interleaved_clusters():
+    muvera = Muvera(dim=2, k_sim=2, dim_proj=2, r_reps=1)
+    muvera.simhash_projections[0].get_cluster_ids = lambda vectors: np.array([3, 0, 3, 0])
+    vectors = np.array([[1, 2], [3, 4], [5, 6], [7, 8]], dtype=np.float32)
+    np.testing.assert_array_equal(
+        muvera.process_query(vectors).reshape(4, 2), [[10, 12], [0, 0], [0, 0], [6, 8]]
+    )
+    # Both empty clusters tie between 0 and 3 and take the first vector assigned to 0.
+    np.testing.assert_array_equal(
+        muvera.process_document(vectors).reshape(4, 2), [[5, 6], [3, 4], [3, 4], [3, 4]]
+    )
