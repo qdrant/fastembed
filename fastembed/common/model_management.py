@@ -1,4 +1,5 @@
 import os
+import stat
 import time
 import gzip
 import json
@@ -66,7 +67,6 @@ def _cache_requested_revision(
         or PureWindowsPath(revision).drive
     ):
         return
-    temporary: Path | None = None
     try:
         root = snapshot_dir.expanduser().resolve()
         if Path(snapshot).resolve() != root / "snapshots" / commit:
@@ -77,18 +77,19 @@ def _cache_requested_revision(
             return
         if ref_path.is_file() and ref_path.read_text() == commit:
             return
+        mode = stat.S_IMODE(ref_path.stat().st_mode) if ref_path.exists() else None
         ref_path.parent.mkdir(parents=True, exist_ok=True)
-        with tempfile.NamedTemporaryFile(mode="w", dir=ref_path.parent, delete=False) as stream:
-            temporary = Path(stream.name)
-            stream.write(commit)
-        os.replace(temporary, ref_path)
+        # A private directory protects the staged hash, while ordinary file creation
+        # respects the umask instead of installing NamedTemporaryFile's owner-only mode.
+        with tempfile.TemporaryDirectory(dir=ref_path.parent) as temporary_dir:
+            temporary = Path(temporary_dir) / "ref"
+            temporary.write_text(commit)
+            if mode is not None:
+                temporary.chmod(mode)
+            os.replace(temporary, ref_path)
     except (OSError, RuntimeError) as error:
         # Like the Hub's cache bookkeeping, this must not fail a completed download.
         logger.warning(f"Could not cache revision {revision!r}: {error}")
-    finally:
-        if temporary is not None:
-            with contextlib.suppress(OSError):
-                temporary.unlink()
 
 
 class CorruptedCacheError(ValueError):

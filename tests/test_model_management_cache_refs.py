@@ -1,5 +1,9 @@
 """Exercise real Hub snapshot/ref cache handling with only network boundaries replaced."""
 
+import json
+import os
+import subprocess
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Callable
@@ -14,6 +18,46 @@ from fastembed.common.model_management import ModelManagement
 
 COMMIT = "a" * 40
 CONTENTS = b"small local model fixture"
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX file permissions")
+@pytest.mark.parametrize("umask", [0o022, 0o027])
+@pytest.mark.parametrize("existing_mode", [None, 0o640, 0o600])
+def test_ref_permissions_respect_umask_and_preserve_existing_mode(
+    tmp_path: Path, umask: int, existing_mode: int | None
+) -> None:
+    """Isolate the process-wide umask while checking new and replaced cache ref modes."""
+    script = """
+import json, os, stat, sys
+from pathlib import Path
+from fastembed.common.model_management import _cache_requested_revision
+
+root = Path(sys.argv[1])
+os.umask(int(sys.argv[2]))
+mode = json.loads(sys.argv[3])
+commit = "a" * 40
+snapshot = root / "snapshots" / commit
+snapshot.mkdir(parents=True)
+ref = root / "refs" / "main"
+if mode is not None:
+    ref.parent.mkdir(parents=True)
+    ref.write_text("b" * 40)
+    ref.chmod(mode)
+_cache_requested_revision(root, str(snapshot), "main", commit)
+print(json.dumps({"mode": stat.S_IMODE(ref.stat().st_mode), "commit": ref.read_text()}))
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", script, str(tmp_path), str(umask), json.dumps(existing_mode)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert json.loads(result.stdout) == {
+        "mode": 0o666 & ~umask if existing_mode is None else existing_mode,
+        "commit": COMMIT,
+    }
+    assert sorted((tmp_path / "refs").iterdir()) == [tmp_path / "refs" / "main"]
 
 
 @pytest.fixture
