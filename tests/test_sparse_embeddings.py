@@ -4,8 +4,10 @@ from contextlib import contextmanager
 import pytest
 import numpy as np
 
+from fastembed.common.utils import remove_non_alphanumeric
 from fastembed.sparse.bm25 import Bm25
 from fastembed.sparse.sparse_text_embedding import SparseTextEmbedding
+from fastembed.sparse.utils.tokenizer import SimpleTokenizer
 from tests.utils import delete_model_cache, is_manual_run, should_test_model
 
 
@@ -309,6 +311,35 @@ def test_disable_stemmer_behavior(disable_stemmer: bool) -> None:
     else:
         expected = ["quick", "brown", "fox", "test", "sentenc"]
     assert result == expected, f"Expected {expected}, but got {result}"
+
+
+def test_combining_marks_do_not_split_words() -> None:
+    # Tamil and Devanagari vowel signs and Arabic harakat are combining marks, which the regex
+    # word class does not match.
+    text = "தமிழ் மொழி, हिन्दी भाषा! ذَهَبَ الطَّالِبُ"
+    assert SimpleTokenizer.tokenize(text) == [
+        "தமிழ்",
+        "மொழி",
+        "हिन्दी",
+        "भाषा",
+        "ذَهَبَ",
+        "الطَّالِبُ",
+    ]
+    assert remove_non_alphanumeric("தமிழ், हिन्दी!") == "தமிழ்  हिन्दी "
+
+
+@pytest.mark.parametrize(
+    "language,text,expected",
+    [
+        ("arabic", "ذَهَبَ الطَّالِبُ إِلَى المَدْرَسَةِ", ["ذهب", "طالب", "الي", "مدرس"]),
+        ("tamil", "சென்னை தமிழ்நாட்டின் தலைநகரம் ஆகும்", ["சென்", "தமிழ்நாடு", "தலைநகரம்", "ஆக்"]),
+    ],
+    ids=["arabic", "tamil"],
+)
+def test_stem_words_with_combining_marks(language: str, text: str, expected: list[str]) -> None:
+    model = Bm25("Qdrant/bm25", language=language)
+    tokens = model.tokenizer.tokenize(remove_non_alphanumeric(text))
+    assert model._stem(tokens) == expected
 
 
 class _PolishStemmer:
