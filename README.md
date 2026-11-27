@@ -46,6 +46,40 @@ embeddings_list = list(embedding_model.embed(documents))
 len(embeddings_list[0]) # Vector of 384 dimensions
 ```
 
+### Model cache and ONNX Runtime options
+
+Use `cache_dir` to choose where FastEmbed stores downloaded model files. If omitted, FastEmbed uses `FASTEMBED_CACHE_PATH` when set, or a `fastembed_cache` directory in the system temporary directory.
+
+Set `local_files_only=True` to load a model from cached files without downloading. The required model files must already be in the selected cache.
+
+```python
+from fastembed import TextEmbedding
+
+model_name = "BAAI/bge-small-en-v1.5"
+cache_dir = "./fastembed_cache"
+
+# First run: download the model into this cache.
+model = TextEmbedding(model_name=model_name, cache_dir=cache_dir)
+
+# Later: use the same cache without downloading.
+offline_model = TextEmbedding(
+    model_name=model_name,
+    cache_dir=cache_dir,
+    local_files_only=True,
+)
+```
+
+For ONNX models, `enable_cpu_mem_arena` is an exposed ONNX Runtime session option. Pass `enable_cpu_mem_arena=False` to disable the CPU memory arena; omit it to keep ONNX Runtime's default:
+
+```python
+from fastembed import TextEmbedding
+
+model = TextEmbedding(
+    model_name="BAAI/bge-small-en-v1.5",
+    enable_cpu_mem_arena=False,
+)
+```
+
 Fastembed supports a variety of models for different tasks and modalities.
 The list of all the available models can be found [here](https://qdrant.github.io/fastembed/examples/Supported_Models/)
 ### 🎒 Dense text embeddings
