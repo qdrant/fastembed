@@ -2,10 +2,11 @@ import os
 import platform
 from contextlib import contextmanager
 from io import BytesIO
+from pathlib import Path
 
 import numpy as np
 import pytest
-from PIL import Image
+from PIL import ExifTags, Image
 
 from fastembed import ImageEmbedding
 from tests.config import TEST_MISC_DIR
@@ -198,3 +199,18 @@ def test_session_options(model_cache, model_name) -> None:
         model = ImageEmbedding(model_name=model_name, enable_cpu_mem_arena=False)
         session_options = model.model.model.get_session_options()
         assert session_options.enable_cpu_mem_arena is False
+
+
+@pytest.mark.parametrize("model_name", ["Qdrant/clip-ViT-B-32-vision"])
+def test_exif_orientation(model_cache, model_name: str, tmp_path: Path) -> None:
+    upright = Image.open(TEST_MISC_DIR / "image.jpeg").convert("RGB")
+    # phone cameras store the pixels rotated and tag how viewers should turn them upright
+    exif = Image.Exif()
+    exif[ExifTags.Base.Orientation] = 6  # rotate 90 degrees clockwise to display
+    rotated_path = tmp_path / "rotated.png"
+    upright.transpose(Image.Transpose.ROTATE_90).save(rotated_path, exif=exif.tobytes())
+
+    with model_cache(model_name) as model:
+        from_path, from_image = list(model.embed([rotated_path, upright]))
+
+    assert np.allclose(from_path, from_image, atol=1e-6)
