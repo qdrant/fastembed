@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Iterable, Sequence, Type
 
 import numpy as np
-from PIL import Image, ImageOps
+from PIL import Image
 from tokenizers import Encoding, Tokenizer
 
 from fastembed.common import OnnxProvider, ImageInput
@@ -187,7 +187,7 @@ class OnnxMultimodalModel(OnnxModel[T]):
         with contextlib.ExitStack() as stack:
             assert self.processor is not None, "Processor is not initialized"
             image_files = [
-                ImageOps.exif_transpose(stack.enter_context(self.processor.open_image(image)))
+                stack.enter_context(self.processor.open_image(image))
                 if not isinstance(image, Image.Image)
                 else image
                 for image in images

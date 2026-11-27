@@ -1,7 +1,7 @@
 from typing import Any
 import math
 
-from PIL import Image
+from PIL import Image, ImageOps
 
 from fastembed.common.types import NumpyArray
 from fastembed.image.transform.functional import (
@@ -293,6 +293,9 @@ class Compose:
         size = self._draft_size(image.size)
         if size is not None:
             image.draft(image.mode, size)  # a no-op for formats other than JPEG
+        # phone cameras store photos rotated, with an EXIF tag saying how to display them;
+        # this loads the pixels, so it must come after draft
+        ImageOps.exif_transpose(image, in_place=True)
         return image
 
     def _draft_size(self, size: tuple[int, int]) -> tuple[int, int] | None:
