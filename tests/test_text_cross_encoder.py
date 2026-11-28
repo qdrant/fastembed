@@ -20,6 +20,9 @@ CANONICAL_SCORE_VALUES = {
     "jinaai/jina-reranker-v1-tiny-en": np.array([2.5911, 0.1122]),
     "jinaai/jina-reranker-v1-turbo-en": np.array([1.8295, -2.8908]),
     "jinaai/jina-reranker-v2-base-multilingual": np.array([1.6533, -1.6455]),
+    "syntriq/lupe-multilingual-reranker-small": np.array([6.928032, -5.38603]),
+    "syntriq/lupe-multilingual-reranker-base": np.array([6.526691, -6.96417]),
+    "syntriq/lupe-multilingual-reranker-large": np.array([7.556798, -6.858602]),
 }
 
 
@@ -190,3 +193,16 @@ def test_session_options(model_cache, model_name) -> None:
         model = TextCrossEncoder(model_name=model_name, enable_cpu_mem_arena=False)
         session_options = model.model.model.get_session_options()
         assert session_options.enable_cpu_mem_arena is False
+
+
+def test_long_pair_is_not_truncated_at_384(model_cache) -> None:
+    is_ci = os.getenv("CI")
+    is_manual = is_manual_run()
+    for model_desc in TextCrossEncoder._list_supported_models():
+        if not model_desc.model.startswith("syntriq/lupe-multilingual-reranker-"):
+            continue
+        if not should_test_model(model_desc, "Xenova/ms-marco-MiniLM-L-6-v2", is_ci, is_manual):
+            continue
+        with model_cache(model_desc.model) as model:
+            document = "Paris is the capital of France. " * 100
+            assert model.token_count([("What is the capital of France?", document)]) > 384
