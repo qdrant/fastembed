@@ -11,7 +11,7 @@ from fastembed.common.model_description import (
 )
 from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.common.types import NumpyArray, Device
-from fastembed.common.utils import normalize, mean_pooling, last_token_pooling
+from fastembed.common.utils import first_token_pooling, last_token_pooling, mean_pooling, normalize
 from fastembed.text.onnx_embedding import OnnxTextEmbedding
 from fastembed.text.onnx_text_model import TextEmbeddingWorker
 
@@ -97,7 +97,7 @@ class CustomTextEmbedding(OnnxTextEmbedding):
         self, embeddings: NumpyArray, attention_mask: NDArray[np.int64] | None = None
     ) -> NumpyArray:
         if self._pooling == PoolingType.CLS:
-            return embeddings[:, 0]
+            return first_token_pooling(embeddings, attention_mask)
 
         if self._pooling == PoolingType.MEAN:
             if attention_mask is None:
