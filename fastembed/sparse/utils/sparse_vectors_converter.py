@@ -96,7 +96,12 @@ class SparseVectorConverter:
             # }
             if embedding.word_id > 0:
                 # Known word, no need to clean
-                new_sentence_embedding[word] = embedding
+                known_embedding = copy.deepcopy(embedding)
+                if word in new_sentence_embedding:
+                    previous = new_sentence_embedding[word]
+                    known_embedding.count += previous.count
+                    known_embedding.forms += previous.forms
+                new_sentence_embedding[word] = known_embedding
             else:
                 # Unknown word
                 if word in self.unwanted_tokens:
