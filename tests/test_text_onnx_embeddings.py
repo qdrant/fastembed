@@ -115,6 +115,9 @@ CANONICAL_VECTOR_VALUES = {
     "minishlab/potion-multilingual-128M": np.array(
         [0.02366836, 0.02973341, 0.05140258, -0.00745248, -0.06740689]
     ),
+    "minishlab/blink-8M": np.array(
+        [-0.08758501, -0.0309574, -0.05417808, -0.06783412, -0.03945381]
+    ),
 }
 
 PAPR_CODE_INSTRUCT_PREFIX = (
