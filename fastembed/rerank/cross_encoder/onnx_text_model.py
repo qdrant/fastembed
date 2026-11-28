@@ -90,7 +90,9 @@ class OnnxCrossEncoderModel(OnnxModel[float]):
         onnx_input = self._preprocess_onnx_input(inputs, **kwargs)
         outputs = self.model.run(self.ONNX_OUTPUT_NAMES, onnx_input)  # type: ignore[union-attr]
         relevant_output = outputs[0]
-        scores: NumpyArray = relevant_output[:, 0]
+        scores: NumpyArray = (
+            relevant_output if relevant_output.ndim == 1 else relevant_output[:, 0]
+        )
         return OnnxOutputContext(model_output=scores)
 
     def _rerank_documents(

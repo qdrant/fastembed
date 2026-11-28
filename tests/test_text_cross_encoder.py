@@ -1,10 +1,17 @@
 import os
 from contextlib import contextmanager
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock
 
 import numpy as np
 import pytest
+from tokenizers import Tokenizer
+from tokenizers.models import WordLevel
 
+from fastembed.common.model_description import ModelSource
 from fastembed.rerank.cross_encoder import TextCrossEncoder
+from fastembed.rerank.cross_encoder.custom_text_cross_encoder import CustomTextCrossEncoder
 from tests.utils import delete_model_cache, is_manual_run, should_test_model
 
 CANONICAL_SCORE_VALUES = {
@@ -25,6 +32,31 @@ CANONICAL_SCORE_VALUES = {
 
 _MODELS_TO_CACHE = ("Xenova/ms-marco-MiniLM-L-6-v2",)
 MODELS_TO_CACHE = tuple([x.lower() for x in _MODELS_TO_CACHE])
+
+
+@pytest.mark.parametrize("logits", [[0.25, 0.5], [[0.25], [0.5]], [[0.25, 0.75], [0.5, 1.0]]])
+def test_custom_reranker_score_shapes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, logits: list[float] | list[list[float]]
+) -> None:
+    tokenizer = Tokenizer(WordLevel({"[UNK]": 0, "[PAD]": 1}, unk_token="[UNK]"))
+    tokenizer.save(str(tmp_path / "tokenizer.json"))
+    (tmp_path / "tokenizer_config.json").write_text(
+        '{"model_max_length": 16, "pad_token": "[PAD]"}', encoding="utf-8"
+    )
+
+    session = Mock()
+    session.get_inputs.return_value = [SimpleNamespace(name="input_ids")]
+    session.run.return_value = [np.array(logits, dtype=np.float32)]
+    monkeypatch.setattr("onnxruntime.InferenceSession", Mock(return_value=session))
+    monkeypatch.setattr(CustomTextCrossEncoder, "SUPPORTED_MODELS", [])
+    model_name = "tests/reranker-score-shapes"
+    TextCrossEncoder.add_custom_model(model_name, sources=ModelSource(hf=model_name))
+    encoder = TextCrossEncoder(
+        model_name, cache_dir=str(tmp_path), specific_model_path=str(tmp_path)
+    )
+
+    assert list(encoder.rerank("query", ["first", "second"])) == [0.25, 0.5]
+    assert list(encoder.rerank_pairs([("query", "first"), ("query", "second")])) == [0.25, 0.5]
 
 
 @pytest.fixture(scope="module")
