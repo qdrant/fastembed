@@ -50,13 +50,16 @@ class IfSplade(SparseTextEmbeddingBase, OnnxTextModel[SparseEmbedding]):
         if output.attention_mask is None:
             raise ValueError("attention_mask must be provided for document post-processing")
 
-        # Max-pool token logits over the sequence, masking out the padding
+        # Ignore padded tokens during the reduction, without allocating a second logits tensor.
         pooled = np.max(
-            output.model_output * np.expand_dims(output.attention_mask, axis=-1), axis=1
-        )
+            output.model_output,
+            axis=1,
+            where=output.attention_mask[:, :, None].astype(bool),
+            initial=0,
+        ).astype(np.float64, copy=False)
         # v3 models of the opensearch-neural-sparse family use a double log activation,
         # log(1 + log(1 + relu(x))), to increase sparsity of document embeddings
-        scores = np.log1p(np.log1p(np.maximum(pooled, 0.0)))
+        scores = np.log1p(np.log1p(pooled))
 
         if self.special_tokens_ids:
             scores[:, list(self.special_tokens_ids)] = 0.0

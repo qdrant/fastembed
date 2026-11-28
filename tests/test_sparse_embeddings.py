@@ -1,13 +1,14 @@
 import os
 from contextlib import contextmanager
 
-import pytest
 import numpy as np
+import pytest
 
+from fastembed.common.onnx_model import OnnxOutputContext
 from fastembed.sparse.bm25 import Bm25
+from fastembed.sparse.if_splade import IfSplade
 from fastembed.sparse.sparse_text_embedding import SparseTextEmbedding
 from tests.utils import delete_model_cache, is_manual_run, should_test_model
-
 
 CANONICAL_COLUMN_VALUES = {
     "prithivida/Splade_PP_en_v1": {
@@ -390,6 +391,27 @@ def test_parallel_matches_serial() -> None:
     for expected, actual in zip(serial, parallel):
         assert actual.indices.tolist() == expected.indices.tolist()
         assert actual.values.tolist() == pytest.approx(expected.values.tolist())
+
+
+def test_if_splade_document_pooling_ignores_padding() -> None:
+    model = IfSplade.__new__(IfSplade)
+    model.special_tokens_ids = {2}
+    output = OnnxOutputContext(
+        model_output=np.array(
+            [
+                [[np.nan, 99, 99], [3, -1, 4], [1, -2, 2]],
+                [[np.nan, 99, 99], [1, 2, 3], [4, 5, 6]],
+            ],
+            dtype=np.float32,
+        ),
+        attention_mask=np.array([[0, 1, 1], [0, 0, 0]], dtype=np.int64),
+    )
+
+    first, empty = model._post_process_onnx_output(output)
+    np.testing.assert_array_equal(first.indices, [0])
+    np.testing.assert_array_equal(first.values, [np.log1p(np.log1p(3.0))])
+    assert first.values.dtype == np.float64
+    assert empty.indices.size == empty.values.size == 0
 
 
 def test_if_splade_query_embed_is_inference_free() -> None:
