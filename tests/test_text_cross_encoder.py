@@ -195,13 +195,14 @@ def test_session_options(model_cache, model_name) -> None:
         assert session_options.enable_cpu_mem_arena is False
 
 
-@pytest.mark.parametrize(
-    "model_name",
-    ["syntriq/lupe-multilingual-reranker-small", "syntriq/lupe-multilingual-reranker-base"],
-)
-def test_long_pair_is_not_truncated_at_384(model_cache, model_name: str) -> None:
-    if os.getenv("CI") and not is_manual_run():
-        pytest.skip("downloads a large model")
-    with model_cache(model_name) as model:
-        document = "Paris is the capital of France. " * 100
-        assert model.token_count([("What is the capital of France?", document)]) > 384
+def test_long_pair_is_not_truncated_at_384(model_cache) -> None:
+    is_ci = os.getenv("CI")
+    is_manual = is_manual_run()
+    for model_desc in TextCrossEncoder._list_supported_models():
+        if not model_desc.model.startswith("syntriq/lupe-multilingual-reranker-"):
+            continue
+        if not should_test_model(model_desc, "Xenova/ms-marco-MiniLM-L-6-v2", is_ci, is_manual):
+            continue
+        with model_cache(model_desc.model) as model:
+            document = "Paris is the capital of France. " * 100
+            assert model.token_count([("What is the capital of France?", document)]) > 384
